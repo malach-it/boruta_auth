@@ -12,7 +12,7 @@ It is intended to follow RFCs :
 As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
 
 ## Documentation
-Documentation can be found [here](https://hexdocs.pm/boruta/0.2.0/Boruta.html)
+Documentation can be found [here](https://hexdocs.pm/boruta/1.0.0-rc.0/Boruta.html)
 
 ## Live example
 A live example can be found [here](https://boruta.herokuapp.com/)
@@ -85,7 +85,7 @@ In order to expose endpoints of an OAuth server with Boruta, you need implement 
 
 This library has specific interfaces to interact with `Plug.Conn` requests.
 
-Here is an example of token endpoint controller:
+Here is an example of a token endpoint controller:
 ```
 defmodule MyApp.OauthController do
   @behaviour Boruta.Oauth.Application

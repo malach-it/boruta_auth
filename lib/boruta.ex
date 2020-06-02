@@ -79,6 +79,32 @@ defmodule Boruta do
 
   This library has specific interfaces to interact with `Plug.Conn` requests.
 
+  Here is an example of a token endpoint controller:
+  ```
+  defmodule MyApp.OauthController do
+    @behaviour Boruta.Oauth.Application
+    ...
+    def token(%Plug.Conn{} = conn, _params) do
+      conn |> Oauth.token(__MODULE__)
+    end
+
+    @impl Boruta.Oauth.Application
+    def token_success(conn, %TokenResponse{} = response) do
+      conn
+      |> put_view(OauthView)
+      |> render("token.json", response: response)
+    end
+
+    @impl Boruta.Oauth.Application
+    def token_error(conn, %Error{status: status, error: error, error_description: error_description}) do
+      conn
+      |> put_status(status)
+      |> put_view(OauthView)
+      |> render("error.json", error: error, error_description: error_description)
+    end
+    ...
+  end
+  ```
   ## Feedback
   It is a work in progress, all feedbacks / feature requests / improvments are welcome -> [me](mailto:pascal.knoth@gmx.com)
   """
