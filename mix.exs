@@ -4,9 +4,6 @@ defmodule Boruta.MixProject do
   def project do
     [
       name: "Boruta core",
-      build_path: "../../_build",
-      deps_path: "../../deps",
-      lockfile: "../../mix.lock",
       app: :boruta,
       version: "0.2.0",
       elixir: "~> 1.5",

@@ -1,3 +1,6 @@
+[![pipeline status](https://gitlab.com/patatoid/boruta_auth/badges/master/pipeline.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
+[![coverage report](https://gitlab.com/patatoid/boruta_auth/badges/master/coverage.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
+
 # Boruta OAuth provider core
 Boruta is the core of an OAuth provider giving business logic of authentication and authorization.
 
