@@ -5,7 +5,7 @@ defmodule Boruta.MixProject do
     [
       name: "Boruta core",
       app: :boruta,
-      version: "0.2.0",
+      version: "1.0.0-rc.0",
       elixir: "~> 1.5",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule Boruta.MixProject do
       docs: docs(),
       package: package(),
       description: description(),
-      source_url: "https://github.com/patatoid/boruta-core",
+      source_url: "https://gitlab.com/patatoid/boruta_auth",
       dialyzer: [
         plt_add_apps: [:mix]
       ]
