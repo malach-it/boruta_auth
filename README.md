@@ -64,7 +64,7 @@ end
 Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
 ```
 config :boruta, Boruta.Oauth,
-  repo: Boruta.Repo,
+  repo: MyApp.Repo,
   contexts: [
     access_tokens: Boruta.Ecto.AccessTokens,
     clients: Boruta.Ecto.Clients,
