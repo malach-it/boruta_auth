@@ -40,11 +40,11 @@ defmodule Boruta.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0.0", only: [:dev], runtime: false},
+      {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ecto_sql, "~> 3.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:ex_json_schema, "~> 0.6.1"},
+      {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
       {:jason, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
