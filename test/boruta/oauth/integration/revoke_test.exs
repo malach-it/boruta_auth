@@ -1,7 +1,5 @@
 defmodule Boruta.OauthTest.RevokeTest do
   use ExUnit.Case
-  # TODO remove conn dependency
-  use Phoenix.ConnTest
   use Boruta.DataCase
 
   import Boruta.Factory
@@ -43,7 +41,7 @@ defmodule Boruta.OauthTest.RevokeTest do
     end
 
     test "returns an error with invalid client_id/secret", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, "bad_secret")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, "bad_secret")
 
       assert Oauth.revoke(%{
         body_params: %{"token" => "token"},
@@ -59,7 +57,7 @@ defmodule Boruta.OauthTest.RevokeTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
       |> stub(:persisted?, fn(_params) -> true end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.revoke(%{
         body_params: %{"token" => token.value},
         req_headers: [{"authorization", authorization_header}]
@@ -71,8 +69,8 @@ defmodule Boruta.OauthTest.RevokeTest do
     end
   end
 
-  defp using_basic_auth(conn, username, password) do
-    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
-    conn |> put_req_header("authorization", header_content)
+  defp using_basic_auth(username, password) do
+    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
+    %{req_headers: [{"authorization", authorization_header}]}
   end
 end

@@ -1,7 +1,5 @@
 defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   use ExUnit.Case
-  # TODO remove conn dependency
-  use Phoenix.ConnTest
   use Boruta.DataCase
 
   import Boruta.Factory
@@ -326,7 +324,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if request is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
@@ -341,7 +339,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `client_id` is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
 
       assert Oauth.token(
         %{
@@ -362,7 +360,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `code` is invalid", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.token(
@@ -384,7 +382,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `code` and request redirect_uri do not match", %{client: client, bad_redirect_uri_code: bad_redirect_uri_code} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
       assert Oauth.token(
         %{
@@ -405,7 +403,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if grant type is not allowed by client", %{client_without_grant_type: client, code: code} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
       assert Oauth.token(
         %{
@@ -426,7 +424,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
       |> stub(:persisted?, fn(_params) -> true end)
@@ -462,7 +460,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a token with scope", %{client: client, code_with_scope: code, resource_owner: resource_owner} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
       |> stub(:persisted?, fn(_params) -> true end)
@@ -497,8 +495,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
   end
 
-  defp using_basic_auth(conn, username, password) do
-    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
-    conn |> put_req_header("authorization", header_content)
+  defp using_basic_auth(username, password) do
+    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
+    %{req_headers: [{"authorization", authorization_header}]}
   end
 end

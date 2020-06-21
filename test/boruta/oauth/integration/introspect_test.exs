@@ -1,7 +1,5 @@
 defmodule Boruta.OauthTest.IntrospectTest do
   use ExUnit.Case
-  # TODO remove conn dependency
-  use Phoenix.ConnTest
   use Boruta.DataCase
 
   import Boruta.Factory
@@ -49,7 +47,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
     end
 
     test "returns an error with invalid client_id/secret", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, "bad_secret")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, "bad_secret")
 
       assert Oauth.introspect(%{
         body_params: %{"token" => "token"},
@@ -62,7 +60,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
     end
 
     test "returns an inactive token if token is inactive", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
       assert Oauth.introspect(%{
         body_params: %{"token" => "token"},
@@ -84,7 +82,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
     test "returns a token introspected if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.introspect(%{
         body_params: %{"token" => token.value},
         req_headers: [{"authorization", authorization_header}]
@@ -112,8 +110,8 @@ defmodule Boruta.OauthTest.IntrospectTest do
     end
   end
 
-  defp using_basic_auth(conn, username, password) do
-    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
-    conn |> put_req_header("authorization", header_content)
+  defp using_basic_auth(username, password) do
+    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
+    %{req_headers: [{"authorization", authorization_header}]}
   end
 end
