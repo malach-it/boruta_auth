@@ -24,6 +24,8 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     repos = parse_repo(args)
 
     Enum.map repos, fn repo ->
+      ensure_repo(repo, args)
+
       path = Path.join(source_repo_priv(repo), "migrations")
       file = Path.join(path, "#{timestamp()}_create_boruta.exs")
       assigns = [

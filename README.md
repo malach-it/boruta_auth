@@ -64,7 +64,7 @@ end
 Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
 ```
 config :boruta, Boruta.Oauth,
-  repo: Boruta.Repo,
+  repo: MyApp.Repo,
   contexts: [
     access_tokens: Boruta.Ecto.AccessTokens,
     clients: Boruta.Ecto.Clients,
@@ -85,7 +85,7 @@ In order to expose endpoints of an OAuth server with Boruta, you need implement 
 
 This library has specific interfaces to interact with `Plug.Conn` requests.
 
-Here is an example of token endpoint controller:
+Here is an example of a token endpoint controller:
 ```
 defmodule MyApp.OauthController do
   @behaviour Boruta.Oauth.Application

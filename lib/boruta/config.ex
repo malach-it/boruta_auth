@@ -5,7 +5,7 @@ defmodule Boruta.Config do
   Configuration can be set as following in `config.exs` (this configuration is the default)
   ```
   config :boruta, Boruta.Oauth,
-    repo: Boruta.Repo,
+    repo: MyApp.Repo,
     contexts: [
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,

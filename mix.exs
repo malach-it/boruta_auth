@@ -126,7 +126,7 @@ defmodule Boruta.MixProject do
       name: "boruta",
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/patatoid/boruta-core"
+        "Gitlab" => "https://gitlab.com/patatoid/boruta_auth"
       }
     }
   end
