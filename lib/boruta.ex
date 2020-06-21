@@ -9,8 +9,6 @@ defmodule Boruta do
 
   As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
 
-  Note : Refresh tokens are not implemented yet
-
   ## Installation
   1. __Schemas migration__
 
