@@ -41,15 +41,14 @@ defmodule Boruta.MixProject do
   defp deps do
     [
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.7", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0.0", only: [:dev], runtime: false},
       {:ecto_sql, "~> 3.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6.1"},
       {:ex_machina, "~> 2.4", only: :test},
       {:jason, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
-      # TODO remove phoenix dependency
-      {:phoenix, "~> 1.4.3"},
+      {:plug, "~> 1.0"},
       {:puid, "~> 1.0"},
       {:secure_random, "~> 0.5"},
       {:mox, "~> 0.5", only: :test}

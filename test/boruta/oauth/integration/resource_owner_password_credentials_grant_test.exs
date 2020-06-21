@@ -1,7 +1,5 @@
 defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
   use ExUnit.Case
-  # TODO remove conn dependency
-  use Phoenix.ConnTest
   use Boruta.DataCase
 
   import Boruta.Factory
@@ -46,7 +44,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     end
 
     test "returns an error if request is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("test", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
@@ -61,7 +59,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     end
 
     test "returns an error if client_id/secret are invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("6a2f41a3-c54c-fce8-32d2-0324e1c32e22", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("6a2f41a3-c54c-fce8-32d2-0324e1c32e22", "test")
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
@@ -76,7 +74,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     end
 
     test "returns an error if username is invalid", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       ResourceOwners
       |> stub(:get_by, fn(_params) -> nil end)
 
@@ -96,7 +94,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     test "returns an error if password is invalid", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> nil end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
@@ -114,7 +112,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
       |> stub(:persisted?, fn(_params) -> true end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
@@ -144,7 +142,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       |> stub(:get_by, fn(_params) -> resource_owner end)
       |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       %{name: given_scope} = List.first(client.authorized_scopes)
       case Oauth.token(
         %{
@@ -175,7 +173,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       |> stub(:get_by, fn(_params) -> resource_owner end)
       |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       given_scope = "bad_scope"
       assert Oauth.token(
         %{
@@ -191,7 +189,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     end
 
     test "returns an error if grant type is not allowed by the client", %{client_without_grant_type: client, resource_owner: resource_owner} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
@@ -211,8 +209,8 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     end
   end
 
-  defp using_basic_auth(conn, username, password) do
-    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
-    conn |> put_req_header("authorization", header_content)
+  defp using_basic_auth(username, password) do
+    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
+    %{req_headers: [{"authorization", authorization_header}]}
   end
 end

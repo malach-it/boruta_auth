@@ -1,7 +1,5 @@
 defmodule Boruta.OauthTest.RefreshTokenTest do
   use ExUnit.Case
-  # TODO remove conn dependency
-  use Phoenix.ConnTest
   use Boruta.DataCase
 
   import Boruta.Factory
@@ -51,7 +49,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns an error if client is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth("6a2f41a3-c54c-fce8-32d2-0324e1c32e22", "test")
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("6a2f41a3-c54c-fce8-32d2-0324e1c32e22", "test")
       assert Oauth.token(%{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => "refresh_token"},
         req_headers: [{"authorization", authorization_header}]
@@ -63,7 +61,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns an error if refresh_token is invalid", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(%{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => "bad_refresh_token"},
         req_headers: [{"authorization", authorization_header}]
@@ -75,7 +73,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns an error if access_token associated is expired", %{client: client, expired_access_token: token} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(%{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token},
         req_headers: [{"authorization", authorization_header}]
@@ -89,7 +87,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     test "returns an error if scope is unknown or unauthorized", %{client: client, access_token: token} do
       ResourceOwners
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(%{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token, "scope" => "bad_scope"},
         req_headers: [{"authorization", authorization_header}]
@@ -101,7 +99,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns an error if grant type is not allowed by client", %{client_without_grant_type: client, access_token: token} do
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(%{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token, "scope" => "bad_scope"},
         req_headers: [{"authorization", authorization_header}]
@@ -115,7 +113,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     test "returns token", %{client: client, access_token: token} do
       ResourceOwners
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
-      %{req_headers: [{"authorization", authorization_header}]} = build_conn() |> using_basic_auth(client.id, client.secret)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
         %{
           body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token, "scope" => "scope"},
@@ -141,8 +139,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
   end
 
-  defp using_basic_auth(conn, username, password) do
-    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
-    conn |> put_req_header("authorization", header_content)
+  defp using_basic_auth(username, password) do
+    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
+    %{req_headers: [{"authorization", authorization_header}]}
   end
 end
