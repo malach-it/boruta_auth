@@ -31,3 +31,6 @@ boruta-*.tar
 /config/*.secret.exs
 
 mix.lock
+
+# Vim files
+tags

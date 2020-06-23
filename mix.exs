@@ -5,7 +5,7 @@ defmodule Boruta.MixProject do
     [
       name: "Boruta core",
       app: :boruta,
-      version: "1.0.0-rc.1",
+      version: "1.0.0-rc.2",
       elixir: "~> 1.5",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -46,7 +46,6 @@ defmodule Boruta.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
-      {:jason, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
       {:plug, "~> 1.0"},
       {:puid, "~> 1.0"},

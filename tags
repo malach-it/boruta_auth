@@ -135,6 +135,7 @@ Bunt	deps/bunt/lib/bunt.ex	/^defmodule Bunt do$/;"	m
 CLI	deps/credo/lib/credo/cli.ex	/^defmodule Credo.CLI do$/;"	m
 CLI	deps/earmark/lib/earmark/cli.ex	/^defmodule Earmark.CLI do$/;"	m
 CLI	deps/ex_doc/lib/ex_doc/cli.ex	/^defmodule ExDoc.CLI do$/;"	m
+CODE_VERSION	deps/earmark/src/link_text_parser.erl	/^-define(CODE_VERSION, "1.4").$/;"	d
 CODE_VERSION	deps/erlex/src/parser.erl	/^-define(CODE_VERSION, "1.4").$/;"	d
 COOKIE	deps/plug/lib/plug/session/cookie.ex	/^defmodule Plug.Session.COOKIE do$/;"	m
 CSRFProtection	deps/plug/lib/plug/csrf_protection.ex	/^defmodule Plug.CSRFProtection do$/;"	m
@@ -1823,6 +1824,13 @@ add_title	deps/earmark/lib/earmark/helpers/link_parser.ex	/^  defp add_title({pa
 add_to	deps/earmark/lib/earmark/helpers/html_helpers.ex	/^  defp add_to(attrs, text) do$/;"	f
 add_to_col_start_and_end	deps/credo/lib/credo/code/interpolation_helper.ex	/^  defp add_to_col_start_and_end(positions, padding) do$/;"	f
 add_underscores_to_number_string	deps/credo/lib/credo/check/readability/large_numbers.ex	/^  defp add_underscores_to_number_string(string) do$/;"	f
+add_ws_prefix	deps/earmark/src/link_text_parser.erl	/^add_ws_prefix({Value, _}, {Link, LT, LP}) -> {Link, LT, string:concat(Value, LP)}. $/;"	f	module:link_text_parser
+adjust_line	deps/earmark/src/link_text_lexer.erl	/^adjust_line(N, N, _Cs, L) -> L;$/;"	f	module:link_text_lexer
+adjust_line	deps/earmark/src/link_text_lexer.erl	/^adjust_line(T, A, [$\\n|Cs], L) ->$/;"	f	module:link_text_lexer
+adjust_line	deps/earmark/src/link_text_lexer.erl	/^adjust_line(T, A, [_|Cs], L) ->$/;"	f	module:link_text_lexer
+adjust_line	deps/earmark/src/string_lexer.erl	/^adjust_line(N, N, _Cs, L) -> L;$/;"	f	module:string_lexer
+adjust_line	deps/earmark/src/string_lexer.erl	/^adjust_line(T, A, [$\\n|Cs], L) ->$/;"	f	module:string_lexer
+adjust_line	deps/earmark/src/string_lexer.erl	/^adjust_line(T, A, [_|Cs], L) ->$/;"	f	module:string_lexer
 adjust_line	deps/erlex/src/lexer.erl	/^adjust_line(N, N, _Cs, L) -> L;$/;"	f	module:lexer
 adjust_line	deps/erlex/src/lexer.erl	/^adjust_line(T, A, [$\\n|Cs], L) ->$/;"	f	module:lexer
 adjust_line	deps/erlex/src/lexer.erl	/^adjust_line(T, A, [_|Cs], L) ->$/;"	f	module:lexer
@@ -3505,12 +3513,14 @@ compute	deps/credo/lib/credo/severity.ex	/^  def compute(value, max_value), do: 
 compute_list_spacing	deps/earmark/lib/earmark/parser.ex	/^  defp compute_list_spacing( anything_else ), do: anything_else # nop$/;"	f
 compute_list_spacing	deps/earmark/lib/earmark/parser.ex	/^  defp compute_list_spacing( list = %Block.List{blocks: items} ) do$/;"	f
 concat	deps/nimble_parsec/lib/nimble_parsec.ex	/^  def concat(left, right) when is_combinator(left) and is_combinator(right) do$/;"	f
+concat_3t	deps/earmark/src/link_text_parser.erl	/^concat_3t(L, {MT, MP}, R) -> {string:join([L, MT, R], ""), string:join([ L, MP, R ], "")}.$/;"	f	module:link_text_parser
 concat_if	deps/ecto_sql/lib/ecto/adapters/myxql.ex	/^  defp concat_if(content, nil, _fun),  do: content$/;"	f
 concat_if	deps/ecto_sql/lib/ecto/adapters/myxql.ex	/^  defp concat_if(content, value, fun), do: content <> " " <> fun.(value)$/;"	f
 concat_if	deps/ecto_sql/lib/ecto/adapters/postgres.ex	/^  defp concat_if(content, nil, _fun),  do: content$/;"	f
 concat_if	deps/ecto_sql/lib/ecto/adapters/postgres.ex	/^  defp concat_if(content, value, fun), do: content <> " " <> fun.(value)$/;"	f
 concat_if	deps/ecto_sql/lib/ecto/adapters/tds.ex	/^  defp concat_if(content, nil, _fun), do: content$/;"	f
 concat_if	deps/ecto_sql/lib/ecto/adapters/tds.ex	/^  defp concat_if(content, value, fun), do: content <> " " <> fun.(value)$/;"	f
+concat_tuple	deps/earmark/src/link_text_parser.erl	/^concat_tuple({LT, LP}, {RT, RP}) -> {string:concat(LT, RT), string:concat(LP, RP)}.$/;"	f	module:link_text_parser
 conclude	deps/db_connection/lib/db_connection.ex	/^  defp conclude(%DBConnection{pool_ref: pool_ref, conn_ref: conn_ref}, result) do$/;"	f
 conditional_lock_for_migrations	deps/ecto_sql/lib/ecto/migrator.ex	/^  defp conditional_lock_for_migrations(module, repo, opts, fun) do$/;"	f
 config	deps/ecto/lib/ecto/repo.ex	/^      def config do$/;"	f
@@ -4463,6 +4473,7 @@ disconnect	deps/postgrex/lib/postgrex/protocol.ex	/^  defp disconnect(s, %Runtim
 disconnect	deps/postgrex/lib/postgrex/protocol.ex	/^  defp disconnect(s, tag, action, reason) do$/;"	f
 disconnect	deps/postgrex/lib/postgrex/protocol.ex	/^  defp disconnect(s, tag, action, reason, buffer) do$/;"	f
 disconnects on transaction timeouts	deps/ecto_sql/integration_test/sql/sandbox.exs	/^    test "disconnects on transaction timeouts" do$/;"	t
+dismiss_backslash	deps/earmark/src/link_text_lexer.erl	/^dismiss_backslash([$\\\\|Chars]) -> Chars.$/;"	f	module:link_text_lexer
 dispatch	deps/phoenix/lib/phoenix/socket/transport.ex	/^  def dispatch(%Message{} = msg, channels, socket) do$/;"	f
 dispatch	deps/phoenix/lib/phoenix/socket/transport.ex	/^  def dispatch(%{ref: ref, topic: "phoenix", event: "heartbeat"}, _channels, socket) do$/;"	f
 dispatch	deps/phoenix/lib/phoenix/socket/transport.ex	/^  def dispatch(msg, channels, socket)$/;"	f
@@ -5736,6 +5747,7 @@ escape_window_description	deps/ecto/lib/ecto/query/builder.ex	/^  defp escape_wi
 escape_window_function	deps/ecto/lib/ecto/query/builder.ex	/^  defp escape_window_function(expr, type, params_acc, vars, env) do$/;"	f
 escape_with_type	deps/ecto/lib/ecto/query/builder.ex	/^  defp escape_with_type(expr, type, params_acc, vars, env) do$/;"	f
 escaped	deps/makeup_elixir/lib/makeup/lexers/elixir_lexer/helper.ex	/^  def escaped(literal) when is_binary(literal) do$/;"	f
+escaped_token	deps/earmark/src/link_text_parser.erl	/^escaped_token({_Token, _Line, Value}) -> {string:concat("\\\\", Value), string:concat("\\\\", Value)}.$/;"	f	module:link_text_parser
 escapeu	deps/jason/lib/decoder.ex	/^  defp escapeu(<<_rest::bits>>, original, skip, _stack, _key_decode, _string_decode, _acc) do$/;"	f
 escapeu	deps/jason/lib/decoder.ex	/^  defp escapeu(<<int1::16, int2::16, rest::bits>>, original, skip, stack, key_decode, string_decode, acc) do$/;"	f
 escapeu_first	deps/jason/lib/decoder.ex	/^    defmacro escapeu_first(int, last, rest, original, skip, stack, key_decode, string_decode, acc) do$/;"	a
@@ -6117,6 +6129,7 @@ extract_path_and_guards	deps/plug/lib/plug/router.ex	/^  defp extract_path_and_g
 extract_public_key	deps/phoenix/lib/mix/tasks/phx.gen.cert.ex	/^  defp extract_public_key(rsa_private_key(modulus: m, publicExponent: e)) do$/;"	f
 extract_start	deps/earmark/lib/earmark/parser.ex	/^  defp extract_start(%{bullet: bullet}) do$/;"	f
 extract_title	deps/ex_doc/lib/ex_doc/formatter/html.ex	/^  defp extract_title(content) do$/;"	f
+extract_token	deps/earmark/src/link_text_parser.erl	/^extract_token({_Token, _Line, Value}) -> {Value, Value}.$/;"	f	module:link_text_parser
 extract_username_and_salute	deps/credo/lib/credo/check/warning/unused_regex_operation.ex	/^      def extract_username_and_salute(regex, string) do$/;"	f
 extras	deps/ecto/mix.exs	/^  def extras() do$/;"	f
 extras	deps/phoenix/mix.exs	/^  defp extras do$/;"	f
@@ -6519,6 +6532,11 @@ format_endpoint	deps/phoenix/lib/phoenix/router/console_formatter.ex	/^  defp fo
 format_entry_point	deps/nimble_parsec/lib/nimble_parsec/recorder.ex	/^  defp format_entry_point(:def, name) do$/;"	f
 format_entry_point	deps/nimble_parsec/lib/nimble_parsec/recorder.ex	/^  defp format_entry_point(:defp, name) do$/;"	f
 format_entry_point	deps/nimble_parsec/lib/nimble_parsec/recorder.ex	/^  defp format_entry_point(nil, _name) do$/;"	f
+format_error	deps/earmark/src/link_text_lexer.erl	/^format_error({illegal,S}) -> ["illegal characters ",io_lib:write_string(S)];$/;"	f	module:link_text_lexer
+format_error	deps/earmark/src/link_text_lexer.erl	/^format_error({user,S}) -> S.$/;"	f	module:link_text_lexer
+format_error	deps/earmark/src/link_text_parser.erl	/^format_error(Message) ->$/;"	f	module:link_text_parser
+format_error	deps/earmark/src/string_lexer.erl	/^format_error({illegal,S}) -> ["illegal characters ",io_lib:write_string(S)];$/;"	f	module:string_lexer
+format_error	deps/earmark/src/string_lexer.erl	/^format_error({user,S}) -> S.$/;"	f	module:string_lexer
 format_error	deps/erlex/src/lexer.erl	/^format_error({illegal,S}) -> ["illegal characters ",io_lib:write_string(S)];$/;"	f	module:lexer
 format_error	deps/erlex/src/lexer.erl	/^format_error({user,S}) -> S.$/;"	f	module:lexer
 format_error	deps/erlex/src/parser.erl	/^format_error(Message) ->$/;"	f	module:parser
@@ -8323,6 +8341,8 @@ link_headings	deps/ex_doc/lib/ex_doc/formatter/html/templates.ex	/^  def link_he
 link_id	deps/ex_doc/lib/ex_doc/formatter/html.ex	/^  def link_id(id, type) do$/;"	f
 link_id	deps/ex_doc/lib/ex_doc/formatter/html.ex	/^  def link_id(node), do: link_id(node.id, node.type)$/;"	f
 link_moduledoc_headings	deps/ex_doc/lib/ex_doc/formatter/html/templates.ex	/^  defp link_moduledoc_headings(content) do$/;"	f
+link_text_lexer	deps/earmark/src/link_text_lexer.erl	/^-module(link_text_lexer).$/;"	m
+link_text_parser	deps/earmark/src/link_text_parser.erl	/^-module(link_text_parser).$/;"	m
 links_from_blocks	deps/earmark/lib/earmark/parser.ex	/^  defp links_from_blocks(blocks) do$/;"	f
 list	deps/jason/lib/encode.ex	/^  def list(list, {escape, encode_map}) do$/;"	f
 list	deps/jason/lib/encode.ex	/^  defp list([], _escape, _encode_map) do$/;"	f
@@ -8605,6 +8625,7 @@ make_empty_if_unfetched	deps/plug/lib/plug/parsers.ex	/^  defp make_empty_if_unf
 make_empty_if_unfetched	deps/plug/lib/plug/parsers.ex	/^  defp make_empty_if_unfetched(params), do: params$/;"	f
 make_fun	deps/db_connection/lib/db_connection/task.ex	/^  defp make_fun(fun) when is_function(fun, 1) do$/;"	f
 make_fun	deps/db_connection/lib/db_connection/task.ex	/^  defp make_fun(mfargs) do$/;"	f
+make_image_tuple	deps/earmark/src/link_text_parser.erl	/^make_image_tuple({_Link, L, R}) -> {image, L, string:concat("!", R)}.$/;"	f	module:link_text_parser
 make_indent	deps/earmark/lib/earmark/transform.ex	/^  defp make_indent(%{indent: indent}, level) do$/;"	f
 make_into	deps/ecto_sql/lib/ecto/adapters/sql/stream.ex	/^  defp make_into(fun, stream) do$/;"	f
 make_into	deps/postgrex/lib/postgrex/stream.ex	/^  defp make_into(conn, stream, %Postgrex.Copy{ref: ref} = copy, opts) do$/;"	f
@@ -9660,6 +9681,7 @@ parse	deps/decimal/lib/decimal.ex	/^  def parse(binary) when is_binary(binary) d
 parse	deps/earmark/lib/earmark/helpers/yecc_helpers.ex	/^  def parse( text, lexer: lexer, parser: parser ) do$/;"	f
 parse	deps/earmark/lib/earmark/parser.ex	/^  def parse(text_lines), do: parse(text_lines, %Options{}, false)$/;"	f
 parse	deps/earmark/lib/earmark/parser.ex	/^  def parse(text_lines, options = %Options{}, recursive) do$/;"	f
+parse	deps/earmark/src/link_text_parser.erl	/^parse(Tokens) ->$/;"	f	module:link_text_parser
 parse	deps/erlex/lib/erlex.ex	/^  defp parse(tokens) do$/;"	f
 parse	deps/erlex/src/parser.erl	/^parse(Tokens) ->$/;"	f	module:parser
 parse	deps/jason/lib/decoder.ex	/^  def parse(data, opts) when is_binary(data) do$/;"	f
@@ -9701,6 +9723,8 @@ parse!	deps/earmark/lib/earmark/helpers/yecc_helpers.ex	/^  def parse!( text, le
 parse!	deps/phoenix/lib/mix/tasks/phx.gen.secret.ex	/^  defp parse!(int) do$/;"	f
 parse_access_get	deps/ecto/lib/ecto/query/builder.ex	/^  defp parse_access_get({{:., _, [Access, :get]}, _, [left, right]}, acc) do$/;"	f
 parse_access_get	deps/ecto/lib/ecto/query/builder.ex	/^  defp parse_access_get({{:., _, [{var, _, context}, field]}, _, []} = expr, acc)$/;"	f
+parse_and_scan	deps/earmark/src/link_text_parser.erl	/^parse_and_scan({F, A}) ->$/;"	f	module:link_text_parser
+parse_and_scan	deps/earmark/src/link_text_parser.erl	/^parse_and_scan({M, F, A}) ->$/;"	f	module:link_text_parser
 parse_and_scan	deps/erlex/src/parser.erl	/^parse_and_scan({F, A}) ->$/;"	f	module:parser
 parse_and_scan	deps/erlex/src/parser.erl	/^parse_and_scan({M, F, A}) ->$/;"	f	module:parser
 parse_app_info	deps/dialyxir/lib/dialyxir/plt.ex	/^  defp parse_app_info(info, app) do$/;"	f
@@ -11508,6 +11532,7 @@ result	deps/phoenix/lib/phoenix/socket.ex	/^  defp result({:ok, _}), do: :ok$/;"
 resume	deps/phoenix/lib/phoenix/endpoint/cowboy_websocket.ex	/^  def resume(module, fun, args) do$/;"	f
 resume_session	deps/phoenix/lib/phoenix/transports/long_poll.ex	/^  defp resume_session(%{"token" => token}, endpoint, opts) do$/;"	f
 resume_session	deps/phoenix/lib/phoenix/transports/long_poll.ex	/^  defp resume_session(_params, _endpoint, _opts), do: :error$/;"	f
+return_error	deps/earmark/src/link_text_parser.erl	/^return_error(Line, Message) ->$/;"	f	module:link_text_parser
 return_error	deps/erlex/src/parser.erl	/^return_error(Line, Message) ->$/;"	f	module:parser
 returning	deps/ecto/lib/ecto/repo/schema.ex	/^  defp returning(schema, opts) do$/;"	f
 returning	deps/ecto_sql/lib/ecto/adapters/postgres/connection.ex	/^    defp returning(%{select: %{fields: fields}} = query, sources),$/;"	f
@@ -12180,6 +12205,20 @@ skip?	deps/dialyxir/lib/dialyxir/project.ex	/^  defp skip?({short_description, w
 skip?	deps/dialyxir/lib/dialyxir/project.ex	/^  defp skip?({short_description}, {_, _, _, short_description}), do: true$/;"	f
 skip?	deps/ecto/lib/ecto/changeset/relation.ex	/^  defp skip?(%{valid?: true, changes: empty, action: :update}) when empty == %{},$/;"	f
 skip?	deps/ecto/lib/ecto/changeset/relation.ex	/^  defp skip?(_changeset),$/;"	f
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, skip_token, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, {end_token,_T,Push}, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, {end_token,_T}, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, {error,_S}, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, {skip_token,Push}, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, {token,_T,Push}, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/link_text_lexer.erl	/^skip_cont(Rest, Line, {token,_T}, Error) ->$/;"	f	module:link_text_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, skip_token, Error) ->$/;"	f	module:string_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, {end_token,_T,Push}, Error) ->$/;"	f	module:string_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, {end_token,_T}, Error) ->$/;"	f	module:string_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, {error,_S}, Error) ->$/;"	f	module:string_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, {skip_token,Push}, Error) ->$/;"	f	module:string_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, {token,_T,Push}, Error) ->$/;"	f	module:string_lexer
+skip_cont	deps/earmark/src/string_lexer.erl	/^skip_cont(Rest, Line, {token,_T}, Error) ->$/;"	f	module:string_lexer
 skip_cont	deps/erlex/src/lexer.erl	/^skip_cont(Rest, Line, skip_token, Error) ->$/;"	f	module:lexer
 skip_cont	deps/erlex/src/lexer.erl	/^skip_cont(Rest, Line, {end_token,_T,Push}, Error) ->$/;"	f	module:lexer
 skip_cont	deps/erlex/src/lexer.erl	/^skip_cont(Rest, Line, {end_token,_T}, Error) ->$/;"	f	module:lexer
@@ -12196,6 +12235,10 @@ skip_specs_types_and_capture	deps/credo/lib/credo/check/consistency/space_around
 skip_specs_types_and_capture	deps/credo/lib/credo/check/consistency/space_around_operators/collector.ex	/^  defp skip_specs_types_and_capture([{:capture_op, _, _} | tokens]) do$/;"	f
 skip_specs_types_and_capture	deps/credo/lib/credo/check/consistency/space_around_operators/collector.ex	/^  defp skip_specs_types_and_capture([{:identifier, _, :&} | [{:identifier, _, :\/} | tokens]]) do$/;"	f
 skip_specs_types_and_capture	deps/credo/lib/credo/check/consistency/space_around_operators/collector.ex	/^  defp skip_specs_types_and_capture(tokens), do: tokens$/;"	f
+skip_tokens	deps/earmark/src/link_text_lexer.erl	/^skip_tokens(Ics, Line, Error) ->$/;"	f	module:link_text_lexer
+skip_tokens	deps/earmark/src/link_text_lexer.erl	/^skip_tokens(S0, Ics0, L0, Tcs, Tlen0, Tline, Error, A0, Alen0) ->$/;"	f	module:link_text_lexer
+skip_tokens	deps/earmark/src/string_lexer.erl	/^skip_tokens(Ics, Line, Error) ->$/;"	f	module:string_lexer
+skip_tokens	deps/earmark/src/string_lexer.erl	/^skip_tokens(S0, Ics0, L0, Tcs, Tlen0, Tline, Error, A0, Alen0) ->$/;"	f	module:string_lexer
 skip_tokens	deps/erlex/src/lexer.erl	/^skip_tokens(Ics, Line, Error) ->$/;"	f	module:lexer
 skip_tokens	deps/erlex/src/lexer.erl	/^skip_tokens(S0, Ics0, L0, Tcs, Tlen0, Tline, Error, A0, Alen0) ->$/;"	f	module:lexer
 slice	deps/crypto_rand/lib/crypto_rand.ex	/^  defp slice(bits, offset, bytes) do$/;"	f
@@ -12513,6 +12556,14 @@ stream_fetch	deps/db_connection/lib/db_connection.ex	/^  defp stream_fetch(_, {:
 stream_fetch	deps/db_connection/lib/db_connection.ex	/^  defp stream_fetch(conn, {:cont, query, cursor}, opts) do$/;"	f
 strict_via_args_or_config_file?	deps/credo/lib/credo/config_builder.ex	/^  defp strict_via_args_or_config_file?([], config_file) do$/;"	f
 strict_via_args_or_config_file?	deps/credo/lib/credo/config_builder.ex	/^  defp strict_via_args_or_config_file?([potential_path | _], config_file) do$/;"	f
+string	deps/earmark/src/link_text_lexer.erl	/^string(Ics0, L0, Tcs, Ts) ->$/;"	f	module:link_text_lexer
+string	deps/earmark/src/link_text_lexer.erl	/^string(String) -> string(String, 1).$/;"	f	module:link_text_lexer
+string	deps/earmark/src/link_text_lexer.erl	/^string(String, Line) -> string(String, Line, String, []).$/;"	f	module:link_text_lexer
+string	deps/earmark/src/link_text_lexer.erl	/^string([], L, [], Ts) ->                     % No partial tokens!$/;"	f	module:link_text_lexer
+string	deps/earmark/src/string_lexer.erl	/^string(Ics0, L0, Tcs, Ts) ->$/;"	f	module:string_lexer
+string	deps/earmark/src/string_lexer.erl	/^string(String) -> string(String, 1).$/;"	f	module:string_lexer
+string	deps/earmark/src/string_lexer.erl	/^string(String, Line) -> string(String, Line, String, []).$/;"	f	module:string_lexer
+string	deps/earmark/src/string_lexer.erl	/^string([], L, [], Ts) ->                     % No partial tokens!$/;"	f	module:string_lexer
 string	deps/erlex/src/lexer.erl	/^string(Ics0, L0, Tcs, Ts) ->$/;"	f	module:lexer
 string	deps/erlex/src/lexer.erl	/^string(String) -> string(String, 1).$/;"	f	module:lexer
 string	deps/erlex/src/lexer.erl	/^string(String, Line) -> string(String, Line, String, []).$/;"	f	module:lexer
@@ -12522,6 +12573,20 @@ string	deps/jason/lib/decoder.ex	/^  defp string(data, original, skip, stack, ke
 string	deps/jason/lib/encode.ex	/^  def string(string, {escape, _encode_map}) do$/;"	f
 string	deps/nimble_parsec/lib/nimble_parsec.ex	/^  def string(combinator \\\\ empty(), binary)$/;"	f
 string_attr	deps/phoenix/lib/mix/phoenix/schema.ex	/^  defp string_attr(types) do$/;"	f
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(Rest, Line, skip_token, Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(Rest, Line, {end_token,T,Push}, Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(Rest, Line, {end_token,T}, Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(Rest, Line, {skip_token,Push}, Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(Rest, Line, {token,T,Push}, Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(Rest, Line, {token,T}, Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/link_text_lexer.erl	/^string_cont(_Rest, Line, {error,S}, _Ts) ->$/;"	f	module:link_text_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(Rest, Line, skip_token, Ts) ->$/;"	f	module:string_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(Rest, Line, {end_token,T,Push}, Ts) ->$/;"	f	module:string_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(Rest, Line, {end_token,T}, Ts) ->$/;"	f	module:string_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(Rest, Line, {skip_token,Push}, Ts) ->$/;"	f	module:string_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(Rest, Line, {token,T,Push}, Ts) ->$/;"	f	module:string_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(Rest, Line, {token,T}, Ts) ->$/;"	f	module:string_lexer
+string_cont	deps/earmark/src/string_lexer.erl	/^string_cont(_Rest, Line, {error,S}, _Ts) ->$/;"	f	module:string_lexer
 string_cont	deps/erlex/src/lexer.erl	/^string_cont(Rest, Line, skip_token, Ts) ->$/;"	f	module:lexer
 string_cont	deps/erlex/src/lexer.erl	/^string_cont(Rest, Line, {end_token,T,Push}, Ts) ->$/;"	f	module:lexer
 string_cont	deps/erlex/src/lexer.erl	/^string_cont(Rest, Line, {end_token,T}, Ts) ->$/;"	f	module:lexer
@@ -12531,6 +12596,7 @@ string_cont	deps/erlex/src/lexer.erl	/^string_cont(Rest, Line, {token,T}, Ts) ->
 string_cont	deps/erlex/src/lexer.erl	/^string_cont(_Rest, Line, {error,S}, _Ts) ->$/;"	f	module:lexer
 string_decode_function	deps/jason/lib/decoder.ex	/^  defp string_decode_function(%{strings: :copy}), do: &:binary.copy\/1$/;"	f
 string_decode_function	deps/jason/lib/decoder.ex	/^  defp string_decode_function(%{strings: :reference}), do: &(&1)$/;"	f
+string_lexer	deps/earmark/src/string_lexer.erl	/^-module(string_lexer).$/;"	m
 string_like	deps/makeup/lib/makeup/lexer/combinators.ex	/^  def string_like(left, right, middle, ttype, attrs \\\\ %{}) when is_list(middle) do$/;"	f
 string_params_for	deps/ex_machina/lib/ex_machina/ecto.ex	/^      def string_params_for(factory_name, attrs \\\\ %{}) do$/;"	f
 string_params_for	deps/ex_machina/lib/ex_machina/ecto.ex	/^  def string_params_for(module, factory_name, attrs \\\\ %{}) do$/;"	f
@@ -12819,6 +12885,7 @@ timestamps	deps/ecto/lib/ecto/schema.ex	/^  defmacro timestamps(opts \\\\ []) do
 timestamps	deps/ecto_sql/lib/ecto/migration.ex	/^  def timestamps(opts \\\\ []) when is_list(opts) do$/;"	f
 timings_to_map	deps/credo/lib/credo/execution/task/write_debug_report.ex	/^  def timings_to_map(list) do$/;"	f
 title	deps/earmark/lib/earmark/helpers/link_parser.ex	/^  defp title(remaining_text) do$/;"	f
+title_tuple	deps/earmark/src/link_text_parser.erl	/^title_tuple({Title, Parsed}) -> {link, Title, string:join(["[", Parsed, "]"], "")}.$/;"	f	module:link_text_parser
 tmp_path	deps/ecto_sql/integration_test/support/file_helpers.exs	/^  def tmp_path do$/;"	f
 to_app_source	deps/phoenix/lib/mix/phoenix.ex	/^  defp to_app_source(app, source_dir) when is_atom(app),$/;"	f
 to_app_source	deps/phoenix/lib/mix/phoenix.ex	/^  defp to_app_source(path, source_dir) when is_binary(path),$/;"	f
@@ -13010,6 +13077,14 @@ to_var	deps/ex_doc/lib/ex_doc/retriever.ex	/^  defp to_var({:<<>>, _, _}, _), do
 to_var	deps/ex_doc/lib/ex_doc/retriever.ex	/^  defp to_var({:{}, _, _}, _), do: {:tuple, [], nil}$/;"	f
 to_var	deps/ex_doc/lib/ex_doc/retriever.ex	/^  defp to_var({_, _}, _), do: {:tuple, [], nil}$/;"	f
 to_var	deps/ex_doc/lib/ex_doc/retriever.ex	/^  defp to_var({name, meta, _}, _) when is_atom(name), do: {name, meta, nil}$/;"	f
+token	deps/earmark/src/link_text_lexer.erl	/^token(Cont, Chars) -> token(Cont, Chars, 1).$/;"	f	module:link_text_lexer
+token	deps/earmark/src/link_text_lexer.erl	/^token(S0, Ics0, L0, Tcs, Tlen0, Tline, A0, Alen0) ->$/;"	f	module:link_text_lexer
+token	deps/earmark/src/link_text_lexer.erl	/^token([], Chars, Line) ->$/;"	f	module:link_text_lexer
+token	deps/earmark/src/link_text_lexer.erl	/^token({token,State,Line,Tcs,Tlen,Tline,Action,Alen}, Chars, _) ->$/;"	f	module:link_text_lexer
+token	deps/earmark/src/string_lexer.erl	/^token(Cont, Chars) -> token(Cont, Chars, 1).$/;"	f	module:string_lexer
+token	deps/earmark/src/string_lexer.erl	/^token(S0, Ics0, L0, Tcs, Tlen0, Tline, A0, Alen0) ->$/;"	f	module:string_lexer
+token	deps/earmark/src/string_lexer.erl	/^token([], Chars, Line) ->$/;"	f	module:string_lexer
+token	deps/earmark/src/string_lexer.erl	/^token({token,State,Line,Tcs,Tlen,Tline,Action,Alen}, Chars, _) ->$/;"	f	module:string_lexer
 token	deps/erlex/src/lexer.erl	/^token(Cont, Chars) -> token(Cont, Chars, 1).$/;"	f	module:lexer
 token	deps/erlex/src/lexer.erl	/^token(S0, Ics0, L0, Tcs, Tlen0, Tline, A0, Alen0) ->$/;"	f	module:lexer
 token	deps/erlex/src/lexer.erl	/^token([], Chars, Line) ->$/;"	f	module:lexer
@@ -13033,6 +13108,20 @@ token	lib/boruta/oauth/authorization.ex	/^  def token(request)$/;"	f
 token	lib/boruta/oauth/introspect.ex	/^  def token(%IntrospectRequest{client_id: client_id, client_secret: client_secret, token: token}) do$/;"	f
 token	lib/boruta/oauth/json/schema.ex	/^  def token do$/;"	f
 token	lib/boruta/oauth/revoke.ex	/^  def token(%RevokeRequest{$/;"	f
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, skip_token) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, {end_token,T,Push}) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, {end_token,T}) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, {error,S}) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, {skip_token,Push}) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, {token,T,Push}) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/link_text_lexer.erl	/^token_cont(Rest, Line, {token,T}) ->$/;"	f	module:link_text_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, skip_token) ->$/;"	f	module:string_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, {end_token,T,Push}) ->$/;"	f	module:string_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, {end_token,T}) ->$/;"	f	module:string_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, {error,S}) ->$/;"	f	module:string_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, {skip_token,Push}) ->$/;"	f	module:string_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, {token,T,Push}) ->$/;"	f	module:string_lexer
+token_cont	deps/earmark/src/string_lexer.erl	/^token_cont(Rest, Line, {token,T}) ->$/;"	f	module:string_lexer
 token_cont	deps/erlex/src/lexer.erl	/^token_cont(Rest, Line, skip_token) ->$/;"	f	module:lexer
 token_cont	deps/erlex/src/lexer.erl	/^token_cont(Rest, Line, {end_token,T,Push}) ->$/;"	f	module:lexer
 token_cont	deps/erlex/src/lexer.erl	/^token_cont(Rest, Line, {end_token,T}) ->$/;"	f	module:lexer
@@ -13053,11 +13142,35 @@ token_to_class_map	deps/makeup/lib/makeup/token/utils.ex	/^  def token_to_class_
 token_value_to_binary	deps/makeup/lib/makeup/lexer/postprocess.ex	/^  def token_value_to_binary({ttype, meta, value}) do$/;"	f
 token_values_to_binaries	deps/makeup/lib/makeup/lexer/postprocess.ex	/^  def token_values_to_binaries(tokens) do$/;"	f
 tokenize	deps/earmark/lib/earmark/helpers/leex_helpers.ex	/^  def tokenize line, with: lexer do$/;"	f
+tokens	deps/earmark/src/link_text_lexer.erl	/^tokens(Cont, Chars) -> tokens(Cont, Chars, 1).$/;"	f	module:link_text_lexer
+tokens	deps/earmark/src/link_text_lexer.erl	/^tokens(S0, Ics0, L0, Tcs, Tlen0, Tline, Ts, A0, Alen0) ->$/;"	f	module:link_text_lexer
+tokens	deps/earmark/src/link_text_lexer.erl	/^tokens([], Chars, Line) ->$/;"	f	module:link_text_lexer
+tokens	deps/earmark/src/link_text_lexer.erl	/^tokens({skip_tokens,State,Line,Tcs,Tlen,Tline,Error,Action,Alen}, Chars, _) ->$/;"	f	module:link_text_lexer
+tokens	deps/earmark/src/link_text_lexer.erl	/^tokens({tokens,State,Line,Tcs,Tlen,Tline,Ts,Action,Alen}, Chars, _) ->$/;"	f	module:link_text_lexer
+tokens	deps/earmark/src/string_lexer.erl	/^tokens(Cont, Chars) -> tokens(Cont, Chars, 1).$/;"	f	module:string_lexer
+tokens	deps/earmark/src/string_lexer.erl	/^tokens(S0, Ics0, L0, Tcs, Tlen0, Tline, Ts, A0, Alen0) ->$/;"	f	module:string_lexer
+tokens	deps/earmark/src/string_lexer.erl	/^tokens([], Chars, Line) ->$/;"	f	module:string_lexer
+tokens	deps/earmark/src/string_lexer.erl	/^tokens({skip_tokens,State,Line,Tcs,Tlen,Tline,Error,Action,Alen}, Chars, _) ->$/;"	f	module:string_lexer
+tokens	deps/earmark/src/string_lexer.erl	/^tokens({tokens,State,Line,Tcs,Tlen,Tline,Ts,Action,Alen}, Chars, _) ->$/;"	f	module:string_lexer
 tokens	deps/erlex/src/lexer.erl	/^tokens(Cont, Chars) -> tokens(Cont, Chars, 1).$/;"	f	module:lexer
 tokens	deps/erlex/src/lexer.erl	/^tokens(S0, Ics0, L0, Tcs, Tlen0, Tline, Ts, A0, Alen0) ->$/;"	f	module:lexer
 tokens	deps/erlex/src/lexer.erl	/^tokens([], Chars, Line) ->$/;"	f	module:lexer
 tokens	deps/erlex/src/lexer.erl	/^tokens({skip_tokens,State,Line,Tcs,Tlen,Tline,Error,Action,Alen}, Chars, _) ->$/;"	f	module:lexer
 tokens	deps/erlex/src/lexer.erl	/^tokens({tokens,State,Line,Tcs,Tlen,Tline,Ts,Action,Alen}, Chars, _) ->$/;"	f	module:lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, skip_token, Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, {end_token,T,Push}, Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, {end_token,T}, Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, {error,S}, _Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, {skip_token,Push}, Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, {token,T,Push}, Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/link_text_lexer.erl	/^tokens_cont(Rest, Line, {token,T}, Ts) ->$/;"	f	module:link_text_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, skip_token, Ts) ->$/;"	f	module:string_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, {end_token,T,Push}, Ts) ->$/;"	f	module:string_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, {end_token,T}, Ts) ->$/;"	f	module:string_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, {error,S}, _Ts) ->$/;"	f	module:string_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, {skip_token,Push}, Ts) ->$/;"	f	module:string_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, {token,T,Push}, Ts) ->$/;"	f	module:string_lexer
+tokens_cont	deps/earmark/src/string_lexer.erl	/^tokens_cont(Rest, Line, {token,T}, Ts) ->$/;"	f	module:string_lexer
 tokens_cont	deps/erlex/src/lexer.erl	/^tokens_cont(Rest, Line, skip_token, Ts) ->$/;"	f	module:lexer
 tokens_cont	deps/erlex/src/lexer.erl	/^tokens_cont(Rest, Line, {end_token,T,Push}, Ts) ->$/;"	f	module:lexer
 tokens_cont	deps/erlex/src/lexer.erl	/^tokens_cont(Rest, Line, {end_token,T}, Ts) ->$/;"	f	module:lexer
@@ -14185,10 +14298,17 @@ wrong_length	deps/ecto/lib/ecto/changeset.ex	/^  defp wrong_length(:string, _len
 wrong_length	deps/ecto/lib/ecto/changeset.ex	/^  defp wrong_length(_type, value, value, _opts), do: nil$/;"	f
 xcode_style	deps/makeup/lib/makeup/styles/html/style_map.ex	/^  def xcode_style, do: HTML.XcodeStyle.style()$/;"	f
 xhr?	deps/plug/lib/plug/csrf_protection.ex	/^  defp xhr?(conn) do$/;"	f
+yecc_end	deps/earmark/src/link_text_parser.erl	/^yecc_end(Line) ->$/;"	f	module:link_text_parser
+yecc_end	deps/earmark/src/link_text_parser.erl	/^yecc_end({Line,_Column}) ->$/;"	f	module:link_text_parser
 yecc_end	deps/erlex/src/parser.erl	/^yecc_end(Line) ->$/;"	f	module:parser
 yecc_end	deps/erlex/src/parser.erl	/^yecc_end({Line,_Column}) ->$/;"	f	module:parser
+yecc_error_type	deps/earmark/src/link_text_parser.erl	/^yecc_error_type(function_clause, [{?MODULE,F,ArityOrArgs,_} | _]) ->$/;"	f	module:link_text_parser
 yecc_error_type	deps/erlex/src/parser.erl	/^yecc_error_type(function_clause, [{?MODULE,F,ArityOrArgs,_} | _]) ->$/;"	f	module:parser
+yeccerror	deps/earmark/src/link_text_parser.erl	/^yeccerror(Token) ->$/;"	f	module:link_text_parser
 yeccerror	deps/erlex/src/parser.erl	/^yeccerror(Token) ->$/;"	f	module:parser
+yeccgoto_anything	deps/earmark/src/link_text_parser.erl	/^yeccgoto_anything(10, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_anything	deps/earmark/src/link_text_parser.erl	/^yeccgoto_anything(23, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_anything	deps/earmark/src/link_text_parser.erl	/^yeccgoto_anything(35, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccgoto_assignment	deps/erlex/src/parser.erl	/^yeccgoto_assignment(0=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_assignment	deps/erlex/src/parser.erl	/^yeccgoto_assignment(115=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_assignment	deps/erlex/src/parser.erl	/^yeccgoto_assignment(118=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14336,6 +14456,12 @@ yeccgoto_function	deps/erlex/src/parser.erl	/^yeccgoto_function(58, Cat, Ss, Sta
 yeccgoto_function	deps/erlex/src/parser.erl	/^yeccgoto_function(64, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_function	deps/erlex/src/parser.erl	/^yeccgoto_function(67, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_function	deps/erlex/src/parser.erl	/^yeccgoto_function(83, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccgoto_inside_brackets	deps/earmark/src/link_text_parser.erl	/^yeccgoto_inside_brackets(14, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_inside_brackets	deps/earmark/src/link_text_parser.erl	/^yeccgoto_inside_brackets(4, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_inside_brackets	deps/earmark/src/link_text_parser.erl	/^yeccgoto_inside_brackets(7=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_inside_brackets_part	deps/earmark/src/link_text_parser.erl	/^yeccgoto_inside_brackets_part(14, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_inside_brackets_part	deps/earmark/src/link_text_parser.erl	/^yeccgoto_inside_brackets_part(4, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_inside_brackets_part	deps/earmark/src/link_text_parser.erl	/^yeccgoto_inside_brackets_part(7, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(0, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(100=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(102=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14364,6 +14490,11 @@ yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(58, Cat, Ss, Stack
 yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(64, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(67, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_integer	deps/erlex/src/parser.erl	/^yeccgoto_integer(83, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccgoto_link	deps/earmark/src/link_text_parser.erl	/^yeccgoto_link(0=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_link	deps/earmark/src/link_text_parser.erl	/^yeccgoto_link(3=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_link	deps/earmark/src/link_text_parser.erl	/^yeccgoto_link(5=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_link_or_image	deps/earmark/src/link_text_parser.erl	/^yeccgoto_link_or_image(0, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_link_or_image	deps/earmark/src/link_text_parser.erl	/^yeccgoto_link_or_image(5=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccgoto_list	deps/erlex/src/parser.erl	/^yeccgoto_list(0, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_list	deps/erlex/src/parser.erl	/^yeccgoto_list(115, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_list	deps/erlex/src/parser.erl	/^yeccgoto_list(118, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14476,6 +14607,9 @@ yeccgoto_range	deps/erlex/src/parser.erl	/^yeccgoto_range(58=_S, Cat, Ss, Stack,
 yeccgoto_range	deps/erlex/src/parser.erl	/^yeccgoto_range(64=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_range	deps/erlex/src/parser.erl	/^yeccgoto_range(67=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_range	deps/erlex/src/parser.erl	/^yeccgoto_range(83=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccgoto_rest	deps/earmark/src/link_text_parser.erl	/^yeccgoto_rest(10=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_rest	deps/earmark/src/link_text_parser.erl	/^yeccgoto_rest(23=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccgoto_rest	deps/earmark/src/link_text_parser.erl	/^yeccgoto_rest(35=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccgoto_rest	deps/erlex/src/parser.erl	/^yeccgoto_rest(0=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_rest	deps/erlex/src/parser.erl	/^yeccgoto_rest(115=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_rest	deps/erlex/src/parser.erl	/^yeccgoto_rest(118=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14570,7 +14704,16 @@ yeccgoto_value_items	deps/erlex/src/parser.erl	/^yeccgoto_value_items(52=_S, Cat
 yeccgoto_value_items	deps/erlex/src/parser.erl	/^yeccgoto_value_items(58, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_values	deps/erlex/src/parser.erl	/^yeccgoto_values(0=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccgoto_values	deps/erlex/src/parser.erl	/^yeccgoto_values(2=_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars0	deps/earmark/src/link_text_parser.erl	/^yeccpars0(Tokens, Tzr, State, States, Vstack) ->$/;"	f	module:link_text_parser
 yeccpars0	deps/erlex/src/parser.erl	/^yeccpars0(Tokens, Tzr, State, States, Vstack) ->$/;"	f	module:parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [Token | Tokens], Tzr) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [], {no_func, Line}) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [], {no_func, no_line}) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [], {{_F,_A}, _Line}=Tzr) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1([Token | Tokens], Tzr, State, States, Vstack) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1([], {no_func, Endline}, State, States, Vstack) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1([], {no_func, no_line}, State, States, Vstack) ->$/;"	f	module:link_text_parser
+yeccpars1	deps/earmark/src/link_text_parser.erl	/^yeccpars1([], {{F, A},_Line}, State, States, Vstack) ->$/;"	f	module:link_text_parser
 yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [Token | Tokens], Tzr) ->$/;"	f	module:parser
 yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [], {no_func, Line}) ->$/;"	f	module:parser
 yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1(State1, State, States, Vstack, Token0, [], {no_func, no_line}) ->$/;"	f	module:parser
@@ -14579,6 +14722,34 @@ yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1([Token | Tokens], Tzr, State, St
 yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1([], {no_func, Endline}, State, States, Vstack) ->$/;"	f	module:parser
 yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1([], {no_func, no_line}, State, States, Vstack) ->$/;"	f	module:parser
 yeccpars1	deps/erlex/src/parser.erl	/^yeccpars1([], {{F, A},_Line}, State, States, Vstack) ->$/;"	f	module:parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(0=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(10=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(11=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(12=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(13=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(14=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(15=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(16=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(17=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(18=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(20=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(21=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(24=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(25=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(26=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(27=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(28=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(29=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(30=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(31=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(32=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(33=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(35=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(3=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(4=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(5=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(9=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2	deps/earmark/src/link_text_parser.erl	/^yeccpars2(Other, _, _, _, _, _, _) ->$/;"	f	module:link_text_parser
 yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(0=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(103=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(104=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14652,6 +14823,10 @@ yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(97=S, Cat, Ss, Stack, T, Ts, Tzr
 yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(98=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(99=S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2	deps/erlex/src/parser.erl	/^yeccpars2(Other, _, _, _, _, _, _) ->$/;"	f	module:parser
+yeccpars2_0	deps/earmark/src/link_text_parser.erl	/^yeccpars2_0(S, exclamation_mark, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_0	deps/earmark/src/link_text_parser.erl	/^yeccpars2_0(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_0	deps/earmark/src/link_text_parser.erl	/^yeccpars2_0(S, ws, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_0	deps/earmark/src/link_text_parser.erl	/^yeccpars2_0(_, _, _, _, T, _, _) ->$/;"	f	module:link_text_parser
 yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, '...', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14663,7 +14838,20 @@ yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, 'fun(', Ss, Stack, T, Ts,
 yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, '{', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_0	deps/erlex/src/parser.erl	/^yeccpars2_0(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_1	deps/earmark/src/link_text_parser.erl	/^yeccpars2_1(_, _, _, _, T, _, _) ->$/;"	f	module:link_text_parser
+yeccpars2_1	deps/earmark/src/link_text_parser.erl	/^yeccpars2_1(_S, '$end', _Ss, Stack, _T, _Ts, _Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_1	deps/erlex/src/parser.erl	/^yeccpars2_1(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, any_quote, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, close_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, escaped, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, exclamation_mark, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, open_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, open_title, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, verbatim, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(S, ws, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_10	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_10	deps/erlex/src/parser.erl	/^yeccpars2_10(S, '->', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_10	deps/erlex/src/parser.erl	/^yeccpars2_10(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_100	deps/erlex/src/parser.erl	/^yeccpars2_100(S, ',', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14692,6 +14880,8 @@ yeccpars2_108	deps/erlex/src/parser.erl	/^yeccpars2_108(S, ')', Ss, Stack, T, Ts
 yeccpars2_108	deps/erlex/src/parser.erl	/^yeccpars2_108(_, _, _, _, T, _, _) ->$/;"	f	module:parser
 yeccpars2_109	deps/erlex/src/parser.erl	/^yeccpars2_109(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_109_	deps/erlex/src/parser.erl	/^yeccpars2_109_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_10_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_10_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_11	deps/earmark/src/link_text_parser.erl	/^yeccpars2_11(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_11	deps/erlex/src/parser.erl	/^yeccpars2_11(S, '..', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_11	deps/erlex/src/parser.erl	/^yeccpars2_11(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_110	deps/erlex/src/parser.erl	/^yeccpars2_110(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14708,6 +14898,8 @@ yeccpars2_116	deps/erlex/src/parser.erl	/^yeccpars2_116(_S, Cat, Ss, Stack, T, T
 yeccpars2_116_	deps/erlex/src/parser.erl	/^yeccpars2_116_(__Stack0) ->$/;"	f	module:parser
 yeccpars2_117	deps/erlex/src/parser.erl	/^yeccpars2_117(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_117_	deps/erlex/src/parser.erl	/^yeccpars2_117_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_11_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_11_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_12	deps/earmark/src/link_text_parser.erl	/^yeccpars2_12(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_12	deps/erlex/src/parser.erl	/^yeccpars2_12(S, '->', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_12	deps/erlex/src/parser.erl	/^yeccpars2_12(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_120	deps/erlex/src/parser.erl	/^yeccpars2_120(S, '=', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14737,13 +14929,23 @@ yeccpars2_128	deps/erlex/src/parser.erl	/^yeccpars2_128(S, int, Ss, Stack, T, Ts
 yeccpars2_128	deps/erlex/src/parser.erl	/^yeccpars2_128(_, _, _, _, T, _, _) ->$/;"	f	module:parser
 yeccpars2_129	deps/erlex/src/parser.erl	/^yeccpars2_129(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_129_	deps/erlex/src/parser.erl	/^yeccpars2_129_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_12_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_12_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_13	deps/earmark/src/link_text_parser.erl	/^yeccpars2_13(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_13	deps/erlex/src/parser.erl	/^yeccpars2_13(_, _, _, _, T, _, _) ->$/;"	f	module:parser
 yeccpars2_13	deps/erlex/src/parser.erl	/^yeccpars2_13(_S, '$end', _Ss, Stack, _T, _Ts, _Tzr) ->$/;"	f	module:parser
 yeccpars2_130	deps/erlex/src/parser.erl	/^yeccpars2_130(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_130_	deps/erlex/src/parser.erl	/^yeccpars2_130_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_13_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_13_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_14	deps/earmark/src/link_text_parser.erl	/^yeccpars2_14(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_14	deps/earmark/src/link_text_parser.erl	/^yeccpars2_14(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_14	deps/erlex/src/parser.erl	/^yeccpars2_14(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_15	deps/earmark/src/link_text_parser.erl	/^yeccpars2_15(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_15	deps/erlex/src/parser.erl	/^yeccpars2_15(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_15_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_15_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_16	deps/earmark/src/link_text_parser.erl	/^yeccpars2_16(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_16	deps/erlex/src/parser.erl	/^yeccpars2_16(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_16_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_16_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_17	deps/earmark/src/link_text_parser.erl	/^yeccpars2_17(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(S, ':', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(S, '::', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14753,10 +14955,16 @@ yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(S, atom_full, Ss, Stack, T
 yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(S, atom_part, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_17	deps/erlex/src/parser.erl	/^yeccpars2_17(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_17_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_17_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_17_	deps/erlex/src/parser.erl	/^yeccpars2_17_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_18	deps/earmark/src/link_text_parser.erl	/^yeccpars2_18(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_18	deps/erlex/src/parser.erl	/^yeccpars2_18(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_18_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_18_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_19	deps/earmark/src/link_text_parser.erl	/^yeccpars2_19(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_19	deps/earmark/src/link_text_parser.erl	/^yeccpars2_19(_, _, _, _, T, _, _) ->$/;"	f	module:link_text_parser
 yeccpars2_19	deps/erlex/src/parser.erl	/^yeccpars2_19(S, '{', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_19	deps/erlex/src/parser.erl	/^yeccpars2_19(_, _, _, _, T, _, _) ->$/;"	f	module:parser
+yeccpars2_2	deps/earmark/src/link_text_parser.erl	/^yeccpars2_2(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(S, '...', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14772,6 +14980,9 @@ yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(S, atom_full, Ss, Stack, T, 
 yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(S, atom_part, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_2	deps/erlex/src/parser.erl	/^yeccpars2_2(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_20	deps/earmark/src/link_text_parser.erl	/^yeccpars2_20(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_20_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_20_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_21	deps/earmark/src/link_text_parser.erl	/^yeccpars2_21(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, ')', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14784,8 +14995,22 @@ yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, 'fun(', Ss, Stack, T, T
 yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, '{', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_21	deps/erlex/src/parser.erl	/^yeccpars2_21(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_21_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_21_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_22	deps/earmark/src/link_text_parser.erl	/^yeccpars2_22(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_22	deps/erlex/src/parser.erl	/^yeccpars2_22(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_22_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_22_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_22_	deps/erlex/src/parser.erl	/^yeccpars2_22_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, any_quote, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, close_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, escaped, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, exclamation_mark, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, open_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, open_title, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, verbatim, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(S, ws, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_23	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, '...', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14797,6 +15022,8 @@ yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, 'fun(', Ss, Stack, T, T
 yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, '{', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_23	deps/erlex/src/parser.erl	/^yeccpars2_23(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_23_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_23_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_24	deps/earmark/src/link_text_parser.erl	/^yeccpars2_24(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, '...', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14809,22 +15036,36 @@ yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, 'fun(', Ss, Stack, T, T
 yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, '{', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_24	deps/erlex/src/parser.erl	/^yeccpars2_24(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_24_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_24_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_25	deps/earmark/src/link_text_parser.erl	/^yeccpars2_25(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_25	deps/erlex/src/parser.erl	/^yeccpars2_25(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_25_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_25_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_25_	deps/erlex/src/parser.erl	/^yeccpars2_25_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_26	deps/earmark/src/link_text_parser.erl	/^yeccpars2_26(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_26	deps/erlex/src/parser.erl	/^yeccpars2_26(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_26_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_26_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_26_	deps/erlex/src/parser.erl	/^yeccpars2_26_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_27	deps/earmark/src/link_text_parser.erl	/^yeccpars2_27(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_27	deps/erlex/src/parser.erl	/^yeccpars2_27(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_27_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_27_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_27_	deps/erlex/src/parser.erl	/^yeccpars2_27_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_28	deps/earmark/src/link_text_parser.erl	/^yeccpars2_28(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_28	deps/erlex/src/parser.erl	/^yeccpars2_28(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_28	deps/erlex/src/parser.erl	/^yeccpars2_28(S, ')', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_28	deps/erlex/src/parser.erl	/^yeccpars2_28(S, '...', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_28	deps/erlex/src/parser.erl	/^yeccpars2_28(S, '[', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_28	deps/erlex/src/parser.erl	/^yeccpars2_28(S, 'fun(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_28	deps/erlex/src/parser.erl	/^yeccpars2_28(_, _, _, _, T, _, _) ->$/;"	f	module:parser
+yeccpars2_28_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_28_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_29	deps/earmark/src/link_text_parser.erl	/^yeccpars2_29(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_29	deps/erlex/src/parser.erl	/^yeccpars2_29(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_29_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_29_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_29_	deps/erlex/src/parser.erl	/^yeccpars2_29_(__Stack0) ->$/;"	f	module:parser
 yeccpars2_2_	deps/erlex/src/parser.erl	/^yeccpars2_2_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_3	deps/earmark/src/link_text_parser.erl	/^yeccpars2_3(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_3	deps/earmark/src/link_text_parser.erl	/^yeccpars2_3(_, _, _, _, T, _, _) ->$/;"	f	module:link_text_parser
 yeccpars2_3	deps/erlex/src/parser.erl	/^yeccpars2_3(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_30	deps/earmark/src/link_text_parser.erl	/^yeccpars2_30(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, '(', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, '...', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14837,25 +15078,54 @@ yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, '{', Ss, Stack, T, Ts, 
 yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, '}', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_30	deps/erlex/src/parser.erl	/^yeccpars2_30(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_30_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_30_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_31	deps/earmark/src/link_text_parser.erl	/^yeccpars2_31(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_31	deps/erlex/src/parser.erl	/^yeccpars2_31(S, '}', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_31	deps/erlex/src/parser.erl	/^yeccpars2_31(_, _, _, _, T, _, _) ->$/;"	f	module:parser
+yeccpars2_31_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_31_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_32	deps/earmark/src/link_text_parser.erl	/^yeccpars2_32(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_32	deps/erlex/src/parser.erl	/^yeccpars2_32(S, ',', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_32	deps/erlex/src/parser.erl	/^yeccpars2_32(S, '=', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_32	deps/erlex/src/parser.erl	/^yeccpars2_32(S, '|', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_32	deps/erlex/src/parser.erl	/^yeccpars2_32(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_32_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_32_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_32_	deps/erlex/src/parser.erl	/^yeccpars2_32_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_33	deps/earmark/src/link_text_parser.erl	/^yeccpars2_33(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_33	deps/erlex/src/parser.erl	/^yeccpars2_33(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_33_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_33_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_33_	deps/erlex/src/parser.erl	/^yeccpars2_33_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_34	deps/earmark/src/link_text_parser.erl	/^yeccpars2_34(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_34_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_34_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, any_quote, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, close_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, escaped, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, exclamation_mark, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, open_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, open_title, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, verbatim, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(S, ws, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_35_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_35_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_36	deps/earmark/src/link_text_parser.erl	/^yeccpars2_36(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_36_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_36_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_37	deps/earmark/src/link_text_parser.erl	/^yeccpars2_37(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_37	deps/erlex/src/parser.erl	/^yeccpars2_37(S, '=', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_37	deps/erlex/src/parser.erl	/^yeccpars2_37(S, '|', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_37	deps/erlex/src/parser.erl	/^yeccpars2_37(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_37_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_37_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_37_	deps/erlex/src/parser.erl	/^yeccpars2_37_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_38	deps/earmark/src/link_text_parser.erl	/^yeccpars2_38(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_38	deps/erlex/src/parser.erl	/^yeccpars2_38(S, '=', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_38	deps/erlex/src/parser.erl	/^yeccpars2_38(S, '|', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_38	deps/erlex/src/parser.erl	/^yeccpars2_38(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_38_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_38_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_38_	deps/erlex/src/parser.erl	/^yeccpars2_38_(__Stack0) ->$/;"	f	module:parser
 yeccpars2_39	deps/erlex/src/parser.erl	/^yeccpars2_39(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_39_	deps/erlex/src/parser.erl	/^yeccpars2_39_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_4(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_4(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_4	deps/erlex/src/parser.erl	/^yeccpars2_4(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_40	deps/erlex/src/parser.erl	/^yeccpars2_40(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_40_	deps/erlex/src/parser.erl	/^yeccpars2_40_(__Stack0) ->$/;"	f	module:parser
@@ -14907,6 +15177,7 @@ yeccpars2_58	deps/erlex/src/parser.erl	/^yeccpars2_58(S, Cat, Ss, Stack, T, Ts, 
 yeccpars2_58	deps/erlex/src/parser.erl	/^yeccpars2_58(S, int, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_59	deps/erlex/src/parser.erl	/^yeccpars2_59(S, '>', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_59	deps/erlex/src/parser.erl	/^yeccpars2_59(_, _, _, _, T, _, _) ->$/;"	f	module:parser
+yeccpars2_6	deps/earmark/src/link_text_parser.erl	/^yeccpars2_6(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_6	deps/erlex/src/parser.erl	/^yeccpars2_6(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_60	deps/erlex/src/parser.erl	/^yeccpars2_60(S, ',', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_60	deps/erlex/src/parser.erl	/^yeccpars2_60(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -14942,6 +15213,17 @@ yeccpars2_68	deps/erlex/src/parser.erl	/^yeccpars2_68(_S, Cat, Ss, Stack, T, Ts,
 yeccpars2_68_	deps/erlex/src/parser.erl	/^yeccpars2_68_(__Stack0) ->$/;"	f	module:parser
 yeccpars2_69	deps/erlex/src/parser.erl	/^yeccpars2_69(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_69_	deps/erlex/src/parser.erl	/^yeccpars2_69_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_6_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_6_(__Stack0) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, any_quote, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, close_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, escaped, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, exclamation_mark, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, open_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, open_title, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, verbatim, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(S, ws, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_7	deps/earmark/src/link_text_parser.erl	/^yeccpars2_7(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_7	deps/erlex/src/parser.erl	/^yeccpars2_7(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_70	deps/erlex/src/parser.erl	/^yeccpars2_70(S, '>', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_70	deps/erlex/src/parser.erl	/^yeccpars2_70(_, _, _, _, T, _, _) ->$/;"	f	module:parser
@@ -14964,6 +15246,8 @@ yeccpars2_78	deps/erlex/src/parser.erl	/^yeccpars2_78(S, ')', Ss, Stack, T, Ts, 
 yeccpars2_78	deps/erlex/src/parser.erl	/^yeccpars2_78(_, _, _, _, T, _, _) ->$/;"	f	module:parser
 yeccpars2_79	deps/erlex/src/parser.erl	/^yeccpars2_79(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_79_	deps/erlex/src/parser.erl	/^yeccpars2_79_(__Stack0) ->$/;"	f	module:parser
+yeccpars2_8	deps/earmark/src/link_text_parser.erl	/^yeccpars2_8(S, close_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_8	deps/earmark/src/link_text_parser.erl	/^yeccpars2_8(_, _, _, _, T, _, _) ->$/;"	f	module:link_text_parser
 yeccpars2_8	deps/erlex/src/parser.erl	/^yeccpars2_8(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_80	deps/erlex/src/parser.erl	/^yeccpars2_80(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_80_	deps/erlex/src/parser.erl	/^yeccpars2_80_(__Stack0) ->$/;"	f	module:parser
@@ -15003,6 +15287,7 @@ yeccpars2_88_	deps/erlex/src/parser.erl	/^yeccpars2_88_(__Stack0) ->$/;"	f	modul
 yeccpars2_89	deps/erlex/src/parser.erl	/^yeccpars2_89(S, '<', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_89	deps/erlex/src/parser.erl	/^yeccpars2_89(S, '{', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_89	deps/erlex/src/parser.erl	/^yeccpars2_89(_, _, _, _, T, _, _) ->$/;"	f	module:parser
+yeccpars2_9	deps/earmark/src/link_text_parser.erl	/^yeccpars2_9(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
 yeccpars2_9	deps/erlex/src/parser.erl	/^yeccpars2_9(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_90	deps/erlex/src/parser.erl	/^yeccpars2_90(S, '#', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_90	deps/erlex/src/parser.erl	/^yeccpars2_90(_S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
@@ -15025,9 +15310,32 @@ yeccpars2_98	deps/erlex/src/parser.erl	/^yeccpars2_98(S, ',', Ss, Stack, T, Ts, 
 yeccpars2_98	deps/erlex/src/parser.erl	/^yeccpars2_98(_, _, _, _, T, _, _) ->$/;"	f	module:parser
 yeccpars2_99	deps/erlex/src/parser.erl	/^yeccpars2_99(S, '_', Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_99	deps/erlex/src/parser.erl	/^yeccpars2_99(S, Cat, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
+yeccpars2_9_	deps/earmark/src/link_text_parser.erl	/^yeccpars2_9_(__Stack0) ->$/;"	f	module:link_text_parser
 yeccpars2_cont_0	deps/erlex/src/parser.erl	/^yeccpars2_cont_0(S, atom_full, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_cont_0	deps/erlex/src/parser.erl	/^yeccpars2_cont_0(S, atom_part, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:parser
 yeccpars2_cont_0	deps/erlex/src/parser.erl	/^yeccpars2_cont_0(_, _, _, _, T, _, _) ->$/;"	f	module:parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, any_quote, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, close_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, escaped, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, exclamation_mark, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, open_bracket, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, open_paren, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, open_title, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, verbatim, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(S, ws, Ss, Stack, T, Ts, Tzr) ->$/;"	f	module:link_text_parser
+yeccpars2_cont_4	deps/earmark/src/link_text_parser.erl	/^yeccpars2_cont_4(_, _, _, _, T, _, _) ->$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string(Other) ->$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({'$end', _}) -> [];$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({Other, _}) when is_atom(Other) ->$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({_Cat, _, Val}) -> io_lib:format("~tp", [Val]);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({atom, _, A}) -> io_lib:write_atom(A);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({char,_,C}) -> io_lib:write_char(C);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({dot, _}) -> "'.'";$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({float,_,F}) -> io_lib:write(F);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({integer,_,N}) -> io_lib:write(N);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({reserved_symbol, _, A}) -> io_lib:write(A);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({string,_,S}) -> io_lib:write_string(S);$/;"	f	module:link_text_parser
+yecctoken2string	deps/earmark/src/link_text_parser.erl	/^yecctoken2string({var,_,V}) -> io_lib:format("~s", [V]);$/;"	f	module:link_text_parser
 yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string(Other) ->$/;"	f	module:parser
 yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string({'$end', _}) -> [];$/;"	f	module:parser
 yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string({Other, _}) when is_atom(Other) ->$/;"	f	module:parser
@@ -15040,9 +15348,28 @@ yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string({integer,_,N}) -> 
 yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string({reserved_symbol, _, A}) -> io_lib:write(A);$/;"	f	module:parser
 yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string({string,_,S}) -> io_lib:write_string(S);$/;"	f	module:parser
 yecctoken2string	deps/erlex/src/parser.erl	/^yecctoken2string({var,_,V}) -> io_lib:format("~s", [V]);$/;"	f	module:parser
+yecctoken_end_location	deps/earmark/src/link_text_parser.erl	/^yecctoken_end_location(Token) ->$/;"	f	module:link_text_parser
 yecctoken_end_location	deps/erlex/src/parser.erl	/^yecctoken_end_location(Token) ->$/;"	f	module:parser
+yecctoken_location	deps/earmark/src/link_text_parser.erl	/^yecctoken_location(Token) ->$/;"	f	module:link_text_parser
 yecctoken_location	deps/erlex/src/parser.erl	/^yecctoken_location(Token) ->$/;"	f	module:parser
+yecctoken_to_string	deps/earmark/src/link_text_parser.erl	/^yecctoken_to_string(Token) ->$/;"	f	module:link_text_parser
 yecctoken_to_string	deps/erlex/src/parser.erl	/^yecctoken_to_string(Token) ->$/;"	f	module:parser
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(0, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(1, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(10, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(2, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(3, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(4, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(5, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(6, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(7, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(8, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(9, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/link_text_lexer.erl	/^yyaction(_, _, _, _) -> error.$/;"	f	module:link_text_lexer
+yyaction	deps/earmark/src/string_lexer.erl	/^yyaction(0, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:string_lexer
+yyaction	deps/earmark/src/string_lexer.erl	/^yyaction(1, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:string_lexer
+yyaction	deps/earmark/src/string_lexer.erl	/^yyaction(2, TokenLen, YYtcs, TokenLine) ->$/;"	f	module:string_lexer
+yyaction	deps/earmark/src/string_lexer.erl	/^yyaction(_, _, _, _) -> error.$/;"	f	module:string_lexer
 yyaction	deps/erlex/src/lexer.erl	/^yyaction(0, _, _, _) ->$/;"	f	module:lexer
 yyaction	deps/erlex/src/lexer.erl	/^yyaction(1, _, _, TokenLine) ->$/;"	f	module:lexer
 yyaction	deps/erlex/src/lexer.erl	/^yyaction(10, _, _, TokenLine) ->$/;"	f	module:lexer
@@ -15074,8 +15401,13 @@ yyaction	deps/erlex/src/lexer.erl	/^yyaction(7, _, _, TokenLine) ->$/;"	f	module
 yyaction	deps/erlex/src/lexer.erl	/^yyaction(8, _, _, TokenLine) ->$/;"	f	module:lexer
 yyaction	deps/erlex/src/lexer.erl	/^yyaction(9, _, _, TokenLine) ->$/;"	f	module:lexer
 yyaction	deps/erlex/src/lexer.erl	/^yyaction(_, _, _, _) -> error.$/;"	f	module:lexer
+yyaction_0	deps/earmark/src/link_text_lexer.erl	/^yyaction_0(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction_0	deps/earmark/src/string_lexer.erl	/^yyaction_0(TokenChars, TokenLine) ->$/;"	f	module:string_lexer
 yyaction_0	deps/erlex/src/lexer.erl	/^yyaction_0() ->$/;"	f	module:lexer
+yyaction_1	deps/earmark/src/link_text_lexer.erl	/^yyaction_1(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction_1	deps/earmark/src/string_lexer.erl	/^yyaction_1(TokenChars, TokenLine) ->$/;"	f	module:string_lexer
 yyaction_1	deps/erlex/src/lexer.erl	/^yyaction_1(TokenLine) ->$/;"	f	module:lexer
+yyaction_10	deps/earmark/src/link_text_lexer.erl	/^yyaction_10(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_10	deps/erlex/src/lexer.erl	/^yyaction_10(TokenLine) ->$/;"	f	module:lexer
 yyaction_11	deps/erlex/src/lexer.erl	/^yyaction_11(TokenLine) ->$/;"	f	module:lexer
 yyaction_12	deps/erlex/src/lexer.erl	/^yyaction_12(TokenLine) ->$/;"	f	module:lexer
@@ -15086,6 +15418,8 @@ yyaction_16	deps/erlex/src/lexer.erl	/^yyaction_16(TokenLine) ->$/;"	f	module:le
 yyaction_17	deps/erlex/src/lexer.erl	/^yyaction_17(TokenLine) ->$/;"	f	module:lexer
 yyaction_18	deps/erlex/src/lexer.erl	/^yyaction_18(TokenLine) ->$/;"	f	module:lexer
 yyaction_19	deps/erlex/src/lexer.erl	/^yyaction_19(TokenLine) ->$/;"	f	module:lexer
+yyaction_2	deps/earmark/src/link_text_lexer.erl	/^yyaction_2(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
+yyaction_2	deps/earmark/src/string_lexer.erl	/^yyaction_2(TokenChars, TokenLine) ->$/;"	f	module:string_lexer
 yyaction_2	deps/erlex/src/lexer.erl	/^yyaction_2(TokenLine) ->$/;"	f	module:lexer
 yyaction_20	deps/erlex/src/lexer.erl	/^yyaction_20(TokenLine) ->$/;"	f	module:lexer
 yyaction_21	deps/erlex/src/lexer.erl	/^yyaction_21(TokenLine) ->$/;"	f	module:lexer
@@ -15097,16 +15431,96 @@ yyaction_26	deps/erlex/src/lexer.erl	/^yyaction_26(TokenChars, TokenLine) ->$/;"
 yyaction_27	deps/erlex/src/lexer.erl	/^yyaction_27(TokenChars, TokenLine) ->$/;"	f	module:lexer
 yyaction_28	deps/erlex/src/lexer.erl	/^yyaction_28(TokenChars, TokenLine) ->$/;"	f	module:lexer
 yyaction_29	deps/erlex/src/lexer.erl	/^yyaction_29(TokenChars, TokenLine) ->$/;"	f	module:lexer
+yyaction_3	deps/earmark/src/link_text_lexer.erl	/^yyaction_3(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_3	deps/erlex/src/lexer.erl	/^yyaction_3(TokenLine) ->$/;"	f	module:lexer
+yyaction_4	deps/earmark/src/link_text_lexer.erl	/^yyaction_4(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_4	deps/erlex/src/lexer.erl	/^yyaction_4(TokenLine) ->$/;"	f	module:lexer
+yyaction_5	deps/earmark/src/link_text_lexer.erl	/^yyaction_5(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_5	deps/erlex/src/lexer.erl	/^yyaction_5(TokenLine) ->$/;"	f	module:lexer
+yyaction_6	deps/earmark/src/link_text_lexer.erl	/^yyaction_6(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_6	deps/erlex/src/lexer.erl	/^yyaction_6(TokenLine) ->$/;"	f	module:lexer
+yyaction_7	deps/earmark/src/link_text_lexer.erl	/^yyaction_7(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_7	deps/erlex/src/lexer.erl	/^yyaction_7(TokenLine) ->$/;"	f	module:lexer
+yyaction_8	deps/earmark/src/link_text_lexer.erl	/^yyaction_8(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_8	deps/erlex/src/lexer.erl	/^yyaction_8(TokenLine) ->$/;"	f	module:lexer
+yyaction_9	deps/earmark/src/link_text_lexer.erl	/^yyaction_9(TokenChars, TokenLine) ->$/;"	f	module:link_text_lexer
 yyaction_9	deps/erlex/src/lexer.erl	/^yyaction_9(TokenLine) ->$/;"	f	module:lexer
+yypre	deps/earmark/src/link_text_lexer.erl	/^yypre(List, N) -> lists:sublist(List, N).$/;"	f	module:link_text_lexer
+yypre	deps/earmark/src/string_lexer.erl	/^yypre(List, N) -> lists:sublist(List, N).$/;"	f	module:string_lexer
 yypre	deps/erlex/src/lexer.erl	/^yypre(List, N) -> lists:sublist(List, N).$/;"	f	module:lexer
+yyrev	deps/earmark/src/link_text_lexer.erl	/^yyrev(List) -> lists:reverse(List).$/;"	f	module:link_text_lexer
+yyrev	deps/earmark/src/link_text_lexer.erl	/^yyrev(List, Tail) -> lists:reverse(List, Tail).$/;"	f	module:link_text_lexer
+yyrev	deps/earmark/src/string_lexer.erl	/^yyrev(List) -> lists:reverse(List).$/;"	f	module:string_lexer
+yyrev	deps/earmark/src/string_lexer.erl	/^yyrev(List, Tail) -> lists:reverse(List, Tail).$/;"	f	module:string_lexer
 yyrev	deps/erlex/src/lexer.erl	/^yyrev(List) -> lists:reverse(List).$/;"	f	module:lexer
 yyrev	deps/erlex/src/lexer.erl	/^yyrev(List, Tail) -> lists:reverse(List, Tail).$/;"	f	module:lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate() -> 10.$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(0, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(1, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, Ics, Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [10|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [32|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [33|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [34|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [39|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [40|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [41|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [91|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [92|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [93|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [C|Ics], Line, Tlen, Action, Alen) when C >= 0, C =< 9 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [C|Ics], Line, Tlen, Action, Alen) when C >= 11, C =< 31 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [C|Ics], Line, Tlen, Action, Alen) when C >= 35, C =< 38 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [C|Ics], Line, Tlen, Action, Alen) when C >= 42, C =< 90 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(10, [C|Ics], Line, Tlen, Action, Alen) when C >= 94 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [10|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [33|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [C|Ics], Line, Tlen, _, _) when C >= 0, C =< 9 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [C|Ics], Line, Tlen, _, _) when C >= 11, C =< 31 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [C|Ics], Line, Tlen, _, _) when C >= 35, C =< 38 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [C|Ics], Line, Tlen, _, _) when C >= 42, C =< 90 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(11, [C|Ics], Line, Tlen, _, _) when C >= 94 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(2, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(3, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(4, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [10|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [33|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [C|Ics], Line, Tlen, _, _) when C >= 0, C =< 9 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [C|Ics], Line, Tlen, _, _) when C >= 11, C =< 31 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [C|Ics], Line, Tlen, _, _) when C >= 35, C =< 38 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [C|Ics], Line, Tlen, _, _) when C >= 42, C =< 90 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(5, [C|Ics], Line, Tlen, _, _) when C >= 94 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(6, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(6, [C|Ics], Line, Tlen, _, _) when C >= 0, C =< 9 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(6, [C|Ics], Line, Tlen, _, _) when C >= 11 ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(7, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(7, [32|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(7, [34|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(7, [39|Ics], Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(8, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(9, Ics, Line, Tlen, _, _) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/link_text_lexer.erl	/^yystate(S, Ics, Line, Tlen, Action, Alen) ->$/;"	f	module:link_text_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate() -> 2.$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(0, Ics, Line, Tlen, _, _) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(0, [96|Ics], Line, Tlen, _, _) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(1, Ics, Line, Tlen, _, _) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, Ics, Line, Tlen, Action, Alen) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [10|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [92|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [96|Ics], Line, Tlen, Action, Alen) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [C|Ics], Line, Tlen, Action, Alen) when C >= 0, C =< 9 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [C|Ics], Line, Tlen, Action, Alen) when C >= 11, C =< 91 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [C|Ics], Line, Tlen, Action, Alen) when C >= 93, C =< 95 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(2, [C|Ics], Line, Tlen, Action, Alen) when C >= 97 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(3, Ics, Line, Tlen, _, _) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(3, [10|Ics], Line, Tlen, _, _) ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(3, [C|Ics], Line, Tlen, _, _) when C >= 0, C =< 9 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(3, [C|Ics], Line, Tlen, _, _) when C >= 11, C =< 91 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(3, [C|Ics], Line, Tlen, _, _) when C >= 93, C =< 95 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(3, [C|Ics], Line, Tlen, _, _) when C >= 97 ->$/;"	f	module:string_lexer
+yystate	deps/earmark/src/string_lexer.erl	/^yystate(S, Ics, Line, Tlen, Action, Alen) ->$/;"	f	module:string_lexer
 yystate	deps/erlex/src/lexer.erl	/^yystate() -> 41.$/;"	f	module:lexer
 yystate	deps/erlex/src/lexer.erl	/^yystate(0, Ics, Line, Tlen, _, _) ->$/;"	f	module:lexer
 yystate	deps/erlex/src/lexer.erl	/^yystate(0, [10|Ics], Line, Tlen, _, _) ->$/;"	f	module:lexer
@@ -15235,4 +15649,6 @@ yystate	deps/erlex/src/lexer.erl	/^yystate(7, Ics, Line, Tlen, _, _) ->$/;"	f	mo
 yystate	deps/erlex/src/lexer.erl	/^yystate(8, Ics, Line, Tlen, _, _) ->$/;"	f	module:lexer
 yystate	deps/erlex/src/lexer.erl	/^yystate(9, Ics, Line, Tlen, _, _) ->$/;"	f	module:lexer
 yystate	deps/erlex/src/lexer.erl	/^yystate(S, Ics, Line, Tlen, Action, Alen) ->$/;"	f	module:lexer
+yysuf	deps/earmark/src/link_text_lexer.erl	/^yysuf(List, N) -> lists:nthtail(N, List).$/;"	f	module:link_text_lexer
+yysuf	deps/earmark/src/string_lexer.erl	/^yysuf(List, N) -> lists:nthtail(N, List).$/;"	f	module:string_lexer
 yysuf	deps/erlex/src/lexer.erl	/^yysuf(List, N) -> lists:nthtail(N, List).$/;"	f	module:lexer
