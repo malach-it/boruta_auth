@@ -6,9 +6,6 @@ use Mix.Config
 
 config :logger, level: :error
 
-config :boruta,
-  ecto_repos: [Boruta.Repo]
-
 config :boruta, Boruta.Repo,
   username: System.get_env("POSTGRES_USER") || "postgres",
   password: System.get_env("POSTGRES_PASSWORD") || "postgres",

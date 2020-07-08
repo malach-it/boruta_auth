@@ -14,6 +14,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
   describe "implicit grant" do
     setup do
+      stub(ResourceOwners, :username, fn (resource_owner) -> resource_owner.email end)
       resource_owner = %User{}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
@@ -80,7 +81,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns an error if user is invalid", %{client: client} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> nil end)
+      |> stub(:get_by, fn(_params) -> {:error, "Resourceowner not found"} end)
       |> stub(:persisted?, fn(_params) -> false end)
       redirect_uri = List.first(client.redirect_uris)
 

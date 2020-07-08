@@ -3,7 +3,7 @@ defmodule Boruta.Ecto.AccessTokens do
   @behaviour Boruta.Oauth.AccessTokens
 
   import Ecto.Query, only: [from: 2]
-  import Boruta.Config, only: [repo: 0]
+  import Boruta.Config, only: [repo: 0, resource_owners: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto.Token
@@ -40,7 +40,7 @@ defmodule Boruta.Ecto.AccessTokens do
 
     token_attributes = %{
       client_id: client.id,
-      resource_owner_id: resource_owner && resource_owner.id,
+      resource_owner_username: resource_owner && resource_owners().username(resource_owner),
       redirect_uri: redirect_uri,
       state: state,
       scope: scope

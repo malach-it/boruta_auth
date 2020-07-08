@@ -28,15 +28,16 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
      }}
     | {:ok, user :: struct()}
   def authorize(username: username, password: password) do
-    case resource_owners().get_by(username: username, password: password) do
-      nil ->
+    with {:ok, resource_owner} <- resource_owners().get_by(username: username),
+      :ok <- resource_owners().check_password(resource_owner, password) do
+      {:ok, resource_owner}
+    else
+      {:error, reason} ->
         {:error, %Error{
           status: :unauthorized,
           error: :invalid_resource_owner,
-          error_description: "Invalid username or password."
+          error_description: reason
         }}
-      resource_owner ->
-      {:ok, resource_owner}
     end
   end
   def authorize(resource_owner: resource_owner) do

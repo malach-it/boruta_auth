@@ -14,6 +14,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
   describe "resource owner password credentials grant" do
     setup do
+      stub(ResourceOwners, :username, fn (resource_owner) -> resource_owner.email end)
       resource_owner = %User{}
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
@@ -76,7 +77,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     test "returns an error if username is invalid", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> nil end)
+      |> stub(:get_by, fn(_params) -> {:error, "Resource owner not found."} end)
 
       assert Oauth.token(
         %{
@@ -86,14 +87,16 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
         ApplicationMock
       ) == {:token_error, %Error{
         error: :invalid_resource_owner,
-        error_description: "Invalid username or password.",
+        error_description: "Resource owner not found.",
         status: :unauthorized
       }}
     end
 
     test "returns an error if password is invalid", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> nil end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> {:error, "Password is invalid."} end)
+
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(
         %{
@@ -103,14 +106,15 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
         ApplicationMock
       ) == {:token_error, %Error{
         error: :invalid_resource_owner,
-        error_description: "Invalid username or password.",
+        error_description: "Password is invalid.",
         status: :unauthorized
       }}
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       |> stub(:persisted?, fn(_params) -> true end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
@@ -139,7 +143,8 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
     test "returns a token if scope is authorized", %{client_with_scope: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
@@ -170,7 +175,8 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
     test "returns an error if scope is unknown or unauthorized by the client", %{client_with_scope: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)

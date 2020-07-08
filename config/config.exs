@@ -4,4 +4,7 @@
 # the umbrella root.
 use Mix.Config
 
+config :boruta,
+  ecto_repos: [Boruta.Repo]
+
 import_config "#{Mix.env()}.exs"

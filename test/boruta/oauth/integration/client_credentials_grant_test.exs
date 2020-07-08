@@ -8,6 +8,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.TokenResponse
+  alias Boruta.Support.ResourceOwners
 
   describe "client credentials grant" do
     setup do

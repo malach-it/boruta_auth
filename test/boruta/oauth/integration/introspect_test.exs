@@ -21,7 +21,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
         type: "access_token",
         client: client,
         scope: "scope",
-        resource_owner_id: resource_owner.id
+        resource_owner_username: resource_owner.email
       )
       {:ok,
         client: client,
@@ -81,7 +81,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
 
     test "returns a token introspected if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.introspect(%{
         body_params: %{"token" => token.value},
