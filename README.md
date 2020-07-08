@@ -4,7 +4,7 @@
 # Boruta OAuth provider core
 Boruta is the core of an OAuth provider giving business logic of authentication and authorization.
 
-It is intended to follow RFCs :
+It is intended to follow RFCs:
 - [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)
 - [RFC 7662 - OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 - [RFC 7009 - OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
@@ -18,10 +18,10 @@ Documentation can be found [here](https://hexdocs.pm/boruta/1.0.0-rc.0/Boruta.ht
 A live example can be found [here](https://boruta.herokuapp.com/)
 
 ## Installation
-1. __Schemas migration__
+1. Schemas migration
 
-If you plan to use Boruta builtin clients and tokens contexts, you'll need a migration for its `Ecto` schemas. This can be done by running :
-```
+If you plan to use Boruta builtin clients and tokens contexts, you'll need a migration for its `Ecto` schemas. This can be done by running:
+```sh
 mix boruta.gen.migration
 ```
 
@@ -29,8 +29,8 @@ mix boruta.gen.migration
 
 In order to have user flows working, You need to implement `Boruta.Oauth.ResourceOwners`.
 
-Here is an example implementation :
-```
+Here is an example implementation:
+```elixir
 defmodule MyApp.ResourceOwners do
   @behaviour Boruta.Oauth.ResourceOwners
 
@@ -38,16 +38,22 @@ defmodule MyApp.ResourceOwners do
   alias MyApp.Repo
 
   @impl Boruta.Oauth.ResourceOwners
-  def get_by(username: username, password: password) do
-    with %User{} = user <- Repo.get_by(User, email: username),
-      :ok <- User.check_password(user, password) do
-        user
+  def get_by(username: username) do
+    with %User{} = user <- Repo.get_by(User, email: username) do
+      {:ok, user}
     else
-      _ -> nil
+      _ -> {:error, "User not found."}
     end
   end
-  def get_by(id: id) do
-    Repo.get(id)
+
+  @impl Boruta.Oauth.ResourceOwners
+  def check_password(resource_owner, password) do
+    User.check_password(user, password)
+  end
+
+  @impl Boruta.Oauth.ResourceOwners
+  def username(%User{email: username}) do
+    username
   end
 
   @impl Boruta.Oauth.ResourceOwners
@@ -62,7 +68,7 @@ end
 3. __Configuration__
 
 Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
-```
+```elixir
 config :boruta, Boruta.Oauth,
   repo: MyApp.Repo,
   contexts: [
@@ -86,7 +92,7 @@ In order to expose endpoints of an OAuth server with Boruta, you need implement 
 This library has specific interfaces to interact with `Plug.Conn` requests.
 
 Here is an example of a token endpoint controller:
-```
+```elixir
 defmodule MyApp.OauthController do
   @behaviour Boruta.Oauth.Application
   ...
@@ -113,4 +119,4 @@ end
 ```
 
 ## Feedback
-It is a work in progress, all feedbacks / feature requests / improvments are welcome
+It is a work in progress, all feedbacks / feature requests / improvements are welcome

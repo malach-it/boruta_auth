@@ -44,6 +44,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Client do
 
   alias Boruta.Oauth
   alias Boruta.Ecto
+  alias Boruta.Ecto.OauthMapper
 
   def to_oauth_schema(%Ecto.Client{} = client) do
     client = repo().preload(client, :authorized_scopes)
@@ -55,8 +56,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Client do
         %{
           authorized_scopes:
             Enum.map(client.authorized_scopes, fn scope ->
-              # TODO to_oauth_schema(scope)
-              struct(Oauth.Scope, Map.from_struct(scope))
+              OauthMapper.to_oauth_schema(scope)
             end)
         }
       )

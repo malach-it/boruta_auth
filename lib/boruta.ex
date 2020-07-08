@@ -2,7 +2,7 @@ defmodule Boruta do
   @moduledoc """
   Boruta is the core of an OAuth provider giving business logic of authentication and authorization.
 
-  It is intended to follow RFCs :
+  It is intended to follow RFCs:
   - [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)
   - [RFC 7662 - OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
   - [RFC 7009 - OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
@@ -12,7 +12,7 @@ defmodule Boruta do
   ## Installation
   1. __Schemas migration__
 
-  If you plan to use Boruta builtin clients and tokens contexts, you'll need a migration for its `Ecto` schemas. This can be done by running :
+  If you plan to use Boruta builtin clients and tokens contexts, you'll need a migration for its `Ecto` schemas. This can be done by running:
   ```
   mix boruta.gen.migration
   ```
@@ -21,7 +21,7 @@ defmodule Boruta do
 
   In order to have user flows working, You need to implement `Boruta.Oauth.ResourceOwners`.
 
-  Here is an example implementation :
+  Here is an example implementation:
   ```
   defmodule MyApp.ResourceOwners do
     @behaviour Boruta.Oauth.ResourceOwners
@@ -39,7 +39,7 @@ defmodule Boruta do
       end
     end
     def get_by(id: id) do
-      Repo.get(id)
+      Repo.get(User, id)
     end
 
     @impl Boruta.Oauth.ResourceOwners
@@ -104,6 +104,6 @@ defmodule Boruta do
   end
   ```
   ## Feedback
-  It is a work in progress, all feedbacks / feature requests / improvments are welcome -> [me](mailto:pascal.knoth@gmx.com)
+  It is a work in progress, all feedbacks / feature requests / improvements are welcome -> [me](mailto:io.pascal.knoth@gmail.com)
   """
 end

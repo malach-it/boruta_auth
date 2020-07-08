@@ -22,7 +22,6 @@ defmodule Boruta.Oauth.Request.Authorize do
   def request(%{query_params: query_params}, resource_owner) do
     case Validator.validate(:authorize, query_params) do
       {:ok, params} ->
-        # TODO have an explicit current_user param (request(conn :: Plug.Conn.t(), user :: any())
         build_request(Enum.into(params, %{"resource_owner" => resource_owner}))
       {:error, error_description} ->
         {:error, %Error{status: :bad_request, error: :invalid_request, error_description: error_description}}
