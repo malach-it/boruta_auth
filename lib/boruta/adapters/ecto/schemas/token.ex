@@ -22,7 +22,7 @@ defmodule Boruta.Ecto.Token do
     redirect_uri: String.t(),
     expires_at: integer(),
     client: Client.t(),
-    resource_owner_username: String.t(),
+    sub: String.t(),
     revoked_at: DateTime.t()
   }
 
@@ -40,7 +40,7 @@ defmodule Boruta.Ecto.Token do
     field(:revoked_at, :utc_datetime)
 
     belongs_to(:client, Client)
-    field(:resource_owner_username, :string)
+    field(:sub, :string)
 
     timestamps()
   end
@@ -48,7 +48,7 @@ defmodule Boruta.Ecto.Token do
   @doc false
   def changeset(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :redirect_uri, :resource_owner_username, :state, :scope])
+    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope])
     |> validate_required([:client_id])
     |> put_change(:type, "access_token")
     |> put_value()
@@ -58,7 +58,7 @@ defmodule Boruta.Ecto.Token do
   @doc false
   def changeset_with_refresh_token(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :redirect_uri, :resource_owner_username, :state, :scope])
+    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope])
     |> validate_required([:client_id])
     |> put_change(:type, "access_token")
     |> put_value()
@@ -69,8 +69,8 @@ defmodule Boruta.Ecto.Token do
   @doc false
   def code_changeset(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :resource_owner_username, :redirect_uri, :state, :scope])
-    |> validate_required([:client_id, :resource_owner_username, :redirect_uri])
+    |> cast(attrs, [:client_id, :sub, :redirect_uri, :state, :scope])
+    |> validate_required([:client_id, :sub, :redirect_uri])
     |> put_change(:type, "code")
     |> put_value()
     |> put_change(:expires_at, :os.system_time(:seconds) + authorization_code_expires_in())

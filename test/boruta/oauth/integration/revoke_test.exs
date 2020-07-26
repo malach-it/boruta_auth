@@ -16,7 +16,12 @@ defmodule Boruta.OauthTest.RevokeTest do
     setup do
       client = insert(:client)
       resource_owner = %User{}
-      token = insert(:token, type: "access_token", client_id: client.id, scope: "scope", resource_owner_username: resource_owner.email)
+      token = insert(:token,
+        type: "access_token",
+        client_id: client.id,
+        scope: "scope",
+        sub: resource_owner.id
+      )
       {:ok,
         client: client,
         token: token,

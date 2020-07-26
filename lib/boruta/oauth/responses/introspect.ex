@@ -3,6 +3,8 @@ defmodule Boruta.Oauth.IntrospectResponse do
   Introspect response
   """
 
+  import Boruta.Config, only: [resource_owners: 0]
+
   @type t :: %__MODULE__{
     active: boolean(),
     client_id: String.t(),
@@ -38,9 +40,9 @@ defmodule Boruta.Oauth.IntrospectResponse do
     %IntrospectResponse{
       active: true,
       client_id: client.id,
-      username: resource_owner && resource_owner.email,
+      username: resource_owners().username(resource_owner),
       scope: scope,
-      sub: resource_owner && resource_owner.id,
+      sub: resource_owners().sub(resource_owner),
       iss: "boruta", # TODO change to hostname
       exp: expires_at,
       iat: DateTime.to_unix(inserted_at)

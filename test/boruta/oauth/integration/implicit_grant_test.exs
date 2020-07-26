@@ -15,6 +15,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
   describe "implicit grant" do
     setup do
       stub(ResourceOwners, :username, fn (resource_owner) -> resource_owner.email end)
+      stub(ResourceOwners, :sub, fn (resource_owner) -> resource_owner.id end)
       resource_owner = %User{}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])

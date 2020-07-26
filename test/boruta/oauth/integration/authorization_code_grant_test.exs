@@ -16,6 +16,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   describe "authorization code grant - authorize" do
     setup do
       stub(ResourceOwners, :username, fn(resource_owner) -> resource_owner.email end)
+      stub(ResourceOwners, :sub, fn(resource_owner) -> resource_owner.id end)
 
       resource_owner = %User{}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
@@ -281,6 +282,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   describe "authorization code grant - token" do
     setup do
       stub(ResourceOwners, :username, fn(resource_owner) -> resource_owner.email end)
+      stub(ResourceOwners, :sub, fn(resource_owner) -> resource_owner.id end)
+
       resource_owner = %User{}
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
@@ -288,14 +291,14 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         :token,
         type: "code",
         client_id: client.id,
-        resource_owner_username: resource_owner.email,
+        sub: resource_owner.id,
         redirect_uri: List.first(client.redirect_uris)
      )
       expired_code = insert(
         :token,
         type: "code",
         client_id: client.id,
-        resource_owner_username: resource_owner.email,
+        sub: resource_owner.id,
         redirect_uri: List.first(client.redirect_uris),
         expires_at: :os.system_time(:seconds) - 10
       )
@@ -303,14 +306,14 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         :token,
         type: "code",
         client_id: client.id,
-        resource_owner_username: resource_owner.email,
+        sub: resource_owner.id,
         redirect_uri: "http://bad.redirect.uri"
       )
       code_with_scope = insert(
         :token,
         type: "code",
         client_id: client.id,
-        resource_owner_username: resource_owner.email,
+        sub: resource_owner.id,
         redirect_uri: List.first(client.redirect_uris),
         scope: "hello world"
       )

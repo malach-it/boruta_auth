@@ -30,17 +30,31 @@ defmodule Boruta do
     alias MyApp.Repo
 
     @impl Boruta.Oauth.ResourceOwners
-    def get_by(username: username, password: password) do
-      with %User{} = user <- Repo.get_by(User, email: username),
-        :ok <- User.check_password(user, password) do
+    def get_by(username: username) do
+      with %User{} = user <- Repo.get_by(User, email: username) do
           user
       else
         _ -> nil
       end
     end
-    def get_by(id: id) do
-      Repo.get(User, id)
+    def get_by(sub: sub) do
+      with %User{} = user <- Repo.get_by(User, id: sub) do
+        {:ok, user}
+      else
+        _ -> {:error, "User not found."}
+      end
     end
+
+    @impl Boruta.Oauth.ResourceOwners
+    def check_password(resource_owner, password) do
+      User.check_password(user, password)
+    end
+
+    @impl Boruta.Oauth.ResourceOwners
+    def username(%User{email: username}), do: username
+
+    @impl Boruta.Oauth.ResourceOwners
+    def sub(%User{id: sub}), do: sub
 
     @impl Boruta.Oauth.ResourceOwners
     def authorized_scopes(%User{}), do: []

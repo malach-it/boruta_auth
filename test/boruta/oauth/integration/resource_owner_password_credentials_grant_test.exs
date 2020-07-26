@@ -15,6 +15,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
   describe "resource owner password credentials grant" do
     setup do
       stub(ResourceOwners, :username, fn (resource_owner) -> resource_owner.email end)
+      stub(ResourceOwners, :sub, fn (resource_owner) -> resource_owner.id end)
       resource_owner = %User{}
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])

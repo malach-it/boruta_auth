@@ -45,6 +45,13 @@ defmodule MyApp.ResourceOwners do
       _ -> {:error, "User not found."}
     end
   end
+  def get_by(sub: sub) do
+    with %User{} = user <- Repo.get_by(User, id: sub) do
+      {:ok, user}
+    else
+      _ -> {:error, "User not found."}
+    end
+  end
 
   @impl Boruta.Oauth.ResourceOwners
   def check_password(resource_owner, password) do
@@ -52,9 +59,10 @@ defmodule MyApp.ResourceOwners do
   end
 
   @impl Boruta.Oauth.ResourceOwners
-  def username(%User{email: username}) do
-    username
-  end
+  def username(%User{email: username}), do: username
+
+  @impl Boruta.Oauth.ResourceOwners
+  def sub(%User{id: sub}), do: sub
 
   @impl Boruta.Oauth.ResourceOwners
   def authorized_scopes(%User{}), do: []

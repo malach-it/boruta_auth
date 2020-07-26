@@ -24,7 +24,7 @@ defmodule Boruta.Ecto.Codes do
     changeset =
       Ecto.Token.code_changeset(%Ecto.Token{}, %{
         client_id: client.id,
-        resource_owner_username: resource_owner && resource_owners().username(resource_owner),
+        sub: resource_owner && resource_owners().sub(resource_owner),
         redirect_uri: redirect_uri,
         state: state,
         scope: scope
