@@ -9,6 +9,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.IntrospectResponse
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
@@ -81,9 +82,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
 
     test "returns a token introspected if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
-      |> stub(:username, fn(_params) -> "username" end)
-      |> stub(:sub, fn(_params) -> "sub" end)
+      |> stub(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.introspect(%{
         body_params: %{"token" => token.value},

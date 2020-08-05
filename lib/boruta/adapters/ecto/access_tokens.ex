@@ -2,9 +2,9 @@ defmodule Boruta.Ecto.AccessTokens do
   @moduledoc false
   @behaviour Boruta.Oauth.AccessTokens
 
-  import Ecto.Query, only: [from: 2]
-  import Boruta.Config, only: [repo: 0, resource_owners: 0]
+  import Boruta.Config, only: [repo: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
+  import Ecto.Query, only: [from: 2]
 
   alias Boruta.Ecto.Token
   alias Boruta.Oauth
@@ -34,13 +34,13 @@ defmodule Boruta.Ecto.AccessTokens do
         %{client: client, scope: scope} = params,
         options
       ) do
-    resource_owner = params[:resource_owner]
+    sub = params[:sub]
     state = params[:state]
     redirect_uri = params[:redirect_uri]
 
     token_attributes = %{
       client_id: client.id,
-      sub: resource_owner && resource_owners().sub(resource_owner),
+      sub: sub,
       redirect_uri: redirect_uri,
       state: state,
       scope: scope

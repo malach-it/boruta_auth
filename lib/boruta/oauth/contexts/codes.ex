@@ -15,7 +15,7 @@ defmodule Boruta.Oauth.Codes do
   """
   @callback create(params :: %{
     :client => Boruta.Oauth.Client.t(),
-    :resource_owner => struct(),
+    :sub => String.t(),
     :redirect_uri => String.t(),
     :scope => String.t(),
     :state => String.t()

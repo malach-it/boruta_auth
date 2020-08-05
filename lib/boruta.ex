@@ -26,20 +26,21 @@ defmodule Boruta do
   defmodule MyApp.ResourceOwners do
     @behaviour Boruta.Oauth.ResourceOwners
 
+    alias Boruta.Oauth.ResourceOwner
     alias MyApp.Accounts.User
     alias MyApp.Repo
 
     @impl Boruta.Oauth.ResourceOwners
     def get_by(username: username) do
-      with %User{} = user <- Repo.get_by(User, email: username) do
-          user
+      with %User{id: sub, email: username} <- Repo.get_by(User, email: username) do
+        {:ok, %ResourceOwner{sub: sub, username: username}}
       else
-        _ -> nil
+        _ -> {:error, "User not found."}
       end
     end
     def get_by(sub: sub) do
       with %User{} = user <- Repo.get_by(User, id: sub) do
-        {:ok, user}
+        {:ok, %ResourceOwner{sub: sub, username: username}}
       else
         _ -> {:error, "User not found."}
       end
@@ -51,17 +52,7 @@ defmodule Boruta do
     end
 
     @impl Boruta.Oauth.ResourceOwners
-    def username(%User{email: username}), do: username
-
-    @impl Boruta.Oauth.ResourceOwners
-    def sub(%User{id: sub}), do: sub
-
-    @impl Boruta.Oauth.ResourceOwners
-    def authorized_scopes(%User{}), do: []
-
-    @impl Boruta.Oauth.ResourceOwners
-    def persisted?(%{__meta__: %{state: :loaded}}), do: true
-    def persisted?(_resource_owner), do: false
+    def authorized_scopes(%ResourceOwner{}), do: []
   end
   ```
 

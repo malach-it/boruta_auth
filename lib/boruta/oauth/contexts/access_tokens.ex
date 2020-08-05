@@ -16,7 +16,7 @@ defmodule Boruta.Oauth.AccessTokens do
   """
   @callback create(params :: %{
     :client => Boruta.Oauth.Client.t(),
-    optional(:resource_owner) => struct(),
+    :sub => String.t(),
     optional(:redirect_uri) => String.t(),
     :scope => String.t(),
     optional(:state) => String.t()

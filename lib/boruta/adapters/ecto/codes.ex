@@ -2,7 +2,7 @@ defmodule Boruta.Ecto.Codes do
   @moduledoc false
   @behaviour Boruta.Oauth.Codes
 
-  import Boruta.Config, only: [repo: 0, resource_owners: 0]
+  import Boruta.Config, only: [repo: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto
@@ -16,15 +16,16 @@ defmodule Boruta.Ecto.Codes do
   @impl Boruta.Oauth.Codes
   def create(%{
         client: client,
-        resource_owner: resource_owner,
         redirect_uri: redirect_uri,
         scope: scope,
         state: state
-      }) do
+      } = params) do
+    sub = params[:sub]
+
     changeset =
       Ecto.Token.code_changeset(%Ecto.Token{}, %{
         client_id: client.id,
-        sub: resource_owner && resource_owners().sub(resource_owner),
+        sub: sub,
         redirect_uri: redirect_uri,
         state: state,
         scope: scope

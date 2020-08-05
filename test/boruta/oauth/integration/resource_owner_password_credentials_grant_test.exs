@@ -8,15 +8,15 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
   describe "resource owner password credentials grant" do
     setup do
-      stub(ResourceOwners, :username, fn (resource_owner) -> resource_owner.email end)
-      stub(ResourceOwners, :sub, fn (resource_owner) -> resource_owner.id end)
-      resource_owner = %User{}
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
       client_with_scope = insert(:client,
@@ -102,7 +102,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "boom"}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "boom"}
         },
         ApplicationMock
       ) == {:token_error, %Error{
@@ -116,12 +116,11 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
       |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
-      |> stub(:persisted?, fn(_params) -> true end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "password"}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password"}
         },
         ApplicationMock
       ) do
@@ -146,14 +145,13 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
       |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
-      |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       %{name: given_scope} = List.first(client.authorized_scopes)
       case Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "password", "scope" => given_scope}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password", "scope" => given_scope}
         },
         ApplicationMock
       ) do
@@ -178,14 +176,13 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
       |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
-      |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       given_scope = "bad_scope"
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "password", "scope" => given_scope}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password", "scope" => given_scope}
         },
         ApplicationMock
       ) == {:token_error, %Error{
@@ -202,7 +199,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
           req_headers: [{"authorization", authorization_header}],
           body_params: %{
             "grant_type" => "password",
-            "username" => resource_owner.email,
+            "username" => resource_owner.username,
             "password" => "password",
             "scope" => ""
           }

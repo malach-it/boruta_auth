@@ -9,14 +9,14 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
   describe "implicit grant" do
     setup do
-      stub(ResourceOwners, :username, fn (resource_owner) -> resource_owner.email end)
-      stub(ResourceOwners, :sub, fn (resource_owner) -> resource_owner.id end)
-      resource_owner = %User{}
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
       client_with_scope = insert(:client,
@@ -83,7 +83,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     test "returns an error if user is invalid", %{client: client} do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> {:error, "Resourceowner not found"} end)
-      |> stub(:persisted?, fn(_params) -> false end)
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
@@ -107,8 +106,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
+      |> stub(:get_by, fn (_params) -> {:ok, resource_owner} end)
       redirect_uri = List.first(client.redirect_uris)
 
       case Oauth.authorize(
@@ -139,8 +137,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns a token if scope is authorized", %{client_with_scope: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
@@ -175,7 +172,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     test "returns an error if scope is unknown or unauthorized", %{client_with_scope: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
       given_scope = "bad_scope"
       redirect_uri = List.first(client.redirect_uris)
@@ -203,7 +199,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     test "returns an error if grant type is not allowed by the client", %{client_without_grant_type: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
       |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
       redirect_uri = List.first(client.redirect_uris)
       assert Oauth.authorize(

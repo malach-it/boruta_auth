@@ -254,6 +254,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
 
   describe "with a token" do
     setup do
+      stub(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
       token = insert(:token)
       public_scope = insert(:scope, public: true)
       private_scope = insert(:scope, public: false)

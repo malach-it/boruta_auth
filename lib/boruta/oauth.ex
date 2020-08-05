@@ -11,6 +11,7 @@ defmodule Boruta.Oauth do
   alias Boruta.Oauth.Introspect
   alias Boruta.Oauth.IntrospectResponse
   alias Boruta.Oauth.Request
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Revoke
   alias Boruta.Oauth.TokenResponse
 
@@ -38,7 +39,7 @@ defmodule Boruta.Oauth do
 
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
-  @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: struct(), module :: atom()) :: any()
+  @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
   def authorize(conn, resource_owner, module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, token} <- Authorization.token(request) do

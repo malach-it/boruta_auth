@@ -3,8 +3,6 @@ defmodule Boruta.Oauth.IntrospectResponse do
   Introspect response
   """
 
-  import Boruta.Config, only: [resource_owners: 0]
-
   @type t :: %__MODULE__{
     active: boolean(),
     client_id: String.t(),
@@ -28,21 +26,28 @@ defmodule Boruta.Oauth.IntrospectResponse do
   ]
 
   alias Boruta.Oauth.IntrospectResponse
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
   def from_token(%Token{
     client: client,
+    sub: sub,
     resource_owner: resource_owner,
     expires_at: expires_at,
     scope: scope,
     inserted_at: inserted_at
   }) do
+    username = case resource_owner do
+      %ResourceOwner{username: username} -> username
+      nil -> nil
+    end
+
     %IntrospectResponse{
       active: true,
       client_id: client.id,
-      username: resource_owners().username(resource_owner),
+      username: username,
       scope: scope,
-      sub: resource_owners().sub(resource_owner),
+      sub: sub,
       iss: "boruta", # TODO change to hostname
       exp: expires_at,
       iat: DateTime.to_unix(inserted_at)
