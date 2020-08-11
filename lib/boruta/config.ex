@@ -39,49 +39,49 @@ defmodule Boruta.Config do
 
   @spec repo() :: module()
   @doc false
-  defmacro repo do
+  def repo do
     Keyword.fetch!(oauth_config(), :repo)
   end
 
   @spec access_token_expires_in() :: integer()
   @doc false
-  defmacro access_token_expires_in do
+  def access_token_expires_in do
     Keyword.fetch!(oauth_config(), :expires_in)[:access_token]
   end
 
   @spec authorization_code_expires_in() :: integer()
   @doc false
-  defmacro authorization_code_expires_in do
+  def authorization_code_expires_in do
     Keyword.fetch!(oauth_config(), :expires_in)[:authorization_code]
   end
 
   @spec token_generator() :: module()
   @doc false
-  defmacro token_generator do
+  def token_generator do
     Keyword.fetch!(oauth_config(), :token_generator)
   end
 
   @spec access_tokens() :: module()
   @doc false
-  defmacro access_tokens do
+  def access_tokens do
     Keyword.fetch!(oauth_config(), :contexts)[:access_tokens]
   end
 
   @spec clients() :: module()
   @doc false
-  defmacro clients do
+  def clients do
     Keyword.fetch!(oauth_config(), :contexts)[:clients]
   end
 
   @spec codes() :: module()
   @doc false
-  defmacro codes do
+  def codes do
     Keyword.fetch!(oauth_config(), :contexts)[:codes]
   end
 
   @spec scopes() :: module()
   @doc false
-  defmacro scopes do
+  def scopes do
     Keyword.fetch!(oauth_config(), :contexts)[:scopes]
   end
 

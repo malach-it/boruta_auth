@@ -16,15 +16,16 @@ defmodule Boruta.Ecto.Codes do
   @impl Boruta.Oauth.Codes
   def create(%{
         client: client,
-        resource_owner: resource_owner,
         redirect_uri: redirect_uri,
         scope: scope,
         state: state
-      }) do
+      } = params) do
+    sub = params[:sub]
+
     changeset =
       Ecto.Token.code_changeset(%Ecto.Token{}, %{
         client_id: client.id,
-        resource_owner_id: resource_owner.id,
+        sub: sub,
         redirect_uri: redirect_uri,
         state: state,
         scope: scope

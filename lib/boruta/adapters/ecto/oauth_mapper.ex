@@ -19,7 +19,12 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
   def to_oauth_schema(%Ecto.Token{} = token) do
     token = repo().preload(token, [:client])
     client = OauthMapper.to_oauth_schema(token.client)
-    resource_owner = token.resource_owner_id && resource_owners().get_by(id: token.resource_owner_id)
+    resource_owner = with "" <> sub <- token.sub, # token is linked to a resource_owner
+      {:ok, resource_owner} <- resource_owners().get_by(sub: sub) do
+      resource_owner
+    else
+      _ -> nil
+    end
 
     struct(
       Oauth.Token,
@@ -39,6 +44,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Client do
 
   alias Boruta.Oauth
   alias Boruta.Ecto
+  alias Boruta.Ecto.OauthMapper
 
   def to_oauth_schema(%Ecto.Client{} = client) do
     client = repo().preload(client, :authorized_scopes)
@@ -50,8 +56,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Client do
         %{
           authorized_scopes:
             Enum.map(client.authorized_scopes, fn scope ->
-              # TODO to_oauth_schema(scope)
-              struct(Oauth.Scope, Map.from_struct(scope))
+              OauthMapper.to_oauth_schema(scope)
             end)
         }
       )

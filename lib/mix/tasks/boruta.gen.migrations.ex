@@ -85,7 +85,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:revoked_at, :utc_datetime)
 
         add(:client_id, references(:clients, type: :uuid, on_delete: :nilify_all))
-        add(:resource_owner_id, :string)
+        add(:sub, :string)
 
         timestamps()
       end

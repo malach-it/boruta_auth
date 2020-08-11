@@ -8,13 +8,15 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
   describe "resource owner password credentials grant" do
     setup do
-      resource_owner = %User{}
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
       client_with_scope = insert(:client,
@@ -76,7 +78,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     test "returns an error if username is invalid", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> nil end)
+      |> stub(:get_by, fn(_params) -> {:error, "Resource owner not found."} end)
 
       assert Oauth.token(
         %{
@@ -86,37 +88,39 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
         ApplicationMock
       ) == {:token_error, %Error{
         error: :invalid_resource_owner,
-        error_description: "Invalid username or password.",
+        error_description: "Resource owner not found.",
         status: :unauthorized
       }}
     end
 
     test "returns an error if password is invalid", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> nil end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> {:error, "Password is invalid."} end)
+
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "boom"}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "boom"}
         },
         ApplicationMock
       ) == {:token_error, %Error{
         error: :invalid_resource_owner,
-        error_description: "Invalid username or password.",
+        error_description: "Password is invalid.",
         status: :unauthorized
       }}
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "password"}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password"}
         },
         ApplicationMock
       ) do
@@ -139,15 +143,15 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
     test "returns a token if scope is authorized", %{client_with_scope: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       %{name: given_scope} = List.first(client.authorized_scopes)
       case Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "password", "scope" => given_scope}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password", "scope" => given_scope}
         },
         ApplicationMock
       ) do
@@ -170,15 +174,15 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
     test "returns an error if scope is unknown or unauthorized by the client", %{client_with_scope: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> resource_owner end)
-      |> stub(:persisted?, fn(_params) -> true end)
+      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       given_scope = "bad_scope"
       assert Oauth.token(
         %{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{"grant_type" => "password", "username" => resource_owner.email, "password" => "password", "scope" => given_scope}
+          body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password", "scope" => given_scope}
         },
         ApplicationMock
       ) == {:token_error, %Error{
@@ -195,7 +199,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
           req_headers: [{"authorization", authorization_header}],
           body_params: %{
             "grant_type" => "password",
-            "username" => resource_owner.email,
+            "username" => resource_owner.username,
             "password" => "password",
             "scope" => ""
           }

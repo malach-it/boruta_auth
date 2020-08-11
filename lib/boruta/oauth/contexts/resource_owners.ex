@@ -2,22 +2,22 @@ defmodule Boruta.Oauth.ResourceOwners do
   @moduledoc """
   Resource owner context
   """
-  # TODO remove password from get_by and move it to a check_password/2 callback
+
+  alias Boruta.Oauth.ResourceOwner
+
   @doc """
   Returns a resource owner by (username, password) or (id). Returns nil for non matching results.
   """
-  @callback get_by(
-    [username: String.t(), password: String.t()] |
-    [id: String.t()]
-  ) :: resource_owner :: struct() | nil
+  @callback get_by([username: String.t()] | [sub: String.t()]) ::
+    {:ok, resource_owner :: ResourceOwner.t()} | {:error, String.t()}
+
+  @doc """
+  Determines if given password is correct.
+  """
+  @callback check_password(resource_owner :: ResourceOwner.t(), password :: String.t()) :: :ok | {:error, String.t()}
 
   @doc """
   Returns a list of authorized scopes for a given resource owner. These scopes will be granted is requested for the user.
   """
-  @callback authorized_scopes(resource_owner :: struct()) :: list(Boruta.Oauth.Scope.t())
-
-  @doc """
-  Returns true whenever the given resource owner is persisted.
-  """
-  @callback persisted?(resource_owner :: struct()) :: boolean()
+  @callback authorized_scopes(resource_owner :: ResourceOwner.t()) :: list(Boruta.Oauth.Scope.t())
 end

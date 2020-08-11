@@ -26,21 +26,28 @@ defmodule Boruta.Oauth.IntrospectResponse do
   ]
 
   alias Boruta.Oauth.IntrospectResponse
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
   def from_token(%Token{
     client: client,
+    sub: sub,
     resource_owner: resource_owner,
     expires_at: expires_at,
     scope: scope,
     inserted_at: inserted_at
   }) do
+    username = case resource_owner do
+      %ResourceOwner{username: username} -> username
+      nil -> nil
+    end
+
     %IntrospectResponse{
       active: true,
       client_id: client.id,
-      username: resource_owner && resource_owner.email,
+      username: username,
       scope: scope,
-      sub: resource_owner && resource_owner.id,
+      sub: sub,
       iss: "boruta", # TODO change to hostname
       exp: expires_at,
       iat: DateTime.to_unix(inserted_at)

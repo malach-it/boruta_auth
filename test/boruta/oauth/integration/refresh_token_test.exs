@@ -13,13 +13,14 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
   describe "refresh_token" do
     setup do
+      stub(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
       expired_access_token = insert(
         :token,
         type: "access_token",
         refresh_token: "from_an_expired_token",
-        client_id: client.id,
+        client: client,
         redirect_uri: List.first(client.redirect_uris),
         expires_at: :os.system_time(:seconds) - 10
       )
@@ -27,7 +28,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         :token,
         type: "access_token",
         refresh_token: "from_an_access_token",
-        client_id: client.id,
+        client: client,
         redirect_uri: List.first(client.redirect_uris),
         expires_at: :os.system_time(:seconds) + 10,
         scope: "scope"

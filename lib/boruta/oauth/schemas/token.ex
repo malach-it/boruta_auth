@@ -14,6 +14,7 @@ defmodule Boruta.Oauth.Token do
     redirect_uri: nil,
     expires_at: nil,
     client: nil,
+    sub: nil,
     resource_owner: nil,
     refresh_token: nil,
     inserted_at: nil,
@@ -28,7 +29,8 @@ defmodule Boruta.Oauth.Token do
     redirect_uri: String.t(),
     expires_at: integer(),
     client: Boruta.Oauth.Client.t(),
-    resource_owner: struct(),
+    sub: String.t(),
+    resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
     refresh_token: String.t(),
     inserted_at: DateTime.t(),
     revoked_at: DateTime.t()

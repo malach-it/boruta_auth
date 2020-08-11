@@ -11,10 +11,13 @@ defmodule Boruta.Oauth do
   alias Boruta.Oauth.Introspect
   alias Boruta.Oauth.IntrospectResponse
   alias Boruta.Oauth.Request
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Revoke
   alias Boruta.Oauth.TokenResponse
 
   @doc """
+  Process an token request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
+
   Triggers `token_success` in case of success and `token_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
   @spec token(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
@@ -32,9 +35,11 @@ defmodule Boruta.Oauth do
   end
 
   @doc """
+  Process an authorize request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
+
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
-  @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: struct(), module :: atom()) :: any()
+  @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
   def authorize(conn, resource_owner, module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, token} <- Authorization.token(request) do
@@ -54,6 +59,8 @@ defmodule Boruta.Oauth do
   end
 
   @doc """
+  Process a introspect request as stated in [RFC 7662 - OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662).
+
   Triggers `introspect_success` in case of success and `introspect_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
   @spec introspect(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
@@ -69,6 +76,11 @@ defmodule Boruta.Oauth do
     end
   end
 
+  @doc """
+  Process a revoke request as stated in [RFC 7009 - OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009).
+
+  Triggers `revoke_success` in case of success and `revoke_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
+  """
   @spec revoke(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   def revoke(conn, module) do
     with {:ok, request} <- Request.revoke_request(conn),

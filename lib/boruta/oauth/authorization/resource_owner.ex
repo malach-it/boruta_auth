@@ -6,6 +6,7 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
   import Boruta.Config, only: [resource_owners: 0]
 
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
 
   @doc """
   Authorize the resource owner corresponding to the given params.
@@ -16,7 +17,7 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
   """
   @spec authorize(
     [email: String.t(), password: String.t()] |
-    [resource_owner: struct()]
+    [resource_owner: ResourceOwner.t()]
   ) ::
     {:error,
      %Error{
@@ -26,30 +27,22 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
        :redirect_uri => nil,
        :status => :unauthorized
      }}
-    | {:ok, user :: struct()}
+    | {:ok, user :: ResourceOwner.t()}
   def authorize(username: username, password: password) do
-    case resource_owners().get_by(username: username, password: password) do
-      nil ->
+    with {:ok, resource_owner} <- resource_owners().get_by(username: username),
+      :ok <- resource_owners().check_password(resource_owner, password) do
+      {:ok, resource_owner}
+    else
+      {:error, reason} ->
         {:error, %Error{
           status: :unauthorized,
           error: :invalid_resource_owner,
-          error_description: "Invalid username or password."
+          error_description: reason
         }}
-      resource_owner ->
-      {:ok, resource_owner}
     end
   end
-  def authorize(resource_owner: resource_owner) do
-    case resource_owners().persisted?(resource_owner) do
-      true -> {:ok, resource_owner}
-      false ->
-        {:error, %Error{
-          status: :unauthorized,
-          error: :invalid_resource_owner,
-          error_description: "Resource owner is invalid.",
-          format: :internal
-        }}
-    end
+  def authorize(resource_owner: %ResourceOwner{} = resource_owner) do
+    {:ok, resource_owner}
   end
   def authorize(_) do
     {:error, %Error{

@@ -21,6 +21,7 @@ defmodule Boruta.Factory do
 
   def token_factory do
     %Ecto.Token{
+      client: build(:client),
       type: "access_token",
       value: Boruta.TokenGenerator.generate(),
       expires_at: :os.system_time(:seconds) + 10
