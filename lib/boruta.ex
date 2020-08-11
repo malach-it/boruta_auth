@@ -32,15 +32,15 @@ defmodule Boruta do
 
     @impl Boruta.Oauth.ResourceOwners
     def get_by(username: username) do
-      with %User{id: sub, email: username} <- Repo.get_by(User, email: username) do
-        {:ok, %ResourceOwner{sub: sub, username: username}}
+      with %User{id: id, email: email} <- Repo.get_by(User, email: username) do
+        {:ok, %ResourceOwner{sub: id, username: email}}
       else
         _ -> {:error, "User not found."}
       end
     end
     def get_by(sub: sub) do
-      with %User{} = user <- Repo.get_by(User, id: sub) do
-        {:ok, %ResourceOwner{sub: sub, username: username}}
+      with %User{id: id, email: email} = user <- Repo.get_by(User, id: sub) do
+        {:ok, %ResourceOwner{sub: id, username: email}}
       else
         _ -> {:error, "User not found."}
       end
