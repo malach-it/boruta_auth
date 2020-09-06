@@ -27,7 +27,7 @@ defmodule Boruta.Ecto.Token do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  @timestamps_opts type: :utc_datetime
+  @timestamps_opts type: :utc_datetime_usec
   schema "tokens" do
     field(:type, :string)
     field(:value, :string)
@@ -36,7 +36,7 @@ defmodule Boruta.Ecto.Token do
     field(:scope, :string)
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
-    field(:revoked_at, :utc_datetime)
+    field(:revoked_at, :utc_datetime_usec)
     field(:code_challenge, :string, virtual: true)
     field(:code_challenge_hash, :string)
     field(:code_challenge_method, :string, default: "plain")

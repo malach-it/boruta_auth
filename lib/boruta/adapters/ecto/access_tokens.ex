@@ -65,7 +65,7 @@ defmodule Boruta.Ecto.AccessTokens do
 
   @impl Boruta.Oauth.AccessTokens
   def revoke(%Oauth.Token{value: value}) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    now = DateTime.utc_now()
 
     with {:ok, token} <- repo().get_by(Token, value: value)
     |> Changeset.change(revoked_at: now)

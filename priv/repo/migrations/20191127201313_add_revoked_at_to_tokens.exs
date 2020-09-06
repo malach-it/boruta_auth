@@ -3,7 +3,7 @@ defmodule Boruta.Repo.Migrations.AddRevokedAtToTokens do
 
   def change do
     alter table(:tokens) do
-      add :revoked_at, :utc_datetime
+      add :revoked_at, :utc_datetime_usec
     end
   end
 end

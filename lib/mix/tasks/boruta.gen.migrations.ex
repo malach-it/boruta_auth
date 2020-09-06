@@ -85,7 +85,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:redirect_uri, :string)
         add(:state, :string)
         add(:scope, :string)
-        add(:revoked_at, :utc_datetime)
+        add(:revoked_at, :utc_datetime_usec)
         add(:code_challenge_hash, :string)
         add(:code_challenge_method, :string)
 
