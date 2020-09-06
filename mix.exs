@@ -50,7 +50,9 @@ defmodule Boruta.MixProject do
       {:plug, "~> 1.0"},
       {:puid, "~> 1.0"},
       {:secure_random, "~> 0.5"},
-      {:mox, "~> 0.5", only: :test}
+      {:mox, "~> 0.5", only: :test},
+      {:shards, "~> 0.6"},
+      {:nebulex, "~> 2.0.0-rc.0"}
     ]
   end
 

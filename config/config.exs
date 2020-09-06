@@ -7,4 +7,10 @@ use Mix.Config
 config :boruta,
   ecto_repos: [Boruta.Repo]
 
+config :boruta, Boruta.Cache,
+  primary: [
+    gc_interval: 86_400_000, #=> 1 day
+    backend: :shards,
+    partitions: 2
+  ]
 import_config "#{Mix.env()}.exs"

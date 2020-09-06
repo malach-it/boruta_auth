@@ -8,35 +8,48 @@ defmodule Boruta.Ecto.Clients do
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
 
   @impl Boruta.Oauth.Clients
-  def get_by(id: id, secret: secret) do
-    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id, secret: secret) do
-      to_oauth_schema(client)
+  def get_by(attrs) do
+    case get_by(:from_cache, attrs) do
+      {:ok, client} -> client
+      {:error, _reason} -> get_by(:from_database, attrs)
     end
   end
 
-  def get_by(id: id, redirect_uri: redirect_uri) do
+  defp get_by(:from_cache, attrs), do: ClientStore.get(attrs)
+  defp get_by(:from_database, id: id, secret: secret) do
+    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id, secret: secret),
+      {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
+        client
+    end
+  end
+  defp get_by(:from_database, id: id, redirect_uri: redirect_uri) do
     with %Ecto.Client{} = client <-
            repo().one(
              from c in Ecto.Client,
                where: c.id == ^id and fragment("? = ANY (redirect_uris)", ^redirect_uri)
-           ) do
-      to_oauth_schema(client)
+           ),
+      {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
+        client
     end
   end
 
   @impl Boruta.Oauth.Clients
-  def authorized_scopes(%Oauth.Client{id: id}) do
+  def authorized_scopes(client) do
+    case ClientStore.authorized_scopes(client) do
+      {:ok, authorized_scopes} -> authorized_scopes
+      {:error, _reason} -> authorized_scopes(:from_database, client)
+    end
+  end
+
+  defp authorized_scopes(:from_database, %Oauth.Client{id: id}) do
     case repo().get_by(Ecto.Client, id: id) do
       %Ecto.Client{} = client ->
-        client = repo().preload(client, :authorized_scopes)
-        Enum.map(
-          client.authorized_scopes,
-          &to_oauth_schema(&1)
-        )
-
+        {:ok, client} = to_oauth_schema(client) |> ClientStore.put()
+        client.authorized_scopes
       nil ->
         []
     end

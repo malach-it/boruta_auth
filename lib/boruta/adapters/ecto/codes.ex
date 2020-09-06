@@ -7,11 +7,16 @@ defmodule Boruta.Ecto.Codes do
 
   alias Boruta.Ecto
   alias Boruta.Oauth.Client
+  alias Boruta.Ecto.TokenStore
 
   @impl Boruta.Oauth.Codes
-  def get_by(value: value, redirect_uri: redirect_uri) do
-    repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
-    |> to_oauth_schema()
+  def get_by([value: value, redirect_uri: redirect_uri] = attrs) do
+    case TokenStore.get(attrs) do
+      {:ok, token} -> token
+      {:error, _reason} ->
+        repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
+        |> to_oauth_schema()
+      end
   end
 
   @impl Boruta.Oauth.Codes
@@ -45,8 +50,9 @@ defmodule Boruta.Ecto.Codes do
         }
       ])
 
-    with {:ok, token} <- repo().insert(changeset) do
-      {:ok, to_oauth_schema(token)}
+    with {:ok, token} <- repo().insert(changeset),
+      {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
+      {:ok, token}
     end
   end
 
