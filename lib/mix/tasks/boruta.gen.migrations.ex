@@ -69,6 +69,8 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:scope, :string)
         add(:authorize_scope, :boolean, default: false)
         add(:supported_grant_types, {:array, :string})
+        add(:authorization_code_ttl, :integer, null: false)
+        add(:access_token_ttl, :integer, null: false)
 
         timestamps()
       end

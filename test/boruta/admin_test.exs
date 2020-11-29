@@ -8,10 +8,14 @@ defmodule Boruta.Ecto.AdminTest do
   alias Boruta.Ecto.Scope
 
   @client_valid_attrs %{
-    redirect_uri: ["https://redirect.uri"]
+    redirect_uri: ["https://redirect.uri"],
+    access_token_ttl: 3600,
+    authorization_code_ttl: 60
   }
   @client_update_attrs %{
-    redirect_uri: ["https://updated.redirect.uri"]
+    redirect_uri: ["https://updated.redirect.uri"],
+    access_token_ttl: 3600,
+    authorization_code_ttl: 60
   }
 
   # clients
@@ -58,7 +62,7 @@ defmodule Boruta.Ecto.AdminTest do
       scope = insert(:scope)
       assert {:ok,
         %Client{authorized_scopes: authorized_scopes}
-      } = Admin.create_client(%{"authorized_scopes" => [%{"id" => scope.id}]})
+      } = Admin.create_client(Map.put(@client_valid_attrs, :authorized_scopes, [%{"id" => scope.id}]))
       assert authorized_scopes == [scope]
     end
   end

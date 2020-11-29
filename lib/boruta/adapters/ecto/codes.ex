@@ -6,6 +6,7 @@ defmodule Boruta.Ecto.Codes do
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto
+  alias Boruta.Oauth.Client
 
   @impl Boruta.Oauth.Codes
   def get_by(value: value, redirect_uri: redirect_uri) do
@@ -14,21 +15,27 @@ defmodule Boruta.Ecto.Codes do
   end
 
   @impl Boruta.Oauth.Codes
-  def create(%{
-        client: client,
-        redirect_uri: redirect_uri,
-        scope: scope,
-        state: state
-      } = params) do
+  def create(
+        %{
+          client: %Client{
+            id: client_id,
+            authorization_code_ttl: authorization_code_ttl
+          },
+          redirect_uri: redirect_uri,
+          scope: scope,
+          state: state,
+        } = params
+      ) do
     sub = params[:sub]
 
     changeset =
       Ecto.Token.code_changeset(%Ecto.Token{}, %{
-        client_id: client.id,
+        client_id: client_id,
         sub: sub,
         redirect_uri: redirect_uri,
         state: state,
-        scope: scope
+        scope: scope,
+        authorization_code_ttl: authorization_code_ttl
       })
 
     with {:ok, token} <- repo().insert(changeset) do
