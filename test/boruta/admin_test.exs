@@ -49,6 +49,18 @@ defmodule Boruta.Ecto.AdminTest do
       })
     end
 
+    test "returns an error when access token tll is invalid" do
+      assert {:error, %Ecto.Changeset{} } = Admin.create_client(
+        Map.put(@client_valid_attrs, :access_token_ttl, 1_000_000)
+      )
+    end
+
+    test "returns an error when authorization code tll is invalid" do
+      assert {:error, %Ecto.Changeset{} } = Admin.create_client(
+        Map.put(@client_valid_attrs, :authorization_code_ttl, 1_000_000)
+      )
+    end
+
     test "creates a client" do
       assert {:ok, %Client{} } = Admin.create_client(@client_valid_attrs)
     end

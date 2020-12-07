@@ -69,9 +69,9 @@ defmodule Boruta do
       resource_owners: MyApp.ResourceOwners,
       scopes: Boruta.Ecto.Scopes
     ],
-    expires_in: [
+    max_ttl: [
       authorization_code: 60,
-      access_token: 3600
+      access_token: 60 * 60 * 24
     ],
     token_generator: Boruta.TokenGenerator
   ```
