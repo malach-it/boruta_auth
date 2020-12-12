@@ -7,24 +7,22 @@ defmodule Boruta.Ecto.Token do
 
   import Boruta.Config,
     only: [
-      access_token_expires_in: 0,
-      authorization_code_expires_in: 0,
       token_generator: 0
     ]
 
   alias Boruta.Ecto.Client
 
   @type t :: %__MODULE__{
-    type:  String.t(),
-    value: String.t(),
-    state: String.t(),
-    scope: String.t(),
-    redirect_uri: String.t(),
-    expires_at: integer(),
-    client: Client.t(),
-    sub: String.t(),
-    revoked_at: DateTime.t()
-  }
+          type: String.t(),
+          value: String.t(),
+          state: String.t(),
+          scope: String.t(),
+          redirect_uri: String.t(),
+          expires_at: integer(),
+          client: Client.t(),
+          sub: String.t(),
+          revoked_at: DateTime.t()
+        }
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -38,6 +36,8 @@ defmodule Boruta.Ecto.Token do
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime)
+    field(:access_token_ttl, :integer, virtual: true)
+    field(:authorization_code_ttl, :integer, virtual: true)
 
     belongs_to(:client, Client)
     field(:sub, :string)
@@ -48,32 +48,33 @@ defmodule Boruta.Ecto.Token do
   @doc false
   def changeset(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope])
+    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope, :access_token_ttl])
+    |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
     |> put_change(:type, "access_token")
     |> put_value()
-    |> put_change(:expires_at, :os.system_time(:seconds) + access_token_expires_in())
+    |> put_expires_at()
   end
 
   @doc false
   def changeset_with_refresh_token(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope])
-    |> validate_required([:client_id])
+    |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :scope])
+    |> validate_required([:access_token_ttl, :client_id])
     |> put_change(:type, "access_token")
     |> put_value()
     |> put_refresh_token()
-    |> put_change(:expires_at, :os.system_time(:seconds) + access_token_expires_in())
+    |> put_expires_at()
   end
 
   @doc false
   def code_changeset(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :sub, :redirect_uri, :state, :scope])
-    |> validate_required([:client_id, :sub, :redirect_uri])
+    |> cast(attrs, [:authorization_code_ttl, :client_id, :sub, :redirect_uri, :state, :scope])
+    |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> put_change(:type, "code")
     |> put_value()
-    |> put_change(:expires_at, :os.system_time(:seconds) + authorization_code_expires_in())
+    |> put_code_expires_at()
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
@@ -90,5 +91,17 @@ defmodule Boruta.Ecto.Token do
       :refresh_token,
       token_generator().generate(:refresh_token, struct(data, changes))
     )
+  end
+
+  defp put_expires_at(changeset) do
+    {_type, access_token_ttl} = fetch_field(changeset, :access_token_ttl)
+
+    put_change(changeset, :expires_at, :os.system_time(:seconds) + access_token_ttl)
+  end
+
+  defp put_code_expires_at(changeset) do
+    {_type, authorization_code_ttl} = fetch_field(changeset, :authorization_code_ttl)
+
+    put_change(changeset, :expires_at, :os.system_time(:seconds) + authorization_code_ttl)
   end
 end

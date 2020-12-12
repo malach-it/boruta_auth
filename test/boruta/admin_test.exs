@@ -8,10 +8,14 @@ defmodule Boruta.Ecto.AdminTest do
   alias Boruta.Ecto.Scope
 
   @client_valid_attrs %{
-    redirect_uri: ["https://redirect.uri"]
+    redirect_uri: ["https://redirect.uri"],
+    access_token_ttl: 3600,
+    authorization_code_ttl: 60
   }
   @client_update_attrs %{
-    redirect_uri: ["https://updated.redirect.uri"]
+    redirect_uri: ["https://updated.redirect.uri"],
+    access_token_ttl: 3600,
+    authorization_code_ttl: 60
   }
 
   # clients
@@ -45,6 +49,18 @@ defmodule Boruta.Ecto.AdminTest do
       })
     end
 
+    test "returns an error when access token tll is invalid" do
+      assert {:error, %Ecto.Changeset{} } = Admin.create_client(
+        Map.put(@client_valid_attrs, :access_token_ttl, 1_000_000)
+      )
+    end
+
+    test "returns an error when authorization code tll is invalid" do
+      assert {:error, %Ecto.Changeset{} } = Admin.create_client(
+        Map.put(@client_valid_attrs, :authorization_code_ttl, 1_000_000)
+      )
+    end
+
     test "creates a client" do
       assert {:ok, %Client{} } = Admin.create_client(@client_valid_attrs)
     end
@@ -58,7 +74,7 @@ defmodule Boruta.Ecto.AdminTest do
       scope = insert(:scope)
       assert {:ok,
         %Client{authorized_scopes: authorized_scopes}
-      } = Admin.create_client(%{"authorized_scopes" => [%{"id" => scope.id}]})
+      } = Admin.create_client(Map.put(@client_valid_attrs, :authorized_scopes, [%{"id" => scope.id}]))
       assert authorized_scopes == [scope]
     end
   end

@@ -13,9 +13,9 @@ defmodule Boruta.Config do
       resource_owners: nil,
       scopes: Boruta.Ecto.Scopes
     ],
-    expires_in: [
+    max_ttl: [
       authorization_code: 60,
-      access_token: 3600
+      access_token: 60 * 60 * 24
     ],
     token_generator: Boruta.TokenGenerator
   ```
@@ -31,9 +31,9 @@ defmodule Boruta.Config do
       resource_owners: nil,
       scopes: Boruta.Ecto.Scopes
     ],
-    expires_in: [
+    max_ttl: [
       authorization_code: 60,
-      access_token: 3600
+      access_token: 60 * 60 * 24
     ],
     token_generator: Boruta.TokenGenerator
 
@@ -43,16 +43,16 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :repo)
   end
 
-  @spec access_token_expires_in() :: integer()
+  @spec access_token_max_ttl() :: integer()
   @doc false
-  def access_token_expires_in do
-    Keyword.fetch!(oauth_config(), :expires_in)[:access_token]
+  def access_token_max_ttl do
+    Keyword.fetch!(oauth_config(), :max_ttl)[:access_token]
   end
 
-  @spec authorization_code_expires_in() :: integer()
+  @spec authorization_code_max_ttl() :: integer()
   @doc false
-  def authorization_code_expires_in do
-    Keyword.fetch!(oauth_config(), :expires_in)[:authorization_code]
+  def authorization_code_max_ttl do
+    Keyword.fetch!(oauth_config(), :max_ttl)[:authorization_code]
   end
 
   @spec token_generator() :: module()

@@ -8,6 +8,7 @@ defmodule Boruta.Ecto.AccessTokens do
 
   alias Boruta.Ecto.Token
   alias Boruta.Oauth
+  alias Boruta.Oauth.Client
   alias Ecto.Changeset
 
   @impl Boruta.Oauth.AccessTokens
@@ -31,7 +32,7 @@ defmodule Boruta.Ecto.AccessTokens do
 
   @impl Boruta.Oauth.AccessTokens
   def create(
-        %{client: client, scope: scope} = params,
+        %{client: %Client{id: client_id, access_token_ttl: access_token_ttl}, scope: scope} = params,
         options
       ) do
     sub = params[:sub]
@@ -39,11 +40,12 @@ defmodule Boruta.Ecto.AccessTokens do
     redirect_uri = params[:redirect_uri]
 
     token_attributes = %{
-      client_id: client.id,
+      client_id: client_id,
       sub: sub,
       redirect_uri: redirect_uri,
       state: state,
-      scope: scope
+      scope: scope,
+      access_token_ttl: access_token_ttl
     }
 
     changeset =

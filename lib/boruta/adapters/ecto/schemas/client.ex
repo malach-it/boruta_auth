@@ -4,7 +4,14 @@ defmodule Boruta.Ecto.Client do
 
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
-  import Boruta.Config, only: [token_generator: 0, repo: 0]
+
+  import Boruta.Config,
+    only: [
+      token_generator: 0,
+      repo: 0,
+      access_token_max_ttl: 0,
+      authorization_code_max_ttl: 0
+    ]
 
   alias Boruta.Ecto.Scope
 
@@ -29,7 +36,19 @@ defmodule Boruta.Ecto.Client do
     field(:secret, :string)
     field(:authorize_scope, :boolean, default: false)
     field(:redirect_uris, {:array, :string})
-    field(:supported_grant_types, {:array, :string}, default: ["client_credentials", "password", "authorization_code", "refresh_token", "implicit"])
+
+    field(:supported_grant_types, {:array, :string},
+      default: [
+        "client_credentials",
+        "password",
+        "authorization_code",
+        "refresh_token",
+        "implicit"
+      ]
+    )
+
+    field(:access_token_ttl, :integer)
+    field(:authorization_code_ttl, :integer)
 
     many_to_many :authorized_scopes, Scope, join_through: "clients_scopes", on_replace: :delete
 
@@ -40,7 +59,16 @@ defmodule Boruta.Ecto.Client do
   def create_changeset(client, attrs) do
     client
     |> repo().preload(:authorized_scopes)
-    |> cast(attrs, [:redirect_uris, :authorize_scope, :supported_grant_types])
+    |> cast(attrs, [
+      :access_token_ttl,
+      :authorization_code_ttl,
+      :redirect_uris,
+      :authorize_scope,
+      :supported_grant_types
+    ])
+    |> validate_required([:authorization_code_ttl, :access_token_ttl])
+    |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
+    |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
     |> validate_redirect_uris
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -51,7 +79,16 @@ defmodule Boruta.Ecto.Client do
   def update_changeset(client, attrs) do
     client
     |> repo().preload(:authorized_scopes)
-    |> cast(attrs, [:redirect_uris, :authorize_scope, :supported_grant_types])
+    |> cast(attrs, [
+      :access_token_ttl,
+      :authorization_code_ttl,
+      :redirect_uris,
+      :authorize_scope,
+      :supported_grant_types
+    ])
+    |> validate_required([:authorization_code_ttl, :access_token_ttl])
+    |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
+    |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -66,7 +103,7 @@ defmodule Boruta.Ecto.Client do
   end
 
   def validate_supported_grant_types(changeset) do
-    validate_change(changeset, :supported_grant_types, fn (:supported_grant_types, grant_types) ->
+    validate_change(changeset, :supported_grant_types, fn :supported_grant_types, grant_types ->
       case Enum.empty?(grant_types -- @grant_types) do
         true -> []
         false -> [supported_grant_types: "must be one of #{Enum.join(@grant_types, ", ")}"]
@@ -90,7 +127,7 @@ defmodule Boruta.Ecto.Client do
   defp parse_authorized_scopes(attrs) do
     authorized_scope_ids =
       Enum.map(
-        attrs["authorized_scopes"] || [],
+        attrs["authorized_scopes"] || attrs[:authorized_scopes] || [],
         fn scope_attrs ->
           case apply_action(Scope.assoc_changeset(%Scope{}, scope_attrs), :replace) do
             {:ok, %{id: id}} -> id
