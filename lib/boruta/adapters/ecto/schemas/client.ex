@@ -46,6 +46,7 @@ defmodule Boruta.Ecto.Client do
         "implicit"
       ]
     )
+    field(:pkce, :boolean, default: false)
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)

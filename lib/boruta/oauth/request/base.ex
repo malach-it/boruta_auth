@@ -70,6 +70,8 @@ defmodule Boruta.Oauth.Request.Base do
       redirect_uri: params["redirect_uri"],
       resource_owner: params["resource_owner"],
       state: params["state"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
       scope: params["scope"]
     })}
   end

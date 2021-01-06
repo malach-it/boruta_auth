@@ -36,6 +36,10 @@ defmodule Boruta.Ecto.Token do
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime)
+    field(:code_challenge, :string, virtual: true)
+    field(:code_challenge_hash, :string)
+    field(:code_challenge_method, :string, virtual: true)
+    field(:code_challenge_method_hash, :string)
     field(:access_token_ttl, :integer, virtual: true)
     field(:authorization_code_ttl, :integer, virtual: true)
 
@@ -70,11 +74,43 @@ defmodule Boruta.Ecto.Token do
   @doc false
   def code_changeset(token, attrs) do
     token
-    |> cast(attrs, [:authorization_code_ttl, :client_id, :sub, :redirect_uri, :state, :scope])
+    |> cast(attrs, [
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :redirect_uri,
+      :state,
+      :scope
+    ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> put_change(:type, "code")
     |> put_value()
     |> put_code_expires_at()
+  end
+
+  def pkce_code_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :redirect_uri,
+      :state,
+      :scope,
+      :code_challenge,
+      :code_challenge_method
+    ])
+    |> validate_required([
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :redirect_uri,
+      :code_challenge
+    ])
+    |> put_change(:type, "code")
+    |> put_value()
+    |> put_code_expires_at()
+    |> encrypt_code_challenge()
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
@@ -104,4 +140,17 @@ defmodule Boruta.Ecto.Token do
 
     put_change(changeset, :expires_at, :os.system_time(:seconds) + authorization_code_ttl)
   end
+
+  defp encrypt_code_challenge(%Ecto.Changeset{valid?: true} = changeset) do
+    changeset
+    |> put_change(
+      :code_challenge_hash,
+      :crypto.hash(:sha512, get_field(changeset, :code_challenge, "")) |> Base.encode16
+    )
+    |> put_change(
+      :code_challenge_method_hash,
+      :crypto.hash(:sha512, get_field(changeset, :code_challenge_method, "")) |> Base.encode16
+    )
+  end
+  defp encrypt_code_challenge(changeset), do: changeset
 end

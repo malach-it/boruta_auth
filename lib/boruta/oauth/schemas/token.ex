@@ -18,7 +18,9 @@ defmodule Boruta.Oauth.Token do
     resource_owner: nil,
     refresh_token: nil,
     inserted_at: nil,
-    revoked_at: nil
+    revoked_at: nil,
+    code_challenge: nil,
+    code_challenge_method: nil
   ]
 
   @type t :: %__MODULE__{
@@ -32,6 +34,8 @@ defmodule Boruta.Oauth.Token do
     sub: String.t(),
     resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
     refresh_token: String.t(),
+    code_challenge_method: String.t(),
+    code_challenge: String.t(),
     inserted_at: DateTime.t(),
     revoked_at: DateTime.t()
   }

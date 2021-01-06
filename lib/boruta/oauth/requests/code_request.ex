@@ -9,12 +9,21 @@ defmodule Boruta.Oauth.CodeRequest do
   Note : `resource_owner` is an addition that must be provided by the application layer.
   """
   @type t :: %__MODULE__{
-    client_id: String.t(),
-    redirect_uri: String.t(),
-    state: String.t(),
-    scope: String.t(),
-    resource_owner: struct(),
-    grant_type: String.t()
-  }
-  defstruct client_id: "", redirect_uri: "", state: "", scope: "", resource_owner: nil, grant_type: "authorization_code"
+          client_id: String.t(),
+          redirect_uri: String.t(),
+          state: String.t(),
+          scope: String.t(),
+          resource_owner: struct(),
+          grant_type: String.t(),
+          code_challenge: String.t(),
+          code_challenge_method: String.t()
+        }
+  defstruct client_id: "",
+            redirect_uri: "",
+            state: "",
+            scope: "",
+            resource_owner: nil,
+            grant_type: "authorization_code",
+            code_challenge: "",
+            code_challenge_method: "plain"
 end

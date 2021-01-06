@@ -19,11 +19,12 @@ defmodule Boruta.Ecto.Codes do
         %{
           client: %Client{
             id: client_id,
-            authorization_code_ttl: authorization_code_ttl
+            authorization_code_ttl: authorization_code_ttl,
+            pkce: false
           },
           redirect_uri: redirect_uri,
           scope: scope,
-          state: state,
+          state: state
         } = params
       ) do
     sub = params[:sub]
@@ -36,6 +37,38 @@ defmodule Boruta.Ecto.Codes do
         state: state,
         scope: scope,
         authorization_code_ttl: authorization_code_ttl
+      })
+
+    with {:ok, token} <- repo().insert(changeset) do
+      {:ok, to_oauth_schema(token)}
+    end
+  end
+  def create(
+        %{
+          client: %Client{
+            id: client_id,
+            authorization_code_ttl: authorization_code_ttl,
+            pkce: true
+          },
+          redirect_uri: redirect_uri,
+          scope: scope,
+          state: state,
+          code_challenge: code_challenge,
+          code_challenge_method: code_challenge_method
+        } = params
+      ) do
+    sub = params[:sub]
+
+    changeset =
+      Ecto.Token.pkce_code_changeset(%Ecto.Token{}, %{
+        client_id: client_id,
+        sub: sub,
+        redirect_uri: redirect_uri,
+        state: state,
+        scope: scope,
+        authorization_code_ttl: authorization_code_ttl,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method
       })
 
     with {:ok, token} <- repo().insert(changeset) do
