@@ -10,7 +10,8 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
           client_id: String.t(),
           redirect_uri: String.t(),
           code: String.t(),
-          grant_type: String.t()
+          grant_type: String.t(),
+          code_verifier: String.t()
         }
-  defstruct client_id: "", redirect_uri: "", code: "", grant_type: "authorization_code"
+  defstruct client_id: "", redirect_uri: "", code: "", grant_type: "authorization_code", code_verifier: ""
 end

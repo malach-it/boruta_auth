@@ -46,7 +46,8 @@ defmodule Boruta.Oauth.Json.Schema do
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
         "code" => %{"type" => "string"},
-        "redirect_uri" => %{"type" => "string"}
+        "redirect_uri" => %{"type" => "string"},
+        "code_verifier" => %{"type" => "string"}
       },
       "required" => ["grant_type", "code", "redirect_uri"]
     } |> Schema.resolve
@@ -92,7 +93,10 @@ defmodule Boruta.Oauth.Json.Schema do
         "state" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "code_challenge" => %{"type" => "string"},
-        "code_challenge_method" => %{"type" => "string"}
+        "code_challenge_method" => %{
+          "type" => "string",
+          "pattern" => "plain|S256"
+        }
       },
       "required" => ["response_type", "client_id", "redirect_uri"]
     } |> Schema.resolve

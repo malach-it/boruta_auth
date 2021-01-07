@@ -391,7 +391,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       given_state = "state"
       given_code_challenge = "code challenge"
-      given_code_challenge_method = "code challenge method"
+      given_code_challenge_method = "S256"
       redirect_uri = List.first(client.redirect_uris)
 
       case Oauth.authorize(
@@ -420,14 +420,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           %Ecto.Token{
             code_challenge: repo_code_challenge,
             code_challenge_method: repo_code_challenge_method,
-            code_challenge_hash: repo_code_challenge_hash,
-            code_challenge_method_hash: repo_code_challenge_method_hash
+            code_challenge_hash: repo_code_challenge_hash
           } = Repo.get_by(Ecto.Token, value: value)
 
           assert repo_code_challenge == nil
-          assert repo_code_challenge_method == nil
+          assert repo_code_challenge_method == "S256"
           assert String.length(repo_code_challenge_hash) == 128
-          assert String.length(repo_code_challenge_method_hash) == 128
 
           assert type == "code"
           assert value
@@ -447,6 +445,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
+      pkce_client = insert(:client, pkce: true)
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
       code =
@@ -456,6 +455,18 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris)
+        )
+
+      pkce_code =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: "code challenge",
+          code_challenge_hash: Oauth.Token.hash("code challenge"),
+          code_challenge_method: "plain"
         )
 
       expired_code =
@@ -489,9 +500,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       {:ok,
        client: client,
+       pkce_client: pkce_client,
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
        code: code,
+       pkce_code: pkce_code,
        bad_redirect_uri_code: bad_redirect_uri_code,
        expired_code: expired_code,
        code_with_scope: code_with_scope}
@@ -674,6 +687,106 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  "client_id" => client.id,
                  "code" => code.value,
                  "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns an error with pkce without code_verifier", %{
+      pkce_client: client,
+      pkce_code: code
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %{
+                 req_headers: [{"authorization", authorization_header}],
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "PKCE request invalid.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error with pkce and bad code_verifier", %{
+      pkce_client: client,
+      pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      assert Oauth.token(
+               %{
+                 req_headers: [{"authorization", authorization_header}],
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "code_verifier" => "bad code challenge"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Code verifier is invalid.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns a token with pkce", %{
+      pkce_client: client,
+      pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      case Oauth.token(
+             %{
+               req_headers: [{"authorization", authorization_header}],
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri,
+                 "code_verifier" => code.code_challenge
                }
              },
              ApplicationMock

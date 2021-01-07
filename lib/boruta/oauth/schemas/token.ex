@@ -20,6 +20,7 @@ defmodule Boruta.Oauth.Token do
     inserted_at: nil,
     revoked_at: nil,
     code_challenge: nil,
+    code_challenge_hash: nil,
     code_challenge_method: nil
   ]
 
@@ -34,8 +35,9 @@ defmodule Boruta.Oauth.Token do
     sub: String.t(),
     resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
     refresh_token: String.t(),
-    code_challenge_method: String.t(),
     code_challenge: String.t(),
+    code_challenge_hash: String.t(),
+    code_challenge_method: String.t(),
     inserted_at: DateTime.t(),
     revoked_at: DateTime.t()
   }
@@ -58,6 +60,12 @@ defmodule Boruta.Oauth.Token do
     end
   end
 
+  @spec revoked?(token :: Token.t()) :: :ok | {:error, String.t()}
   def revoked?(%Token{revoked_at: nil}), do: :ok
   def revoked?(%Token{revoked_at: _}), do: {:error, "Token revoked."}
+
+  @spec hash(string :: String.t()) :: hashed_string :: String.t()
+  def hash(string) do
+    :crypto.hash(:sha512, string) |> Base.encode16
+  end
 end

@@ -8,7 +8,7 @@ defmodule Boruta.Repo.Migrations.AddPkceToClients do
 
     alter table(:tokens) do
       add(:code_challenge_hash, :string)
-      add(:code_challenge_method_hash, :string)
+      add(:code_challenge_method, :string)
     end
   end
 end

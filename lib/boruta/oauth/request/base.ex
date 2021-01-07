@@ -43,7 +43,8 @@ defmodule Boruta.Oauth.Request.Base do
     {:ok, struct(AuthorizationCodeRequest, %{
       client_id: params["client_id"],
       code: params["code"],
-      redirect_uri: params["redirect_uri"]
+      redirect_uri: params["redirect_uri"],
+      code_verifier: params["code_verifier"]
     })}
   end
   def build_request(%{"grant_type" => "refresh_token"} = params) do

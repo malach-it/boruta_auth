@@ -95,19 +95,23 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
         client_id: client_id,
         code: code,
         redirect_uri: redirect_uri,
-        grant_type: grant_type
+        grant_type: grant_type,
+        code_verifier: code_verifier
       }) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
              redirect_uri: redirect_uri,
-             grant_type: grant_type
+             grant_type: grant_type,
+             code_verifier: code_verifier
            ),
          {:ok, code} <-
-           Authorization.Code.authorize(
+           Authorization.Code.authorize(%{
              value: code,
-             redirect_uri: redirect_uri
-           ),
+             redirect_uri: redirect_uri,
+             client: client,
+             code_verifier: code_verifier
+           }),
          {:ok, %ResourceOwner{sub: sub}} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       # TODO rescue from creation errors
@@ -201,31 +205,32 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              against: %{client: client}
            ) do
       # TODO rescue from creation errors
-      with {:ok, token} <-
-             codes().create(%{
-               client: client,
-               sub: sub,
-               redirect_uri: redirect_uri,
-               state: state,
-               scope: scope,
-               code_challenge: code_challenge,
-               code_challenge_method: code_challenge_method
-             }) do
-        {:ok, token}
-      else
+      case codes().create(%{
+             client: client,
+             sub: sub,
+             redirect_uri: redirect_uri,
+             state: state,
+             scope: scope,
+             code_challenge: code_challenge,
+             code_challenge_method: code_challenge_method
+           }) do
+        {:ok, token} ->
+          {:ok, token}
+
         {:error, %Ecto.Changeset{errors: errors} = changeset} ->
-          if errors[:code_challenge] == {"can't be blank", [validation: :required]} do
-            {:error,
-             %Error{
-               status: :bad_request,
-               error: :invalid_request,
-               error_description: "Code challenge must be provided for PKCE requests.",
-               format: :fragment,
-               redirect_uri: redirect_uri
-             }}
-          else
-            {:error, changeset}
+          case errors[:code_challenge] == {"can't be blank", [validation: :required]} do
+            true ->
+              {:error,
+               %Error{
+                 status: :bad_request,
+                 error: :invalid_request,
+                 error_description: "Code challenge must be provided for PKCE requests."
+               }}
+
+            false ->
+              {:error, changeset}
           end
+
         {:error, error} ->
           {:error, error}
       end

@@ -11,6 +11,7 @@ defmodule Boruta.Ecto.Token do
     ]
 
   alias Boruta.Ecto.Client
+  alias Boruta.Oauth
 
   @type t :: %__MODULE__{
           type: String.t(),
@@ -38,8 +39,7 @@ defmodule Boruta.Ecto.Token do
     field(:revoked_at, :utc_datetime)
     field(:code_challenge, :string, virtual: true)
     field(:code_challenge_hash, :string)
-    field(:code_challenge_method, :string, virtual: true)
-    field(:code_challenge_method_hash, :string)
+    field(:code_challenge_method, :string)
     field(:access_token_ttl, :integer, virtual: true)
     field(:authorization_code_ttl, :integer, virtual: true)
 
@@ -145,11 +145,7 @@ defmodule Boruta.Ecto.Token do
     changeset
     |> put_change(
       :code_challenge_hash,
-      :crypto.hash(:sha512, get_field(changeset, :code_challenge, "")) |> Base.encode16
-    )
-    |> put_change(
-      :code_challenge_method_hash,
-      :crypto.hash(:sha512, get_field(changeset, :code_challenge_method, "")) |> Base.encode16
+      changeset |> get_field(:code_challenge, "") |> Oauth.Token.hash()
     )
   end
   defp encrypt_code_challenge(changeset), do: changeset
