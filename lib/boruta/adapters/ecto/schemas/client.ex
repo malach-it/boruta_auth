@@ -65,7 +65,8 @@ defmodule Boruta.Ecto.Client do
       :authorization_code_ttl,
       :redirect_uris,
       :authorize_scope,
-      :supported_grant_types
+      :supported_grant_types,
+      :pkce
     ])
     |> validate_required([:authorization_code_ttl, :access_token_ttl])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
@@ -85,7 +86,8 @@ defmodule Boruta.Ecto.Client do
       :authorization_code_ttl,
       :redirect_uris,
       :authorize_scope,
-      :supported_grant_types
+      :supported_grant_types,
+      :pkce
     ])
     |> validate_required([:authorization_code_ttl, :access_token_ttl])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
