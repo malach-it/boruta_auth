@@ -176,6 +176,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
   import Boruta.Config, only: [codes: 0]
 
   alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
@@ -205,37 +206,48 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              against: %{client: client}
            ) do
       # TODO rescue from creation errors
-      case codes().create(%{
-             client: client,
-             sub: sub,
-             redirect_uri: redirect_uri,
-             state: state,
-             scope: scope,
-             code_challenge: code_challenge,
-             code_challenge_method: code_challenge_method
-           }) do
-        {:ok, token} ->
-          {:ok, token}
-
-        {:error, %Ecto.Changeset{errors: errors} = changeset} ->
-          case errors[:code_challenge] == {"can't be blank", [validation: :required]} do
-            true ->
-              {:error,
-               %Error{
-                 status: :bad_request,
-                 error: :invalid_request,
-                 error_description: "Code challenge must be provided for PKCE requests."
-               }}
-
-            false ->
-              {:error, changeset}
-          end
+      with :ok <- check_code_challenge(client, code_challenge, code_challenge_method),
+           {:ok, token} <-
+             codes().create(%{
+               client: client,
+               sub: sub,
+               redirect_uri: redirect_uri,
+               state: state,
+               scope: scope,
+               code_challenge: code_challenge,
+               code_challenge_method: code_challenge_method
+             }) do
+        {:ok, token}
+      else
+        {:error, :invalid_code_challenge} ->
+          {:error,
+           %Error{
+             status: :bad_request,
+             error: :invalid_request,
+             error_description: "Code challenge is invalid."
+           }}
 
         {:error, error} ->
           {:error, error}
       end
     end
   end
+
+  @spec check_code_challenge(
+          client :: Client.t(),
+          code_challenge :: String.t(),
+          code_challenge_method :: String.t()
+        ) :: :ok | {:error, :invalid_code_challenge}
+  defp check_code_challenge(%Client{pkce: false}, _code_challenge, _code_challenge_method),
+    do: :ok
+
+  defp check_code_challenge(%Client{pkce: true}, "", _code_challenge_method),
+    do: {:error, :invalid_code_challenge}
+
+  defp check_code_challenge(%Client{pkce: true}, nil, _code_challenge_method),
+    do: {:error, :invalid_code_challenge}
+
+  defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do

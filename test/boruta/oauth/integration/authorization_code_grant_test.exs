@@ -374,7 +374,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                :authorize_error,
                %Boruta.Oauth.Error{
                  error: :invalid_request,
-                 error_description: "Code challenge must be provided for PKCE requests.",
+                 error_description: "Code challenge is invalid.",
                  format: :query,
                  redirect_uri: "https://redirect.uri",
                  status: :bad_request

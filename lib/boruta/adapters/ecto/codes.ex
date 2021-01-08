@@ -19,37 +19,8 @@ defmodule Boruta.Ecto.Codes do
         %{
           client: %Client{
             id: client_id,
-            authorization_code_ttl: authorization_code_ttl,
-            pkce: false
-          },
-          redirect_uri: redirect_uri,
-          scope: scope,
-          state: state
-        } = params
-      ) do
-    sub = params[:sub]
-
-    changeset =
-      Ecto.Token.code_changeset(%Ecto.Token{}, %{
-        client_id: client_id,
-        sub: sub,
-        redirect_uri: redirect_uri,
-        state: state,
-        scope: scope,
-        authorization_code_ttl: authorization_code_ttl
-      })
-
-    with {:ok, token} <- repo().insert(changeset) do
-      {:ok, to_oauth_schema(token)}
-    end
-  end
-  def create(
-        %{
-          client: %Client{
-            id: client_id,
-            authorization_code_ttl: authorization_code_ttl,
-            pkce: true
-          },
+            authorization_code_ttl: authorization_code_ttl
+          } = client,
           redirect_uri: redirect_uri,
           scope: scope,
           state: state,
@@ -60,19 +31,25 @@ defmodule Boruta.Ecto.Codes do
     sub = params[:sub]
 
     changeset =
-      Ecto.Token.pkce_code_changeset(%Ecto.Token{}, %{
-        client_id: client_id,
-        sub: sub,
-        redirect_uri: redirect_uri,
-        state: state,
-        scope: scope,
-        authorization_code_ttl: authorization_code_ttl,
-        code_challenge: code_challenge,
-        code_challenge_method: code_challenge_method
-      })
+      apply(Ecto.Token, changeset_method(client), [
+        %Ecto.Token{},
+        %{
+          client_id: client_id,
+          sub: sub,
+          redirect_uri: redirect_uri,
+          state: state,
+          scope: scope,
+          authorization_code_ttl: authorization_code_ttl,
+          code_challenge: code_challenge,
+          code_challenge_method: code_challenge_method
+        }
+      ])
 
     with {:ok, token} <- repo().insert(changeset) do
       {:ok, to_oauth_schema(token)}
     end
   end
+
+  defp changeset_method(%Client{pkce: false}), do: :code_changeset
+  defp changeset_method(%Client{pkce: true}), do: :pkce_code_changeset
 end
