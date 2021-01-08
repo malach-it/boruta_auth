@@ -60,10 +60,27 @@ defmodule Boruta.Oauth.Token do
     end
   end
 
+  @doc """
+  Determines if a token is revoked.
+
+  ## Examples
+      iex> revoked?(%Boruta.Oauth.Token{revoked_at: nil})
+      :ok
+
+      iex> revoked?(%Boruta.Oauth.Token{})
+      {:error, "Token revoked."}
+  """
   @spec revoked?(token :: Token.t()) :: :ok | {:error, String.t()}
   def revoked?(%Token{revoked_at: nil}), do: :ok
   def revoked?(%Token{revoked_at: _}), do: {:error, "Token revoked."}
 
+  @doc """
+  Returns an hexadecimal SHA512 hash of given string
+
+  ## Examples
+      iex> hash("foo")
+      "F7FBBA6E0636F890E56FBBF3283E524C6FA3204AE298382D624741D0DC6638326E282C41BE5E4254D8820772C5518A2C5A8C0C7F7EDA19594A7EB539453E1ED7"
+  """
   @spec hash(string :: String.t()) :: hashed_string :: String.t()
   def hash(string) do
     :crypto.hash(:sha512, string) |> Base.encode16
