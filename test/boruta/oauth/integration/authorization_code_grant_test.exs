@@ -11,6 +11,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
@@ -124,6 +125,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -156,6 +158,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
@@ -190,6 +193,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns an error with private scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       given_scope = "private"
       redirect_uri = List.first(client.redirect_uris)
@@ -216,12 +220,13 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
-    test "returns a token if scope is authorized", %{
+    test "returns a code if scope is authorized by client", %{
       client_with_scope: client,
       resource_owner: resource_owner
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
@@ -253,12 +258,51 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns a code if scope is authorized by resource owner", %{
+      client_with_scope: client,
+      resource_owner: resource_owner
+    } do
+      given_scope = %Scope{name: "resource_owner:scope"}
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [given_scope] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "scope" => given_scope.name
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           value: value,
+           expires_in: expires_in
+         }} ->
+          assert type == "code"
+          assert value
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+
     test "returns an error if scope is unknown or unauthorized", %{
       client_with_scope: client,
       resource_owner: resource_owner
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       given_scope = "bad_scope"
       redirect_uri = List.first(client.redirect_uris)
@@ -316,6 +360,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code with state", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
@@ -355,6 +400,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
@@ -388,6 +434,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
 
       given_state = "state"
       given_code_challenge = "code challenge"

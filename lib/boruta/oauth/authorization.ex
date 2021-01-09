@@ -198,12 +198,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              redirect_uri: redirect_uri,
              grant_type: grant_type
            ),
-         {:ok, %ResourceOwner{sub: sub}} <-
+         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: resource_owner),
          {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,
-             against: %{client: client}
+             against: %{client: client, resource_owner: resource_owner}
            ) do
       # TODO rescue from creation errors
       with :ok <- check_code_challenge(client, code_challenge, code_challenge_method),
