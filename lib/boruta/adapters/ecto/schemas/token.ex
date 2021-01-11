@@ -39,7 +39,7 @@ defmodule Boruta.Ecto.Token do
     field(:revoked_at, :utc_datetime)
     field(:code_challenge, :string, virtual: true)
     field(:code_challenge_hash, :string)
-    field(:code_challenge_method, :string)
+    field(:code_challenge_method, :string, default: "plain")
     field(:access_token_ttl, :integer, virtual: true)
     field(:authorization_code_ttl, :integer, virtual: true)
 
@@ -110,6 +110,7 @@ defmodule Boruta.Ecto.Token do
     |> put_change(:type, "code")
     |> put_value()
     |> put_code_expires_at()
+    |> put_code_challenge_method()
     |> encrypt_code_challenge()
   end
 
@@ -139,6 +140,15 @@ defmodule Boruta.Ecto.Token do
     {_type, authorization_code_ttl} = fetch_field(changeset, :authorization_code_ttl)
 
     put_change(changeset, :expires_at, :os.system_time(:seconds) + authorization_code_ttl)
+  end
+
+  defp put_code_challenge_method(changeset) do
+    code_challenge_method = case get_field(changeset, :code_challenge_method) do
+      nil -> "plain"
+      code_challenge_method -> code_challenge_method
+    end
+
+    put_change(changeset, :code_challenge_method, code_challenge_method)
   end
 
   defp encrypt_code_challenge(%Ecto.Changeset{valid?: true} = changeset) do

@@ -485,6 +485,46 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert false
       end
     end
+
+    test "code_challenge_method defaults to `plain`", %{
+      pkce_client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+
+      given_state = "state"
+      given_code_challenge = "code challenge"
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "state" => given_state,
+                 "code_challenge" => given_code_challenge
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           value: value
+         }} ->
+          %Ecto.Token{
+            code_challenge_method: repo_code_challenge_method,
+          } = Repo.get_by(Ecto.Token, value: value)
+
+          assert repo_code_challenge_method == "plain"
+
+        _ ->
+          assert false
+      end
+    end
   end
 
   describe "authorization code grant - token" do
