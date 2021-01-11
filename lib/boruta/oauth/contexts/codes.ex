@@ -18,6 +18,8 @@ defmodule Boruta.Oauth.Codes do
     :sub => String.t(),
     :redirect_uri => String.t(),
     :scope => String.t(),
-    :state => String.t()
+    :state => String.t(),
+    :code_challenge => String.t(),
+    :code_challenge_method => String.t()
   }) :: code :: Boruta.Oauth.Token.t() | {:error, Ecto.Changeset.t()}
 end

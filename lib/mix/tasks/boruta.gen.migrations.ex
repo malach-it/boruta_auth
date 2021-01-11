@@ -71,6 +71,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:supported_grant_types, {:array, :string})
         add(:authorization_code_ttl, :integer, null: false)
         add(:access_token_ttl, :integer, null: false)
+        add(:pkce, :boolean, default: false)
 
         timestamps()
       end
@@ -85,6 +86,8 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:state, :string)
         add(:scope, :string)
         add(:revoked_at, :utc_datetime)
+        add(:code_challenge_hash, :string)
+        add(:code_challenge_method, :string)
 
         add(:client_id, references(:clients, type: :uuid, on_delete: :nilify_all))
         add(:sub, :string)
