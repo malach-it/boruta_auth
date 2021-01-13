@@ -7,6 +7,8 @@ defmodule Boruta.Ecto.Admin.Clients do
   import Boruta.Config, only: [repo: 0]
 
   alias Boruta.Ecto.Client
+  alias Boruta.Ecto.Clients
+  alias Boruta.Oauth
 
   @doc """
   Returns the list of clients.
@@ -74,9 +76,10 @@ defmodule Boruta.Ecto.Admin.Clients do
 
   """
   def update_client(%Client{} = client, attrs) do
-    client
-    |> Client.update_changeset(attrs)
-    |> repo().update()
+    with {:ok, client} <- client |> Client.update_changeset(attrs) |> repo().update(),
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id})do
+      {:ok, client}
+    end
   end
 
   @doc """
@@ -92,6 +95,8 @@ defmodule Boruta.Ecto.Admin.Clients do
 
   """
   def delete_client(%Client{} = client) do
-    repo().delete(client)
+    with :ok <- Clients.invalidate(%Oauth.Client{id: client.id})do
+      repo().delete(client)
+    end
   end
 end

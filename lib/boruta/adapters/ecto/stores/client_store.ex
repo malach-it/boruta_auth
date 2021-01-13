@@ -8,6 +8,7 @@ defmodule Boruta.Ecto.ClientStore do
     {:ok, token :: Boruta.Oauth.Client.t()} | {:error, reason :: String.t()}
   def get(id: id, secret: secret) do
     with %Client{secret: client_secret} = client <- get_by_id(id),
+      # TODO move logic to Clients
       true <- secret == client_secret do
         {:ok, client}
       else
@@ -17,6 +18,7 @@ defmodule Boruta.Ecto.ClientStore do
   end
   def get(id: id, redirect_uri: redirect_uri) do
     with %Client{redirect_uris: client_redirect_uris} = client <- get_by_id(id),
+      # TODO move logic to Clients
       true <- Enum.member?(client_redirect_uris, redirect_uri) do
         {:ok, client}
       else
@@ -44,7 +46,8 @@ defmodule Boruta.Ecto.ClientStore do
     end
   end
 
-  @spec invalidate(client :: Boruta.Oauth.Client.t()) ::
-    {:ok, client :: Boruta.Oauth.Client.t()} | {:error, reason :: String.t()}
-  def invalidate(client), do: {:ok, client}
+  @spec invalidate(client :: %Client{}) :: :ok
+  def invalidate(client) do
+    Cache.delete({Client, client.id})
+  end
 end

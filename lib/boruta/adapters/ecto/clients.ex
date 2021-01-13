@@ -37,6 +37,10 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
+  def invalidate(client) do
+    ClientStore.invalidate(client)
+  end
+
   @impl Boruta.Oauth.Clients
   def authorized_scopes(client) do
     case ClientStore.authorized_scopes(client) do
