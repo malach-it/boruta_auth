@@ -7,6 +7,7 @@ defmodule Boruta.Ecto.Admin.Scopes do
   import Boruta.Config, only: [repo: 0]
 
   alias Boruta.Ecto.Scope
+  alias Boruta.Ecto.Scopes
 
   @doc """
   Returns the list of scopes.
@@ -52,9 +53,10 @@ defmodule Boruta.Ecto.Admin.Scopes do
 
   """
   def create_scope(attrs \\ %{}) do
-    %Scope{}
-    |> Scope.changeset(attrs)
-    |> repo().insert()
+    with {:ok, scope} <- %Scope{} |> Scope.changeset(attrs) |> repo().insert(),
+         :ok <- Scopes.invalidate(:public) do
+      {:ok, scope}
+    end
   end
 
   @doc """
@@ -70,9 +72,10 @@ defmodule Boruta.Ecto.Admin.Scopes do
 
   """
   def update_scope(%Scope{} = scope, attrs) do
-    scope
-    |> Scope.changeset(attrs)
-    |> repo().update()
+    with {:ok, scope} <- scope |> Scope.changeset(attrs) |> repo().update(),
+         :ok <- Scopes.invalidate(:public) do
+      {:ok, scope}
+    end
   end
 
   @doc """
@@ -88,6 +91,8 @@ defmodule Boruta.Ecto.Admin.Scopes do
 
   """
   def delete_scope(%Scope{} = scope) do
-    repo().delete(scope)
+    with :ok <- Scopes.invalidate(:public) do
+      repo().delete(scope)
+    end
   end
 end

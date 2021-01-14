@@ -2,6 +2,7 @@ defprotocol Boruta.Ecto.OauthMapper do
   @moduledoc false
 
   @fallback_to_any true
+  @spec to_oauth_schema(schema :: struct()) :: oauth_schema :: struct()
   def to_oauth_schema(schema)
 end
 

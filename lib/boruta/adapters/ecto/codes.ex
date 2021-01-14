@@ -6,12 +6,20 @@ defmodule Boruta.Ecto.Codes do
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth.Client
 
   @impl Boruta.Oauth.Codes
-  def get_by(value: value, redirect_uri: redirect_uri) do
-    repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
-    |> to_oauth_schema()
+  def get_by([value: value, redirect_uri: redirect_uri]) do
+    with {:ok, token} <- TokenStore.get(value: value),
+      true <- token.redirect_uri == redirect_uri do
+      {:ok, token}
+    else
+      {:error, "Not cached."} ->
+        repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
+        |> to_oauth_schema()
+      false -> nil
+    end
   end
 
   @impl Boruta.Oauth.Codes
@@ -45,8 +53,9 @@ defmodule Boruta.Ecto.Codes do
         }
       ])
 
-    with {:ok, token} <- repo().insert(changeset) do
-      {:ok, to_oauth_schema(token)}
+    with {:ok, token} <- repo().insert(changeset),
+      {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
+      {:ok, token}
     end
   end
 

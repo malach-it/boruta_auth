@@ -14,6 +14,7 @@ defmodule Boruta.DataCase do
 
   use ExUnit.CaseTemplate
 
+  alias Boruta.Ecto.Scopes
   alias Ecto.Adapters.SQL.Sandbox
 
   using do
@@ -29,6 +30,7 @@ defmodule Boruta.DataCase do
 
   setup tags do
     :ok = Sandbox.checkout(Boruta.Repo)
+    :ok = Scopes.invalidate(:public)
 
     unless tags[:async] do
       Sandbox.mode(Boruta.Repo, {:shared, self()})

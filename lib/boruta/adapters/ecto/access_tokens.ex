@@ -7,27 +7,39 @@ defmodule Boruta.Ecto.AccessTokens do
   import Ecto.Query, only: [from: 2]
 
   alias Boruta.Ecto.Token
+  alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
   alias Ecto.Changeset
 
   @impl Boruta.Oauth.AccessTokens
-  def get_by(value: value) do
-    repo().one(
+  def get_by(attrs) do
+    case get_by(:from_cache, attrs) do
+      {:ok, token} -> token
+      {:error, _reason} -> get_by(:from_database, attrs)
+    end
+  end
+
+  defp get_by(:from_cache, attrs), do: TokenStore.get(attrs)
+  defp get_by(:from_database, value: value) do
+    with %Token{} = token <- repo().one(
       from t in Token,
         left_join: c in assoc(t, :client),
         where: t.type == "access_token" and t.value == ^value
-    )
-    |> to_oauth_schema()
+    ),
+    {:ok, token} <- token |> to_oauth_schema() |> TokenStore.put() do
+      token
+    end
   end
-
-  def get_by(refresh_token: refresh_token) do
-    repo().one(
+  defp get_by(:from_database, refresh_token: refresh_token) do
+    with %Token{} = token <- repo().one(
       from t in Token,
         left_join: c in assoc(t, :client),
         where: t.type == "access_token" and t.refresh_token == ^refresh_token
-    )
-    |> to_oauth_schema()
+    ),
+    {:ok, token} <- token |> to_oauth_schema() |> TokenStore.put() do
+      token
+    end
   end
 
   @impl Boruta.Oauth.AccessTokens
@@ -55,8 +67,9 @@ defmodule Boruta.Ecto.AccessTokens do
         [%Token{}, token_attributes]
       )
 
-    with {:ok, token} <- repo().insert(changeset) do
-      {:ok, to_oauth_schema(token)}
+    with {:ok, token} <- repo().insert(changeset),
+      {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
+      {:ok, token}
     end
   end
 
@@ -65,12 +78,13 @@ defmodule Boruta.Ecto.AccessTokens do
 
   @impl Boruta.Oauth.AccessTokens
   def revoke(%Oauth.Token{value: value}) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    now = DateTime.utc_now()
 
     with {:ok, token} <- repo().get_by(Token, value: value)
-    |> Changeset.change(revoked_at: now)
-    |> repo().update() do
-      {:ok, to_oauth_schema(token)}
+      |> Changeset.change(revoked_at: now)
+      |> repo().update(),
+      {:ok, token} <- TokenStore.invalidate(to_oauth_schema(token)) do
+      {:ok, token}
     end
   end
 end

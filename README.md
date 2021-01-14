@@ -71,6 +71,7 @@ Boruta provides several configuration options, to customize them you can add con
 ```elixir
 config :boruta, Boruta.Oauth,
   repo: MyApp.Repo,
+  cache_backend: Boruta.Cache,
   contexts: [
     access_tokens: Boruta.Ecto.AccessTokens,
     clients: Boruta.Ecto.Clients,

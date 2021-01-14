@@ -6,6 +6,7 @@ defmodule Boruta.Config do
   ```
   config :boruta, Boruta.Oauth,
     repo: MyApp.Repo,
+    cache_backend; Boruta.Cache,
     contexts: [
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
@@ -24,6 +25,7 @@ defmodule Boruta.Config do
   """
 
   @defaults repo: Boruta.Repo,
+    cache_backend: Boruta.Cache,
     contexts: [
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
@@ -41,6 +43,12 @@ defmodule Boruta.Config do
   @doc false
   def repo do
     Keyword.fetch!(oauth_config(), :repo)
+  end
+
+  @spec cache_backend() :: module()
+  @doc false
+  def cache_backend do
+    Keyword.fetch!(oauth_config(), :cache_backend)
   end
 
   @spec access_token_max_ttl() :: integer()
