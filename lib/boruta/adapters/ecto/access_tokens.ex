@@ -22,20 +22,24 @@ defmodule Boruta.Ecto.AccessTokens do
 
   defp get_by(:from_cache, attrs), do: TokenStore.get(attrs)
   defp get_by(:from_database, value: value) do
-    repo().one(
+    with %Token{} = token <- repo().one(
       from t in Token,
         left_join: c in assoc(t, :client),
         where: t.type == "access_token" and t.value == ^value
-    )
-    |> to_oauth_schema()
+    ),
+    {:ok, token} <- token |> to_oauth_schema() |> TokenStore.put() do
+      token
+    end
   end
   defp get_by(:from_database, refresh_token: refresh_token) do
-    repo().one(
+    with %Token{} = token <- repo().one(
       from t in Token,
         left_join: c in assoc(t, :client),
         where: t.type == "access_token" and t.refresh_token == ^refresh_token
-    )
-    |> to_oauth_schema()
+    ),
+    {:ok, token} <- token |> to_oauth_schema() |> TokenStore.put() do
+      token
+    end
   end
 
   @impl Boruta.Oauth.AccessTokens

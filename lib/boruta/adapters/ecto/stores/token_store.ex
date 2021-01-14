@@ -8,13 +8,13 @@ defmodule Boruta.Ecto.TokenStore do
   @spec get([value: String.t()] | [refresh_token: String.t()]) ::
     {:ok, token :: Boruta.Oauth.Token.t()} | {:error, reason :: String.t()}
   def get(value: value) do
-    case Cache.get({Token, value}) do
+    case Cache.get({Token, :value, value}) do
       nil -> {:error, "Not cached."}
       %Token{} = token -> {:ok, token}
     end
   end
   def get(refresh_token: refresh_token) do
-    case Cache.get({Token, refresh_token}) do
+    case Cache.get({Token, :refresh_token, refresh_token}) do
       nil -> {:error, "Not cached."}
       %Token{} = token -> {:ok, token}
     end
@@ -22,9 +22,15 @@ defmodule Boruta.Ecto.TokenStore do
 
   @spec put(token :: Boruta.Oauth.Token.t()) ::
     {:ok, token :: Boruta.Oauth.Token.t()}
-  def put(%Token{client: %Client{access_token_ttl: access_token_ttl}} = token) do
-    with :ok <- Cache.put({Token, token.value}, token, ttl: access_token_ttl * 1000),
-      :ok <- Cache.put({Token, token.refresh_token}, token, ttl: access_token_ttl * 1000) do
+  def put(%Token{type: "access_token", client: %Client{access_token_ttl: access_token_ttl}} = token) do
+    with :ok <- Cache.put({Token, :value, token.value}, token, ttl: access_token_ttl * 1000),
+      :ok <- Cache.put({Token, :refresh_token, token.refresh_token}, token, ttl: access_token_ttl * 1000) do
+      {:ok, token}
+    end
+  end
+  def put(%Token{type: "code", client: %Client{authorization_code_ttl: authorization_code_ttl}} = token) do
+    with :ok <- Cache.put({Token, :value, token.value}, token, ttl: authorization_code_ttl * 1000),
+      :ok <- Cache.put({Token, :refresh_token, token.refresh_token}, token, ttl: authorization_code_ttl * 1000) do
       {:ok, token}
     end
   end
@@ -32,7 +38,8 @@ defmodule Boruta.Ecto.TokenStore do
   @spec invalidate(token :: Boruta.Oauth.Token.t()) ::
     {:ok, token :: Boruta.Oauth.Token.t()}
   def invalidate(token) do
-    with :ok <- Cache.put({Token, token.value}, nil) do
+    with :ok <- Cache.delete({Token, :value, token.value}),
+    :ok <- Cache.delete({Token, :refresh_token, token.refresh_token}) do
       {:ok, token}
     end
   end
