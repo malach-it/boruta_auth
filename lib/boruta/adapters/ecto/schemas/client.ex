@@ -32,6 +32,7 @@ defmodule Boruta.Ecto.Client do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+  @timestamps_opts type: :utc_datetime
   schema "clients" do
     field(:secret, :string)
     field(:authorize_scope, :boolean, default: false)

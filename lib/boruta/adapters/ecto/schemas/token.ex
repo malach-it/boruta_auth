@@ -55,6 +55,7 @@ defmodule Boruta.Ecto.Token do
     |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope, :access_token_ttl])
     |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
+    |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
     |> put_value()
     |> put_expires_at()
@@ -65,6 +66,7 @@ defmodule Boruta.Ecto.Token do
     token
     |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :scope])
     |> validate_required([:access_token_ttl, :client_id])
+    |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
     |> put_value()
     |> put_refresh_token()
@@ -83,6 +85,7 @@ defmodule Boruta.Ecto.Token do
       :scope
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
+    |> foreign_key_constraint(:client_id)
     |> put_change(:type, "code")
     |> put_value()
     |> put_code_expires_at()
@@ -107,6 +110,7 @@ defmodule Boruta.Ecto.Token do
       :redirect_uri,
       :code_challenge
     ])
+    |> foreign_key_constraint(:client_id)
     |> put_change(:type, "code")
     |> put_value()
     |> put_code_expires_at()
