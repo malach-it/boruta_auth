@@ -92,7 +92,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:client_id, references(:clients, type: :uuid, on_delete: :nilify_all))
         add(:sub, :string)
 
-        timestamps()
+        timestamps(type: :utc_datetime_usec)
       end
 
       create table(:scopes, primary_key: false) do
