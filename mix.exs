@@ -42,7 +42,7 @@ defmodule Boruta.MixProject do
     [
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:ecto_sql, "~> 3.5"},
+      {:ecto_sql, ">= 3.5.2"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
