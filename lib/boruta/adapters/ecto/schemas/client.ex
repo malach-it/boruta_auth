@@ -163,21 +163,15 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp generate_key_pair(changeset) do
-    {:RSAPrivateKey, _version, modulus, public_exponent, _private_exponent, _prime1, _prime2,
-     _exponent1, _exponent2, _coefficient,
-     _other_prime_infos} = rsa_private_key = :public_key.generate_key({:rsa, 2048, 65_537})
+    private_key = JOSE.JWK.generate_key({:rsa, 4096, 65_537})
+    public_key = JOSE.JWK.to_public(private_key)
 
-    rsa_public_key = {:RSAPublicKey, modulus, public_exponent}
-
-    rsa_private_key_pem_entry = :public_key.pem_entry_encode(:RSAPrivateKey, rsa_private_key)
-    rsa_public_key_pem_entry = :public_key.pem_entry_encode(:RSAPublicKey, rsa_public_key)
-
-    pem_out_public = :public_key.pem_encode([rsa_public_key_pem_entry])
-    pem_out_private = :public_key.pem_encode([rsa_private_key_pem_entry])
+    {_type, public_pem} = JOSE.JWK.to_pem(public_key)
+    {_type, private_pem} = JOSE.JWK.to_pem(private_key)
 
     changeset
-    |> put_change(:public_key, pem_out_public)
-    |> put_change(:private_key, pem_out_private)
+    |> put_change(:public_key, public_pem)
+    |> put_change(:private_key, private_pem)
   end
 
   defp put_secret(%Ecto.Changeset{data: data, changes: changes} = changeset) do
