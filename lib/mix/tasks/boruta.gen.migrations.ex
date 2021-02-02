@@ -72,6 +72,8 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:authorization_code_ttl, :integer, null: false)
         add(:access_token_ttl, :integer, null: false)
         add(:pkce, :boolean, default: false)
+        add(:public_key, :string, null: false)
+        add(:private_key, :string, null: false)
 
         timestamps()
       end
