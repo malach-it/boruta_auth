@@ -27,7 +27,7 @@ defmodule Boruta.MixProject do
   def application do
     [
       mod: {Boruta.Application, []},
-      extra_applications: [:logger, :runtime_tools, :crypto]
+      extra_applications: [:logger, :runtime_tools, :crypto, :public_key]
     ]
   end
 
@@ -52,7 +52,8 @@ defmodule Boruta.MixProject do
       {:secure_random, "~> 0.5"},
       {:mox, "~> 0.5", only: :test},
       {:shards, "~> 0.6"},
-      {:nebulex, "~> 2.0.0-rc.0"}
+      {:nebulex, "~> 2.0.0-rc.0"},
+      {:jose, "~> 1.11"}
     ]
   end
 

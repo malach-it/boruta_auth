@@ -77,6 +77,21 @@ defmodule Boruta.Ecto.AdminTest do
       } = Admin.create_client(Map.put(@client_valid_attrs, :authorized_scopes, [%{"id" => scope.id}]))
       assert authorized_scopes == [scope]
     end
+
+    test "creates a client with key pair" do
+      assert {:ok,
+        %Client{public_key: pem_public_key, private_key: pem_private_key}
+      } = Admin.create_client(@client_valid_attrs)
+
+      message = "message"
+      [public_entry] = :public_key.pem_decode(pem_public_key)
+      [private_entry] = :public_key.pem_decode(pem_private_key)
+      public_key = :public_key.pem_entry_decode(public_entry)
+      private_key = :public_key.pem_entry_decode(private_entry)
+
+      cipher_text = :public_key.encrypt_private(message, private_key)
+      assert :public_key.decrypt_public(cipher_text, public_key) == message
+    end
   end
 
   describe "update_client/2" do

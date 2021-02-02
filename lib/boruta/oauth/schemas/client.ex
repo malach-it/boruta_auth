@@ -11,7 +11,9 @@ defmodule Boruta.Oauth.Client do
             supported_grant_types: [],
             access_token_ttl: nil,
             authorization_code_ttl: nil,
-            pkce: nil
+            pkce: nil,
+            public_key: nil,
+            private_key: nil
 
   @type t :: %__MODULE__{
           id: any(),
@@ -22,6 +24,8 @@ defmodule Boruta.Oauth.Client do
           supported_grant_types: list(String.t()),
           access_token_ttl: integer(),
           authorization_code_ttl: integer(),
-          pkce: boolean()
+          pkce: boolean(),
+          public_key: String.t(),
+          private_key: String.t()
         }
 end

@@ -19,7 +19,14 @@ defmodule Boruta.Ecto.Client do
           secret: String.t(),
           authorize_scope: boolean(),
           authorized_scopes: list(Scope.t()),
-          redirect_uris: list(String.t())
+          redirect_uris: list(String.t()),
+          supported_grant_types: list(String.t()),
+          pkce: boolean(),
+          access_token_ttl: integer(),
+          authorization_code_ttl: integer(),
+          authorized_scopes: Ecto.AssociationNotLoaded.t() | list(Scope.t()),
+          public_key: list(String.t()),
+          private_key: list(String.t())
         }
 
   @grant_types [
@@ -47,10 +54,14 @@ defmodule Boruta.Ecto.Client do
         "implicit"
       ]
     )
+
     field(:pkce, :boolean, default: false)
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
+
+    field(:public_key, :string)
+    field(:private_key, :string)
 
     many_to_many :authorized_scopes, Scope, join_through: "clients_scopes", on_replace: :delete
 
@@ -75,6 +86,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_redirect_uris
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+    |> generate_key_pair()
     |> put_secret()
   end
 
@@ -148,6 +160,18 @@ defmodule Boruta.Ecto.Client do
       from s in Scope,
         where: s.id in ^authorized_scope_ids
     )
+  end
+
+  defp generate_key_pair(changeset) do
+    private_key = JOSE.JWK.generate_key({:rsa, 4096, 65_537})
+    public_key = JOSE.JWK.to_public(private_key)
+
+    {_type, public_pem} = JOSE.JWK.to_pem(public_key)
+    {_type, private_pem} = JOSE.JWK.to_pem(private_key)
+
+    changeset
+    |> put_change(:public_key, public_pem)
+    |> put_change(:private_key, private_pem)
   end
 
   defp put_secret(%Ecto.Changeset{data: data, changes: changes} = changeset) do

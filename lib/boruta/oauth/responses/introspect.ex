@@ -11,7 +11,8 @@ defmodule Boruta.Oauth.IntrospectResponse do
     sub: String.t(),
     iss: String.t(),
     exp: integer(),
-    iat: integer()
+    iat: integer(),
+    private_key: String.t()
   }
 
   defstruct [
@@ -22,15 +23,17 @@ defmodule Boruta.Oauth.IntrospectResponse do
     sub: nil,
     iss: "boruta",
     exp: nil,
-    iat: nil
+    iat: nil,
+    private_key: nil
   ]
 
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.IntrospectResponse
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
   def from_token(%Token{
-    client: client,
+    client: %Client{id: id, private_key: private_key},
     sub: sub,
     resource_owner: resource_owner,
     expires_at: expires_at,
@@ -44,13 +47,14 @@ defmodule Boruta.Oauth.IntrospectResponse do
 
     %IntrospectResponse{
       active: true,
-      client_id: client.id,
+      client_id: id,
       username: username,
       scope: scope,
       sub: sub,
       iss: "boruta", # TODO change to hostname
       exp: expires_at,
-      iat: DateTime.to_unix(inserted_at)
+      iat: DateTime.to_unix(inserted_at),
+      private_key: private_key
     }
   end
 

@@ -96,10 +96,12 @@ defmodule Boruta.OauthTest.IntrospectTest do
           iss: iss,
           scope: scope,
           sub: sub,
-          username: username
+          username: username,
+          private_key: private_key
         }} ->
           assert active
-          assert client_id
+          assert client_id == client.id
+          assert private_key == client.private_key
           assert exp
           assert iat
           assert iss
