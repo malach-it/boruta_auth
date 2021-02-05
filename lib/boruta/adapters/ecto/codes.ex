@@ -13,7 +13,7 @@ defmodule Boruta.Ecto.Codes do
   def get_by([value: value, redirect_uri: redirect_uri]) do
     with {:ok, token} <- TokenStore.get(value: value),
       true <- token.redirect_uri == redirect_uri do
-      {:ok, token}
+      token
     else
       {:error, "Not cached."} ->
         repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
