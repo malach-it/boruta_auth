@@ -27,10 +27,11 @@ defmodule Boruta.Ecto.Clients do
     end
   end
   defp get_by(:from_database, id: id, redirect_uri: redirect_uri) do
+    redirect_uri_regex = "^#{redirect_uri}$"
     with %Ecto.Client{} = client <-
            repo().one(
              from c in Ecto.Client,
-               where: c.id == ^id and fragment("? = ANY (redirect_uris)", ^redirect_uri)
+               where: c.id == ^id and fragment("SELECT true FROM unnest(redirect_uris) AS r WHERE r ~ ?", ^redirect_uri_regex)
            ),
       {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
         client
