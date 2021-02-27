@@ -10,26 +10,32 @@ defmodule Boruta.Ecto.Codes do
   alias Boruta.Oauth.Client
 
   @impl Boruta.Oauth.Codes
-  def get_by([value: value, redirect_uri: redirect_uri]) do
+  def get_by(value: value, redirect_uri: redirect_uri) do
     with {:ok, token} <- TokenStore.get(value: value),
-      true <- token.redirect_uri == redirect_uri do
+         true <- token.redirect_uri == redirect_uri do
       token
     else
       {:error, "Not cached."} ->
-        repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
-        |> to_oauth_schema()
-        |> TokenStore.put()
-      false -> nil
+        with %Ecto.Token{} = token <- repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri),
+        {:ok, token} <- token
+               |> to_oauth_schema()
+               |> TokenStore.put() do
+          token
+        end
+
+      false ->
+        nil
     end
   end
 
   @impl Boruta.Oauth.Codes
   def create(
         %{
-          client: %Client{
-            id: client_id,
-            authorization_code_ttl: authorization_code_ttl
-          } = client,
+          client:
+            %Client{
+              id: client_id,
+              authorization_code_ttl: authorization_code_ttl
+            } = client,
           redirect_uri: redirect_uri,
           scope: scope,
           state: state,
@@ -55,7 +61,7 @@ defmodule Boruta.Ecto.Codes do
       ])
 
     with {:ok, token} <- repo().insert(changeset),
-      {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
+         {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
       {:ok, token}
     end
   end
