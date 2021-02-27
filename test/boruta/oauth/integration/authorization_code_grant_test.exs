@@ -754,6 +754,44 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns a token from cache", %{client: client, code: code, resource_owner: resource_owner} do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      Boruta.Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
+
+      case Oauth.token(
+             %{
+               req_headers: [{"authorization", authorization_header}],
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
     test "returns a token with scope", %{
       client: client,
       code_with_scope: code,

@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Codes do
       {:error, "Not cached."} ->
         repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri)
         |> to_oauth_schema()
+        |> TokenStore.put()
       false -> nil
     end
   end
