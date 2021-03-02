@@ -2,10 +2,11 @@ defmodule Boruta.Oauth.Scope do
   @moduledoc """
   Schema defining an independent OAuth scope
   """
-  defstruct id: nil, name: nil, public: nil
+  defstruct id: nil, name: nil, label: nil, public: nil
 
   @type t :: %__MODULE__{
     id: any(),
+    label: String.t(),
     name: String.t(),
     public: boolean()
   }

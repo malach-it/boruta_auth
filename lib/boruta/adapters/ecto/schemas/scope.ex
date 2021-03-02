@@ -14,6 +14,7 @@ defmodule Boruta.Ecto.Scope do
   @timestamps_opts type: :utc_datetime
   schema "scopes" do
     field :name, :string
+    field :label, :string
     field :public, :boolean, default: false
 
     timestamps()
@@ -22,7 +23,7 @@ defmodule Boruta.Ecto.Scope do
   @doc false
   def changeset(scope, attrs) do
     scope
-    |> cast(attrs, [:id, :name, :public])
+    |> cast(attrs, [:label, :name, :public])
     |> unique_constraint(:id)
     |> unique_constraint(:name)
     |> validate_required([:name])
