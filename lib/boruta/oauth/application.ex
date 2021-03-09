@@ -15,6 +15,15 @@ defmodule Boruta.Oauth.Application do
   @callback token_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
 
   @doc """
+  This function will be triggered in case of success triggering `Boruta.Oauth.preauthorize/2`
+  """
+  @callback preauthorize_success(conn :: Plug.Conn.t(), authorization :: %Boruta.Oauth.AuthorizationSuccess{})  :: any()
+  @doc """
+  This function will be triggered in case of failure triggering `Boruta.Oauth.preauthorize/2`
+  """
+  @callback preauthorize_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
+
+  @doc """
   This function will be triggered in case of success triggering `Boruta.Oauth.authorize/2`
   """
   @callback authorize_success(conn :: Plug.Conn.t(), token :: Boruta.Oauth.AuthorizeResponse.t())  :: any()

@@ -9,6 +9,12 @@ defmodule Boruta.Oauth.ApplicationMock do
   def token_success(_conn, token), do: {:token_success, token}
 
   @impl Boruta.Oauth.Application
+  def preauthorize_error(_conn, error), do: {:preauthorize_error, error}
+
+  @impl Boruta.Oauth.Application
+  def preauthorize_success(_conn, authorize), do: {:preauthorize_success, authorize}
+
+  @impl Boruta.Oauth.Application
   def authorize_error(_conn, error), do: {:authorize_error, error}
 
   @impl Boruta.Oauth.Application

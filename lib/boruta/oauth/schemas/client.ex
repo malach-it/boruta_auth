@@ -4,6 +4,7 @@ defmodule Boruta.Oauth.Client do
   """
 
   defstruct id: nil,
+            name: nil,
             secret: nil,
             authorize_scope: nil,
             authorized_scopes: [],
@@ -18,6 +19,7 @@ defmodule Boruta.Oauth.Client do
   @type t :: %__MODULE__{
           id: any(),
           secret: String.t(),
+          name: String.t(),
           authorize_scope: boolean(),
           authorized_scopes: list(Boruta.Oauth.Scope.t()),
           redirect_uris: list(String.t()),

@@ -21,7 +21,7 @@ defmodule Boruta.Oauth.Authorization.Client do
     [id: String.t(), redirect_uri: String.t(), grant_type: String.t()] |
     [id: String.t(), redirect_uri: String.t(), grant_type: String.t(), code_verifier: String.t()]
   ) ::
-    {:ok, %Client{}}
+    {:ok, Client.t()}
     | {:error,
       %Error{
         :error => :invalid_client,

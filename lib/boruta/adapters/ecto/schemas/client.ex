@@ -41,6 +41,7 @@ defmodule Boruta.Ecto.Client do
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
   schema "clients" do
+    field(:name, :string)
     field(:secret, :string)
     field(:authorize_scope, :boolean, default: false)
     field(:redirect_uris, {:array, :string})
@@ -73,6 +74,7 @@ defmodule Boruta.Ecto.Client do
     client
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
+      :name,
       :access_token_ttl,
       :authorization_code_ttl,
       :redirect_uris,
@@ -95,6 +97,7 @@ defmodule Boruta.Ecto.Client do
     client
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
+      :name,
       :access_token_ttl,
       :authorization_code_ttl,
       :redirect_uris,

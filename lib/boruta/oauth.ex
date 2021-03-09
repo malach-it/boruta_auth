@@ -37,6 +37,30 @@ defmodule Boruta.Oauth do
   @doc """
   Process an authorize request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
 
+  Triggers `preauthorize_success` in case of success and `preauthorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
+  """
+  @spec preauthorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
+  def preauthorize(conn, resource_owner, module) do
+    with {:ok, request} <- Request.authorize_request(conn, resource_owner),
+         {:ok, authorization} <- Authorization.preauthorize(request) do
+      module.preauthorize_success(
+        conn,
+        authorization
+      )
+    else
+      {:error, %Error{} = error} ->
+        case Request.authorize_request(conn, resource_owner) do
+          {:ok, request} ->
+            module.preauthorize_error(conn, Error.with_format(error, request))
+          _ ->
+            module.preauthorize_error(conn, error)
+        end
+    end
+  end
+
+  @doc """
+  Process an authorize request and returns a token as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
+
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
   @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
