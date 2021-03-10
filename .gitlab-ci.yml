@@ -1,5 +1,6 @@
 stages:
   - test
+  - documentation
 
 services:
   - postgres:latest
@@ -39,3 +40,13 @@ test:
     POSTGRES_USER: postgres
     POSTGRES_PASSWORD: postgres
     MIX_ENV: test
+
+pages:
+  extends: .elixir-task
+  stage: documentation
+  script:
+    - mix docs -f html
+    - mv doc/ public/
+  artifacts:
+    paths:
+      - public
