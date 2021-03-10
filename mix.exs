@@ -5,7 +5,7 @@ defmodule Boruta.MixProject do
     [
       name: "Boruta core",
       app: :boruta,
-      version: "1.0.0-rc.3",
+      version: "1.0.0",
       elixir: "~> 1.5",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -52,7 +52,7 @@ defmodule Boruta.MixProject do
       {:secure_random, "~> 0.5"},
       {:mox, "~> 0.5", only: :test},
       {:shards, "~> 1.0"},
-      {:nebulex, "~> 2.0.0-rc.2"},
+      {:nebulex, "~> 2.0.0"},
       {:jose, "~> 1.11"}
     ]
   end
