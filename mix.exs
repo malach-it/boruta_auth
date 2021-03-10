@@ -91,7 +91,8 @@ defmodule Boruta.MixProject do
         "Schemas": [
           Boruta.Oauth.Token,
           Boruta.Oauth.Client,
-          Boruta.Oauth.Scope
+          Boruta.Oauth.Scope,
+          Boruta.Oauth.ResourceOwner
         ],
         "OAuth request": [
           Boruta.Oauth.TokenRequest,
@@ -113,7 +114,8 @@ defmodule Boruta.MixProject do
         "Utilities": [
           Boruta.BasicAuth,
           Boruta.Oauth.Validator,
-          Boruta.Oauth.TokenGenerator
+          Boruta.Oauth.TokenGenerator,
+          Boruta.Cache.Primary
         ],
         "Errors": [
           Boruta.Oauth.Error

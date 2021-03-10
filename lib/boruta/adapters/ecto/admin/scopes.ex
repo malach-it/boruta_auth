@@ -1,6 +1,6 @@
 defmodule Boruta.Ecto.Admin.Scopes do
   @moduledoc """
-  TODO Admin Scopes documentation
+  `Boruta.Ecto.Scope` resource administration.
   """
 
   import Ecto.Query, warn: false

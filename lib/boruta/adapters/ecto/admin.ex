@@ -1,7 +1,7 @@
 defmodule Boruta.Ecto.Admin do
   # TODO move to Boruta.Oauth.Admin
   @moduledoc """
-  The Ecto.Admin context.
+  Administration of Boruta resources.
   """
 
   defdelegate list_clients, to: Boruta.Ecto.Admin.Clients
