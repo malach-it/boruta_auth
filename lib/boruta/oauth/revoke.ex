@@ -9,7 +9,7 @@ defmodule Boruta.Oauth.Revoke do
   alias Boruta.Oauth.RevokeRequest
 
   @doc """
-  Revokes token according to the given `RevokeRequest`
+  Revokes token according to the given `Boruta.Oauth.RevokeRequest`
   ## Examples
       iex> token(%RevokeRequest{
         client_id: "client_id",

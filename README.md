@@ -13,10 +13,10 @@ It is intended to follow RFCs:
 As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
 
 ## Documentation
-Documentation can be found [here](https://hexdocs.pm/boruta/1.0.0-rc.0/Boruta.html)
+Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/Boruta.html)
 
 ## Live example
-A live example can be found [here](https://boruta.herokuapp.com/)
+A live example can be found [here](http://oauth.boruta.patatoid.fr/)
 
 ## Installation
 1. Schemas migration
@@ -65,7 +65,7 @@ defmodule MyApp.ResourceOwners do
 end
 ```
 
-3. __Configuration__
+3. Configuration
 
 Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
 ```elixir

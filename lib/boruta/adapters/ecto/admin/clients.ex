@@ -1,6 +1,6 @@
 defmodule Boruta.Ecto.Admin.Clients do
   @moduledoc """
-  TODO Admin Clients documentation
+  `Boruta.Ecto.Client` resource administration.
   """
 
   import Ecto.Query, warn: false

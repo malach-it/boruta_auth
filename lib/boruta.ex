@@ -11,7 +11,7 @@ defmodule Boruta do
   As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
 
   ## Installation
-  1. __Schemas migration__
+  1. Schemas migration
 
   If you plan to use Boruta builtin clients and tokens contexts, you'll need a migration for its `Ecto` schemas. This can be done by running:
   ```
@@ -57,7 +57,7 @@ defmodule Boruta do
   end
   ```
 
-  3. __Configuration__
+  3. Configuration
 
   Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
   ```

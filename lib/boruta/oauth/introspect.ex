@@ -9,7 +9,7 @@ defmodule Boruta.Oauth.Introspect do
   alias Boruta.Oauth.Token
 
   @doc """
-  Build an introspect response for the given `IntrospectRequest`
+  Returns corresponding token for the given `Boruta.Oauth.IntrospectRequest`
 
   Note : Invalid tokens returns an error `{:error, %Error{error: :invalid_access_token, ...}}`. That must be rescued to return `%{"active" => false}` in application implementation.
   ## Examples

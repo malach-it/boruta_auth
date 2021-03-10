@@ -3,10 +3,17 @@ defprotocol Boruta.Oauth.Authorization do
   """
 
   @doc """
+  Checks if request is valid for token creation for given request, depending of implementation.
+  """
+  @spec preauthorize(request :: any()) ::
+          {:ok, Boruta.Oauth.AuthorizationSuccess.t()} | {:error, Boruta.Oauth.Error.t()}
+  def preauthorize(request)
+
+  @doc """
   Creates and returns a token for given request, depending of implementation.
   """
-  # TODO type check implementations
-  def preauthorize(request)
+  @spec token(request :: any()) ::
+          {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()} | {:error, Boruta.Oauth.Error.t()}
   def token(request)
 end
 

@@ -22,12 +22,12 @@ defmodule Boruta.Oauth.AccessTokens do
     optional(:state) => String.t()
   }, options :: [
     refresh_token: boolean()
-  ]) :: token :: Boruta.Oauth.Token.t() | {:error, Ecto.Changeset.t()}
+  ]) :: token :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
 
   @doc """
   Revokes the given `Boruta.Oauth.Token`.
   """
   @callback revoke(
     token :: Boruta.Oauth.Token.t()
-  ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, Ecto.Changeset.t()}
+  ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 end

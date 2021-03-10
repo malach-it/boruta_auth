@@ -20,8 +20,6 @@ defmodule Boruta.Config do
     ],
     token_generator: Boruta.TokenGenerator
   ```
-
-  NOTE: Since all configurations expected `resource_owners` are macro, they are assigned at compile time
   """
 
   @defaults repo: Boruta.Repo,
@@ -95,7 +93,6 @@ defmodule Boruta.Config do
 
   @spec resource_owners() :: module()
   @doc false
-  # NOTE resource_owners is not a macro in order to get config at runtime
   def resource_owners do
     Keyword.fetch!(oauth_config(), :contexts)[:resource_owners]
   end

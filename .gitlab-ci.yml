@@ -1,5 +1,6 @@
 stages:
   - test
+  - documentation
 
 services:
   - postgres:latest
@@ -7,7 +8,6 @@ services:
 .elixir-task:
   image: elixir:1.10.3-alpine
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
     paths:
     - _build/
   before_script:
@@ -39,3 +39,13 @@ test:
     POSTGRES_USER: postgres
     POSTGRES_PASSWORD: postgres
     MIX_ENV: test
+
+pages:
+  extends: .elixir-task
+  stage: documentation
+  script:
+    - mix docs -f html
+    - mv doc/ public/
+  artifacts:
+    paths:
+      - public

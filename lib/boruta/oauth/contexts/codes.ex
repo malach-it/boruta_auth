@@ -21,5 +21,5 @@ defmodule Boruta.Oauth.Codes do
     :state => String.t(),
     :code_challenge => String.t(),
     :code_challenge_method => String.t()
-  }) :: code :: Boruta.Oauth.Token.t() | {:error, Ecto.Changeset.t()}
+  }) :: code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
 end

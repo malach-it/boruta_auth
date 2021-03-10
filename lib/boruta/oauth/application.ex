@@ -8,38 +8,50 @@ defmodule Boruta.Oauth.Application do
   @doc """
   This function will be triggered in case of success triggering `Boruta.Oauth.token/2`
   """
-  @callback token_success(conn :: Plug.Conn.t(), token :: Boruta.Oauth.TokenResponse.t()) :: any()
+  @callback token_success(conn :: Plug.Conn.t(), token_response :: Boruta.Oauth.TokenResponse.t()) ::
+              any()
   @doc """
   This function will be triggered in case of failure triggering `Boruta.Oauth.token/2`
   """
   @callback token_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
 
   @doc """
-  This function will be triggered in case of success triggering `Boruta.Oauth.preauthorize/2`
+  This function will be triggered in case of success triggering `Boruta.Oauth.preauthorize/3`
   """
-  @callback preauthorize_success(conn :: Plug.Conn.t(), authorization :: %Boruta.Oauth.AuthorizationSuccess{})  :: any()
+  @callback preauthorize_success(
+              conn :: Plug.Conn.t(),
+              authorization :: %Boruta.Oauth.AuthorizationSuccess{}
+            ) :: any()
   @doc """
-  This function will be triggered in case of failure triggering `Boruta.Oauth.preauthorize/2`
+  This function will be triggered in case of failure triggering `Boruta.Oauth.preauthorize/3`
   """
-  @callback preauthorize_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
+  @callback preauthorize_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
+              any()
 
   @doc """
-  This function will be triggered in case of success triggering `Boruta.Oauth.authorize/2`
+  This function will be triggered in case of success triggering `Boruta.Oauth.authorize/3`
   """
-  @callback authorize_success(conn :: Plug.Conn.t(), token :: Boruta.Oauth.AuthorizeResponse.t())  :: any()
+  @callback authorize_success(
+              conn :: Plug.Conn.t(),
+              authorize_response :: Boruta.Oauth.AuthorizeResponse.t()
+            ) :: any()
   @doc """
-  This function will be triggered in case of failure triggering `Boruta.Oauth.authorize/2`
+  This function will be triggered in case of failure triggering `Boruta.Oauth.authorize/3`
   """
   @callback authorize_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
 
   @doc """
   This function will be triggered in case of success triggering `Boruta.Oauth.introspect/2`
   """
-  @callback introspect_success(conn :: Plug.Conn.t(), token :: Boruta.Oauth.IntrospectResponse.t()) :: any()
+  @callback introspect_success(
+              conn :: Plug.Conn.t(),
+              introspect_response :: Boruta.Oauth.IntrospectResponse.t()
+            ) :: any()
   @doc """
   This function will be triggered in case of failure triggering `Boruta.Oauth.introspect/2`
   """
-  @callback introspect_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
+  @callback introspect_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
+              any()
 
   @doc """
   This function will be triggered in case of success triggering `Boruta.Oauth.revoke/2`
