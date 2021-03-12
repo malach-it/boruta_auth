@@ -119,15 +119,19 @@ defmodule MyApp.OauthController do
 end
 ```
 
-## Create an OAuth client
+## Straightforward testing
 You can also create a client and test it
 ```
+alias Boruta.Ecto
+alias Boruta.Oauth.Authorization
+alias Boruta.Oauth.{ClientCredentialsRequest, Token}
+
 # create a client
-{:ok, %Boruta.Ecto.Client{id: client_id, secret: client_secret}} = Boruta.Ecto.Admin.create_client(%{authorization_code_ttl: 60, access_token_ttl: 60 * 60})
+{:ok, %Ecto.Client{id: client_id, secret: client_secret}} = Ecto.Admin.create_client(%{authorization_code_ttl: 60, access_token_ttl: 60 * 60})
 # obtain a token
-{:ok, %Boruta.Oauth.Token{value: value}} = Boruta.Oauth.Authorization.token(%Boruta.Oauth.ClientCredentialsRequest{client_id: client_id, client_secret: client_secret})
+{:ok, %Token{value: value}} = Authorization.token(%ClientCredentialsRequest{client_id: client_id, client_secret: client_secret})
 # check token
-{:ok, _token} = Boruta.Oauth.Authorization.AccessToken.authorize(value: value)
+{:ok, _token} = Authorization.AccessToken.authorize(value: value)
 ```
 
 ## Feedback
