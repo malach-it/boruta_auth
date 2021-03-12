@@ -79,9 +79,9 @@ config :boruta, Boruta.Oauth,
     resource_owners: MyApp.ResourceOwners,
     scopes: Boruta.Ecto.Scopes
   ],
-  expires_in: [
+  max_ttl: [
     authorization_code: 60,
-    access_token: 3600
+    access_token: 60 * 60 * 24
   ],
   token_generator: Boruta.TokenGenerator
 ```
@@ -117,6 +117,17 @@ defmodule MyApp.OauthController do
   end
   ...
 end
+```
+
+## Create an OAuth client
+You can also create a client and test it
+```
+# create a client
+{:ok, %Boruta.Ecto.Client{id: client_id, secret: client_secret}} = Boruta.Ecto.Admin.create_client(%{authorization_code_ttl: 60, access_token_ttl: 60 * 60})
+# obtain a token
+{:ok, %Boruta.Oauth.Token{value: value}} = Boruta.Oauth.Authorization.token(%Boruta.Oauth.ClientCredentialsRequest{client_id: client_id, client_secret: client_secret})
+# check token
+{:ok, _token} = Boruta.Oauth.Authorization.AccessToken.authorize(value: value)
 ```
 
 ## Feedback

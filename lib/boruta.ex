@@ -110,6 +110,18 @@ defmodule Boruta do
     ...
   end
   ```
+
+  ## Create an OAuth client
+  You can also create a client and test it
+  ```
+  # create a client
+  {:ok, %Boruta.Ecto.Client{id: client_id, secret: client_secret}} = Boruta.Ecto.Admin.create_client(%{authorization_code_ttl: 60, access_token_ttl: 60 * 60})
+  # obtain a token
+  {:ok, %Boruta.Oauth.Token{value: value}} = Boruta.Oauth.Authorization.token(%Boruta.Oauth.ClientCredentialsRequest{client_id: client_id, client_secret: client_secret})
+  # check token
+  {:ok, _token} = Boruta.Oauth.Authorization.AccessToken.authorize(value: value)
+  ```
+
   ## Feedback
   It is a work in progress, all feedbacks / feature requests / improvements are welcome -> [me](mailto:io.pascal.knoth@gmail.com)
   """
