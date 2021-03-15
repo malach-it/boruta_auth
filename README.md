@@ -13,12 +13,12 @@ It is intended to follow RFCs:
 As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
 
 ## Documentation
-Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/Boruta.html)
+Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
 
 ## Live example
 A live example can be found [here](http://oauth.boruta.patatoid.fr/)
 
-## Installation
+## Setup
 1. Schemas migration
 
 If you plan to use Boruta builtin clients and tokens contexts, you'll need a migration for its `Ecto` schemas. This can be done by running:
@@ -70,13 +70,13 @@ end
 Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
 ```elixir
 config :boruta, Boruta.Oauth,
-  repo: MyApp.Repo,
+  repo: MyApp.Repo, # mandatory
   cache_backend: Boruta.Cache,
   contexts: [
     access_tokens: Boruta.Ecto.AccessTokens,
     clients: Boruta.Ecto.Clients,
     codes: Boruta.Ecto.Codes,
-    resource_owners: MyApp.ResourceOwners,
+    resource_owners: MyApp.ResourceOwners, # mandatory for user flows
     scopes: Boruta.Ecto.Scopes
   ],
   max_ttl: [
@@ -87,8 +87,8 @@ config :boruta, Boruta.Oauth,
 ```
 
 ## Integration
-This implementation follows a pseudo hexagonal architecture to invert dependencies to Application layer.
-In order to expose endpoints of an OAuth server with Boruta, you need implement the behaviour `Boruta.Oauth.Application` with all needed callbacks for `token/2`, `authorize/2` and `introspect/2` calls from `Boruta.Oauth`.
+This implementation follows an hexagonal architecture to invert dependencies to Application layer.
+In order to expose endpoints of an OAuth server with Boruta, you need implement the behaviour `Boruta.Oauth.Application` with all needed callbacks for `token/2`, `authorize/2`, `introspect/2` and `revoke/2` calls from `Boruta.Oauth`.
 
 This library has specific interfaces to interact with `Plug.Conn` requests.
 
@@ -121,7 +121,7 @@ end
 
 ## Straightforward testing
 You can also create a client and test it
-```
+```elixir
 alias Boruta.Ecto
 alias Boruta.Oauth.Authorization
 alias Boruta.Oauth.{ClientCredentialsRequest, Token}
@@ -133,6 +133,15 @@ alias Boruta.Oauth.{ClientCredentialsRequest, Token}
 # check token
 {:ok, _token} = Authorization.AccessToken.authorize(value: value)
 ```
+
+## Guides
+Some integration guides are provided as code samples.
+- [Authorization code grant](authorization_code.md)
+- [Client Credentials grant](client_credentials.md)
+- [Implicit grant](implicit.md)
+- [Resource Owner Password Credentials grant](resource_owner_password_credentials.md)
+- [Introspect](introspect.md)
+- [Revoke](revoke.md)
 
 ## Feedback
 It is a work in progress, all feedbacks / feature requests / improvements are welcome

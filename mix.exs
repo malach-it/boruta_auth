@@ -59,8 +59,17 @@ defmodule Boruta.MixProject do
 
   defp docs do
     [
-      main: "Boruta",
+      main: "readme",
       source_url: "https://gitlab.com/patatoid/boruta-core",
+      extras: [
+        "README.md",
+        "guides/client_credentials.md",
+        "guides/resource_owner_password_credentials.md",
+        "guides/authorization_code.md",
+        "guides/implicit.md",
+        "guides/introspect.md",
+        "guides/revoke.md"
+      ],
       groups_for_modules: [
         "Responses": [
           Boruta.Oauth.AuthorizeResponse,
@@ -73,7 +82,8 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Authorization.Client,
           Boruta.Oauth.Authorization.Code,
           Boruta.Oauth.Authorization.ResourceOwner,
-          Boruta.Oauth.Authorization.Scope
+          Boruta.Oauth.Authorization.Scope,
+          Boruta.Oauth.AuthorizationSuccess
         ],
         "Introspection": [
           Boruta.Oauth.Introspect
