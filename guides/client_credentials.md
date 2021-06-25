@@ -15,6 +15,10 @@ As stated in OAuth 2.0 RFC [Client credentials grant](https://tools.ietf.org/htm
 
 (B)  The authorization server authenticates the client, and if valid, issues an access token.
 
+> Copyright (c) 2012 IETF Trust and the persons identified as authors of the code. All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without modification, is permitted pursuant to, and subject to the license terms contained in, the Simplified BSD License set forth in Section 4.c of the IETF Trust’s Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info).
+
 ## Integration
 ### Code example
 - lib/my_app_web/views/oauth_view.ex

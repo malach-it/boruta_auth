@@ -39,6 +39,10 @@ As stated in OAuth 2.0 RFC [Authorization code grant](https://tools.ietf.org/htm
 
 (E)  The authorization server authenticates the client, validates the authorization code, and ensures that the redirection URI received matches the URI used to redirect the client in step (C).  If valid, the authorization server responds back with an access token and, optionally, a refresh token.
 
+> Copyright (c) 2012 IETF Trust and the persons identified as authors of the code. All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without modification, is permitted pursuant to, and subject to the license terms contained in, the Simplified BSD License set forth in Section 4.c of the IETF Trust’s Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info).
+
 ## Integration
 ### Code example
 - lib/my_app_web/resource_owners.ex

@@ -5,13 +5,13 @@ defmodule Boruta.Config do
   Configuration can be set as following in `config.exs` (this configuration is the default)
   ```
   config :boruta, Boruta.Oauth,
-    repo: MyApp.Repo,
-    cache_backend; Boruta.Cache,
+    repo: MyApp.Repo, # mandatory
+    cache_backend: Boruta.Cache,
     contexts: [
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
       codes: Boruta.Ecto.Codes,
-      resource_owners: nil,
+      resource_owners: MyApp.ResourceOwners, # mandatory for user flows
       scopes: Boruta.Ecto.Scopes
     ],
     max_ttl: [
