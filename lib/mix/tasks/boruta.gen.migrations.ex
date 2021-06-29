@@ -63,15 +63,15 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     def change do
       create table(:clients, primary_key: false) do
         add(:id, :uuid, primary_key: true)
-        add(:name, :string)
-        add(:secret, :string)
-        add(:redirect_uris, {:array, :string})
+        add(:name, :string, default: "", null: false)
+        add(:secret, :string, null: false)
+        add(:redirect_uris, {:array, :string}, default: [], null: false)
         add(:scope, :string)
-        add(:authorize_scope, :boolean, default: false)
-        add(:supported_grant_types, {:array, :string})
+        add(:authorize_scope, :boolean, default: false, null: false)
+        add(:supported_grant_types, {:array, :string}, default: [], null: false)
         add(:authorization_code_ttl, :integer, null: false)
         add(:access_token_ttl, :integer, null: false)
-        add(:pkce, :boolean, default: false)
+        add(:pkce, :boolean, default: false, null: false)
         add(:public_key, :text, null: false)
         add(:private_key, :text, null: false)
 
