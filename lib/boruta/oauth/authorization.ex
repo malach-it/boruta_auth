@@ -18,7 +18,9 @@ defprotocol Boruta.Oauth.Authorization do
 end
 
 defmodule Boruta.Oauth.AuthorizationSuccess do
-  @moduledoc false
+  @moduledoc """
+  Struct encapsulating an authorization success
+  """
 
   defstruct client: nil,
             redirect_uri: nil,
