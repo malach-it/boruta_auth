@@ -39,7 +39,11 @@ defmodule Boruta.Oauth do
 
   Triggers `preauthorize_success` in case of success and `preauthorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
-  @spec preauthorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
+  @spec preauthorize(
+          conn :: Plug.Conn.t() | map(),
+          resource_owner :: ResourceOwner.t(),
+          module :: atom()
+        ) :: any()
   def preauthorize(conn, resource_owner, module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, authorization} <- Authorization.preauthorize(request) do
@@ -52,6 +56,7 @@ defmodule Boruta.Oauth do
         case Request.authorize_request(conn, resource_owner) do
           {:ok, request} ->
             module.preauthorize_error(conn, Error.with_format(error, request))
+
           _ ->
             module.preauthorize_error(conn, error)
         end
@@ -63,19 +68,24 @@ defmodule Boruta.Oauth do
 
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
-  @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
+  @spec authorize(
+          conn :: Plug.Conn.t() | map(),
+          resource_owner :: ResourceOwner.t(),
+          module :: atom()
+        ) :: any()
   def authorize(conn, resource_owner, module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
-         {:ok, token} <- Authorization.token(request) do
+         {:ok, tokens} <- Authorization.token(request) do
       module.authorize_success(
         conn,
-        AuthorizeResponse.from_token(token)
+        AuthorizeResponse.from_tokens(tokens)
       )
     else
       {:error, %Error{} = error} ->
         case Request.authorize_request(conn, resource_owner) do
           {:ok, request} ->
             module.authorize_error(conn, Error.with_format(error, request))
+
           _ ->
             module.authorize_error(conn, error)
         end
@@ -95,6 +105,7 @@ defmodule Boruta.Oauth do
     else
       {:error, %Error{error: :invalid_access_token} = error} ->
         module.introspect_success(conn, IntrospectResponse.from_error(error))
+
       {:error, %Error{} = error} ->
         module.introspect_error(conn, error)
     end

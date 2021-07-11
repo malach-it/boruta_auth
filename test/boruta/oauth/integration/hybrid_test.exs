@@ -1,4 +1,4 @@
-defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
+defmodule Boruta.OauthTest.HybridGrantTest do
   use ExUnit.Case
   use Boruta.DataCase
 
@@ -17,7 +17,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
-  describe "authorization code grant - authorize" do
+  describe "hybrid grant - authorize" do
     setup do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
@@ -44,7 +44,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `response_type` is 'code' and schema is invalid" do
-      assert Oauth.authorize(%{query_params: %{"response_type" => "code"}}, nil, ApplicationMock) ==
+      assert Oauth.authorize(
+               %{query_params: %{"response_type" => "code token"}},
+               nil,
+               ApplicationMock
+             ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -58,7 +62,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
                    "redirect_uri" => "http://redirect.uri"
                  }
@@ -80,7 +84,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => "http://bad.redirect.uri"
                  }
@@ -104,7 +108,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri
                  }
@@ -132,7 +136,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri
                }
@@ -155,6 +159,118 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns a code and a token", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code token",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           code: code,
+           access_token: access_token,
+           expires_in: expires_in
+         }} ->
+          assert type == "code"
+          assert code
+          assert access_token
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> stub(:claims, fn _sub -> %{"email" => "test@test.test"} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code id_token",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           code: code,
+           id_token: id_token,
+           expires_in: expires_in
+         }} ->
+          assert type == "code"
+          assert code
+          assert id_token
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a code, a token and an id_token", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> stub(:claims, fn _sub -> %{email: "test@test.test"} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code id_token token",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           code: code,
+           id_token: id_token,
+           access_token: access_token,
+           expires_in: expires_in
+         }} ->
+          assert type == "code"
+          assert code
+          assert id_token
+          assert access_token
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
@@ -166,7 +282,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
                  "scope" => given_scope
@@ -201,7 +317,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri,
                    "scope" => given_scope
@@ -234,7 +350,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
                  "scope" => given_scope
@@ -273,7 +389,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
                  "scope" => given_scope.name
@@ -311,7 +427,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri,
                    "scope" => given_scope
@@ -339,7 +455,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri,
                    "scope" => ""
@@ -369,7 +485,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
                  "state" => given_state
@@ -409,7 +525,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code",
+                   "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri,
                    "state" => given_state
@@ -445,7 +561,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
                  "state" => given_state,
@@ -502,7 +618,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       case Oauth.authorize(
              %{
                query_params: %{
-                 "response_type" => "code",
+                 "response_type" => "code token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
                  "state" => given_state,
@@ -521,417 +637,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           } = Repo.get_by(Ecto.Token, value: value)
 
           assert repo_code_challenge_method == "plain"
-
-        _ ->
-          assert false
-      end
-    end
-  end
-
-  describe "authorization code grant - token" do
-    setup do
-      user = %User{}
-      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
-      client = insert(:client)
-      pkce_client = insert(:client, pkce: true)
-      client_without_grant_type = insert(:client, supported_grant_types: [])
-
-      code =
-        insert(
-          :token,
-          type: "code",
-          client: client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(client.redirect_uris)
-        )
-
-      pkce_code =
-        insert(
-          :token,
-          type: "code",
-          client: pkce_client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(pkce_client.redirect_uris),
-          code_challenge: "code challenge",
-          code_challenge_hash: Oauth.Token.hash("code challenge"),
-          code_challenge_method: "plain"
-        )
-
-      expired_code =
-        insert(
-          :token,
-          type: "code",
-          client: client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(client.redirect_uris),
-          expires_at: :os.system_time(:seconds) - 10
-        )
-
-      bad_redirect_uri_code =
-        insert(
-          :token,
-          type: "code",
-          client: client,
-          sub: resource_owner.sub,
-          redirect_uri: "http://bad.redirect.uri"
-        )
-
-      code_with_scope =
-        insert(
-          :token,
-          type: "code",
-          client: client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(client.redirect_uris),
-          scope: "hello world"
-        )
-
-      {:ok,
-       client: client,
-       pkce_client: pkce_client,
-       client_without_grant_type: client_without_grant_type,
-       resource_owner: resource_owner,
-       code: code,
-       pkce_code: pkce_code,
-       bad_redirect_uri_code: bad_redirect_uri_code,
-       expired_code: expired_code,
-       code_with_scope: code_with_scope}
-    end
-
-    test "returns an error if request is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{"grant_type" => "authorization_code"}
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description:
-                    "Request body validation failed. #/client_id do match required pattern /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/. Required properties code, redirect_uri are missing at #.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error if `client_id` is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{
-                   "grant_type" => "authorization_code",
-                   "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-                   "code" => "bad_code",
-                   "redirect_uri" => "http://redirect.uri"
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
-                  status: :unauthorized
-                }}
-    end
-
-    test "returns an error if `code` is invalid", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-      redirect_uri = List.first(client.redirect_uris)
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{
-                   "grant_type" => "authorization_code",
-                   "client_id" => client.id,
-                   "code" => "bad_code",
-                   "redirect_uri" => redirect_uri
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_code,
-                  error_description: "Provided authorization code is incorrect.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error if `code` and request redirect_uri do not match", %{
-      client: client,
-      bad_redirect_uri_code: bad_redirect_uri_code
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-      redirect_uri = List.first(client.redirect_uris)
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{
-                   "grant_type" => "authorization_code",
-                   "client_id" => client.id,
-                   "code" => bad_redirect_uri_code.value,
-                   "redirect_uri" => redirect_uri
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_code,
-                  error_description: "Provided authorization code is incorrect.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error if grant type is not allowed by client", %{
-      client_without_grant_type: client,
-      code: code
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-      redirect_uri = List.first(client.redirect_uris)
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{
-                   "grant_type" => "authorization_code",
-                   "client_id" => client.id,
-                   "code" => code.value,
-                   "redirect_uri" => redirect_uri
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :unsupported_grant_type,
-                  error_description: "Client do not support given grant type.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-
-      redirect_uri = List.first(client.redirect_uris)
-
-      case Oauth.token(
-             %{
-               req_headers: [{"authorization", authorization_header}],
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => client.id,
-                 "code" => code.value,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
-
-        _ ->
-          assert false
-      end
-    end
-
-    test "returns a token from cache", %{
-      client: client,
-      code: code,
-      resource_owner: resource_owner
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-
-      redirect_uri = List.first(client.redirect_uris)
-      Boruta.Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
-
-      case Oauth.token(
-             %{
-               req_headers: [{"authorization", authorization_header}],
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => client.id,
-                 "code" => code.value,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
-
-        _ ->
-          assert false
-      end
-    end
-
-    test "returns a token with scope", %{
-      client: client,
-      code_with_scope: code,
-      resource_owner: resource_owner
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-
-      redirect_uri = List.first(client.redirect_uris)
-
-      case Oauth.token(
-             %{
-               req_headers: [{"authorization", authorization_header}],
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => client.id,
-                 "code" => code.value,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
-
-        _ ->
-          assert false
-      end
-    end
-
-    test "returns an error with pkce without code_verifier", %{
-      pkce_client: client,
-      pkce_code: code
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-      redirect_uri = List.first(client.redirect_uris)
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{
-                   "grant_type" => "authorization_code",
-                   "client_id" => client.id,
-                   "code" => code.value,
-                   "redirect_uri" => redirect_uri
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description: "PKCE request invalid.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error with pkce and bad code_verifier", %{
-      pkce_client: client,
-      pkce_code: code,
-      resource_owner: resource_owner
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-      redirect_uri = List.first(client.redirect_uris)
-
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-
-      assert Oauth.token(
-               %{
-                 req_headers: [{"authorization", authorization_header}],
-                 body_params: %{
-                   "grant_type" => "authorization_code",
-                   "client_id" => client.id,
-                   "code" => code.value,
-                   "redirect_uri" => redirect_uri,
-                   "code_verifier" => "bad code challenge"
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description: "Code verifier is invalid.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns a token with pkce", %{
-      pkce_client: client,
-      pkce_code: code,
-      resource_owner: resource_owner
-    } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-      redirect_uri = List.first(client.redirect_uris)
-
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-
-      case Oauth.token(
-             %{
-               req_headers: [{"authorization", authorization_header}],
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => client.id,
-                 "code" => code.value,
-                 "redirect_uri" => redirect_uri,
-                 "code_verifier" => code.code_challenge
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
 
         _ ->
           assert false
