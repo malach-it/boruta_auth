@@ -15,12 +15,9 @@ defmodule Boruta.Oauth.Request.Base do
           {:ok, header :: String.t()}
           | {:error, :no_authorization_header}
   def authorization_header(req_headers) do
-    case Enum.find(
-           req_headers,
-           fn header -> elem(header, 0) == "authorization" end
-         ) do
+    case List.keyfind(req_headers, "authorization", 0) do
+      nil -> {:error, :no_authorization_header}
       {"authorization", header} -> {:ok, header}
-      _ -> {:error, :no_authorization_header}
     end
   end
 
