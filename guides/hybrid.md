@@ -157,10 +157,10 @@ defmodule MyAppWeb.OauthController do
         expires_in: expires_in,
         state: state
       }
-      |> Enum.map(fn {param_type, value} ->
-        value && {param_type, value}
+      |> Enum.flat_map(fn
+        {_param_type, nil} -> []
+        pair -> [pair]
       end)
-      |> Enum.reject(&is_nil/1)
       |> URI.encode_query()
 
     url = "#{redirect_uri}?#{query_string}"
