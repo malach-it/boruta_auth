@@ -172,7 +172,7 @@ defmodule MyAppWeb.OauthController do
         %AuthorizeResponse{
           type: type,
           redirect_uri: redirect_uri,
-          value: value,
+          code: code,
           expires_in: expires_in,
           state: state
         }
@@ -180,17 +180,13 @@ defmodule MyAppWeb.OauthController do
     query_string =
       case state do
         nil ->
-          URI.encode_query(%{type => value, "expires_in" => expires_in})
+          URI.encode_query(%{"code" => code, "expires_in" => expires_in})
 
         state ->
-          URI.encode_query(%{type => value, "expires_in" => expires_in, "state" => state})
+          URI.encode_query(%{"code" => code, "expires_in" => expires_in, "state" => state})
       end
 
-    url =
-      case type do
-        "access_token" -> "#{redirect_uri}##{query_string}"
-        "code" -> "#{redirect_uri}?#{query_string}"
-      end
+    url = "#{redirect_uri}?#{query_string}"
 
     redirect(conn, external: url)
   end

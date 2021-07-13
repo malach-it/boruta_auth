@@ -1,58 +1,10 @@
-# Implicit grant
+# Hybrid flow
 
-As stated in OAuth 2.0 RFC [Implicit grant](https://tools.ietf.org/html/rfc6749#section-4.2) is a flow suitable for javascript applications, ensuring client validity with its provided TLS certificate.
+As stated in OpenID Connect core 1.0 [Hybrid flow](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth) is a flow based on Authorization code grant flow.
 
-```
-                    +----------+
-                    | Resource |
-                    |  Owner   |
-                    |          |
-                    +----------+
-                         ^
-                         |
-                        (B)
-                    +----|-----+          Client Identifier     +---------------+
-                    |         -+----(A)-- & Redirection URI --->|               |
-                    |  User-   |                                | Authorization |
-                    |  Agent  -|----(B)-- User authenticates -->|     Server    |
-                    |          |                                |               |
-                    |          |<---(C)--- Redirection URI ----<|               |
-                    |          |          with Access Token     +---------------+
-                    |          |            in Fragment
-                    |          |                                +---------------+
-                    |          |----(D)--- Redirection URI ---->|   Web-Hosted  |
-                    |          |          without Fragment      |     Client    |
-                    |          |                                |    Resource   |
-                    |     (F)  |<---(E)------- Script ---------<|               |
-                    |          |                                +---------------+
-                    +-|--------+
-                      |    |
-                     (A)  (G) Access Token
-                      |    |
-                      ^    v
-                    +---------+
-                    |         |
-                    |  Client |
-                    |         |
-                    +---------+
-```
-(A)  The client initiates the flow by directing the resource owner's user-agent to the authorization endpoint.  The client includes its client identifier, requested scope, local state, and a redirection URI to which the authorization server will send the user-agent back once access is granted (or denied).
+See [Authorization Code grant](authorization_code.md) for the flow steps aknowledgement.
 
-(B)  The authorization server authenticates the resource owner (via the user-agent) and establishes whether the resource owner grants or denies the client's access request.
-
-(C)  Assuming the resource owner grants access, the authorization server redirects the user-agent back to the client using the redirection URI provided earlier.  The redirection URI includes the access token in the URI fragment.
-
-(D)  The user-agent follows the redirection instructions by making a request to the web-hosted client resource (which does not include the fragment per [RFC2616]).  The user-agent retains the fragment information locally.
-
-(E)  The web-hosted client resource returns a web page (typically an HTML document with an embedded script) capable of accessing the full redirection URI including the fragment retained by the user-agent, and extracting the access token (and other parameters) contained in the fragment.
-
-(F)  The user-agent executes the script provided by the web-hosted client resource locally, which extracts the access token.
-
-(G)  The user-agent passes the access token to the client.
-
-> Copyright (c) 2012 IETF Trust and the persons identified as authors of the code. All rights reserved.
->
-> Redistribution and use in source and binary forms, with or without modification, is permitted pursuant to, and subject to the license terms contained in, the Simplified BSD License set forth in Section 4.c of the IETF Trust’s Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info).
+The major difference with authorization code grant is the possible addition of response types `id_token` and `token` while requesting for a code.
 
 ## Integration
 ### Code example
@@ -89,6 +41,13 @@ defmodule MyApp.ResourceOwners do
 
   @impl Boruta.Oauth.ResourceOwners
   def authorized_scopes(%ResourceOwner{}), do: []
+
+  @impl Boruta.Oauth.ResourceOwners
+  def claims(sub) do
+    with %User{email: email} = user <- Repo.get_by(User, id: sub) do
+      %{"email" => email}
+    end
+  end
 end
 ```
 
@@ -98,6 +57,31 @@ end
 ```
 defmodule MyAppWeb.OauthView do
   use MyAppWeb, :view
+
+  alias Boruta.Oauth.TokenResponse
+
+  def render("token.json", %{
+    response: %TokenResponse{
+        token_type: token_type,
+        access_token: access_token,
+        expires_in: expires_in,
+        refresh_token: refresh_token
+      }
+  }) do
+    %{
+      token_type: token_type,
+      access_token: access_token,
+      expires_in: expires_in,
+      refresh_token: refresh_token
+    }
+  end
+
+  def render("error.json", %{error: error, error_description: error_description}) do
+    %{
+      error: error,
+      error_description: error_description
+    }
+  end
 end
 ```
 
@@ -118,7 +102,27 @@ defmodule MyAppWeb.OauthController do
 
   alias Boruta.Oauth
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.TokenResponse
   alias MyAppWeb.OauthView
+
+  def token(%Plug.Conn{} = conn, _params) do
+    conn |> Oauth.token(__MODULE__)
+  end
+
+  @impl Boruta.Oauth.Application
+  def token_success(conn, %TokenResponse{} = response) do
+    conn
+    |> put_view(OauthView)
+    |> render("token.json", response: response)
+  end
+
+  @impl Boruta.Oauth.Application
+  def token_error(conn, %Error{status: status, error: error, error_description: error_description}) do
+    conn
+    |> put_status(status)
+    |> put_view(OauthView)
+    |> render("error.json", error: error, error_description: error_description)
+  end
 
   def authorize(%Plug.Conn{query_params: query_params} = conn, _params) do
     current_user = conn.assigns[:current_user]
@@ -138,14 +142,28 @@ defmodule MyAppWeb.OauthController do
         %AuthorizeResponse{
           type: type,
           redirect_uri: redirect_uri,
+          code: code,
+          id_token: id_token,
           access_token: access_token,
           expires_in: expires_in,
           state: state
         }
       ) do
-    query = URI.encode_query(%{"access_token" => access_token, "expires_in" => expires_in})
+    query =
+      %{
+        code: code,
+        id_token: id_token,
+        access_token: access_token,
+        expires_in: expires_in,
+        state: state
+      }
+      |> Enum.map(fn {param_type, value} ->
+        value && {param_type, value}
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> URI.encode_query()
 
-    url = "#{redirect_uri}##{query_string}"
+    url = "#{redirect_uri}?#{query_string}"
 
     redirect(conn, external: url)
   end
@@ -213,6 +231,16 @@ defmodule MyAppWeb.Router do
     plug :fetch_session
     plug :fetch_flash
     plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  scope "/oauth", MyAppWeb do
+    pipe_through :api
+
+    post "/token", OauthController, :token
   end
 
   scope "/oauth", MyAppWeb do

@@ -67,6 +67,7 @@ defmodule Boruta.MixProject do
         "guides/client_credentials.md",
         "guides/resource_owner_password_credentials.md",
         "guides/authorization_code.md",
+        "guides/hybrid.md",
         "guides/implicit.md",
         "guides/introspect.md",
         "guides/revoke.md"
