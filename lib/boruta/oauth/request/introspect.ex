@@ -17,7 +17,7 @@ defmodule Boruta.Oauth.Request.Introspect do
        :redirect_uri => nil,
        :status => :bad_request
      }}
-    | {:ok, request :: %IntrospectRequest{}}
+    | {:ok, request :: IntrospectRequest.t()}
   # Handle Plug.Conn to extract header authorization (could not implement that as a guard)
   def request(%{
     req_headers: req_headers,

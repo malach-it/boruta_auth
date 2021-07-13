@@ -20,11 +20,11 @@ defmodule Boruta.Oauth.Request.Token do
        :redirect_uri => nil,
        :status => :bad_request
      }}
-    | {:ok, oauth_request :: %AuthorizationCodeRequest{}
-      | %ClientCredentialsRequest{}
-      | %AuthorizationCodeRequest{}
-      | %TokenRequest{}
-      | %PasswordRequest{}}
+    | {:ok, oauth_request :: AuthorizationCodeRequest.t()
+      | ClientCredentialsRequest.t()
+      | AuthorizationCodeRequest.t()
+      | TokenRequest.t()
+      | PasswordRequest.t()}
   def request(%{
     req_headers: req_headers,
     body_params: %{} = body_params

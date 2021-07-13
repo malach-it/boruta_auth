@@ -22,9 +22,9 @@ defmodule Boruta.Oauth.Authorization.Scope do
   @spec authorize(params :: [
     scope: String.t(),
     against: %{
-      optional(:client) => %Client{},
+      optional(:client) => Client.t(),
       optional(:resource_owner) => struct(),
-      optional(:token) => %Token{}
+      optional(:token) => Token.t()
     }
   ]) ::
   {:ok, scope :: String.t()} |

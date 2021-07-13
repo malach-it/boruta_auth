@@ -29,7 +29,7 @@ defmodule Boruta.Oauth.Authorization.Code do
              :redirect_uri => nil,
              :status => :bad_request
            }}
-          | {:ok, %Token{}}
+          | {:ok, Token.t()}
   def authorize(%{value: value, redirect_uri: redirect_uri, client: %Client{pkce: false}}) do
     with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
          :ok <- Token.ensure_valid(token) do

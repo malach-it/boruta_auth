@@ -20,9 +20,9 @@ defmodule Boruta.Oauth.Request.Authorize do
            }}
           | {:ok,
              oauth_request ::
-               %CodeRequest{}
-               | %TokenRequest{}
-               | %HybridRequest{}}
+               CodeRequest.t()
+               | TokenRequest.t()
+               | HybridRequest.t()}
   def request(%{query_params: query_params}, resource_owner) do
     case Validator.validate(:authorize, query_params) do
       {:ok, params} ->
