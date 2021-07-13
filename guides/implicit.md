@@ -58,7 +58,7 @@ As stated in OAuth 2.0 RFC [Implicit grant](https://tools.ietf.org/html/rfc6749#
 ### Code example
 - lib/my_app_web/resource_owners.ex
 
-```
+```elixir
 defmodule MyApp.ResourceOwners do
   @behaviour Boruta.Oauth.ResourceOwners
 
@@ -95,7 +95,7 @@ end
 - lib/my_app_web/views/oauth_view.ex
 
 
-```
+```elixir
 defmodule MyAppWeb.OauthView do
   use MyAppWeb, :view
 end
@@ -103,14 +103,14 @@ end
 
 - lib/my_app_web/templates/oauth/error.html.eex
 
-```
+```html
 <h1><%= @error %> - An error occured while authorizing request, check client OAuth configuration</h1>
 <p><%= @error_description %></p>
 ```
 
 - lib/my_app_web/controllers/oauth_controller.ex
 
-```
+```elixir
 defmodule MyAppWeb.OauthController do
   @behaviour Boruta.Oauth.Application
 
@@ -204,7 +204,7 @@ end
 
 - lib/my_app_web/router.ex
 
-```
+```elixir
 defmodule MyAppWeb.Router do
   use MyAppWeb, :router
 
