@@ -12,7 +12,6 @@ defmodule Boruta.OauthTest.HybridGrantTest do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
-  alias Boruta.Oauth.TokenResponse
   alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
@@ -150,7 +149,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert value
           assert expires_in
 
@@ -184,7 +183,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            access_token: access_token,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert code
           assert access_token
           assert expires_in
@@ -220,7 +219,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            id_token: id_token,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert code
           assert id_token
           assert expires_in
@@ -260,7 +259,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            access_token: access_token,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert code
           assert id_token
           assert access_token
@@ -297,7 +296,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert value
           assert expires_in
 
@@ -365,7 +364,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert value
           assert expires_in
 
@@ -404,7 +403,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert value
           assert expires_in
 
@@ -501,7 +500,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
            expires_in: expires_in,
            state: state
          }} ->
-          assert type == "code"
+          assert type == :hybrid
           assert value
           assert expires_in
           assert state == given_state
@@ -591,7 +590,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
           assert repo_code_challenge_method == "S256"
           assert String.length(repo_code_challenge_hash) == 128
 
-          assert type == "code"
+          assert type == :hybrid
           assert value
           assert expires_in
           assert state == given_state
@@ -642,10 +641,5 @@ defmodule Boruta.OauthTest.HybridGrantTest do
           assert false
       end
     end
-  end
-
-  defp using_basic_auth(username, password) do
-    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
-    %{req_headers: [{"authorization", authorization_header}]}
   end
 end

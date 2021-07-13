@@ -141,7 +141,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
            access_token: value,
            expires_in: expires_in
          }} ->
-          assert type == "access_token"
+          assert type == :token
           assert value
           assert expires_in
 
@@ -176,7 +176,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
            access_token: value,
            expires_in: expires_in
          }} ->
-          assert type == "access_token"
+          assert type == :token
           assert value
           assert expires_in
 
@@ -214,7 +214,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
            access_token: value,
            expires_in: expires_in
          }} ->
-          assert type == "access_token"
+          assert type == :token
           assert value
           assert expires_in
 

@@ -78,7 +78,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => _} = params) do
+  def validate(:authorize, %{"response_type" => _}) do
     {:error, "Invalid response_type param."}
   end
 

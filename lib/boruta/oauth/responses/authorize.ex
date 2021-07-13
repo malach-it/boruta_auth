@@ -14,15 +14,15 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             code_challenge_method: nil
 
   @type t :: %__MODULE__{
-          type: String.t(),
+          type: :token | :code | :hybrid,
           redirect_uri: String.t(),
+          expires_in: integer(),
           code: String.t(),
           id_token: String.t() | nil,
           access_token: String.t() | nil,
-          expires_in: integer(),
-          state: String.t(),
-          code_challenge: String.t(),
-          code_challenge_method: String.t()
+          state: String.t() | nil,
+          code_challenge: String.t() | nil,
+          code_challenge_method: String.t() | nil
         }
 
   alias Boruta.Oauth.AuthorizeResponse
@@ -34,7 +34,6 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   def from_tokens(
         %{
           code: %Token{
-            type: type,
             expires_at: expires_at,
             value: value,
             redirect_uri: redirect_uri,
@@ -46,6 +45,12 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
+
+    type =
+      case is_nil(params[:id_token] || params[:token]) do
+        false -> :hybrid
+        true -> :code
+      end
 
     %AuthorizeResponse{
       type: type,
@@ -62,7 +67,6 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   def from_tokens(%{
         token: %Token{
-          type: type,
           expires_at: expires_at,
           value: value,
           redirect_uri: redirect_uri,
@@ -75,7 +79,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
 
     %AuthorizeResponse{
-      type: type,
+      type: :token,
       redirect_uri: redirect_uri,
       access_token: value,
       expires_in: expires_in,

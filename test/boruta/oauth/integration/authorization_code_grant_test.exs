@@ -146,7 +146,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -181,7 +181,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -249,7 +249,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -288,7 +288,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -385,7 +385,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            expires_in: expires_in,
            state: state
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
           assert state == given_state
@@ -475,7 +475,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert repo_code_challenge_method == "S256"
           assert String.length(repo_code_challenge_hash) == 128
 
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
           assert state == given_state
