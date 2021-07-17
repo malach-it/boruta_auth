@@ -79,7 +79,7 @@ defmodule Boruta.Oauth.Validator do
   end
 
   def validate(:authorize, %{"response_type" => _}) do
-    {:error, "Invalid response_type param."}
+    {:error, "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token`."}
   end
 
   def validate(:introspect, params) do
