@@ -75,10 +75,11 @@ defmodule Boruta.Oauth do
         ) :: any()
   def authorize(conn, resource_owner, module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
-         {:ok, tokens} <- Authorization.token(request) do
+         {:ok, tokens} <- Authorization.token(request),
+         %AuthorizeResponse{} = response <- AuthorizeResponse.from_tokens(tokens) do
       module.authorize_success(
         conn,
-        AuthorizeResponse.from_tokens(tokens)
+        response
       )
     else
       {:error, %Error{} = error} ->

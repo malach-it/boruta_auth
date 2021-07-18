@@ -150,9 +150,36 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       end
     end
 
+    test "does not return an id_token without `openid` scope", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_error,
+        %Boruta.Oauth.Error{
+          error: :invalid_request,
+          error_description: "Neither code, nor access_token, nor id_token could be created with given parameters.",
+          format: :fragment,
+          redirect_uri: "https://redirect.uri",
+          status: :bad_request
+        }} = Oauth.authorize(
+            %{
+              query_params: %{
+                "response_type" => "id_token",
+                "client_id" => client.id,
+                "redirect_uri" => redirect_uri
+              }
+            },
+            resource_owner,
+            ApplicationMock
+          )
+    end
+
     test "returns an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -161,7 +188,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                query_params: %{
                  "response_type" => "id_token",
                  "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
+                 "redirect_uri" => redirect_uri,
+                 "scope" => "openid"
                }
              },
              resource_owner,
@@ -180,7 +208,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       end
     end
 
-    test "returns an id_token and a token", %{client: client, resource_owner: resource_owner} do
+    test "does not return an id_token but a token without `openid` scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 
@@ -192,6 +220,42 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                  "response_type" => "id_token token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           access_token: access_token,
+           id_token: id_token,
+           expires_in: expires_in
+         }} ->
+          assert type == :token
+          assert access_token
+          refute id_token
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns an id_token and a token with `openid` scope", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "id_token token",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "scope" => "openid"
                }
              },
              resource_owner,

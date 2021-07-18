@@ -209,6 +209,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenRequest
   alias Boruta.Oauth.Token
 
@@ -259,19 +260,25 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
       # TODO rescue from creation errors
       Enum.reduce(response_types, {:ok, %{}}, fn
         "id_token", {:ok, tokens} ->
-          value = token_generator().generate(:id_token, tokens[:code])
+          case String.match?(scope, ~r/#{Scope.openid().name}/) do
+            true ->
+              value = token_generator().generate(:id_token, tokens[:code])
 
-          id_token = %Token{
-            value: value,
-            type: "id_token",
-            redirect_uri: redirect_uri,
-            client: client,
-            sub: sub,
-            scope: scope,
-            state: state
-          }
+              id_token = %Token{
+                value: value,
+                type: "id_token",
+                redirect_uri: redirect_uri,
+                client: client,
+                sub: sub,
+                scope: scope,
+                state: state
+              }
 
-          {:ok, Map.put(tokens, :id_token, id_token)}
+              {:ok, Map.put(tokens, :id_token, id_token)}
+
+            false ->
+              {:ok, tokens}
+          end
 
         "token", {:ok, tokens} ->
           with {:ok, access_token} <-
@@ -402,12 +409,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
 
   def preauthorize(%HybridRequest{response_types: response_types} = request) do
     with {:ok, authorization} <-
            Authorization.preauthorize(struct(CodeRequest, Map.from_struct(request))) do
-      {:ok, %{authorization|response_types: response_types}}
+      {:ok, %{authorization | response_types: response_types}}
     end
   end
 
@@ -440,19 +448,25 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
           end
 
         "id_token", {:ok, tokens} ->
-          value = token_generator().generate(:id_token, tokens[:code])
+          case String.match?(scope, ~r/#{Scope.openid().name}/) do
+            true ->
+              value = token_generator().generate(:id_token, tokens[:code])
 
-          id_token = %Token{
-            value: value,
-            type: "id_token",
-            redirect_uri: redirect_uri,
-            client: client,
-            sub: sub,
-            scope: scope,
-            state: state
-          }
+              id_token = %Token{
+                value: value,
+                type: "id_token",
+                redirect_uri: redirect_uri,
+                client: client,
+                sub: sub,
+                scope: scope,
+                state: state
+              }
 
-          {:ok, Map.put(tokens, :id_token, id_token)}
+              {:ok, Map.put(tokens, :id_token, id_token)}
+
+            false ->
+              {:ok, tokens}
+          end
 
         "token", {:ok, tokens} ->
           with {:ok, access_token} <-

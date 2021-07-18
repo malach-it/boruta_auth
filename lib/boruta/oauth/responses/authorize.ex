@@ -3,6 +3,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   Authorize response
   """
 
+  alias Boruta.Oauth.Error
+
   defstruct type: nil,
             redirect_uri: nil,
             code: nil,
@@ -65,14 +67,16 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     }
   end
 
-  def from_tokens(%{
-        token: %Token{
-          expires_at: expires_at,
-          value: value,
-          redirect_uri: redirect_uri,
-          state: state
-        }
-      } = params) do
+  def from_tokens(
+        %{
+          token: %Token{
+            expires_at: expires_at,
+            value: value,
+            redirect_uri: redirect_uri,
+            state: state
+          }
+        } = params
+      ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
 
@@ -100,5 +104,15 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       id_token: id_token,
       state: state
     }
+  end
+
+  def from_tokens(_) do
+    {:error,
+     %Error{
+       status: :bad_request,
+       error: :invalid_request,
+       error_description:
+         "Neither code, nor access_token, nor id_token could be created with given parameters."
+     }}
   end
 end

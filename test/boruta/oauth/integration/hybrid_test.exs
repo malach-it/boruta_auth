@@ -193,7 +193,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       end
     end
 
-    test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
+    test "does not return an id_token without `openid` scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
@@ -207,6 +207,42 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                  "response_type" => "code id_token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           code: code,
+           id_token: id_token,
+           expires_in: expires_in
+         }} ->
+          assert type == :code
+          assert code
+          refute id_token
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+    test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> stub(:claims, fn _sub -> %{"email" => "test@test.test"} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code id_token",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "scope" => "openid"
                }
              },
              resource_owner,
@@ -245,7 +281,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                query_params: %{
                  "response_type" => "code id_token token",
                  "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
+                 "redirect_uri" => redirect_uri,
+                 "scope" => "openid"
                }
              },
              resource_owner,

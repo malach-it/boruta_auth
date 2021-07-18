@@ -5,11 +5,13 @@ defmodule Boruta.Oauth.Scope do
   defstruct id: nil, name: nil, label: nil, public: nil
 
   @type t :: %__MODULE__{
-    id: any(),
-    label: String.t(),
-    name: String.t(),
-    public: boolean()
-  }
+          id: any(),
+          label: String.t(),
+          name: String.t(),
+          public: boolean()
+        }
+
+  @openid_scope "openid"
 
   @doc """
   Splits an OAuth scope string into individual scopes as string
@@ -19,10 +21,21 @@ defmodule Boruta.Oauth.Scope do
   """
   @spec split(oauth_scope :: String.t() | nil) :: list(String.t())
   def split(nil), do: []
+
   def split(scope) do
     Enum.filter(
       String.split(scope, " "),
-      fn (scope) -> scope != "" end # remove empty strings
+      # remove empty strings
+      fn scope -> scope != "" end
     )
+  end
+
+  @spec openid() :: t()
+  def openid do
+    %__MODULE__{
+      label: "OpenID Connect reserved scope",
+      name: "openid",
+      public: true
+    }
   end
 end
