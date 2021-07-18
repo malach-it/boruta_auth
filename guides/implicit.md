@@ -138,12 +138,24 @@ defmodule MyAppWeb.OauthController do
         %AuthorizeResponse{
           type: type,
           redirect_uri: redirect_uri,
+          id_token: id_token,
           access_token: access_token,
           expires_in: expires_in,
           state: state
         }
       ) do
-    query = URI.encode_query(%{"access_token" => access_token, "expires_in" => expires_in})
+    query =
+      %{
+        id_token: id_token,
+        access_token: access_token,
+        expires_in: expires_in,
+        state: state
+      }
+      |> Enum.flat_map(fn
+        {_param_type, nil} -> []
+        pair -> [pair]
+      end)
+      |> URI.encode_query()
 
     url = "#{redirect_uri}##{query_string}"
 
