@@ -58,7 +58,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       type: type,
       redirect_uri: redirect_uri,
       code: value,
-      id_token: params[:id_token],
+      id_token: params[:id_token] && params[:id_token].value,
       access_token: params[:token] && params[:token].value,
       expires_in: expires_in,
       state: state,
