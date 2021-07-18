@@ -58,6 +58,8 @@ defmodule Boruta.Oauth.Validator do
   def validate(:authorize, %{"response_type" => response_types} = params)
       when response_types in [
              "token",
+             "id_token",
+             "id_token token",
              "code",
              "code id_token",
              "code token",
@@ -79,7 +81,7 @@ defmodule Boruta.Oauth.Validator do
   end
 
   def validate(:authorize, %{"response_type" => _}) do
-    {:error, "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token`."}
+    {:error, "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token` for Hybrid requests and `token` or `id_token token` for Implicit requests."}
   end
 
   def validate(:introspect, params) do

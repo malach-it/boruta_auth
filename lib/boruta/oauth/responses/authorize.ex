@@ -70,11 +70,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
           expires_at: expires_at,
           value: value,
           redirect_uri: redirect_uri,
-          state: state,
-          code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          state: state
         }
-      }) do
+      } = params) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
 
@@ -82,10 +80,25 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       type: :token,
       redirect_uri: redirect_uri,
       access_token: value,
+      id_token: params[:id_token] && params[:id_token].value,
       expires_in: expires_in,
-      state: state,
-      code_challenge: code_challenge,
-      code_challenge_method: code_challenge_method
+      state: state
+    }
+  end
+
+  def from_tokens(%{
+        id_token: %Token{
+          expires_at: expires_at,
+          value: id_token,
+          redirect_uri: redirect_uri,
+          state: state
+        }
+      }) do
+    %AuthorizeResponse{
+      type: :token,
+      redirect_uri: redirect_uri,
+      id_token: id_token,
+      state: state
     }
   end
 end

@@ -58,17 +58,6 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def build_request(%{"response_type" => "token"} = params) do
-    {:ok,
-     %TokenRequest{
-       client_id: params["client_id"],
-       redirect_uri: params["redirect_uri"],
-       resource_owner: params["resource_owner"],
-       state: params["state"],
-       scope: params["scope"]
-     }}
-  end
-
   def build_request(%{"response_type" => "code"} = params) do
     {:ok, %CodeRequest{
       client_id: params["client_id"],
@@ -93,17 +82,31 @@ defmodule Boruta.Oauth.Request.Base do
   def build_request(%{"response_type" => response_type} = params) do
     response_types = String.split(response_type, " ")
 
-    {:ok,
-     %HybridRequest{
-       response_types: response_types,
-       client_id: params["client_id"],
-       redirect_uri: params["redirect_uri"],
-       resource_owner: params["resource_owner"],
-       state: params["state"],
-       code_challenge: params["code_challenge"],
-       code_challenge_method: params["code_challenge_method"],
-       scope: params["scope"]
-     }}
+    case Enum.member?(response_types, "code") do
+      true ->
+        {:ok,
+         %HybridRequest{
+           response_types: response_types,
+           client_id: params["client_id"],
+           redirect_uri: params["redirect_uri"],
+           resource_owner: params["resource_owner"],
+           state: params["state"],
+           code_challenge: params["code_challenge"],
+           code_challenge_method: params["code_challenge_method"],
+           scope: params["scope"]
+         }}
+
+      false ->
+        {:ok,
+         %TokenRequest{
+           response_types: response_types,
+           client_id: params["client_id"],
+           redirect_uri: params["redirect_uri"],
+           resource_owner: params["resource_owner"],
+           state: params["state"],
+           scope: params["scope"]
+         }}
+    end
   end
 
   # revoke request
