@@ -262,10 +262,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
         "id_token", {:ok, tokens} ->
           case String.match?(scope, ~r/#{Scope.openid().name}/) do
             true ->
-              value = token_generator().generate(:id_token, tokens[:code])
-
               id_token = %Token{
-                value: value,
                 type: "id_token",
                 redirect_uri: redirect_uri,
                 client: client,
@@ -273,6 +270,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                 scope: scope,
                 state: state
               }
+              id_token = %{id_token|value: token_generator().generate(:id_token, id_token)}
 
               {:ok, Map.put(tokens, :id_token, id_token)}
 
@@ -450,10 +448,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
         "id_token", {:ok, tokens} ->
           case String.match?(scope, ~r/#{Scope.openid().name}/) do
             true ->
-              value = token_generator().generate(:id_token, tokens[:code])
-
               id_token = %Token{
-                value: value,
                 type: "id_token",
                 redirect_uri: redirect_uri,
                 client: client,
@@ -461,6 +456,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                 scope: scope,
                 state: state
               }
+              id_token = %{id_token|value: token_generator().generate(:id_token, id_token)}
 
               {:ok, Map.put(tokens, :id_token, id_token)}
 

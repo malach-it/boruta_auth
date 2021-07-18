@@ -92,7 +92,6 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   def from_tokens(%{
         id_token: %Token{
-          expires_at: expires_at,
           value: id_token,
           redirect_uri: redirect_uri,
           state: state

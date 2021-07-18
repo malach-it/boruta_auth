@@ -11,8 +11,6 @@ defmodule Boruta.Oauth.Scope do
           public: boolean()
         }
 
-  @openid_scope "openid"
-
   @doc """
   Splits an OAuth scope string into individual scopes as string
   ## Examples
