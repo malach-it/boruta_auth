@@ -94,16 +94,22 @@ defmodule MyAppWeb.OauthView do
     response: %TokenResponse{
         token_type: token_type,
         access_token: access_token,
+        id_token: id_token,
         expires_in: expires_in,
         refresh_token: refresh_token
       }
   }) do
-    %{
+    response = %{
       token_type: token_type,
       access_token: access_token,
       expires_in: expires_in,
       refresh_token: refresh_token
     }
+    case id_token do
+      nil -> response
+      id_token ->
+        Map.put(response, :id_token, id_token)
+    end
   end
 
   def render("error.json", %{error: error, error_description: error_description}) do

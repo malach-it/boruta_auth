@@ -15,7 +15,7 @@ defmodule Boruta.Ecto.Scope do
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
   schema "scopes" do
-    field :name, :string
+    field :name, :string, default: ""
     field :label, :string
     field :public, :boolean, default: false
 

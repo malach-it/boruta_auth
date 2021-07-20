@@ -23,10 +23,11 @@ defmodule Boruta.Oauth do
   @spec token(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   def token(conn, module) do
     with {:ok, request} <- Request.token_request(conn),
-         {:ok, token} <- Authorization.token(request) do
+         {:ok, tokens} <- Authorization.token(request),
+         %TokenResponse{} = response <- TokenResponse.from_token(tokens) do
       module.token_success(
         conn,
-        TokenResponse.from_token(token)
+        response
       )
     else
       {:error, %Error{} = error} ->

@@ -86,7 +86,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:expires_at, :integer)
         add(:redirect_uri, :string)
         add(:state, :string)
-        add(:scope, :string)
+        add(:scope, :string, default: "")
         add(:revoked_at, :utc_datetime_usec)
         add(:code_challenge_hash, :string)
         add(:code_challenge_method, :string)
@@ -100,7 +100,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
       create table(:scopes, primary_key: false) do
         add :id, :binary_id, primary_key: true
         add :label, :string
-        add :name, :string
+        add :name, :string, default: ""
         add :public, :boolean, default: false, null: false
 
         timestamps()

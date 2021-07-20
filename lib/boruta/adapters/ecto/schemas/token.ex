@@ -35,7 +35,7 @@ defmodule Boruta.Ecto.Token do
     field(:value, :string)
     field(:refresh_token, :string)
     field(:state, :string)
-    field(:scope, :string)
+    field(:scope, :string, default: "")
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)

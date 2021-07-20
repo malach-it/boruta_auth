@@ -545,6 +545,16 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           redirect_uri: List.first(client.redirect_uris)
         )
 
+      openid_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          scope: "openid"
+        )
+
       pkce_code =
         insert(
           :token,
@@ -592,6 +602,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
        code: code,
+       openid_code: openid_code,
        pkce_code: pkce_code,
        bad_redirect_uri_code: bad_redirect_uri_code,
        expired_code: expired_code,
@@ -747,6 +758,46 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
          }} ->
           assert token_type == "bearer"
           assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a token and an id_token with openid scope", %{client: client, openid_code: code, resource_owner: resource_owner} do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:claims, fn _sub -> %{} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.token(
+             %{
+               req_headers: [{"authorization", authorization_header}],
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           id_token: id_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert id_token
           assert expires_in
           assert refresh_token
 
