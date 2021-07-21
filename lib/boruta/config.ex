@@ -35,7 +35,8 @@ defmodule Boruta.Config do
       authorization_code: 60,
       access_token: 60 * 60 * 24
     ],
-    token_generator: Boruta.TokenGenerator
+    token_generator: Boruta.TokenGenerator,
+    issuer: "boruta"
 
   @spec repo() :: module()
   @doc false
@@ -95,6 +96,12 @@ defmodule Boruta.Config do
   @doc false
   def resource_owners do
     Keyword.fetch!(oauth_config(), :contexts)[:resource_owners]
+  end
+
+  @spec issuer() :: String.t()
+  @doc false
+  def issuer do
+    Keyword.fetch!(oauth_config(), :issuer)
   end
 
   @spec oauth_config() :: keyword()

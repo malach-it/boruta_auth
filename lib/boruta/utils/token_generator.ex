@@ -11,7 +11,8 @@ defmodule Boruta.TokenGenerator do
 
   import Boruta.Config,
     only: [
-      resource_owners: 0
+      resource_owners: 0,
+      issuer: 0
     ]
 
   alias Boruta.Oauth
@@ -23,6 +24,7 @@ defmodule Boruta.TokenGenerator do
     payload =
       resource_owners().claims(sub)
       |> Map.put("sub", sub)
+      |> Map.put("iss", issuer())
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key})
 
