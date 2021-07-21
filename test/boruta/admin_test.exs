@@ -13,12 +13,11 @@ defmodule Boruta.Ecto.AdminTest do
   @client_valid_attrs %{
     redirect_uri: ["https://redirect.uri"],
     access_token_ttl: 3600,
+    id_token_ttl: 3600,
     authorization_code_ttl: 60
   }
   @client_update_attrs %{
-    redirect_uri: ["https://updated.redirect.uri"],
-    access_token_ttl: 3600,
-    authorization_code_ttl: 60
+    redirect_uri: ["https://updated.redirect.uri"]
   }
 
   # clients
@@ -71,6 +70,18 @@ defmodule Boruta.Ecto.AdminTest do
     test "creates a client with a secret" do
       {:ok, %Client{secret: secret}} = Admin.create_client(@client_valid_attrs)
       assert secret
+    end
+
+    test "creates a client with token ttls" do
+      {:ok, %Client{
+        access_token_ttl: access_token_ttl,
+        authorization_code_ttl: authorization_code_ttl,
+        id_token_ttl: id_token_ttl
+      }} = Admin.create_client(@client_valid_attrs)
+
+      assert access_token_ttl
+      assert authorization_code_ttl
+      assert id_token_ttl
     end
 
     test "creates a client with authorized scopes" do

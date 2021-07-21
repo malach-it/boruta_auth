@@ -215,7 +215,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
               redirect_uri: redirect_uri,
               client: client,
               sub: sub,
-              scope: scope
+              scope: scope,
+              inserted_at: DateTime.utc_now()
             }
 
             id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}
@@ -296,7 +297,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                 client: client,
                 sub: sub,
                 scope: scope,
-                state: state
+                state: state,
+                inserted_at: DateTime.utc_now()
               }
 
               id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}
@@ -483,7 +485,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                 client: client,
                 sub: sub,
                 scope: scope,
-                state: state
+                state: state,
+                inserted_at: DateTime.utc_now()
               }
 
               id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}

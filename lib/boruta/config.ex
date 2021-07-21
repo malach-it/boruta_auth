@@ -33,7 +33,8 @@ defmodule Boruta.Config do
     ],
     max_ttl: [
       authorization_code: 60,
-      access_token: 60 * 60 * 24
+      access_token: 60 * 60 * 24,
+      id_token: 60 * 60 * 24
     ],
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
@@ -60,6 +61,12 @@ defmodule Boruta.Config do
   @doc false
   def authorization_code_max_ttl do
     Keyword.fetch!(oauth_config(), :max_ttl)[:authorization_code]
+  end
+
+  @spec id_token_max_ttl() :: integer()
+  @doc false
+  def id_token_max_ttl do
+    Keyword.fetch!(oauth_config(), :max_ttl)[:id_token]
   end
 
   @spec token_generator() :: module()

@@ -20,11 +20,15 @@ defmodule Boruta.TokenGenerator do
   use Puid, bits: 512, charset: :alphanum
 
   @impl Boruta.Oauth.TokenGenerator
-  def generate(:id_token, %Oauth.Token{sub: sub, client: client}) do
+  def generate(:id_token, %Oauth.Token{sub: sub, client: client, inserted_at: inserted_at}) do
+    iat = DateTime.to_unix(inserted_at)
     payload =
       resource_owners().claims(sub)
       |> Map.put("sub", sub)
       |> Map.put("iss", issuer())
+      |> Map.put("aud", client.id)
+      |> Map.put("iat", iat)
+      |> Map.put("exp", iat + client.id_token_ttl)
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key})
 
