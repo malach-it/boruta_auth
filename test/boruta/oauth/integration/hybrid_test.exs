@@ -125,39 +125,6 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 }}
     end
 
-    test "returns a code", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-
-      redirect_uri = List.first(client.redirect_uris)
-
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert value
-          assert expires_in
-
-        _ ->
-          assert false
-      end
-    end
-
     test "returns a code and a token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
@@ -193,7 +160,34 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       end
     end
 
-    test "does not return an id_token without `openid` scope", %{client: client, resource_owner: resource_owner} do
+    test "creates a code with a nonce", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      Oauth.authorize(
+        %{
+          query_params: %{
+            "response_type" => "code token",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri,
+            "nonce" => nonce
+          }
+        },
+        resource_owner,
+        ApplicationMock
+      )
+
+      assert %Ecto.Token{nonce: ^nonce} = Repo.get_by(Ecto.Token, type: "code")
+    end
+
+    test "does not return an id_token without `openid` scope", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
@@ -228,6 +222,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
           assert false
       end
     end
+
     test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
@@ -235,6 +230,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       |> stub(:claims, fn _sub -> %{"email" => "test@test.test"} end)
 
       redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
 
       case Oauth.authorize(
              %{
@@ -242,7 +238,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                  "response_type" => "code id_token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
-                 "scope" => "openid"
+                 "scope" => "openid",
+                 "nonce" => nonce
                }
              },
              resource_owner,
@@ -260,6 +257,21 @@ defmodule Boruta.OauthTest.HybridGrantTest do
           assert id_token
           assert expires_in
 
+          signer =
+            Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+          {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+          client_id = client.id
+          resource_owner_id = resource_owner.sub
+
+          assert %{
+                   "aud" => ^client_id,
+                   "iat" => _iat,
+                   "exp" => _exp,
+                   "sub" => ^resource_owner_id,
+                   "nonce" => ^nonce
+                 } = claims
+
         _ ->
           assert false
       end
@@ -275,6 +287,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       |> stub(:claims, fn _sub -> %{email: "test@test.test"} end)
 
       redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
 
       case Oauth.authorize(
              %{
@@ -282,7 +295,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                  "response_type" => "code id_token token",
                  "client_id" => client.id,
                  "redirect_uri" => redirect_uri,
-                 "scope" => "openid"
+                 "scope" => "openid",
+                 "nonce" => nonce
                }
              },
              resource_owner,
@@ -301,6 +315,21 @@ defmodule Boruta.OauthTest.HybridGrantTest do
           assert id_token
           assert access_token
           assert expires_in
+
+          signer =
+            Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+          {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+          client_id = client.id
+          resource_owner_id = resource_owner.sub
+
+          assert %{
+                   "aud" => ^client_id,
+                   "iat" => _iat,
+                   "exp" => _exp,
+                   "sub" => ^resource_owner_id,
+                   "nonce" => ^nonce
+                 } = claims
 
         _ ->
           assert false

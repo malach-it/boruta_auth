@@ -12,6 +12,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
+  alias Boruta.TokenGenerator
 
   describe "implicit grant" do
     setup do
@@ -124,56 +125,58 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           access_token: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :token
-          assert value
-          assert expires_in
+      {:authorize_success,
+       %AuthorizeResponse{
+         type: type,
+         access_token: value,
+         expires_in: expires_in
+       }} =
+        Oauth.authorize(
+          %{
+            query_params: %{
+              "response_type" => "token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
 
-        _ ->
-          assert false
-      end
+      assert type == :token
+      assert value
+      assert expires_in
     end
 
-    test "does not return an id_token without `openid` scope", %{client: client, resource_owner: resource_owner} do
+    test "does not return an id_token without `openid` scope", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_error,
-        %Boruta.Oauth.Error{
-          error: :invalid_request,
-          error_description: "Neither code, nor access_token, nor id_token could be created with given parameters.",
-          format: :fragment,
-          redirect_uri: "https://redirect.uri",
-          status: :bad_request
-        }} = Oauth.authorize(
-            %{
-              query_params: %{
-                "response_type" => "id_token",
-                "client_id" => client.id,
-                "redirect_uri" => redirect_uri
-              }
-            },
-            resource_owner,
-            ApplicationMock
-          )
+              %Boruta.Oauth.Error{
+                error: :invalid_request,
+                error_description:
+                  "Neither code, nor access_token, nor id_token could be created with given parameters.",
+                format: :fragment,
+                redirect_uri: "https://redirect.uri",
+                status: :bad_request
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "id_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns an id_token", %{client: client, resource_owner: resource_owner} do
@@ -183,101 +186,128 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       |> stub(:claims, fn _sub -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "id_token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => "openid"
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           id_token: value
-         }} ->
-          assert type == :token
-          assert value
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                id_token: value
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "id_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :token
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+      {:ok, claims} = TokenGenerator.Token.verify_and_validate(value, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
+
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce
+             } = claims
     end
 
-    test "does not return an id_token but a token without `openid` scope", %{client: client, resource_owner: resource_owner} do
+    test "does not return an id_token but a token without `openid` scope", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "id_token token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           access_token: access_token,
-           id_token: id_token,
-           expires_in: expires_in
-         }} ->
-          assert type == :token
-          assert access_token
-          refute id_token
-          assert expires_in
+      {:authorize_success,
+       %AuthorizeResponse{
+         type: type,
+         access_token: access_token,
+         id_token: id_token,
+         expires_in: expires_in
+       }} =
+        Oauth.authorize(
+          %{
+            query_params: %{
+              "response_type" => "id_token token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
 
-        _ ->
-          assert false
-      end
+      assert type == :token
+      assert access_token
+      refute id_token
+      assert expires_in
     end
 
-    test "returns an id_token and a token with `openid` scope", %{client: client, resource_owner: resource_owner} do
+    test "returns an id_token and a token with `openid` scope", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
       |> stub(:claims, fn _sub -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "id_token token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => "openid"
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           access_token: access_token,
-           id_token: id_token,
-           expires_in: expires_in
-         }} ->
-          assert type == :token
-          assert access_token
-          assert id_token
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                access_token: access_token,
+                id_token: id_token,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "id_token token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :token
+      assert access_token
+      assert id_token
+      assert expires_in
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+      {:ok, claims} = TokenGenerator.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
+
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce
+             } = claims
     end
 
     test "returns a token with regexes", %{
@@ -289,30 +319,27 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           access_token: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :token
-          assert value
-          assert expires_in
+      {:authorize_success,
+       %AuthorizeResponse{
+         type: type,
+         access_token: value,
+         expires_in: expires_in
+       }} =
+        Oauth.authorize(
+          %{
+            query_params: %{
+              "response_type" => "token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
 
-        _ ->
-          assert false
-      end
+      assert type == :token
+      assert value
+      assert expires_in
     end
 
     test "returns a token if scope is authorized", %{
@@ -326,31 +353,28 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => given_scope
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           access_token: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :token
-          assert value
-          assert expires_in
+      {:authorize_success,
+       %AuthorizeResponse{
+         type: type,
+         access_token: value,
+         expires_in: expires_in
+       }} =
+        Oauth.authorize(
+          %{
+            query_params: %{
+              "response_type" => "token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri,
+              "scope" => given_scope
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
 
-        _ ->
-          assert false
-      end
+      assert type == :token
+      assert value
+      assert expires_in
     end
 
     test "returns an error if scope is unknown or unauthorized", %{

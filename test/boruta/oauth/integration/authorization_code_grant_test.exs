@@ -155,6 +155,29 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      Oauth.authorize(
+             %{
+               query_params: %{
+                 "response_type" => "code",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "nonce" => nonce
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           )
+     assert %Ecto.Token{nonce: ^nonce} = Repo.get_by(Ecto.Token, type: "code")
+    end
+
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
@@ -552,7 +575,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris),
-          scope: "openid"
+          scope: "openid",
+          nonce: "nonce"
         )
 
       pkce_code =
@@ -801,6 +825,18 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert expires_in
           assert refresh_token
 
+          signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+          {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+          client_id = client.id
+          resource_owner_id = resource_owner.sub
+          nonce = code.nonce
+          assert %{
+            "aud" => ^client_id,
+            "iat" => _iat,
+            "exp" => _exp,
+            "sub" => ^resource_owner_id,
+            "nonce" => ^nonce
+          } = claims
         _ ->
           assert false
       end

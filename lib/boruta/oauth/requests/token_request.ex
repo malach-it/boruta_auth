@@ -15,7 +15,8 @@ defmodule Boruta.Oauth.TokenRequest do
           state: String.t(),
           scope: String.t(),
           resource_owner: struct(),
-          grant_type: String.t()
+          grant_type: String.t(),
+          nonce: String.t()
         }
   defstruct client_id: "",
             redirect_uri: "",
@@ -23,5 +24,6 @@ defmodule Boruta.Oauth.TokenRequest do
             scope: "",
             resource_owner: nil,
             grant_type: "implicit",
+            nonce: nil,
             response_types: []
 end

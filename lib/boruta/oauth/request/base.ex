@@ -59,15 +59,17 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def build_request(%{"response_type" => "code"} = params) do
-    {:ok, %CodeRequest{
-      client_id: params["client_id"],
-      redirect_uri: params["redirect_uri"],
-      resource_owner: params["resource_owner"],
-      state: params["state"],
-      code_challenge: params["code_challenge"],
-      code_challenge_method: params["code_challenge_method"],
-      scope: params["scope"]
-    }}
+    {:ok,
+     %CodeRequest{
+       client_id: params["client_id"],
+       redirect_uri: params["redirect_uri"],
+       resource_owner: params["resource_owner"],
+       state: params["state"],
+       nonce: params["nonce"],
+       code_challenge: params["code_challenge"],
+       code_challenge_method: params["code_challenge_method"],
+       scope: params["scope"]
+     }}
   end
 
   def build_request(%{"response_type" => "introspect"} = params) do
@@ -93,7 +95,8 @@ defmodule Boruta.Oauth.Request.Base do
            state: params["state"],
            code_challenge: params["code_challenge"],
            code_challenge_method: params["code_challenge_method"],
-           scope: params["scope"]
+           scope: params["scope"],
+           nonce: params["nonce"]
          }}
 
       false ->
@@ -104,7 +107,8 @@ defmodule Boruta.Oauth.Request.Base do
            redirect_uri: params["redirect_uri"],
            resource_owner: params["resource_owner"],
            state: params["state"],
-           scope: params["scope"]
+           scope: params["scope"],
+           nonce: params["nonce"]
          }}
     end
   end

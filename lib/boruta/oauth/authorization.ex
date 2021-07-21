@@ -35,6 +35,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             sub: nil,
             scope: nil,
             state: nil,
+            nonce: nil,
             code_challenge: nil,
             code_challenge_method: nil
 
@@ -45,6 +46,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           sub: String.t(),
           scope: String.t(),
           state: String.t(),
+          nonce: String.t(),
           code_challenge: String.t(),
           code_challenge_method: String.t()
         }
@@ -183,7 +185,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
          client: client,
          redirect_uri: redirect_uri,
          sub: sub,
-         scope: code.scope
+         scope: code.scope,
+         nonce: code.nonce
        }}
     end
   end
@@ -194,7 +197,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
             client: client,
             redirect_uri: redirect_uri,
             sub: sub,
-            scope: scope
+            scope: scope,
+            nonce: nonce
           }} <-
            preauthorize(request) do
       # TODO rescue from creation errors
@@ -216,7 +220,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
               client: client,
               sub: sub,
               scope: scope,
-              inserted_at: DateTime.utc_now()
+              inserted_at: DateTime.utc_now(),
+              nonce: nonce
             }
 
             id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}
@@ -248,6 +253,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
         redirect_uri: redirect_uri,
         resource_owner: resource_owner,
         state: state,
+        nonce: nonce,
         scope: scope,
         grant_type: grant_type
       }) do
@@ -271,7 +277,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
          redirect_uri: redirect_uri,
          sub: sub,
          scope: scope,
-         state: state
+         state: state,
+         nonce: nonce
        }}
     end
   end
@@ -284,7 +291,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
-            state: state
+            state: state,
+            nonce: nonce
           }} <- preauthorize(request) do
       # TODO rescue from creation errors
       Enum.reduce(response_types, {:ok, %{}}, fn
@@ -298,6 +306,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                 sub: sub,
                 scope: scope,
                 state: state,
+                nonce: nonce,
                 inserted_at: DateTime.utc_now()
               }
 
@@ -343,6 +352,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
         redirect_uri: redirect_uri,
         resource_owner: resource_owner,
         state: state,
+        nonce: nonce,
         scope: scope,
         grant_type: grant_type,
         code_challenge: code_challenge,
@@ -370,6 +380,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              sub: sub,
              scope: scope,
              state: state,
+             nonce: nonce,
              code_challenge: code_challenge,
              code_challenge_method: code_challenge_method
            }}
@@ -393,6 +404,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             sub: sub,
             scope: scope,
             state: state,
+            nonce: nonce,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method
           }} <-
@@ -405,6 +417,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
                sub: sub,
                scope: scope,
                state: state,
+               nonce: nonce,
                code_challenge: code_challenge,
                code_challenge_method: code_challenge_method
              }) do
@@ -457,6 +470,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
             sub: sub,
             scope: scope,
             state: state,
+            nonce: nonce,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method
           }} <-
@@ -470,6 +484,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                    sub: sub,
                    scope: scope,
                    state: state,
+                   nonce: nonce,
                    code_challenge: code_challenge,
                    code_challenge_method: code_challenge_method
                  }) do
@@ -486,6 +501,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                 sub: sub,
                 scope: scope,
                 state: state,
+                nonce: nonce,
                 inserted_at: DateTime.utc_now()
               }
 

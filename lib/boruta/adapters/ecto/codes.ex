@@ -53,6 +53,7 @@ defmodule Boruta.Ecto.Codes do
           sub: sub,
           redirect_uri: redirect_uri,
           state: state,
+          nonce: params[:nonce],
           scope: scope,
           authorization_code_ttl: authorization_code_ttl,
           code_challenge: code_challenge,
