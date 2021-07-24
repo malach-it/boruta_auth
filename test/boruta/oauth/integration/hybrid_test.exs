@@ -269,7 +269,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                    "iat" => _iat,
                    "exp" => _exp,
                    "sub" => ^resource_owner_id,
-                   "nonce" => ^nonce
+                   "nonce" => ^nonce,
+                   "c_hash" => _c_hash
                  } = claims
 
         _ ->
@@ -328,7 +329,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                    "iat" => _iat,
                    "exp" => _exp,
                    "sub" => ^resource_owner_id,
-                   "nonce" => ^nonce
+                   "nonce" => ^nonce,
+                   "c_hash" => _c_hash
                  } = claims
 
         _ ->

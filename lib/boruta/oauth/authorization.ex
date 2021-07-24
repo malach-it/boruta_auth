@@ -494,7 +494,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
         "id_token", {:ok, tokens} ->
           case String.match?(scope, ~r/#{Scope.openid().name}/) do
             true ->
-              id_token = %Token{
+              token = tokens[:code] || %Token{
                 type: "id_token",
                 redirect_uri: redirect_uri,
                 client: client,
@@ -505,7 +505,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                 inserted_at: DateTime.utc_now()
               }
 
-              id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}
+              id_token = %{token | value: token_generator().generate(:id_token, token)}
 
               {:ok, Map.put(tokens, :id_token, id_token)}
 
