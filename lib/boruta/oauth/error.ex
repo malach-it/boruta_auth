@@ -30,7 +30,7 @@ defmodule Boruta.Oauth.Error do
   end
 
   def with_format(%Error{} = error, %HybridRequest{redirect_uri: redirect_uri}) do
-    %{error | format: :query, redirect_uri: redirect_uri}
+    %{error | format: :fragment, redirect_uri: redirect_uri}
   end
 
   def with_format(%Error{} = error, %TokenRequest{redirect_uri: redirect_uri}) do

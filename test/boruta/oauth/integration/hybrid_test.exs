@@ -74,7 +74,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized,
-                  format: :query,
+                  format: :fragment,
                   redirect_uri: "http://redirect.uri"
                 }}
     end
@@ -96,7 +96,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized,
-                  format: :query,
+                  format: :fragment,
                   redirect_uri: "http://bad.redirect.uri"
                 }}
     end
@@ -120,7 +120,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   error: :invalid_resource_owner,
                   error_description: "Resource owner is invalid.",
                   status: :unauthorized,
-                  format: :query,
+                  format: :fragment,
                   redirect_uri: redirect_uri
                 }}
     end
@@ -382,7 +382,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
                   status: :bad_request,
-                  format: :query,
+                  format: :fragment,
                   redirect_uri: redirect_uri
                 }}
     end
@@ -485,7 +485,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  format: :query,
+                  format: :fragment,
                   redirect_uri: "https://redirect.uri",
                   status: :bad_request
                 }}
@@ -513,7 +513,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
-                  format: :query,
+                  format: :fragment,
                   redirect_uri: redirect_uri,
                   status: :bad_request
                 }}
@@ -580,7 +580,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                %Boruta.Oauth.Error{
                  error: :invalid_request,
                  error_description: "Code challenge is invalid.",
-                 format: :query,
+                 format: :fragment,
                  redirect_uri: "https://redirect.uri",
                  status: :bad_request
                }
