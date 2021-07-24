@@ -132,32 +132,30 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: code,
-           access_token: access_token,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert code
-          assert access_token
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                access_token: access_token,
+                expires_in: expires_in,
+                token_type: "bearer"
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :hybrid
+      assert code
+      assert access_token
+      assert expires_in
     end
 
     test "creates a code with a nonce", %{client: client, resource_owner: resource_owner} do
@@ -195,32 +193,29 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code id_token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: code,
-           id_token: id_token,
-           expires_in: expires_in
-         }} ->
-          assert type == :code
-          assert code
-          refute id_token
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code id_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :code
+      assert code
+      refute id_token
+      assert expires_in
     end
 
     test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
@@ -232,50 +227,46 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code id_token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => "openid",
-                 "nonce" => nonce
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: code,
-           id_token: id_token,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert code
-          assert id_token
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code id_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-          signer =
-            Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+      assert type == :hybrid
+      assert code
+      assert id_token
+      assert expires_in
 
-          {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
-          client_id = client.id
-          resource_owner_id = resource_owner.sub
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
-          assert %{
-                   "aud" => ^client_id,
-                   "iat" => _iat,
-                   "exp" => _exp,
-                   "sub" => ^resource_owner_id,
-                   "nonce" => ^nonce,
-                   "c_hash" => _c_hash
-                 } = claims
+      {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
 
-        _ ->
-          assert false
-      end
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce,
+               "c_hash" => _c_hash
+             } = claims
     end
 
     test "returns a code, a token and an id_token", %{
@@ -290,52 +281,48 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code id_token token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => "openid",
-                 "nonce" => nonce
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: code,
-           id_token: id_token,
-           access_token: access_token,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert code
-          assert id_token
-          assert access_token
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                access_token: access_token,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code id_token token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-          signer =
-            Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+      assert type == :hybrid
+      assert code
+      assert id_token
+      assert access_token
+      assert expires_in
 
-          {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
-          client_id = client.id
-          resource_owner_id = resource_owner.sub
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
-          assert %{
-                   "aud" => ^client_id,
-                   "iat" => _iat,
-                   "exp" => _exp,
-                   "sub" => ^resource_owner_id,
-                   "nonce" => ^nonce,
-                   "c_hash" => _c_hash
-                 } = claims
+      {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
 
-        _ ->
-          assert false
-      end
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce,
+               "c_hash" => _c_hash
+             } = claims
     end
 
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
@@ -346,31 +333,28 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => given_scope
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert value
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :hybrid
+      assert value
+      assert expires_in
     end
 
     test "returns an error with private scope", %{client: client, resource_owner: resource_owner} do
@@ -414,31 +398,28 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => given_scope
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert value
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :hybrid
+      assert value
+      assert expires_in
     end
 
     test "returns a code if scope is authorized by resource owner", %{
@@ -453,31 +434,28 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => given_scope.name
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :hybrid
-          assert value
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope.name
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :hybrid
+      assert value
+      assert expires_in
     end
 
     test "returns an error if scope is unknown or unauthorized", %{
@@ -549,33 +527,30 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "state" => given_state
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in,
-           state: state
-         }} ->
-          assert type == :hybrid
-          assert value
-          assert expires_in
-          assert state == given_state
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in,
+                state: state
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "state" => given_state
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :hybrid
+      assert value
+      assert expires_in
+      assert state == given_state
     end
 
     test "returns an error with pkce client without code_challenge", %{
@@ -625,49 +600,46 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       given_code_challenge_method = "S256"
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "state" => given_state,
-                 "code_challenge" => given_code_challenge,
-                 "code_challenge_method" => given_code_challenge_method
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in,
-           state: state,
-           code_challenge: code_challenge,
-           code_challenge_method: code_challenge_method
-         }} ->
-          %Ecto.Token{
-            code_challenge: repo_code_challenge,
-            code_challenge_method: repo_code_challenge_method,
-            code_challenge_hash: repo_code_challenge_hash
-          } = Repo.get_by(Ecto.Token, value: value)
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in,
+                state: state,
+                code_challenge: code_challenge,
+                code_challenge_method: code_challenge_method
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "state" => given_state,
+                     "code_challenge" => given_code_challenge,
+                     "code_challenge_method" => given_code_challenge_method
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-          assert repo_code_challenge == nil
-          assert repo_code_challenge_method == "S256"
-          assert String.length(repo_code_challenge_hash) == 128
+      %Ecto.Token{
+        code_challenge: repo_code_challenge,
+        code_challenge_method: repo_code_challenge_method,
+        code_challenge_hash: repo_code_challenge_hash
+      } = Repo.get_by(Ecto.Token, value: value)
 
-          assert type == :hybrid
-          assert value
-          assert expires_in
-          assert state == given_state
-          assert code_challenge == given_code_challenge
-          assert code_challenge_method == given_code_challenge_method
+      assert repo_code_challenge == nil
+      assert repo_code_challenge_method == "S256"
+      assert String.length(repo_code_challenge_hash) == 128
 
-        _ ->
-          assert false
-      end
+      assert type == :hybrid
+      assert value
+      assert expires_in
+      assert state == given_state
+      assert code_challenge == given_code_challenge
+      assert code_challenge_method == given_code_challenge_method
     end
 
     test "code_challenge_method defaults to `plain`", %{
@@ -682,32 +654,29 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       given_code_challenge = "code challenge"
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "state" => given_state,
-                 "code_challenge" => given_code_challenge
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           code: value
-         }} ->
-          %Ecto.Token{
-            code_challenge_method: repo_code_challenge_method
-          } = Repo.get_by(Ecto.Token, value: value)
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                code: value
+              }} =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "state" => given_state,
+                     "code_challenge" => given_code_challenge
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-          assert repo_code_challenge_method == "plain"
+      %Ecto.Token{
+        code_challenge_method: repo_code_challenge_method
+      } = Repo.get_by(Ecto.Token, value: value)
 
-        _ ->
-          assert false
-      end
+      assert repo_code_challenge_method == "plain"
     end
   end
 end

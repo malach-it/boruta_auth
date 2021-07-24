@@ -13,7 +13,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             expires_in: nil,
             state: nil,
             code_challenge: nil,
-            code_challenge_method: nil
+            code_challenge_method: nil,
+            token_type: nil
 
   @type t :: %__MODULE__{
           type: :token | :code | :hybrid,
@@ -24,7 +25,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
           access_token: String.t() | nil,
           state: String.t() | nil,
           code_challenge: String.t() | nil,
-          code_challenge_method: String.t() | nil
+          code_challenge_method: String.t() | nil,
+          token_type: String.t() | nil
         }
 
   alias Boruta.Oauth.AuthorizeResponse
@@ -49,9 +51,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
 
     type =
-      case is_nil(params[:id_token] || params[:token]) do
-        false -> :hybrid
-        true -> :code
+      case is_hybrid?(params) do
+        true -> :hybrid
+        false -> :code
       end
 
     %AuthorizeResponse{
@@ -63,7 +65,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       expires_in: expires_in,
       state: state,
       code_challenge: code_challenge,
-      code_challenge_method: code_challenge_method
+      code_challenge_method: code_challenge_method,
+      token_type: (if is_hybrid?(params), do: "bearer")
     }
   end
 
@@ -113,5 +116,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
        error_description:
          "Neither code, nor access_token, nor id_token could be created with given parameters."
      }}
+  end
+
+  defp is_hybrid?(params) do
+    !is_nil(params[:id_token] || params[:token])
   end
 end
