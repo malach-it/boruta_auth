@@ -155,6 +155,40 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns an error with openid scope and wihout nonce", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "OpenID requests require a nonce.",
+                 format: :query,
+                 redirect_uri: "https://redirect.uri",
+                 status: :bad_request
+               }
+             } ==
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
     test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
@@ -164,18 +198,19 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       nonce = "nonce"
 
       Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "nonce" => nonce
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           )
-     assert %Ecto.Token{nonce: ^nonce} = Repo.get_by(Ecto.Token, type: "code")
+        %{
+          query_params: %{
+            "response_type" => "code",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri,
+            "nonce" => nonce
+          }
+        },
+        resource_owner,
+        ApplicationMock
+      )
+
+      assert %Ecto.Token{nonce: ^nonce} = Repo.get_by(Ecto.Token, type: "code")
     end
 
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
@@ -790,7 +825,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
-    test "returns an error if token is used twice", %{client: client, code: code, resource_owner: resource_owner} do
+    test "returns an error if token is used twice", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
 
       ResourceOwners
@@ -812,25 +851,30 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       )
 
       assert {:token_error,
-        %Error{
-          error: :invalid_grant,
-          error_description: "Given authorization code is invalid.",
-          status: :bad_request
-        }} = Oauth.token(
-        %{
-          req_headers: [{"authorization", authorization_header}],
-          body_params: %{
-            "grant_type" => "authorization_code",
-            "client_id" => client.id,
-            "code" => code.value,
-            "redirect_uri" => redirect_uri
-          }
-        },
-        ApplicationMock
-      )
+              %Error{
+                error: :invalid_grant,
+                error_description: "Given authorization code is invalid.",
+                status: :bad_request
+              }} =
+               Oauth.token(
+                 %{
+                   req_headers: [{"authorization", authorization_header}],
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
     end
 
-    test "returns a token and an id_token with openid scope", %{client: client, openid_code: code, resource_owner: resource_owner} do
+    test "returns a token and an id_token with openid scope", %{
+      client: client,
+      openid_code: code,
+      resource_owner: resource_owner
+    } do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
 
       ResourceOwners
@@ -865,18 +909,22 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert expires_in
           assert refresh_token
 
-          signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+          signer =
+            Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
           {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
           client_id = client.id
           resource_owner_id = resource_owner.sub
           nonce = code.nonce
+
           assert %{
-            "aud" => ^client_id,
-            "iat" => _iat,
-            "exp" => _exp,
-            "sub" => ^resource_owner_id,
-            "nonce" => ^nonce
-          } = claims
+                   "aud" => ^client_id,
+                   "iat" => _iat,
+                   "exp" => _exp,
+                   "sub" => ^resource_owner_id,
+                   "nonce" => ^nonce
+                 } = claims
+
         _ ->
           assert false
       end

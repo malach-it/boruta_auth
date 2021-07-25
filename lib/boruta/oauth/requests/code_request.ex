@@ -19,6 +19,7 @@ defmodule Boruta.Oauth.CodeRequest do
           code_challenge: String.t(),
           code_challenge_method: String.t()
         }
+
   defstruct client_id: "",
             redirect_uri: "",
             state: "",
@@ -28,4 +29,12 @@ defmodule Boruta.Oauth.CodeRequest do
             grant_type: "authorization_code",
             code_challenge: "",
             code_challenge_method: "plain"
+
+  alias Boruta.Oauth.Scope
+
+  @spec openid?(request :: __MODULE__.t()) :: boolean()
+  def openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
+    String.match?(scope, ~r/#{Scope.openid().name}/)
+  end
+  def openid?(_request), do: false
 end

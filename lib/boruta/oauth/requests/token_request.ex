@@ -26,4 +26,13 @@ defmodule Boruta.Oauth.TokenRequest do
             grant_type: "implicit",
             nonce: nil,
             response_types: []
+
+  alias Boruta.Oauth.Scope
+
+  @spec openid?(request :: __MODULE__.t()) :: boolean()
+  def openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
+    String.match?(scope, ~r/#{Scope.openid().name}/)
+  end
+
+  def openid?(_request), do: false
 end

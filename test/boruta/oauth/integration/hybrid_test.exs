@@ -73,9 +73,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
-                  status: :unauthorized,
-                  format: :fragment,
-                  redirect_uri: "http://redirect.uri"
+                  status: :unauthorized
                 }}
     end
 
@@ -95,9 +93,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
-                  status: :unauthorized,
-                  format: :fragment,
-                  redirect_uri: "http://bad.redirect.uri"
+                  status: :unauthorized
                 }}
     end
 
@@ -120,8 +116,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   error: :invalid_resource_owner,
                   error_description: "Resource owner is invalid.",
                   status: :unauthorized,
-                  format: :fragment,
-                  redirect_uri: redirect_uri
+                  format: :internal
                 }}
     end
 
@@ -180,6 +175,33 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       )
 
       assert %Ecto.Token{nonce: ^nonce} = Repo.get_by(Ecto.Token, type: "code")
+    end
+
+    test "returns an error without a nonce", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %{
+                 query_params: %{
+                   "response_type" => "code token",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "scope" => "openid"
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "OpenID requests require a nonce.",
+                  status: :bad_request
+                }}
     end
 
     test "does not return an id_token without `openid` scope", %{
@@ -381,9 +403,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  status: :bad_request,
-                  format: :fragment,
-                  redirect_uri: redirect_uri
+                  status: :bad_request
                 }}
     end
 
@@ -485,8 +505,6 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  format: :fragment,
-                  redirect_uri: "https://redirect.uri",
                   status: :bad_request
                 }}
     end
@@ -513,8 +531,6 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
-                  format: :fragment,
-                  redirect_uri: redirect_uri,
                   status: :bad_request
                 }}
     end
@@ -580,8 +596,6 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                %Boruta.Oauth.Error{
                  error: :invalid_request,
                  error_description: "Code challenge is invalid.",
-                 format: :fragment,
-                 redirect_uri: "https://redirect.uri",
                  status: :bad_request
                }
              }

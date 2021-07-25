@@ -179,6 +179,41 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
     end
 
+    test "returns an error with openid scope without nonce", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> stub(:claims, fn _sub -> %{} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "OpenID requests require a nonce.",
+                 format: :fragment,
+                 redirect_uri: "https://redirect.uri",
+                 status: :bad_request
+               }
+             } =
+               Oauth.authorize(
+                 %{
+                   query_params: %{
+                     "response_type" => "id_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
     test "returns an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
