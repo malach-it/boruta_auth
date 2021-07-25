@@ -790,6 +790,46 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns an error if token is used twice", %{client: client, code: code, resource_owner: resource_owner} do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      Oauth.token(
+        %{
+          req_headers: [{"authorization", authorization_header}],
+          body_params: %{
+            "grant_type" => "authorization_code",
+            "client_id" => client.id,
+            "code" => code.value,
+            "redirect_uri" => redirect_uri
+          }
+        },
+        ApplicationMock
+      )
+
+      assert {:token_error,
+        %Error{
+          error: :invalid_grant,
+          error_description: "Given authorization code is invalid.",
+          status: :bad_request
+        }} = Oauth.token(
+        %{
+          req_headers: [{"authorization", authorization_header}],
+          body_params: %{
+            "grant_type" => "authorization_code",
+            "client_id" => client.id,
+            "code" => code.value,
+            "redirect_uri" => redirect_uri
+          }
+        },
+        ApplicationMock
+      )
+    end
+
     test "returns a token and an id_token with openid scope", %{client: client, openid_code: code, resource_owner: resource_owner} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
 

@@ -149,8 +149,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_refresh_token,
-                  error_description: "Token revoked.",
+                  error: :invalid_grant,
+                  error_description: "Given refresh token is invalid.",
                   status: :bad_request
                 }}
     end

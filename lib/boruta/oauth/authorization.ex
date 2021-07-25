@@ -36,12 +36,14 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             scope: nil,
             state: nil,
             nonce: nil,
+            code: nil,
             code_challenge: nil,
             code_challenge_method: nil
 
   @type t :: %__MODULE__{
           response_types: list(String.t()),
           client: Boruta.Oauth.Client.t(),
+          code: Boruta.Oauth.Token.t(),
           redirect_uri: String.t(),
           sub: String.t(),
           scope: String.t(),
@@ -150,6 +152,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
   import Boruta.Config, only: [token_generator: 0]
 
   alias Boruta.AccessTokensAdapter
+  alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.AuthorizationCodeRequest
@@ -183,6 +186,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
       {:ok,
        %AuthorizationSuccess{
          client: client,
+         code: code,
          redirect_uri: redirect_uri,
          sub: sub,
          scope: code.scope,
@@ -195,42 +199,43 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
     with {:ok,
           %AuthorizationSuccess{
             client: client,
+            code: code,
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
             nonce: nonce
           }} <-
-           preauthorize(request) do
-      # TODO rescue from creation errors
-      with {:ok, access_token} <-
-             AccessTokensAdapter.create(
-               %{
-                 client: client,
-                 redirect_uri: redirect_uri,
-                 sub: sub,
-                 scope: scope
-               },
-               refresh_token: true
-             ) do
-        case String.match?(scope, ~r/#{Scope.openid().name}/) do
-          true ->
-            id_token = %Token{
-              type: "id_token",
-              redirect_uri: redirect_uri,
-              client: client,
-              sub: sub,
-              scope: scope,
-              inserted_at: DateTime.utc_now(),
-              nonce: nonce
-            }
+           preauthorize(request),
+         # TODO rescue from creation errors
+         {:ok, access_token} <-
+           AccessTokensAdapter.create(
+             %{
+               client: client,
+               redirect_uri: redirect_uri,
+               sub: sub,
+               scope: scope
+             },
+             refresh_token: true
+           ),
+         {:ok, _code} <- CodesAdapter.revoke(code) do
+      case String.match?(scope, ~r/#{Scope.openid().name}/) do
+        true ->
+          id_token = %Token{
+            type: "id_token",
+            redirect_uri: redirect_uri,
+            client: client,
+            sub: sub,
+            scope: scope,
+            inserted_at: DateTime.utc_now(),
+            nonce: nonce
+          }
 
-            id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}
+          id_token = %{id_token | value: token_generator().generate(:id_token, id_token)}
 
-            {:ok, %{token: access_token, id_token: id_token}}
+          {:ok, %{token: access_token, id_token: id_token}}
 
-          false ->
-            {:ok, %{token: access_token}}
-        end
+        false ->
+          {:ok, %{token: access_token}}
       end
     end
   end

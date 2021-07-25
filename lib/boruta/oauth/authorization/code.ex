@@ -35,6 +35,8 @@ defmodule Boruta.Oauth.Authorization.Code do
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
+      {:error, "Token revoked."} ->
+        {:error, %Error{status: :bad_request, error: :invalid_grant, error_description: "Given authorization code is invalid."}}
       {:error, error} ->
         {:error, %Error{status: :bad_request, error: :invalid_code, error_description: error}}
 
@@ -61,6 +63,8 @@ defmodule Boruta.Oauth.Authorization.Code do
     else
       {:error, :invalid_code_verifier} ->
         {:error, %Error{status: :bad_request, error: :invalid_request, error_description: "Code verifier is invalid."}}
+      {:error, :token_revoked} ->
+        {:error, %Error{status: :bad_request, error: :invalid_grant, error_description: "Given authorization code is invalid."}}
       {:error, error} ->
         {:error, %Error{status: :bad_request, error: :invalid_code, error_description: error}}
 

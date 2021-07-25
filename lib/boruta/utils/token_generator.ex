@@ -24,6 +24,7 @@ defmodule Boruta.TokenGenerator do
   @id_token_alg "RS512"
   @id_token_c_hash_alg :sha512
 
+  @impl Boruta.Oauth.TokenGenerator
   def generate(:id_token, %Oauth.Token{type: "code"} = token) do
     payload =
       id_token_payload(token)

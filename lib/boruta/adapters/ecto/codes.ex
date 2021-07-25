@@ -7,7 +7,7 @@ defmodule Boruta.Ecto.Codes do
 
   alias Boruta.Ecto
   alias Boruta.Ecto.TokenStore
-  alias Boruta.Oauth.Client
+  alias Boruta.Oauth
 
   @impl Boruta.Oauth.Codes
   def get_by(value: value, redirect_uri: redirect_uri) do
@@ -32,7 +32,7 @@ defmodule Boruta.Ecto.Codes do
   def create(
         %{
           client:
-            %Client{
+            %Oauth.Client{
               id: client_id,
               authorization_code_ttl: authorization_code_ttl
             } = client,
@@ -67,6 +67,17 @@ defmodule Boruta.Ecto.Codes do
     end
   end
 
-  defp changeset_method(%Client{pkce: false}), do: :code_changeset
-  defp changeset_method(%Client{pkce: true}), do: :pkce_code_changeset
+  defp changeset_method(%Oauth.Client{pkce: false}), do: :code_changeset
+  defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_code_changeset
+
+  @impl Boruta.Oauth.Codes
+  def revoke(%Oauth.Token{value: value}) do
+    with {:ok, token} <-
+           repo().get_by(Ecto.Token, value: value)
+           |> Ecto.Token.revoke_changeset()
+           |> repo().update(),
+         {:ok, token} <- TokenStore.invalidate(to_oauth_schema(token)) do
+      {:ok, token}
+    end
+  end
 end

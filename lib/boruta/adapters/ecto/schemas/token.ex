@@ -93,6 +93,7 @@ defmodule Boruta.Ecto.Token do
     |> put_code_expires_at()
   end
 
+  @doc false
   def pkce_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
@@ -119,6 +120,15 @@ defmodule Boruta.Ecto.Token do
     |> put_code_expires_at()
     |> put_code_challenge_method()
     |> encrypt_code_challenge()
+  end
+
+  @doc false
+  def revoke_changeset(token) do
+    now = DateTime.utc_now()
+
+    token
+    |> cast(%{}, [])
+    |> put_change(:revoked_at, now)
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
