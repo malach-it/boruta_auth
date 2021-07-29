@@ -24,6 +24,15 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         redirect_uri: List.first(client.redirect_uris),
         expires_at: :os.system_time(:seconds) - 10
       )
+      {:ok, revoked_at} = (:os.system_time(:seconds) - 10) |> DateTime.from_unix()
+      revoked_access_token = insert(
+        :token,
+        type: "access_token",
+        refresh_token: Boruta.TokenGenerator.generate(),
+        client: client,
+        redirect_uri: List.first(client.redirect_uris),
+        revoked_at: revoked_at
+      )
       access_token = insert(
         :token,
         type: "access_token",
@@ -37,6 +46,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         client: client,
         client_without_grant_type: client_without_grant_type,
         expired_access_token: expired_access_token,
+        revoked_access_token: revoked_access_token,
         access_token: access_token
       }
     end
@@ -83,6 +93,31 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         error_description: "Token expired.",
         status: :bad_request
       }}
+    end
+
+    test "returns an error if access_token associated is revoked", %{
+      client: client,
+      revoked_access_token: token
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert Oauth.token(
+               %{
+                 body_params: %{
+                   "grant_type" => "refresh_token",
+                   "refresh_token" => token.refresh_token
+                 },
+                 req_headers: [{"authorization", authorization_header}]
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_refresh_token,
+                  error_description: "Token revoked.",
+                  status: :bad_request
+                }}
     end
 
     test "returns an error if scope is unknown or unauthorized", %{client: client, access_token: token} do
