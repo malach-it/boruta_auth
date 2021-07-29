@@ -105,7 +105,7 @@ defmodule Boruta.Ecto.AdminTest do
 
     test "updates the client" do
       client = client_fixture()
-      assert {:ok, %Client{} = client} = Admin.update_client(client, @client_update_attrs)
+      assert {:ok, %Client{}} = Admin.update_client(client, @client_update_attrs)
     end
 
     test "updates the client with authorized scopes" do
