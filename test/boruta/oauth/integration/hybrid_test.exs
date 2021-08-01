@@ -211,7 +211,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn _sub -> %{"email" => "test@test.test"} end)
+      |> stub(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -244,7 +244,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn _sub -> %{"email" => "test@test.test"} end)
+      |> stub(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -298,7 +298,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn _sub -> %{email: "test@test.test"} end)
+      |> stub(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"

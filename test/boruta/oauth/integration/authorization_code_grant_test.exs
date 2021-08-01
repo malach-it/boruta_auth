@@ -879,7 +879,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:claims, fn _sub -> %{} end)
+      |> stub(:claims, fn _sub, _scope -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
 

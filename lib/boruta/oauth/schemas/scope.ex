@@ -10,6 +10,7 @@ defmodule Boruta.Oauth.Scope do
           name: String.t(),
           public: boolean()
         }
+  @type raw :: String.t()
 
   @doc """
   Splits an OAuth scope string into individual scopes as string
@@ -17,7 +18,7 @@ defmodule Boruta.Oauth.Scope do
       iex> scope("a:scope another:scope")
       ["a:scope", "another:scope"]
   """
-  @spec split(oauth_scope :: String.t() | nil) :: list(String.t())
+  @spec split(oauth_scope :: String.t() | nil) :: list(raw())
   def split(nil), do: []
 
   def split(scope) do

@@ -67,11 +67,12 @@ defmodule Boruta.TokenGenerator do
          sub: sub,
          client: client,
          inserted_at: inserted_at,
-         nonce: nonce
+         nonce: nonce,
+         scope: scope
        }) do
     iat = DateTime.to_unix(inserted_at)
 
-    resource_owners().claims(sub)
+    resource_owners().claims(sub, scope)
     |> Map.put("sub", sub)
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)
