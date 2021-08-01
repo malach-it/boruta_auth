@@ -205,14 +205,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
   alias Boruta.Oauth.TokenRequest
   alias Boruta.Oauth.Token
 
-  def preauthorize(%TokenRequest{
-        client_id: client_id,
-        redirect_uri: redirect_uri,
-        resource_owner: resource_owner,
-        state: state,
-        scope: scope,
-        grant_type: grant_type
-      }) do
+  def preauthorize(
+        %TokenRequest{
+          client_id: client_id,
+          redirect_uri: redirect_uri,
+          resource_owner: resource_owner,
+          state: state,
+          scope: scope,
+          grant_type: grant_type
+        }
+      ) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -366,6 +368,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
 
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.Token
 
@@ -376,7 +379,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
         scope: scope,
         grant_type: grant_type
       }) do
-    with {:ok, _} <-
+    with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
              secret: client_secret,
@@ -384,11 +387,22 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
            ),
          {:ok,
           %Token{
-            client: client,
+            client: ^client,
             sub: sub
           } = token} <- Authorization.AccessToken.authorize(refresh_token: refresh_token),
          {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{token: token}) do
       {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}}
+    else
+      {:ok, _token} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_grant,
+           error_description: "Given refresh token is invalid."
+         }}
+
+      error ->
+        error
     end
   end
 
