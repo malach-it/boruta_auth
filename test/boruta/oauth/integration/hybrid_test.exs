@@ -596,7 +596,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                %Boruta.Oauth.Error{
                  error: :invalid_request,
                  error_description: "Code challenge is invalid.",
-                 status: :bad_request
+                 status: :bad_request,
+                 state: given_state
                }
              }
     end
