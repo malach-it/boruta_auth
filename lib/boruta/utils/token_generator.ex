@@ -77,6 +77,7 @@ defmodule Boruta.TokenGenerator do
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)
     |> Map.put("iat", iat)
+    |> Map.put("auth_time", iat)
     |> Map.put("exp", iat + client.id_token_ttl)
     |> Map.put("nonce", nonce)
   end
