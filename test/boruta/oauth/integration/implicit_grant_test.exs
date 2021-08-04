@@ -9,10 +9,10 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
-  alias Boruta.TokenGenerator
 
   describe "implicit grant" do
     setup do
@@ -246,7 +246,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
-      {:ok, claims} = TokenGenerator.Token.verify_and_validate(value, signer)
+      {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
       client_id = client.id
       resource_owner_id = resource_owner.sub
 
@@ -332,7 +332,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       assert expires_in
 
       signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
-      {:ok, claims} = TokenGenerator.Token.verify_and_validate(id_token, signer)
+      {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
       client_id = client.id
       resource_owner_id = resource_owner.sub
 
@@ -340,9 +340,10 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                "aud" => ^client_id,
                "iat" => _iat,
                "exp" => _exp,
+               "at_hash" => _at_hash,
                "sub" => ^resource_owner_id,
                "nonce" => ^nonce
-             } = claims
+      } = claims
     end
 
     test "returns a token with regexes", %{

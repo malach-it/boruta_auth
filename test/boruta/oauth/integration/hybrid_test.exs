@@ -10,6 +10,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Repo
@@ -277,7 +278,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
-      {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+      {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
       client_id = client.id
       resource_owner_id = resource_owner.sub
 
@@ -333,7 +334,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
-      {:ok, claims} = Boruta.TokenGenerator.Token.verify_and_validate(id_token, signer)
+      {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
       client_id = client.id
       resource_owner_id = resource_owner.sub
 
