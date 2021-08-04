@@ -517,55 +517,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
          }} ->
           %Ecto.Token{
             code_challenge_method: repo_code_challenge_method,
-            code_challenge_hash: repo_code_challenge_hash
           } = Repo.get_by(Ecto.Token, value: value)
 
           assert repo_code_challenge_method == "plain"
-          assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
 
-        _ ->
-          assert false
-      end
-    end
-
-    test "code_challenge_method defaults to `S256`", %{
-      pkce_client: client,
-      resource_owner: resource_owner
-    } do
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
-
-      given_state = "state"
-      given_code_challenge = "code challenge"
-      given_code_challenge_method = "S256"
-      redirect_uri = List.first(client.redirect_uris)
-
-      case Oauth.authorize(
-             %{
-               query_params: %{
-                 "response_type" => "code",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "state" => given_state,
-                 "code_challenge" => given_code_challenge,
-                 "code_challenge_method" => given_code_challenge_method
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           value: value
-         }} ->
-          %Ecto.Token{
-            code_challenge_method: repo_code_challenge_method,
-            code_challenge_hash: repo_code_challenge_hash
-          } = Repo.get_by(Ecto.Token, value: value)
-
-          assert repo_code_challenge_method == "S256"
-          assert repo_code_challenge_hash == :crypto.hash(:sha256, given_code_challenge) |> Base.url_encode64() |> Boruta.Oauth.Token.hash()
         _ ->
           assert false
       end
