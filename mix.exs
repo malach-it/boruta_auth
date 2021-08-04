@@ -71,6 +71,12 @@ defmodule Boruta.MixProject do
         "guides/revoke.md"
       ],
       groups_for_modules: [
+        "Applications": [
+          Boruta.Oauth.AuthorizeApplication,
+          Boruta.Oauth.TokenApplication,
+          Boruta.Oauth.IntrospectApplication,
+          Boruta.Oauth.RevokeApplication
+        ],
         "Responses": [
           Boruta.Oauth.AuthorizeResponse,
           Boruta.Oauth.TokenResponse,
