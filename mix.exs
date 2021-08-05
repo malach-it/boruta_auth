@@ -121,6 +121,11 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.RevokeRequest,
           Boruta.Oauth.Request
         ],
+        "Ecto Adapter": [
+          Boruta.Ecto.Token,
+          Boruta.Ecto.Client,
+          Boruta.Ecto.Scope
+        ],
         "Admin": [
           Boruta.Ecto.Admin,
           Boruta.Ecto.Admin.Clients,

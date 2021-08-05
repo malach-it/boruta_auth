@@ -1,5 +1,8 @@
 defmodule Boruta.Ecto.Client do
-  @moduledoc false
+  @moduledoc """
+  Ecto Adapter Client Schema
+  """
+
   use Ecto.Schema
 
   import Ecto.Changeset
@@ -69,7 +72,6 @@ defmodule Boruta.Ecto.Client do
     timestamps()
   end
 
-  @doc false
   def create_changeset(client, attrs) do
     client
     |> repo().preload(:authorized_scopes)
@@ -92,7 +94,6 @@ defmodule Boruta.Ecto.Client do
     |> put_secret()
   end
 
-  @doc false
   def update_changeset(client, attrs) do
     client
     |> repo().preload(:authorized_scopes)
@@ -121,7 +122,7 @@ defmodule Boruta.Ecto.Client do
     end)
   end
 
-  def validate_supported_grant_types(changeset) do
+  defp validate_supported_grant_types(changeset) do
     validate_change(changeset, :supported_grant_types, fn :supported_grant_types, grant_types ->
       case Enum.empty?(grant_types -- @grant_types) do
         true -> []
