@@ -44,7 +44,7 @@ defmodule Boruta.Ecto.Client do
     field(:name, :string)
     field(:secret, :string)
     field(:authorize_scope, :boolean, default: false)
-    field(:redirect_uris, {:array, :string})
+    field(:redirect_uris, {:array, :string}, default: [])
 
     field(:supported_grant_types, {:array, :string},
       default: [
