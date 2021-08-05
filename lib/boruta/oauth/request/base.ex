@@ -24,49 +24,49 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def build_request(%{"grant_type" => "client_credentials"} = params) do
-    {:ok, struct(ClientCredentialsRequest, %{
+    {:ok, %ClientCredentialsRequest{
       client_id: params["client_id"],
       client_secret: params["client_secret"],
       scope: params["scope"]
-    })}
+    }}
   end
   def build_request(%{"grant_type" => "password"} = params) do
-    {:ok, struct(PasswordRequest, %{
+    {:ok, %PasswordRequest{
       client_id: params["client_id"],
       client_secret: params["client_secret"],
       username: params["username"],
       password: params["password"],
       scope: params["scope"]
-    })}
+    }}
   end
   def build_request(%{"grant_type" => "authorization_code"} = params) do
-    {:ok, struct(AuthorizationCodeRequest, %{
+    {:ok, %AuthorizationCodeRequest{
       client_id: params["client_id"],
       code: params["code"],
       redirect_uri: params["redirect_uri"],
       code_verifier: params["code_verifier"]
-    })}
+    }}
   end
   def build_request(%{"grant_type" => "refresh_token"} = params) do
-    {:ok, struct(RefreshTokenRequest, %{
+    {:ok, %RefreshTokenRequest{
       client_id: params["client_id"],
       client_secret: params["client_secret"],
       refresh_token: params["refresh_token"],
       scope: params["scope"]
-    })}
+    }}
   end
 
   def build_request(%{"response_type" => "token"} = params) do
-    {:ok, struct(TokenRequest, %{
+    {:ok, %TokenRequest{
       client_id: params["client_id"],
       redirect_uri: params["redirect_uri"],
       resource_owner: params["resource_owner"],
       state: params["state"],
       scope: params["scope"]
-    })}
+    }}
   end
   def build_request(%{"response_type" => "code"} = params) do
-    {:ok, struct(CodeRequest, %{
+    {:ok, %CodeRequest{
       client_id: params["client_id"],
       redirect_uri: params["redirect_uri"],
       resource_owner: params["resource_owner"],
@@ -74,21 +74,21 @@ defmodule Boruta.Oauth.Request.Base do
       code_challenge: params["code_challenge"],
       code_challenge_method: params["code_challenge_method"],
       scope: params["scope"]
-    })}
+    }}
   end
   def build_request(%{"response_type" => "introspect"} = params) do
-    {:ok, struct(IntrospectRequest, %{
+    {:ok, %IntrospectRequest{
       client_id: params["client_id"],
       client_secret: params["client_secret"],
       token: params["token"]
-    })}
+    }}
   end
   def build_request(%{"token" => _} = params) do # revoke request
-    {:ok, struct(RevokeRequest, %{
+    {:ok, %RevokeRequest{
       client_id: params["client_id"],
       client_secret: params["client_secret"],
       token: params["token"],
       token_type_hint: params["token_type_hint"]
-    })}
+    }}
   end
 end
