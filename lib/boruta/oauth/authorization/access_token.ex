@@ -30,8 +30,7 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
     | {:ok, %Token{}}
   def authorize(value: value) do
     with %Token{} = token <- access_tokens().get_by(value: value),
-      :ok <- Token.expired?(token),
-      :ok <- Token.revoked?(token) do
+      :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, error} ->
@@ -54,8 +53,7 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
   end
   def authorize(refresh_token: refresh_token) do
     with %Token{} = token <- access_tokens().get_by(refresh_token: refresh_token),
-      :ok <- Token.expired?(token),
-      :ok <- Token.revoked?(token) do
+      :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, error} ->

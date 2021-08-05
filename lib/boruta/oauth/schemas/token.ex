@@ -45,19 +45,15 @@ defmodule Boruta.Oauth.Token do
   Determines if a token is expired
 
   ## Examples
-      iex> expired?(%Boruta.Oauth.Token{expires_at: 1638316800}) # 1st january 2021
-      :ok
+      iex> expired?(%Boruta.Oauth.Token{expires_at: 1924992000}) # 1st january 2031
+      false
 
       iex> expired?(%Boruta.Oauth.Token{expires_at: 0}) # 1st january 1970
-      {:error, "Token expired."}
+      true
   """
-  # TODO move this out of the schema
-  @spec expired?(%Token{expires_at: integer()}) :: :ok | {:error, String.t()}
+  @spec expired?(%Token{expires_at: integer()}) :: :ok | boolean()
   def expired?(%Token{expires_at: expires_at}) do
-    case :os.system_time(:seconds) <= expires_at do
-      true -> :ok
-      false -> {:error, "Token expired."}
-    end
+    :os.system_time(:seconds) >= expires_at
   end
 
   @doc """
@@ -68,11 +64,30 @@ defmodule Boruta.Oauth.Token do
       :ok
 
       iex> revoked?(%Boruta.Oauth.Token{})
+      false
+  """
+  @spec revoked?(token :: Token.t()) :: boolean()
+  def revoked?(%Token{revoked_at: nil}), do: false
+  def revoked?(%Token{revoked_at: _}), do: true
+
+  @doc """
+  Determines if a token is valid, neither expired nor revoked.
+
+  ## Examples
+      iex> ensure_valid(%Boruta.Oauth.Token{revoked_at: nil})
+      :ok
+
+      iex> ensure_valid(%Boruta.Oauth.Token{})
       {:error, "Token revoked."}
   """
-  @spec revoked?(token :: Token.t()) :: :ok | {:error, String.t()}
-  def revoked?(%Token{revoked_at: nil}), do: :ok
-  def revoked?(%Token{revoked_at: _}), do: {:error, "Token revoked."}
+  @spec ensure_valid(token :: Token.t()) :: :ok | {:error, String.t()}
+  def ensure_valid(token) do
+    case {revoked?(token), expired?(token)} do
+      {true, _} -> {:error, "Token revoked."}
+      {_, true} -> {:error, "Token expired."}
+      _ -> :ok
+    end
+  end
 
   @doc """
   Returns an hexadecimal SHA512 hash of given string
