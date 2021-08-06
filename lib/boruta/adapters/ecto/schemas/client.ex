@@ -21,13 +21,12 @@ defmodule Boruta.Ecto.Client do
   @type t :: %__MODULE__{
           secret: String.t(),
           authorize_scope: boolean(),
-          authorized_scopes: list(Scope.t()),
           redirect_uris: list(String.t()),
           supported_grant_types: list(String.t()),
           pkce: boolean(),
           access_token_ttl: integer(),
           authorization_code_ttl: integer(),
-          authorized_scopes: Ecto.AssociationNotLoaded.t() | list(Scope.t()),
+          authorized_scopes: Ecto.Association.NotLoaded.t() | list(Scope.t()),
           public_key: list(String.t()),
           private_key: list(String.t())
         }
