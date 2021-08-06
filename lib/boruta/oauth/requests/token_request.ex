@@ -29,10 +29,16 @@ defmodule Boruta.Oauth.TokenRequest do
 
   alias Boruta.Oauth.Scope
 
-  @spec openid?(request :: __MODULE__.t()) :: boolean()
-  def openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
+  @spec require_nonce?(request :: __MODULE__.t()) :: boolean()
+  def require_nonce?(%__MODULE__{response_types: response_types} = request) do
+    openid?(request) && (
+      response_types |> Enum.member?("id_token")
+    )
+  end
+
+  defp openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
     String.match?(scope, ~r/#{Scope.openid().name}/)
   end
 
-  def openid?(_request), do: false
+  defp openid?(_request), do: false
 end

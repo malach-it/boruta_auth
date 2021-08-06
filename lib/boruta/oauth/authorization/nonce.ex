@@ -12,7 +12,7 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.CodeRequest do
   alias Boruta.Oauth.Error
 
   def authorize(%Boruta.Oauth.CodeRequest{nonce: nonce} = request) do
-    case {CodeRequest.openid?(request), nonce} do
+    case {CodeRequest.require_nonce?(request), nonce} do
       {true, ""} ->
         {:error, %Error{
           status: :bad_request,
@@ -36,7 +36,7 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.TokenRequest do
   alias Boruta.Oauth.Error
 
   def authorize(%Boruta.Oauth.TokenRequest{nonce: nonce} = request) do
-    case {TokenRequest.openid?(request), nonce} do
+    case {TokenRequest.require_nonce?(request), nonce} do
       {true, ""} ->
         {:error, %Error{
           status: :bad_request,

@@ -121,7 +121,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 }}
     end
 
-    test "returns a code and a token", %{client: client, resource_owner: resource_owner} do
+    test "returns a code and a token without a nonce", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
@@ -141,7 +141,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
-                     "redirect_uri" => redirect_uri
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid"
                    }
                  },
                  resource_owner,
@@ -165,7 +166,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       Oauth.authorize(
         %{
           query_params: %{
-            "response_type" => "code token",
+            "response_type" => "code id_token",
             "client_id" => client.id,
             "redirect_uri" => redirect_uri,
             "nonce" => nonce
@@ -188,7 +189,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert Oauth.authorize(
                %{
                  query_params: %{
-                   "response_type" => "code token",
+                   "response_type" => "code id_token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri,
                    "scope" => "openid"

@@ -17,7 +17,8 @@ defmodule Boruta.Oauth.CodeRequest do
           resource_owner: struct(),
           grant_type: String.t(),
           code_challenge: String.t(),
-          code_challenge_method: String.t()
+          code_challenge_method: String.t(),
+          response_types: String.t()
         }
 
   defstruct client_id: "",
@@ -28,13 +29,18 @@ defmodule Boruta.Oauth.CodeRequest do
             resource_owner: nil,
             grant_type: "authorization_code",
             code_challenge: "",
-            code_challenge_method: "plain"
+            code_challenge_method: "plain",
+            response_types: []
 
   alias Boruta.Oauth.Scope
 
-  @spec openid?(request :: __MODULE__.t()) :: boolean()
-  def openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
+  @spec require_nonce?(request :: __MODULE__.t()) :: boolean()
+  def require_nonce?(%__MODULE__{response_types: response_types} = request) do
+    openid?(request) && Enum.member?(response_types, "id_token")
+  end
+
+  defp openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
     String.match?(scope, ~r/#{Scope.openid().name}/)
   end
-  def openid?(_request), do: false
+  defp openid?(_request), do: false
 end
