@@ -7,6 +7,6 @@ defmodule Boruta.CodesAdapter do
 
   import Boruta.Config, only: [codes: 0]
 
-  defdelegate get_by(params), to: codes()
-  defdelegate create(params), to: codes()
+  def get_by(params), do: codes().get_by(params)
+  def create(params), do: codes().create(params)
 end

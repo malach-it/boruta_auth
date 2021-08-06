@@ -6,5 +6,5 @@ defmodule Boruta.ScopesAdapter do
 
   import Boruta.Config, only: [scopes: 0]
 
-  defdelegate public, to: scopes()
+  def public, do: scopes().public()
 end

@@ -69,25 +69,25 @@ defmodule Boruta.Config do
 
   @spec access_tokens() :: module()
   @doc false
-  defmacro access_tokens do
+  def access_tokens do
     Keyword.fetch!(oauth_config(), :contexts)[:access_tokens]
   end
 
   @spec clients() :: module()
   @doc false
-  defmacro clients do
+  def clients do
     Keyword.fetch!(oauth_config(), :contexts)[:clients]
   end
 
   @spec codes() :: module()
   @doc false
-  defmacro codes do
+  def codes do
     Keyword.fetch!(oauth_config(), :contexts)[:codes]
   end
 
   @spec scopes() :: module()
   @doc false
-  defmacro scopes do
+  def scopes do
     Keyword.fetch!(oauth_config(), :contexts)[:scopes]
   end
 
