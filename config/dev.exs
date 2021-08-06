@@ -11,3 +11,8 @@ config :boruta, Boruta.Repo,
   database: "boruta_dev",
   hostname: "localhost",
   pool_size: 10
+
+config :boruta, Boruta.Oauth,
+  contexts: [
+    resource_owners: Dummy.ResourceOwners
+  ]

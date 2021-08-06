@@ -3,8 +3,6 @@ defmodule Boruta.Oauth.Revoke do
   OAuth Revoke
   """
 
-  import Boruta.Config, only: [access_tokens: 0]
-
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.RevokeRequest
 
@@ -35,19 +33,19 @@ defmodule Boruta.Oauth.Revoke do
     with {:ok, _client} <- Authorization.Client.authorize(id: client_id, secret: client_secret) do
       token = case token_type_hint do
         "refresh_token" ->
-          with nil <- access_tokens().get_by(value: value),
-               nil <- access_tokens().get_by(refresh_token: value) do
+          with nil <- Boruta.AccessTokensAdapter.get_by(value: value),
+               nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value) do
             nil
           end
         _ ->
-          with nil <- access_tokens().get_by(refresh_token: value),
-               nil <- access_tokens().get_by(value: value) do
+          with nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value),
+               nil <- Boruta.AccessTokensAdapter.get_by(value: value) do
             nil
           end
       end
 
       if token do
-        with {:ok, _token} <- access_tokens().revoke(token) do
+        with {:ok, _token} <- Boruta.AccessTokensAdapter.revoke(token) do
           :ok
         end
       else

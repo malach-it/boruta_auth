@@ -3,7 +3,6 @@ defmodule Boruta.OauthTest.RevokeTest do
   use Boruta.DataCase
 
   import Boruta.Factory
-  import Boruta.Config, only: [access_tokens: 0]
   import Mox
 
   alias Boruta.Oauth
@@ -69,7 +68,7 @@ defmodule Boruta.OauthTest.RevokeTest do
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) do
         {:revoke_success} ->
-          assert access_tokens().get_by(value: token.value).revoked_at
+          assert Boruta.AccessTokensAdapter.get_by(value: token.value).revoked_at
         _ -> assert false
       end
     end

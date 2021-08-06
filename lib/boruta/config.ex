@@ -11,7 +11,7 @@ defmodule Boruta.Config do
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
       codes: Boruta.Ecto.Codes,
-      resource_owners: MyApp.ResourceOwners, # mandatory for user flows
+      resource_owners: MyApp.ResourceOwners, # mandatory
       scopes: Boruta.Ecto.Scopes
     ],
     max_ttl: [
@@ -69,25 +69,25 @@ defmodule Boruta.Config do
 
   @spec access_tokens() :: module()
   @doc false
-  def access_tokens do
+  defmacro access_tokens do
     Keyword.fetch!(oauth_config(), :contexts)[:access_tokens]
   end
 
   @spec clients() :: module()
   @doc false
-  def clients do
+  defmacro clients do
     Keyword.fetch!(oauth_config(), :contexts)[:clients]
   end
 
   @spec codes() :: module()
   @doc false
-  def codes do
+  defmacro codes do
     Keyword.fetch!(oauth_config(), :contexts)[:codes]
   end
 
   @spec scopes() :: module()
   @doc false
-  def scopes do
+  defmacro scopes do
     Keyword.fetch!(oauth_config(), :contexts)[:scopes]
   end
 
