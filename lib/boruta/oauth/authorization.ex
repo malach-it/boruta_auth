@@ -32,6 +32,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
   defstruct response_types: [],
             client: nil,
             redirect_uri: nil,
+            resource_owner: nil,
             sub: nil,
             scope: nil,
             state: nil,
@@ -46,6 +47,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           code: Boruta.Oauth.Token.t(),
           redirect_uri: String.t(),
           sub: String.t(),
+          resource_owner: Boruta.Oauth.ResourceOwner.t(),
           scope: String.t(),
           state: String.t(),
           nonce: String.t(),
@@ -271,6 +273,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
       {:ok,
        %AuthorizationSuccess{
          response_types: response_types,
+         resource_owner: resource_owner,
          client: client,
          redirect_uri: redirect_uri,
          sub: sub,
@@ -285,6 +288,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
     with {:ok,
           %AuthorizationSuccess{
             response_types: response_types,
+            resource_owner: resource_owner,
             client: client,
             redirect_uri: redirect_uri,
             sub: sub,
@@ -301,6 +305,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
             true ->
               base_token = %Token{
                 client: client,
+                resource_owner: resource_owner,
                 sub: sub,
                 scope: scope,
                 inserted_at: DateTime.utc_now()
@@ -452,8 +457,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
-  import Boruta.Config, only: [token_generator: 0]
-
   alias Boruta.AccessTokensAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization

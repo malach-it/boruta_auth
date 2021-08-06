@@ -66,18 +66,23 @@ defmodule Boruta.Oauth.IdToken do
            sub: sub,
            client: client,
            inserted_at: inserted_at,
-           scope: scope
+           scope: scope,
+           resource_owner: resource_owner
          },
          nonce
        ) do
     iat = DateTime.to_unix(inserted_at)
+    auth_time = case resource_owner.last_login_at do
+      nil -> :os.system_time(:seconds)
+      last_login_at -> DateTime.to_unix(last_login_at)
+    end
 
     resource_owners().claims(sub, scope)
     |> Map.put("sub", sub)
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)
     |> Map.put("iat", iat)
-    |> Map.put("auth_time", iat)
+    |> Map.put("auth_time", auth_time)
     |> Map.put("exp", iat + client.id_token_ttl)
     |> Map.put("nonce", nonce)
   end

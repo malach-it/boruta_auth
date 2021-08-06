@@ -4,6 +4,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.IdToken
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
   setup :verify_on_exit!
@@ -17,12 +18,14 @@ defmodule Boruta.Oauth.IdTokenTest do
   test "generates an id token with a code" do
     client = build_client()
     inserted_at = DateTime.utc_now()
+    last_login_at = DateTime.utc_now()
     code = %Token{
       sub: "sub",
       client: client,
       value: "value",
       inserted_at: inserted_at,
-      scope: "scope"
+      resource_owner: %ResourceOwner{last_login_at: last_login_at},
+      scope: "scope",
     }
     nonce = "nonce"
 
@@ -39,6 +42,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
     client_id = client.id
+    auth_time = DateTime.to_unix(last_login_at)
 
     assert %{
       "aud" => ^client_id,
@@ -47,6 +51,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       "sub" => "sub",
       "nonce" => ^nonce,
       "c_hash" => _c_hash,
+      "auth_time" => ^auth_time,
       "resource_owner_claim" => "claim"
     } = claims
   end
@@ -54,11 +59,13 @@ defmodule Boruta.Oauth.IdTokenTest do
   test "generates an id token with a token" do
     client = build_client()
     inserted_at = DateTime.utc_now()
+    last_login_at = DateTime.utc_now()
     token = %Token{
       sub: "sub",
       client: client,
       value: "value",
       inserted_at: inserted_at,
+      resource_owner: %ResourceOwner{last_login_at: last_login_at},
       scope: "scope"
     }
     nonce = "nonce"
@@ -76,6 +83,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
     client_id = client.id
+    auth_time = DateTime.to_unix(last_login_at)
 
     assert %{
       "aud" => ^client_id,
@@ -84,6 +92,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       "sub" => "sub",
       "nonce" => ^nonce,
       "at_hash" => _at_hash,
+      "auth_time" => ^auth_time,
       "resource_owner_claim" => "claim"
     } = claims
   end
@@ -91,11 +100,13 @@ defmodule Boruta.Oauth.IdTokenTest do
   test "generates an id token with a token and a code" do
     client = build_client()
     inserted_at = DateTime.utc_now()
+    last_login_at = DateTime.utc_now()
     code = %Token{
       sub: "sub",
       client: client,
       value: "code",
       inserted_at: inserted_at,
+      resource_owner: %ResourceOwner{last_login_at: last_login_at},
       scope: "scope"
     }
     token = %Token{
@@ -103,6 +114,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       client: client,
       value: "token",
       inserted_at: inserted_at,
+      resource_owner: %ResourceOwner{last_login_at: last_login_at},
       scope: "scope"
     }
     nonce = "nonce"
@@ -120,6 +132,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
     client_id = client.id
+    auth_time = DateTime.to_unix(last_login_at)
 
     assert %{
       "aud" => ^client_id,
@@ -129,6 +142,45 @@ defmodule Boruta.Oauth.IdTokenTest do
       "nonce" => ^nonce,
       "at_hash" => _at_hash,
       "c_hash" => _c_hash,
+      "auth_time" => ^auth_time,
+      "resource_owner_claim" => "claim"
+    } = claims
+  end
+
+  test "generates an id token with a base token" do
+    client = build_client()
+    inserted_at = DateTime.utc_now()
+    base_token = %Token{
+      sub: "sub",
+      resource_owner: %ResourceOwner{},
+      client: client,
+      value: "token",
+      inserted_at: inserted_at,
+      scope: "scope"
+    }
+    nonce = "nonce"
+
+    assert %{
+      sub: "sub",
+      client: ^client,
+      inserted_at: ^inserted_at,
+      scope: "scope",
+      value: value,
+      type: "id_token"
+    } = IdToken.generate(%{base_token: base_token}, nonce)
+
+    signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+    {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
+    client_id = client.id
+
+    assert %{
+      "aud" => ^client_id,
+      "iat" => _iat,
+      "exp" => _exp,
+      "sub" => "sub",
+      "nonce" => ^nonce,
+      "auth_time" => _auth_time,
       "resource_owner_claim" => "claim"
     } = claims
   end
