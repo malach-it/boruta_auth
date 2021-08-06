@@ -452,8 +452,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
-  import Boruta.Config, only: [access_tokens: 0, codes: 0, token_generator: 0]
+  import Boruta.Config, only: [token_generator: 0]
 
+  alias Boruta.AccessTokensAdapter
+  alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.CodeRequest
@@ -489,7 +491,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
       |> Enum.reduce({:ok, %{}}, fn
         "code", {:ok, tokens} when tokens == %{} ->
           with {:ok, code} <-
-                 codes().create(%{
+                 CodesAdapter.create(%{
                    client: client,
                    redirect_uri: redirect_uri,
                    sub: sub,
@@ -515,7 +517,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
 
         "token", {:ok, tokens} ->
           with {:ok, access_token} <-
-                 access_tokens().create(
+                 AccessTokensAdapter.create(
                    %{
                      client: client,
                      redirect_uri: redirect_uri,
