@@ -45,15 +45,16 @@ defmodule Boruta.Oauth.Token do
   Determines if a token is expired
 
   ## Examples
-      iex> expired?(%Boruta.Oauth.Token{expires_at: 1924992000}) # 1st january 2031
+      iex> expired?(%Boruta.Oauth.Token{expires_at: 1628260754})
       false
 
       iex> expired?(%Boruta.Oauth.Token{expires_at: 0}) # 1st january 1970
       true
   """
   @spec expired?(%Token{expires_at: integer()}) :: :ok | boolean()
-  def expired?(%Token{expires_at: expires_at}) do
-    :os.system_time(:seconds) >= expires_at
+  @spec expired?(%Token{expires_at: integer()}, now :: integer()) :: :ok | boolean()
+  def expired?(%Token{expires_at: expires_at}, now \\ :os.system_time(:seconds)) do
+    now >= expires_at
   end
 
   @doc """
