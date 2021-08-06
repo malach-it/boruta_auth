@@ -126,9 +126,7 @@ defmodule Boruta.Ecto.Token do
   def revoke_changeset(token) do
     now = DateTime.utc_now()
 
-    token
-    |> cast(%{}, [])
-    |> put_change(:revoked_at, now)
+    change(token, revoked_at: now)
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
