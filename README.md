@@ -76,7 +76,7 @@ config :boruta, Boruta.Oauth,
     access_tokens: Boruta.Ecto.AccessTokens,
     clients: Boruta.Ecto.Clients,
     codes: Boruta.Ecto.Codes,
-    resource_owners: MyApp.ResourceOwners, # mandatory for user flows
+    resource_owners: MyApp.ResourceOwners, # mandatory
     scopes: Boruta.Ecto.Scopes
   ],
   max_ttl: [

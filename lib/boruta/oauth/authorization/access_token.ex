@@ -3,8 +3,6 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
   Access token authorization
   """
 
-  import Boruta.Config, only: [access_tokens: 0]
-
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
 
@@ -29,9 +27,8 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
      }}
     | {:ok, %Token{}}
   def authorize(value: value) do
-    with %Token{} = token <- access_tokens().get_by(value: value),
-      :ok <- Token.expired?(token),
-      :ok <- Token.revoked?(token) do
+    with %Token{} = token <- Boruta.AccessTokensAdapter.get_by(value: value),
+      :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, error} ->
@@ -53,9 +50,8 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
     end
   end
   def authorize(refresh_token: refresh_token) do
-    with %Token{} = token <- access_tokens().get_by(refresh_token: refresh_token),
-      :ok <- Token.expired?(token),
-      :ok <- Token.revoked?(token) do
+    with %Token{} = token <- Boruta.AccessTokensAdapter.get_by(refresh_token: refresh_token),
+      :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, error} ->

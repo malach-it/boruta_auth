@@ -3,8 +3,7 @@ defmodule Boruta.Oauth.Authorization.Code do
   Code authorization
   """
 
-  import Boruta.Config, only: [codes: 0]
-
+  alias Boruta.CodesAdapter
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
@@ -32,8 +31,8 @@ defmodule Boruta.Oauth.Authorization.Code do
            }}
           | {:ok, %Token{}}
   def authorize(%{value: value, redirect_uri: redirect_uri, client: %Client{pkce: false}}) do
-    with %Token{} = token <- codes().get_by(value: value, redirect_uri: redirect_uri),
-         :ok <- Token.expired?(token) do
+    with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
+         :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, error} ->
@@ -55,9 +54,9 @@ defmodule Boruta.Oauth.Authorization.Code do
         client: %Client{pkce: true},
         code_verifier: code_verifier
       }) do
-    with %Token{} = token <- codes().get_by(value: value, redirect_uri: redirect_uri),
+    with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
          :ok <- check_code_challenge(token, code_verifier),
-         :ok <- Token.expired?(token) do
+         :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, :invalid_code_verifier} ->

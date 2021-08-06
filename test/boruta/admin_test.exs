@@ -2,10 +2,13 @@ defmodule Boruta.Ecto.AdminTest do
   use Boruta.DataCase, async: true
 
   import Boruta.Factory
+  import Ecto.Query, only: [from: 2]
 
   alias Boruta.Ecto.Admin
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.Scope
+  alias Boruta.Ecto.Token
+  alias Boruta.Repo
 
   @client_valid_attrs %{
     redirect_uri: ["https://redirect.uri"],
@@ -220,6 +223,31 @@ defmodule Boruta.Ecto.AdminTest do
       scope = scope_fixture()
       assert {:ok, %Scope{}} = Admin.delete_scope(scope)
       assert_raise Ecto.NoResultsError, fn -> Admin.get_scope!(scope.id) end
+    end
+  end
+
+  # tokens
+
+  describe "list_active_tokens/0" do
+    test "returns active tokens" do
+      active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10) |> Repo.reload()
+      _expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10)
+      _revoked_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+
+      query = Admin.list_active_tokens()
+
+      assert [^active_token] = Repo.all(query)
+    end
+
+    test "returns active tokens with a queryable" do
+      active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, scope: "test") |> Repo.reload()
+      _other_active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, scope: "other")
+      _expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10)
+      _revoked_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+
+      query = Admin.list_active_tokens(from t in Token, where: t.scope == "test")
+
+      assert [^active_token] = Repo.all(query)
     end
   end
 end

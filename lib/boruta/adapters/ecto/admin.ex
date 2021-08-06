@@ -1,5 +1,4 @@
 defmodule Boruta.Ecto.Admin do
-  # TODO move to Boruta.Oauth.Admin
   @moduledoc """
   Administration of Boruta resources.
   """
@@ -16,4 +15,7 @@ defmodule Boruta.Ecto.Admin do
   defdelegate create_scope(attrs), to: Boruta.Ecto.Admin.Scopes
   defdelegate update_scope(scope, attrs), to: Boruta.Ecto.Admin.Scopes
   defdelegate delete_scope(scope), to: Boruta.Ecto.Admin.Scopes
+
+  defdelegate list_active_tokens(), to: Boruta.Ecto.Admin.Tokens
+  defdelegate list_active_tokens(queryable), to: Boruta.Ecto.Admin.Tokens
 end

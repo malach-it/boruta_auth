@@ -1,5 +1,7 @@
 defmodule Boruta.Ecto.Token do
-  @moduledoc false
+  @moduledoc """
+  Ecto Adapter Token Schema
+  """
 
   use Ecto.Schema
 
@@ -49,7 +51,6 @@ defmodule Boruta.Ecto.Token do
     timestamps()
   end
 
-  @doc false
   def changeset(token, attrs) do
     token
     |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope, :access_token_ttl])
@@ -61,7 +62,6 @@ defmodule Boruta.Ecto.Token do
     |> put_expires_at()
   end
 
-  @doc false
   def changeset_with_refresh_token(token, attrs) do
     token
     |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :scope])
@@ -73,7 +73,6 @@ defmodule Boruta.Ecto.Token do
     |> put_expires_at()
   end
 
-  @doc false
   def code_changeset(token, attrs) do
     token
     |> cast(attrs, [

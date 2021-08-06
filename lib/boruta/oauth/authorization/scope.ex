@@ -3,12 +3,14 @@ defmodule Boruta.Oauth.Authorization.Scope do
   Scope authorization
   """
 
+  import Boruta.Config, only: [resource_owners: 0]
+
+  alias Boruta.ClientsAdapter
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
-
-  import Boruta.Config, only: [scopes: 0, clients: 0, resource_owners: 0]
+  alias Boruta.ScopesAdapter
 
   @doc """
   Authorize the given scope according to the given client.
@@ -58,7 +60,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
 
   defp keep_if_authorized(_scopes, nil), do: []
   defp keep_if_authorized(scopes, :public) do
-    authorized_scopes = scopes().public()
+    authorized_scopes = ScopesAdapter.public()
     |> Enum.map(fn (scope) -> scope.name end)
 
     Enum.filter(scopes, fn (scope) ->
@@ -69,7 +71,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
     keep_if_authorized(scopes, :public)
   end
   defp keep_if_authorized(scopes, %Client{authorize_scope: true} = client) do
-    authorized_scopes = Enum.map(clients().authorized_scopes(client), fn (%Scope{name: name}) -> name end)
+    authorized_scopes = Enum.map(ClientsAdapter.authorized_scopes(client), fn (%Scope{name: name}) -> name end)
 
     Enum.filter(scopes, fn (scope) ->
       Enum.member?(authorized_scopes, scope)

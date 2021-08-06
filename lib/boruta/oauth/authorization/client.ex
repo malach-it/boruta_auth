@@ -3,8 +3,7 @@ defmodule Boruta.Oauth.Authorization.Client do
   Client authorization
   """
 
-  import Boruta.Config, only: [clients: 0]
-
+  alias Boruta.ClientsAdapter
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
 
@@ -31,7 +30,7 @@ defmodule Boruta.Oauth.Authorization.Client do
         :status => :unauthorized
       }}
   def authorize(id: id, secret: secret) do
-    case clients().get_by(id: id, secret: secret) do
+    case ClientsAdapter.get_by(id: id, secret: secret) do
       %Client{} = client ->
         {:ok, client}
       nil ->
@@ -45,7 +44,9 @@ defmodule Boruta.Oauth.Authorization.Client do
     end
   end
   def authorize(id: id, secret: secret, grant_type: grant_type) do
-    with %Client{supported_grant_types: supported_grant_types} = client <- clients().get_by(id: id, secret: secret),
+    with %Client
+      {supported_grant_types: supported_grant_types
+    } = client <- ClientsAdapter.get_by(id: id, secret: secret),
          true <- Enum.member?(supported_grant_types, grant_type) do
         {:ok, client}
     else
@@ -70,7 +71,7 @@ defmodule Boruta.Oauth.Authorization.Client do
   def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type) do
     with %Client{
       supported_grant_types: supported_grant_types
-      } = client <- clients().get_by(id: id, redirect_uri: redirect_uri),
+      } = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
          true <- Enum.member?(supported_grant_types, grant_type) do
         {:ok, client}
     else
@@ -95,7 +96,7 @@ defmodule Boruta.Oauth.Authorization.Client do
   def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type, code_verifier: code_verifier) do
     with %Client{
       supported_grant_types: supported_grant_types
-      } = client <- clients().get_by(id: id, redirect_uri: redirect_uri),
+      } = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
          :ok <- validate_pkce(client, code_verifier),
          true <- Enum.member?(supported_grant_types, grant_type) do
         {:ok, client}

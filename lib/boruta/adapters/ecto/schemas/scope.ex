@@ -1,5 +1,7 @@
 defmodule Boruta.Ecto.Scope do
-  @moduledoc false
+  @moduledoc """
+  Ecto Adapter Scope Schema
+  """
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -20,7 +22,6 @@ defmodule Boruta.Ecto.Scope do
     timestamps()
   end
 
-  @doc false
   def changeset(scope, attrs) do
     scope
     |> cast(attrs, [:label, :name, :public])
@@ -31,7 +32,6 @@ defmodule Boruta.Ecto.Scope do
     |> validate_no_whitespace(:name)
   end
 
-  @doc false
   def assoc_changeset(scope, attrs) do
     scope
     |> cast(attrs, [:id])
