@@ -1,0 +1,142 @@
+defmodule <%= web_module %>.Oauth.AuthorizeController do
+  @behaviour Boruta.Oauth.AuthorizeApplication
+
+  use <%= web_module %>, :controller
+
+  alias Boruta.Oauth
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.AuthorizeResponse
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
+  alias <%= web_module %>.OauthView
+
+  def authorize(%Plug.Conn{query_params: query_params} = conn, _params) do
+    current_user = conn.assigns[:current_user]
+    conn = store_user_return_to(conn, query_params)
+
+    authorize_response(
+      conn,
+      current_user
+    )
+  end
+
+  defp authorize_response(conn, %_{} = current_user) do
+    conn
+    |> delete_session(:session_chosen)
+    |> Oauth.authorize(
+      %ResourceOwner{sub: current_user.id, username: current_user.email},
+      __MODULE__
+    )
+  end
+
+  defp authorize_response(conn, _) do
+    raise "should redirect to login"
+  end
+
+  @impl Boruta.Oauth.AuthorizeApplication
+  def authorize_success(
+        conn,
+        %AuthorizeResponse{
+          type: type,
+          redirect_uri: redirect_uri,
+          value: value,
+          expires_in: expires_in,
+          state: state
+        }
+      ) do
+    query =
+      case {type, state} do
+        {"access_token", nil} ->
+          URI.encode_query(%{access_token: value, expires_in: expires_in})
+
+        {"access_token", state} ->
+          URI.encode_query(%{access_token: value, expires_in: expires_in, state: state})
+
+        {"code", nil} ->
+          URI.encode_query(%{code: value})
+
+        {"code", state} ->
+          URI.encode_query(%{code: value, state: state})
+      end
+
+    url =
+      case type do
+        "access_token" -> "#{redirect_uri}##{query}"
+        "code" -> "#{redirect_uri}?#{query}"
+      end
+
+    conn
+    |> redirect(external: url)
+  end
+
+  @impl Boruta.Oauth.AuthorizeApplication
+  def authorize_error(
+        %Plug.Conn{} = conn,
+        %Error{status: :unauthorized, error: :invalid_resource_owner}
+      ) do
+    raise "should redirect to login"
+  end
+
+  def authorize_error(
+        conn,
+        %Error{
+          error: error,
+          error_description: error_description,
+          format: format,
+          redirect_uri: redirect_uri
+        }
+      )
+      when not is_nil(format) do
+    query = URI.encode_query(%{error: error, error_description: error_description})
+
+    url =
+      case format do
+        :query -> "#{redirect_uri}?#{query}"
+        :fragment -> "#{redirect_uri}##{query}"
+      end
+
+    conn
+    |> redirect(external: url)
+  end
+
+  def authorize_error(
+        conn,
+        %Error{status: status, error: error, error_description: error_description}
+      ) do
+    conn
+    |> put_status(status)
+    |> put_view(<%= web_module %>.OauthView)
+    |> render("error." <> get_format(conn), error: error, error_description: error_description)
+  end
+
+  defp store_user_return_to(conn, %{"code_challenge_method" => code_challenge_method} = params) do
+    conn
+    |> put_session(
+      :user_return_to,
+      Routes.authorize_path(conn, :authorize,
+        client_id: params["client_id"],
+        code_challenge: params["code_challenge"],
+        code_challenge_method: code_challenge_method,
+        redirect_uri: params["redirect_uri"],
+        response_type: params["response_type"],
+        scope: params["scope"],
+        state: params["state"]
+      )
+    )
+  end
+
+  defp store_user_return_to(conn, params) do
+    conn
+    |> put_session(
+      :user_return_to,
+      Routes.authorize_path(conn, :authorize,
+        client_id: params["client_id"],
+        code_challenge: params["code_challenge"],
+        redirect_uri: params["redirect_uri"],
+        response_type: params["response_type"],
+        scope: params["scope"],
+        state: params["state"]
+      )
+    )
+  end
+end
