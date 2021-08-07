@@ -151,8 +151,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest do
-  import Boruta.Config, only: [token_generator: 0]
-
   alias Boruta.AccessTokensAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
@@ -235,8 +233,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
-  import Boruta.Config, only: [token_generator: 0]
-
   alias Boruta.AccessTokensAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
