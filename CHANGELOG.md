@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-rc.1]
+  ### Added
+    - OpenID Connect [hybrid cretification test suite](https://www.certification.openid.net/plan-detail.html?plan=fF6XN5hqGMF5s&public=true) integration
+      - hybrid flow
+      - authorization code and implicit grants OpenID Connect compatibility
+  ### Changed
+    - `Boruta.Oauth.AuthorizeResponse` and `Boruta.Oauth.TokenResponse` do not provide token value in `value` field but prefer giving value by token type `code`, `access_token` or `id_token`.
+    ```
+    %AuthorizeResponse{
+       type: "code",
+       value: value,
+       expires_in: 60
+     }}
+    ```
+    becomes
+    ```
+    %AuthorizeResponse{
+       type: "code",
+       code: value,
+       expires_in: 60
+     }}
+    ```
+  ### Security
+    - codes are revoked after first usage
 ## [Unreleased]
   ### Added
     - `AuthorizeApplication`, `IntrospectApplication`, `RevokeApplication`, and `TokenApplication` behaviours allowing to implement separatly different OAuth use cases.
