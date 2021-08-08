@@ -3,29 +3,28 @@ defmodule Boruta.Ecto.ClientStore do
 
   import Boruta.Config, only: [cache_backend: 0]
 
+  alias Boruta.Ecto.Clients
   alias Boruta.Oauth.Client
 
   @spec get([id: String.t(), secret: String.t()] | [id: String.t(), redirect_uri: String.t()]) ::
           {:ok, token :: Boruta.Oauth.Client.t()} | {:error, reason :: String.t()}
   def get(id: id, secret: secret) do
-    with %Client{secret: client_secret} = client <- get_by_id(id),
-         # TODO move logic to Clients
-         true <- secret == client_secret do
+    with %Client{} = client <- get_by_id(id),
+         :ok <- Clients.check_secret(client, secret) do
       {:ok, client}
     else
-      false -> {:error, "Client secret do not match."}
       nil -> {:error, "Client not cached."}
+      error -> error
     end
   end
 
   def get(id: id, redirect_uri: redirect_uri) do
-    with %Client{redirect_uris: client_redirect_uris} = client <- get_by_id(id),
-         # TODO move logic to Clients
-         true <- Enum.member?(client_redirect_uris, redirect_uri) do
+    with %Client{} = client <- get_by_id(id),
+         :ok <- Clients.check_redirect_uri(client, redirect_uri) do
       {:ok, client}
     else
-      false -> {:error, "Client redirect_uri do not match."}
       nil -> {:error, "Client not cached."}
+      error -> error
     end
   end
 
