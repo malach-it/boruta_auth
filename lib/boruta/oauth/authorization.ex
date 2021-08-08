@@ -67,7 +67,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
 
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, scope: scope}} <- preauthorize(request) do
-      # TODO rescue from creation errors
       AccessTokensAdapter.create(
         %{
           client: client,
@@ -116,7 +115,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       AccessTokensAdapter.create(
         %{
           client: client,
@@ -179,7 +177,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
             scope: scope
           }} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       AccessTokensAdapter.create(
         %{
           client: client,
@@ -244,7 +241,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
             scope: scope,
             state: state
           }} <- preauthorize(request) do
-      # TODO rescue from creation errors
       AccessTokensAdapter.create(
         %{
           client: client,
@@ -328,7 +324,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             code_challenge_method: code_challenge_method
           }} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       CodesAdapter.create(%{
         client: client,
         redirect_uri: redirect_uri,
@@ -403,7 +398,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       AccessTokensAdapter.create(
         %{
           client: client,

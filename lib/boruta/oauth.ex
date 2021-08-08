@@ -31,6 +31,12 @@ defmodule Boruta.Oauth do
     else
       {:error, %Error{} = error} ->
         module.token_error(conn, error)
+      {:error, reason} ->
+        %Error{
+          status: :internal_server_error,
+          error: :unknown_error,
+          error_description: inspect(reason)
+        }
     end
   end
 
@@ -73,12 +79,23 @@ defmodule Boruta.Oauth do
       )
     else
       {:error, %Error{} = error} ->
-        case Request.authorize_request(conn, resource_owner) do
-          {:ok, request} ->
-            module.authorize_error(conn, Error.with_format(error, request))
-          _ ->
-            module.authorize_error(conn, error)
-        end
+        formatted_authorize_error(conn, resource_owner, module, error)
+      {:error, reason} ->
+        error = %Error{
+          status: :internal_server_error,
+          error: :unknown_error,
+          error_description: inspect(reason)
+        }
+        formatted_authorize_error(conn, resource_owner, module, error)
+    end
+  end
+
+  defp formatted_authorize_error(conn, resource_owner, module, error) do
+    case Request.authorize_request(conn, resource_owner) do
+      {:ok, request} ->
+        module.authorize_error(conn, Error.with_format(error, request))
+      _ ->
+        module.authorize_error(conn, error)
     end
   end
 
@@ -112,6 +129,13 @@ defmodule Boruta.Oauth do
       module.revoke_success(conn)
     else
       {:error, error} ->
+        module.revoke_error(conn, error)
+      {:error, reason} ->
+        error = %Error{
+          status: :internal_server_error,
+          error: :unknown_error,
+          error_description: inspect(reason)
+        }
         module.revoke_error(conn, error)
     end
   end
