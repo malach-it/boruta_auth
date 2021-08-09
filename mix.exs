@@ -46,14 +46,16 @@ defmodule Boruta.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
-      {:postgrex, ">= 0.0.0"},
+      {:jose, "~> 1.11"},
+      {:mox, "~> 0.5", only: :test},
+      {:nebulex, "~> 2.0.0"},
+      {:phoenix, "~> 1.5"},
+      {:phoenix_html, "~> 2.13"},
       {:plug, "~> 1.0"},
+      {:postgrex, ">= 0.0.0"},
       {:puid, "~> 1.0"},
       {:secure_random, "~> 0.5"},
-      {:mox, "~> 0.5", only: :test},
-      {:shards, "~> 1.0"},
-      {:nebulex, "~> 2.0.0"},
-      {:jose, "~> 1.11"}
+      {:shards, "~> 1.0"}
     ]
   end
 

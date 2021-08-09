@@ -13,4 +13,7 @@ config :boruta, Boruta.Cache,
     backend: :shards,
     partitions: 2
   ]
+
+config :phoenix, :json_library, Jason
+
 import_config "#{Mix.env()}.exs"

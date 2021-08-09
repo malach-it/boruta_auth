@@ -1,22 +1,23 @@
-defmodule <%= web_module %>.Oauth.IntrospectController do
+defmodule <%= @web_module %>.Oauth.IntrospectController do
   @behaviour Boruta.Oauth.IntrospectApplication
 
-  use <%= web_module %>, :controller
+  use <%= @web_module %>, :controller
 
-  alias Boruta.Oauth
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.IntrospectResponse
-  alias <%= web_module %>.OauthView
+  alias <%= @web_module %>.OauthView
+
+  @oauth_module Application.compile_env(:<%= @otp_app %>, :oauth_module)
 
   def introspect(%Plug.Conn{} = conn, _params) do
-    conn |> Oauth.introspect(__MODULE__)
+    conn |> @oauth_module.introspect(__MODULE__)
   end
 
   @impl Boruta.Oauth.IntrospectApplication
   def introspect_success(conn, %IntrospectResponse{} = response) do
     conn
     |> put_view(OauthView)
-    |> render("introspect.#{get_format(conn)}", response: response)
+    |> render("introspect.json", response: response)
   end
 
   @impl Boruta.Oauth.IntrospectApplication

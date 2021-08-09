@@ -1,14 +1,14 @@
-defmodule <%= web_module %>.Oauth.AuthorizeController do
+defmodule <%= @web_module %>.Oauth.AuthorizeController do
   @behaviour Boruta.Oauth.AuthorizeApplication
 
-  use <%= web_module %>, :controller
+  use <%= @web_module %>, :controller
 
-  alias Boruta.Oauth
-  alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
-  alias <%= web_module %>.OauthView
+  alias <%= @web_module %>.OauthView
+
+  @oauth_module Application.compile_env(:<%= @otp_app %>, :oauth_module)
 
   def authorize(%Plug.Conn{query_params: query_params} = conn, _params) do
     current_user = conn.assigns[:current_user]
@@ -22,15 +22,17 @@ defmodule <%= web_module %>.Oauth.AuthorizeController do
 
   defp authorize_response(conn, %_{} = current_user) do
     conn
-    |> delete_session(:session_chosen)
-    |> Oauth.authorize(
+    |> @oauth_module.authorize(
       %ResourceOwner{sub: current_user.id, username: current_user.email},
       __MODULE__
     )
   end
 
-  defp authorize_response(conn, _) do
-    raise "should redirect to login"
+  defp authorize_response(_conn, _params) do
+    raise """
+    Here occurs the login process. After login, user may be redirected
+    to get_session(conn, :user_return_to)
+    """
   end
 
   @impl Boruta.Oauth.AuthorizeApplication
@@ -71,10 +73,13 @@ defmodule <%= web_module %>.Oauth.AuthorizeController do
 
   @impl Boruta.Oauth.AuthorizeApplication
   def authorize_error(
-        %Plug.Conn{} = conn,
+        %Plug.Conn{},
         %Error{status: :unauthorized, error: :invalid_resource_owner}
       ) do
-    raise "should redirect to login"
+    raise """
+    Here occurs the login process. After login, user may be redirected
+    to get_session(conn, :user_return_to)
+    """
   end
 
   def authorize_error(
@@ -105,9 +110,15 @@ defmodule <%= web_module %>.Oauth.AuthorizeController do
       ) do
     conn
     |> put_status(status)
-    |> put_view(<%= web_module %>.OauthView)
-    |> render("error." <> get_format(conn), error: error, error_description: error_description)
+    |> put_view(OauthView)
+    |> render("error.html", error: error, error_description: error_description)
   end
+
+  @impl Boruta.Oauth.AuthorizeApplication
+  def preauthorize_success(_conn, _response), do: :ok
+
+  @impl Boruta.Oauth.AuthorizeApplication
+  def preauthorize_error(_conn, _response), do: :ok
 
   defp store_user_return_to(conn, %{"code_challenge_method" => code_challenge_method} = params) do
     conn
