@@ -72,12 +72,14 @@ defmodule Boruta.Ecto.Codes do
 
   @impl Boruta.Oauth.Codes
   def revoke(%Oauth.Token{value: value}) do
-    with {:ok, token} <-
-           repo().get_by(Ecto.Token, value: value)
-           |> Ecto.Token.revoke_changeset()
+    with %Ecto.Token{} = token <- repo().get_by!(Ecto.Token, value: value),
+           {:ok, token} <- Ecto.Token.revoke_changeset(token)
            |> repo().update(),
          {:ok, token} <- TokenStore.invalidate(to_oauth_schema(token)) do
       {:ok, token}
+    else
+      nil -> {:error, "Code not found."}
+      error -> error
     end
   end
 end

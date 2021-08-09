@@ -22,11 +22,7 @@ defmodule Boruta.Oauth.Scope do
   def split(nil), do: []
 
   def split(scope) do
-    Enum.filter(
-      String.split(scope, " "),
-      # remove empty strings
-      fn scope -> scope != "" end
-    )
+    String.split(scope, " ", trim: true)
   end
 
   @spec openid() :: t()
@@ -37,4 +33,11 @@ defmodule Boruta.Oauth.Scope do
       public: true
     }
   end
+
+  @spec contains_openid?(oauth_scope :: String.t()) :: boolean()
+  def contains_openid?(scope) when is_binary(scope) do
+    String.match?(scope, ~r/#{openid().name}/)
+  end
+
+  def contains_openid?(_scope), do: false
 end

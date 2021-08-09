@@ -13,13 +13,7 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.CodeRequest do
 
   def authorize(%Boruta.Oauth.CodeRequest{nonce: nonce} = request) do
     case {CodeRequest.require_nonce?(request), nonce} do
-      {true, ""} ->
-        {:error, %Error{
-          status: :bad_request,
-          error: :invalid_request,
-          error_description: "OpenID requests require a nonce."
-        }}
-      {true, nil} ->
+      {true, nonce} when nonce in [nil, ""] ->
         {:error, %Error{
           status: :bad_request,
           error: :invalid_request,

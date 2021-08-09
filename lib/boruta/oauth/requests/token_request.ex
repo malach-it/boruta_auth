@@ -30,15 +30,8 @@ defmodule Boruta.Oauth.TokenRequest do
   alias Boruta.Oauth.Scope
 
   @spec require_nonce?(request :: __MODULE__.t()) :: boolean()
-  def require_nonce?(%__MODULE__{response_types: response_types} = request) do
-    openid?(request) && (
-      response_types |> Enum.member?("id_token")
-    )
+  def require_nonce?(%__MODULE__{response_types: response_types, scope: scope}) do
+    Scope.contains_openid?(scope) &&
+      Enum.member?(response_types, "id_token")
   end
-
-  defp openid?(%__MODULE__{scope: scope}) when is_binary(scope) do
-    String.match?(scope, ~r/#{Scope.openid().name}/)
-  end
-
-  defp openid?(_request), do: false
 end

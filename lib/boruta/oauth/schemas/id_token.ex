@@ -98,7 +98,6 @@ defmodule Boruta.Oauth.IdToken do
   defp hash(string) do
     :crypto.hash(@hash_alg, string)
     |> binary_part(0, 32)
-    |> Base.url_encode64()
-    |> String.replace("=", "")
+    |> Base.url_encode64(padding: false)
   end
 end
