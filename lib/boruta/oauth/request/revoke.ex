@@ -20,7 +20,7 @@ defmodule Boruta.Oauth.Request.Revoke do
        :redirect_uri => nil,
        :status => :bad_request
      }}
-    | {:ok, request :: %RevokeRequest{}}
+    | {:ok, request :: RevokeRequest.t()}
   def request(%{
     req_headers: req_headers,
     body_params: %{} = body_params

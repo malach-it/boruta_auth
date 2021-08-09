@@ -1,10 +1,10 @@
-defmodule Boruta.Oauth.CodeRequest do
+defmodule Boruta.Oauth.HybridRequest do
   @moduledoc """
-  Code request
+  Hybrid request
   """
 
   @typedoc """
-  Type representing a code request as stated in [OAuth 2.0 RFC](https://tools.ietf.org/html/rfc6749#section-4.1.1).
+  Type representing an hybrid request as stated in [OpenId Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth).
 
   Note : `resource_owner` is an addition that must be provided by the application layer.
   """
@@ -18,9 +18,8 @@ defmodule Boruta.Oauth.CodeRequest do
           grant_type: String.t(),
           code_challenge: String.t(),
           code_challenge_method: String.t(),
-          response_types: String.t()
+          response_types: list(String.t())
         }
-
   defstruct client_id: "",
             redirect_uri: "",
             state: "",
@@ -31,11 +30,4 @@ defmodule Boruta.Oauth.CodeRequest do
             code_challenge: "",
             code_challenge_method: "plain",
             response_types: []
-
-  alias Boruta.Oauth.Scope
-
-  @spec require_nonce?(request :: __MODULE__.t()) :: boolean()
-  def require_nonce?(%__MODULE__{response_types: response_types, scope: scope}) do
-    Scope.contains_openid?(scope) && Enum.member?(response_types, "id_token")
-  end
 end

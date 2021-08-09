@@ -23,7 +23,7 @@ As stated in OAuth 2.0 RFC [Client credentials grant](https://tools.ietf.org/htm
 ### Code example
 - lib/my_app_web/views/oauth_view.ex
 
-```
+```elixir
 defmodule MyAppWeb.OauthView do
   use MyAppWeb, :view
 
@@ -56,7 +56,7 @@ end
 
 - lib/my_app_web/controllers/oauth_controller.ex
 
-```
+```elixir
 defmodule MyAppWeb.OauthController do
   @behaviour Boruta.Oauth.Application
 
@@ -90,7 +90,7 @@ end
 
 - lib/my_app_web/router.ex
 
-```
+```elixir
 defmodule MyAppWeb.Router do
   use MyAppWeb, :router
 

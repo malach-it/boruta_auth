@@ -1,47 +1,10 @@
-# Authorization code grant
+# Hybrid flow
 
-As stated in OAuth 2.0 RFC [Authorization code grant](https://tools.ietf.org/html/rfc6749#section-4.1) is a secure flow (recommanded) involving user agent and client in order to get access tokens.
+As stated in OpenID Connect core 1.0 [Hybrid flow](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth) is a flow based on Authorization code grant flow.
 
-```
-                    +----------+
-                    | Resource |
-                    |   Owner  |
-                    |          |
-                    +----------+
-                         ^
-                         |
-                        (B)
-                    +----|-----+          Client Identifier      +---------------+
-                    |         -+----(A)-- & Redirection URI ---->|               |
-                    |  User-   |                                 | Authorization |
-                    |  Agent  -+----(B)-- User authenticates --->|     Server    |
-                    |          |                                 |               |
-                    |         -+----(C)-- Authorization Code ---<|               |
-                    +-|----|---+                                 +---------------+
-                      |    |                                         ^      v
-                     (A)  (C)                                        |      |
-                      |    |                                         |      |
-                      ^    v                                         |      |
-                    +---------+                                      |      |
-                    |         |>---(D)-- Authorization Code ---------'      |
-                    |  Client |          & Redirection URI                  |
-                    |         |                                             |
-                    |         |<---(E)----- Access Token -------------------'
-                    +---------+       (w/ Optional Refresh Token)
-```
-(A)  The client initiates the flow by directing the resource owner's user-agent to the authorization endpoint.  The client includes its client identifier, requested scope, local state, and a redirection URI to which the authorization server will send the user-agent back once access is granted (or denied).
+See [Authorization Code grant](authorization_code.md) for the flow steps aknowledgement.
 
-(B)  The authorization server authenticates the resource owner (via the user-agent) and establishes whether the resource owner grants or denies the client's access request.
-
-(C)  Assuming the resource owner grants access, the authorization server redirects the user-agent back to the client using the redirection URI provided earlier (in the request or during client registration).  The redirection URI includes an authorization code and any local state provided by the client earlier.
-
-(D)  The client requests an access token from the authorization server's token endpoint by including the authorization code received in the previous step.  When making the request, the client authenticates with the authorization server.  The client includes the redirection URI used to obtain the authorization code for verification.
-
-(E)  The authorization server authenticates the client, validates the authorization code, and ensures that the redirection URI received matches the URI used to redirect the client in step (C).  If valid, the authorization server responds back with an access token and, optionally, a refresh token.
-
-> Copyright (c) 2012 IETF Trust and the persons identified as authors of the code. All rights reserved.
->
-> Redistribution and use in source and binary forms, with or without modification, is permitted pursuant to, and subject to the license terms contained in, the Simplified BSD License set forth in Section 4.c of the IETF Trust’s Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info).
+The major difference with authorization code grant is the possible addition of response types `id_token` and `token` while requesting for a code.
 
 ## Integration
 ### Code example
@@ -78,6 +41,13 @@ defmodule MyApp.ResourceOwners do
 
   @impl Boruta.Oauth.ResourceOwners
   def authorized_scopes(%ResourceOwner{}), do: []
+
+  @impl Boruta.Oauth.ResourceOwners
+  def claims(sub) do
+    with %User{email: email} = user <- Repo.get_by(User, id: sub) do
+      %{"email" => email}
+    end
+  end
 end
 ```
 
@@ -94,22 +64,16 @@ defmodule MyAppWeb.OauthView do
     response: %TokenResponse{
         token_type: token_type,
         access_token: access_token,
-        id_token: id_token,
         expires_in: expires_in,
         refresh_token: refresh_token
       }
   }) do
-    response = %{
+    %{
       token_type: token_type,
       access_token: access_token,
       expires_in: expires_in,
       refresh_token: refresh_token
     }
-    case id_token do
-      nil -> response
-      id_token ->
-        Map.put(response, :id_token, id_token)
-    end
   end
 
   def render("error.json", %{error: error, error_description: error_description}) do
@@ -179,18 +143,25 @@ defmodule MyAppWeb.OauthController do
           type: type,
           redirect_uri: redirect_uri,
           code: code,
+          id_token: id_token,
+          access_token: access_token,
           expires_in: expires_in,
           state: state
         }
       ) do
-    query_string =
-      case state do
-        nil ->
-          URI.encode_query(%{"code" => code, "expires_in" => expires_in})
-
-        state ->
-          URI.encode_query(%{"code" => code, "expires_in" => expires_in, "state" => state})
-      end
+    query =
+      %{
+        code: code,
+        id_token: id_token,
+        access_token: access_token,
+        expires_in: expires_in,
+        state: state
+      }
+      |> Enum.flat_map(fn
+        {_param_type, nil} -> []
+        pair -> [pair]
+      end)
+      |> URI.encode_query()
 
     url = "#{redirect_uri}?#{query_string}"
 

@@ -13,7 +13,8 @@ defmodule Boruta.Ecto.Client do
       token_generator: 0,
       repo: 0,
       access_token_max_ttl: 0,
-      authorization_code_max_ttl: 0
+      authorization_code_max_ttl: 0,
+      id_token_max_ttl: 0
     ]
 
   alias Boruta.Ecto.Scope
@@ -27,6 +28,7 @@ defmodule Boruta.Ecto.Client do
           access_token_ttl: integer(),
           authorization_code_ttl: integer(),
           authorized_scopes: Ecto.Association.NotLoaded.t() | list(Scope.t()),
+          id_token_ttl: integer(),
           public_key: list(String.t()),
           private_key: list(String.t())
         }
@@ -62,6 +64,7 @@ defmodule Boruta.Ecto.Client do
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
+    field(:id_token_ttl, :integer)
 
     field(:public_key, :string)
     field(:private_key, :string)
@@ -78,6 +81,7 @@ defmodule Boruta.Ecto.Client do
       :name,
       :access_token_ttl,
       :authorization_code_ttl,
+      :id_token_ttl,
       :redirect_uris,
       :authorize_scope,
       :supported_grant_types,
@@ -86,6 +90,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_required([:authorization_code_ttl, :access_token_ttl])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
+    |> validate_inclusion(:id_token_ttl, 1..id_token_max_ttl())
     |> validate_redirect_uris
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))

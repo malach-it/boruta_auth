@@ -63,6 +63,24 @@ defmodule Boruta.Oauth.Json.Schema do
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
         "state" => %{"type" => "string"},
+        "nonce" => %{"type" => "string"},
+        "redirect_uri" => %{"type" => "string"}
+      },
+      "required" => ["response_type", "client_id", "redirect_uri"]
+    } |> Schema.resolve
+  end
+
+  def id_token do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "response_type" => %{"type" => "string", "pattern" => "id_token"},
+        "client_id" => %{
+          "type" => "string",
+          "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
+        },
+        "state" => %{"type" => "string"},
+        "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"}
       },
       "required" => ["response_type", "client_id", "redirect_uri"]
@@ -91,6 +109,7 @@ defmodule Boruta.Oauth.Json.Schema do
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
         "state" => %{"type" => "string"},
+        "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "code_challenge" => %{"type" => "string"},
         "code_challenge_method" => %{

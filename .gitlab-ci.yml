@@ -16,6 +16,12 @@ services:
   - mix local.rebar --force
   - mix deps.get
 
+compilation:
+  stage: test
+  extends: .elixir-task
+  script:
+  - mix compile --force --warnings-as-errors
+
 dialyzer:
   stage: test
   extends: .elixir-task

@@ -22,9 +22,9 @@ defmodule Boruta.Oauth.Authorization.Scope do
   @spec authorize(params :: [
     scope: String.t(),
     against: %{
-      optional(:client) => %Client{},
+      optional(:client) => Client.t(),
       optional(:resource_owner) => struct(),
-      optional(:token) => %Token{}
+      optional(:token) => Token.t()
     }
   ]) ::
   {:ok, scope :: String.t()} |
@@ -61,6 +61,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
   defp keep_if_authorized(_scopes, nil), do: []
   defp keep_if_authorized(scopes, :public) do
     authorized_scopes = ScopesAdapter.public()
+    |> List.insert_at(0, Scope.openid())
     |> Enum.map(fn (scope) -> scope.name end)
 
     Enum.filter(scopes, fn (scope) ->

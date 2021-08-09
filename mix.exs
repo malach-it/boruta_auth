@@ -46,14 +46,15 @@ defmodule Boruta.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
-      {:postgrex, ">= 0.0.0"},
+      {:joken, "~> 2.0"},
+      {:jose, "~> 1.11"},
+      {:mox, "~> 0.5", only: :test},
+      {:nebulex, "~> 2.0.0"},
       {:plug, "~> 1.0"},
+      {:postgrex, ">= 0.0.0"},
       {:puid, "~> 1.0"},
       {:secure_random, "~> 0.5"},
-      {:mox, "~> 0.5", only: :test},
-      {:shards, "~> 1.0"},
-      {:nebulex, "~> 2.0.0"},
-      {:jose, "~> 1.11"}
+      {:shards, "~> 1.0"}
     ]
   end
 
@@ -66,23 +67,24 @@ defmodule Boruta.MixProject do
         "guides/client_credentials.md",
         "guides/resource_owner_password_credentials.md",
         "guides/authorization_code.md",
+        "guides/hybrid.md",
         "guides/implicit.md",
         "guides/introspect.md",
         "guides/revoke.md"
       ],
       groups_for_modules: [
-        "Applications": [
+        Applications: [
           Boruta.Oauth.AuthorizeApplication,
           Boruta.Oauth.TokenApplication,
           Boruta.Oauth.IntrospectApplication,
           Boruta.Oauth.RevokeApplication
         ],
-        "Responses": [
+        Responses: [
           Boruta.Oauth.AuthorizeResponse,
           Boruta.Oauth.TokenResponse,
           Boruta.Oauth.IntrospectResponse
         ],
-        "Authorization": [
+        Authorization: [
           Boruta.Oauth.Authorization,
           Boruta.Oauth.Authorization.AccessToken,
           Boruta.Oauth.Authorization.Client,
@@ -91,20 +93,20 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Authorization.Scope,
           Boruta.Oauth.AuthorizationSuccess
         ],
-        "Introspection": [
+        Introspection: [
           Boruta.Oauth.Introspect
         ],
-        "Revocation": [
+        Revocation: [
           Boruta.Oauth.Revoke
         ],
-        "Contexts": [
+        Contexts: [
           Boruta.Oauth.AccessTokens,
           Boruta.Oauth.Clients,
           Boruta.Oauth.Codes,
           Boruta.Oauth.ResourceOwners,
-          Boruta.Oauth.Scopes,
+          Boruta.Oauth.Scopes
         ],
-        "Schemas": [
+        Schemas: [
           Boruta.Oauth.Token,
           Boruta.Oauth.Client,
           Boruta.Oauth.Scope,
@@ -131,19 +133,19 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.Client,
           Boruta.Ecto.Scope
         ],
-        "Admin": [
+        Admin: [
           Boruta.Ecto.Admin,
           Boruta.Ecto.Admin.Clients,
           Boruta.Ecto.Admin.Scopes,
           Boruta.Ecto.Admin.Users
         ],
-        "Utilities": [
+        Utilities: [
           Boruta.BasicAuth,
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator,
           Boruta.Cache.Primary
         ],
-        "Errors": [
+        Errors: [
           Boruta.Oauth.Error
         ]
       ]

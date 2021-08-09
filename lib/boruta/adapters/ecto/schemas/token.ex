@@ -19,6 +19,7 @@ defmodule Boruta.Ecto.Token do
           type: String.t(),
           value: String.t(),
           state: String.t(),
+          nonce: String.t(),
           scope: String.t(),
           redirect_uri: String.t(),
           expires_at: integer(),
@@ -35,7 +36,8 @@ defmodule Boruta.Ecto.Token do
     field(:value, :string)
     field(:refresh_token, :string)
     field(:state, :string)
-    field(:scope, :string)
+    field(:nonce, :string)
+    field(:scope, :string, default: "")
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)
@@ -53,7 +55,7 @@ defmodule Boruta.Ecto.Token do
 
   def changeset(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :scope, :access_token_ttl])
+    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :nonce, :scope, :access_token_ttl])
     |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
     |> foreign_key_constraint(:client_id)
@@ -64,7 +66,7 @@ defmodule Boruta.Ecto.Token do
 
   def changeset_with_refresh_token(token, attrs) do
     token
-    |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :scope])
+    |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :nonce, :scope])
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
@@ -81,6 +83,7 @@ defmodule Boruta.Ecto.Token do
       :sub,
       :redirect_uri,
       :state,
+      :nonce,
       :scope
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
@@ -90,6 +93,7 @@ defmodule Boruta.Ecto.Token do
     |> put_code_expires_at()
   end
 
+  @doc false
   def pkce_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
@@ -98,6 +102,7 @@ defmodule Boruta.Ecto.Token do
       :sub,
       :redirect_uri,
       :state,
+      :nonce,
       :scope,
       :code_challenge,
       :code_challenge_method
@@ -115,6 +120,13 @@ defmodule Boruta.Ecto.Token do
     |> put_code_expires_at()
     |> put_code_challenge_method()
     |> encrypt_code_challenge()
+  end
+
+  @doc false
+  def revoke_changeset(token) do
+    now = DateTime.utc_now()
+
+    change(token, revoked_at: now)
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do

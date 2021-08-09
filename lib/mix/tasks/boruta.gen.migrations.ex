@@ -69,8 +69,9 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:scope, :string)
         add(:authorize_scope, :boolean, default: false, null: false)
         add(:supported_grant_types, {:array, :string}, default: [], null: false)
-        add(:authorization_code_ttl, :integer, null: false)
-        add(:access_token_ttl, :integer, null: false)
+        add(:authorization_code_ttl, :integer, null: false, default: 60)
+        add(:access_token_ttl, :integer, null: false, default: 3600)
+        add(:id_token_ttl, :integer, null: false, default: 3600)
         add(:pkce, :boolean, default: false, null: false)
         add(:public_key, :text, null: false)
         add(:private_key, :text, null: false)
@@ -86,7 +87,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:expires_at, :integer)
         add(:redirect_uri, :string)
         add(:state, :string)
-        add(:scope, :string)
+        add(:scope, :string, default: "")
         add(:revoked_at, :utc_datetime_usec)
         add(:code_challenge_hash, :string)
         add(:code_challenge_method, :string)
@@ -100,7 +101,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
       create table(:scopes, primary_key: false) do
         add :id, :binary_id, primary_key: true
         add :label, :string
-        add :name, :string
+        add :name, :string, default: ""
         add :public, :boolean, default: false, null: false
 
         timestamps()
