@@ -41,7 +41,7 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
         }}
     end
   end
-  def authorize(resource_owner: %ResourceOwner{} = resource_owner) do
+  def authorize(resource_owner: %ResourceOwner{sub: sub} = resource_owner) when not is_nil(sub) do
     {:ok, resource_owner}
   end
   def authorize(_) do
