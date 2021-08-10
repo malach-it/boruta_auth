@@ -23,19 +23,19 @@ defmodule Boruta.Config do
   """
 
   @defaults repo: Boruta.Repo,
-    cache_backend: Boruta.Cache,
-    contexts: [
-      access_tokens: Boruta.Ecto.AccessTokens,
-      clients: Boruta.Ecto.Clients,
-      codes: Boruta.Ecto.Codes,
-      resource_owners: nil,
-      scopes: Boruta.Ecto.Scopes
-    ],
-    max_ttl: [
-      authorization_code: 60,
-      access_token: 60 * 60 * 24
-    ],
-    token_generator: Boruta.TokenGenerator
+            cache_backend: Boruta.Cache,
+            contexts: [
+              access_tokens: Boruta.Ecto.AccessTokens,
+              clients: Boruta.Ecto.Clients,
+              codes: Boruta.Ecto.Codes,
+              resource_owners: nil,
+              scopes: Boruta.Ecto.Scopes
+            ],
+            max_ttl: [
+              authorization_code: 60,
+              access_token: 60 * 60 * 24
+            ],
+            token_generator: Boruta.TokenGenerator
 
   @spec repo() :: module()
   @doc false
@@ -94,7 +94,22 @@ defmodule Boruta.Config do
   @spec resource_owners() :: module()
   @doc false
   def resource_owners do
-    Keyword.fetch!(oauth_config(), :contexts)[:resource_owners]
+    case Keyword.fetch!(oauth_config(), :contexts)[:resource_owners] do
+      nil ->
+        raise """
+        Missing configuration for resource_owners context. You can set your own
+        `Boruta.Oauth.ResourceOwners` behaviour implementation in config:
+
+          config :boruta, Boruta.Oauth,
+            repo: MyApp.Repo,
+            contexts: [
+              resource_owners: MyApp.ResourceOwners
+            ]
+        """
+
+      module ->
+        module
+    end
   end
 
   @spec oauth_config() :: keyword()
