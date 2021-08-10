@@ -61,4 +61,6 @@ defmodule Boruta.Oauth.Application do
   This function will be triggered in case of failure triggering `Boruta.Oauth.revoke/2`
   """
   @callback revoke_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
+
+  @optional_callbacks preauthorize_success: 2, preauthorize_error: 2
 end

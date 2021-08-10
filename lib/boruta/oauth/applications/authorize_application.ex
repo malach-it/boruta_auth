@@ -15,7 +15,10 @@ defmodule Boruta.Oauth.AuthorizeApplication do
   @doc """
   This function will be triggered in case of failure triggering `Boruta.Oauth.preauthorize/3`
   """
-  @callback preauthorize_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
+  @callback preauthorize_error(
+              conn :: Plug.Conn.t(),
+              oauth_error :: Boruta.Oauth.Error.t()
+            ) ::
               any()
 
   @doc """
@@ -30,4 +33,6 @@ defmodule Boruta.Oauth.AuthorizeApplication do
   """
   @callback authorize_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
               any()
+
+  @optional_callbacks preauthorize_success: 2, preauthorize_error: 2
 end
