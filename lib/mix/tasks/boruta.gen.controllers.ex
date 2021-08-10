@@ -27,6 +27,10 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   ]
 
   def run(_args) do
+    if Mix.Project.umbrella?() do
+      Mix.raise "mix boruta.gen.controllers must be invoked from within your *_web application root directory"
+    end
+
     otp_app = Mix.Project.config() |> Keyword.fetch!(:app)
     web_app = :"#{otp_app}_web"
 
