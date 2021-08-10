@@ -7,8 +7,6 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
   import Mix.Generator
 
-  @web_module_path "web_module.ex"
-
   @module_paths [
     "controllers/oauth/authorize_controller.ex",
     "controllers/oauth/introspect_controller.ex",
@@ -38,10 +36,6 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
       web_app: web_app
     ]
 
-    web_module_target_path =
-      Path.join(Mix.Phoenix.web_path(otp_app), Atom.to_string(web_app) <> ".ex")
-
-    copy_template(template_path(@web_module_path), web_module_target_path, assigns)
     copy_modules(otp_app, assigns)
     copy_raw_files(otp_app, assigns)
     copy_test_files(otp_app, assigns)
@@ -59,7 +53,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
         end
 
         scope "/oauth", MyAppWeb.Oauth do
-          pipe_through [:browser, :fetch_current_user]
+          pipe_through [:browser]
 
           get "/authorize", AuthorizeController, :authorize
         end
