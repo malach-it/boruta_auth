@@ -11,13 +11,14 @@ defmodule Boruta.Oauth.Error do
   alias Boruta.Oauth.TokenRequest
 
   @type t :: %__MODULE__{
-          status: :bad_request | :unauthorized,
+          status: :internal_server_error | :bad_request | :unauthorized,
           error:
             :invalid_request
             | :invalid_client
             | :invalid_scope
             | :invalid_code
-            | :invalid_resource_owner,
+            | :invalid_resource_owner
+            | :unknown_error,
           error_description: String.t(),
           format: :query | :fragment | nil,
           redirect_uri: String.t() | nil,

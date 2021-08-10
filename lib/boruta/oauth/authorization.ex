@@ -134,7 +134,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
@@ -207,7 +206,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
             nonce: nonce
           }} <-
            preauthorize(request),
-         # TODO rescue from creation errors
          {:ok, access_token} <-
            AccessTokensAdapter.create(
              %{
@@ -292,7 +290,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
             state: state,
             nonce: nonce
           }} <- preauthorize(request) do
-      # TODO rescue from creation errors
       response_types
       |> Enum.sort_by(fn response_type -> response_type == "id_token" end)
       |> Enum.reduce({:ok, %{}}, fn
@@ -418,7 +415,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             code_challenge_method: code_challenge_method
           }} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       with {:ok, code} <-
              CodesAdapter.create(%{
                client: client,
@@ -585,7 +581,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
            preauthorize(request) do
-      # TODO rescue from creation errors
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
