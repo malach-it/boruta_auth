@@ -11,14 +11,10 @@ defmodule Boruta.Ecto.AdminTest do
   alias Boruta.Repo
 
   @client_valid_attrs %{
-    redirect_uri: ["https://redirect.uri"],
-    access_token_ttl: 3600,
-    authorization_code_ttl: 60
+    redirect_uri: ["https://redirect.uri"]
   }
   @client_update_attrs %{
-    redirect_uri: ["https://updated.redirect.uri"],
-    access_token_ttl: 3600,
-    authorization_code_ttl: 60
+    redirect_uri: ["https://updated.redirect.uri"]
   }
 
   # clients
@@ -47,25 +43,26 @@ defmodule Boruta.Ecto.AdminTest do
 
   describe "create_client/1" do
     test "returns error changeset with invalid redirect_uri (bad URI format)" do
-      assert {:error, %Ecto.Changeset{}} = Admin.create_client(%{
-        redirect_uris: ["\\bad_redirect_uri"]
-      })
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.create_client(%{
+                 redirect_uris: ["\\bad_redirect_uri"]
+               })
     end
 
     test "returns an error when access token tll is invalid" do
-      assert {:error, %Ecto.Changeset{} } = Admin.create_client(
-        Map.put(@client_valid_attrs, :access_token_ttl, 1_000_000)
-      )
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.create_client(Map.put(@client_valid_attrs, :access_token_ttl, 1_000_000))
     end
 
     test "returns an error when authorization code tll is invalid" do
-      assert {:error, %Ecto.Changeset{} } = Admin.create_client(
-        Map.put(@client_valid_attrs, :authorization_code_ttl, 1_000_000)
-      )
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorization_code_ttl, 1_000_000)
+               )
     end
 
     test "creates a client" do
-      assert {:ok, %Client{} } = Admin.create_client(@client_valid_attrs)
+      assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
     test "creates a client with a secret" do
@@ -73,18 +70,34 @@ defmodule Boruta.Ecto.AdminTest do
       assert secret
     end
 
+    test "creates a client with an authorization_code ttl" do
+      authorization_code_ttl = 10
+
+      assert {:ok, %Client{authorization_code_ttl: ^authorization_code_ttl}} =
+               Admin.create_client(%{authorization_code_ttl: authorization_code_ttl})
+    end
+
+    test "creates a client with an access_token ttl" do
+      access_token_ttl = 10
+
+      assert {:ok, %Client{access_token_ttl: ^access_token_ttl}} =
+               Admin.create_client(%{access_token_ttl: access_token_ttl})
+    end
+
     test "creates a client with authorized scopes" do
       scope = insert(:scope)
-      assert {:ok,
-        %Client{authorized_scopes: authorized_scopes}
-      } = Admin.create_client(Map.put(@client_valid_attrs, :authorized_scopes, [%{"id" => scope.id}]))
+
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"id" => scope.id}])
+               )
+
       assert authorized_scopes == [scope]
     end
 
     test "creates a client with key pair" do
-      assert {:ok,
-        %Client{public_key: pem_public_key, private_key: pem_private_key}
-      } = Admin.create_client(@client_valid_attrs)
+      assert {:ok, %Client{public_key: pem_public_key, private_key: pem_private_key}} =
+               Admin.create_client(@client_valid_attrs)
 
       message = "message"
       [public_entry] = :public_key.pem_decode(pem_public_key)
@@ -100,9 +113,12 @@ defmodule Boruta.Ecto.AdminTest do
   describe "update_client/2" do
     test "returns error changeset with invalid redirect_uri (bad URI format)" do
       client = client_fixture()
-      assert {:error, %Ecto.Changeset{}} = Admin.update_client(client, %{
-        redirect_uris: ["$bad_redirect_uri"]
-      })
+
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.update_client(client, %{
+                 redirect_uris: ["$bad_redirect_uri"]
+               })
+
       assert client == Admin.get_client!(client.id)
     end
 
@@ -114,8 +130,10 @@ defmodule Boruta.Ecto.AdminTest do
     test "updates the client with authorized scopes" do
       scope = insert(:scope)
       client = client_fixture()
-      assert {:ok,
-        %Client{authorized_scopes: authorized_scopes}} = Admin.update_client(client, %{"authorized_scopes" => [%{"id" => scope.id}]})
+
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.update_client(client, %{"authorized_scopes" => [%{"id" => scope.id}]})
+
       assert authorized_scopes == [scope]
     end
   end
@@ -158,7 +176,7 @@ defmodule Boruta.Ecto.AdminTest do
   describe "get_scopes_by_ids/1" do
     test "returns the scopes with given id" do
       scopes = [scope_fixture(), scope_fixture()]
-      ids = Enum.map(scopes, fn (%Scope{id: id}) -> id end)
+      ids = Enum.map(scopes, fn %Scope{id: id} -> id end)
       assert Admin.get_scopes_by_ids(ids) == scopes
     end
   end
@@ -198,7 +216,8 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "returns error changeset with name containing whitespace", %{scope: scope} do
-      assert {:error, %Ecto.Changeset{}} = Admin.update_scope(scope, %{name: "name with whitespace"})
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.update_scope(scope, %{name: "name with whitespace"})
     end
 
     test "returns error changeset with public set to nil", %{scope: scope} do
@@ -232,7 +251,9 @@ defmodule Boruta.Ecto.AdminTest do
     test "returns active tokens" do
       active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10) |> Repo.reload()
       _expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10)
-      _revoked_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+
+      _revoked_token =
+        insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
 
       query = Admin.list_active_tokens()
 
@@ -240,10 +261,16 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "returns active tokens with a queryable" do
-      active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, scope: "test") |> Repo.reload()
-      _other_active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, scope: "other")
+      active_token =
+        insert(:token, expires_at: :os.system_time(:seconds) + 10, scope: "test") |> Repo.reload()
+
+      _other_active_token =
+        insert(:token, expires_at: :os.system_time(:seconds) + 10, scope: "other")
+
       _expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10)
-      _revoked_token = insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+
+      _revoked_token =
+        insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
 
       query = Admin.list_active_tokens(from t in Token, where: t.scope == "test")
 

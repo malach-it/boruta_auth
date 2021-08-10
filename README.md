@@ -127,7 +127,7 @@ alias Boruta.Oauth.Authorization
 alias Boruta.Oauth.{ClientCredentialsRequest, Token}
 
 # create a client
-{:ok, %Ecto.Client{id: client_id, secret: client_secret}} = Ecto.Admin.create_client(%{authorization_code_ttl: 60, access_token_ttl: 60 * 60})
+{:ok, %Ecto.Client{id: client_id, secret: client_secret}} = Ecto.Admin.create_client(%{})
 # obtain a token
 {:ok, %Token{value: value}} = Authorization.token(%ClientCredentialsRequest{client_id: client_id, client_secret: client_secret})
 # check token
