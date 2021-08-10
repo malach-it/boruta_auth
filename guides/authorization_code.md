@@ -166,8 +166,8 @@ defmodule MyAppWeb.OauthController do
     conn = store_user_return_to(conn, query_params)
 
     Oauth.authorize(
-      %ResourceOwner{sub: current_user.id, username: current_user.email},
       conn,
+      %ResourceOwner{sub: current_user.id, username: current_user.email},
       __MODULE__
     )
   end

@@ -33,7 +33,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
     test "returns an error if Basic auth fails" do
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", "Basic boom"}],
           body_params: %{}
         },
@@ -48,7 +48,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     test "returns an error if request is invalid" do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password"}
         },
@@ -63,7 +63,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     test "returns an error if client_id/secret are invalid" do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("6a2f41a3-c54c-fce8-32d2-0324e1c32e22", "test")
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password", "username" => "username", "password" => "password"}
         },
@@ -81,7 +81,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       |> stub(:get_by, fn(_params) -> {:error, "Resource owner not found."} end)
 
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password", "username" => "username", "password" => "password"}
         },
@@ -100,7 +100,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
 
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "boom"}
         },
@@ -118,7 +118,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       |> stub(:check_password, fn(_resource_owner, _password) -> :ok end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password"}
         },
@@ -149,7 +149,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       %{name: given_scope} = List.first(client.authorized_scopes)
       case Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password", "scope" => given_scope}
         },
@@ -180,7 +180,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       given_scope = "bad_scope"
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{"grant_type" => "password", "username" => resource_owner.username, "password" => "password", "scope" => given_scope}
         },
@@ -195,7 +195,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
     test "returns an error if grant type is not allowed by the client", %{client_without_grant_type: client, resource_owner: resource_owner} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           req_headers: [{"authorization", authorization_header}],
           body_params: %{
             "grant_type" => "password",

@@ -38,85 +38,79 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     end
 
     test "returns an error if `response_type` is 'token' and schema is invalid" do
-      assert Oauth.authorize(%{query_params: %{"response_type" => "token"}}, nil, ApplicationMock) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description:
-                    "Query params validation failed. Required properties client_id, redirect_uri are missing at #.",
-                  status: :bad_request
-                }}
+      assert Oauth.authorize(
+        %Plug.Conn{query_params: %{"response_type" => "token"}},
+        %ResourceOwner{},
+        ApplicationMock
+      ) == {:authorize_error, %Error{
+        error: :invalid_request,
+        error_description: "Query params validation failed. Required properties client_id, redirect_uri are missing at #.",
+        status: :bad_request
+      }}
     end
 
     test "returns an error if client_id is invalid" do
       assert Oauth.authorize(
-               %{
-                 query_params: %{
-                   "response_type" => "token",
-                   "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-                   "redirect_uri" => "http://redirect.uri"
-                 }
-               },
-               nil,
-               ApplicationMock
-             ) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
-                  status: :unauthorized,
-                  format: :fragment,
-                  redirect_uri: "http://redirect.uri"
-                }}
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "token",
+            "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+            "redirect_uri" => "http://redirect.uri"
+          }
+        },
+        %ResourceOwner{},
+        ApplicationMock
+      ) == {:authorize_error, %Error{
+        error: :invalid_client,
+        error_description: "Invalid client_id or redirect_uri.",
+        status: :unauthorized,
+        format: :fragment,
+        redirect_uri: "http://redirect.uri"
+      }}
     end
 
     test "returns an error if redirect_uri is invalid", %{client: client} do
       assert Oauth.authorize(
-               %{
-                 query_params: %{
-                   "response_type" => "token",
-                   "client_id" => client.id,
-                   "redirect_uri" => "http://bad.redirect.uri"
-                 }
-               },
-               nil,
-               ApplicationMock
-             ) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
-                  status: :unauthorized,
-                  format: :fragment,
-                  redirect_uri: "http://bad.redirect.uri"
-                }}
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "token",
+            "client_id" => client.id,
+            "redirect_uri" => "http://bad.redirect.uri"
+          }
+        },
+        %ResourceOwner{},
+        ApplicationMock
+      ) == {:authorize_error, %Error{
+        error: :invalid_client,
+        error_description: "Invalid client_id or redirect_uri.",
+        status: :unauthorized,
+        format: :fragment,
+        redirect_uri: "http://bad.redirect.uri"
+      }}
     end
 
     test "returns an error if user is invalid", %{client: client} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:error, "Resourceowner not found"} end)
-
+      |> stub(:get_by, fn(_params) -> {:error, "Resource owner not found"} end)
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
-                 query_params: %{
-                   "response_type" => "token",
-                   "client_id" => client.id,
-                   "redirect_uri" => redirect_uri
-                 }
-               },
-               nil,
-               ApplicationMock
-             ) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_resource_owner,
-                  error_description: "Resource owner is invalid.",
-                  status: :unauthorized,
-                  format: :fragment,
-                  redirect_uri: redirect_uri
-                }}
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "token",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri
+          }
+        },
+        %ResourceOwner{},
+        ApplicationMock
+      ) == {:authorize_error,  %Error{
+        error: :invalid_resource_owner,
+        error_description: "Resource owner is invalid.",
+        status: :unauthorized,
+        format: :fragment,
+        redirect_uri: redirect_uri
+      }}
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
@@ -132,7 +126,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
          expires_in: expires_in
        }} =
         Oauth.authorize(
-          %{
+          %Plug.Conn{
             query_params: %{
               "response_type" => "token",
               "client_id" => client.id,
@@ -167,7 +161,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                 status: :bad_request
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "id_token",
                      "client_id" => client.id,
@@ -201,7 +195,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                }
              } =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "id_token",
                      "client_id" => client.id,
@@ -229,7 +223,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                 id_token: value
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "id_token",
                      "client_id" => client.id,
@@ -276,7 +270,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
          expires_in: expires_in
        }} =
         Oauth.authorize(
-          %{
+          %Plug.Conn{
             query_params: %{
               "response_type" => "id_token token",
               "client_id" => client.id,
@@ -313,7 +307,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "id_token token",
                      "client_id" => client.id,
@@ -362,7 +356,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
          expires_in: expires_in
        }} =
         Oauth.authorize(
-          %{
+          %Plug.Conn{
             query_params: %{
               "response_type" => "token",
               "client_id" => client.id,
@@ -389,28 +383,31 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
 
-      {:authorize_success,
-       %AuthorizeResponse{
-         type: type,
-         access_token: value,
-         expires_in: expires_in
-       }} =
-        Oauth.authorize(
-          %{
-            query_params: %{
-              "response_type" => "token",
-              "client_id" => client.id,
-              "redirect_uri" => redirect_uri,
-              "scope" => given_scope
-            }
-          },
-          resource_owner,
-          ApplicationMock
-        )
-
-      assert type == :token
-      assert value
-      assert expires_in
+      case  Oauth.authorize(
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "token",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri,
+            "scope" => given_scope
+          }
+        },
+        resource_owner,
+        ApplicationMock
+      ) do
+        {:authorize_success,
+          %AuthorizeResponse{
+            type: type,
+            access_token: value,
+            expires_in: expires_in
+          }
+        } ->
+          assert type == :token
+          assert value
+          assert expires_in
+        _ ->
+          assert false
+      end
     end
 
     test "returns an error if scope is unknown or unauthorized", %{
@@ -425,25 +422,23 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
-                 query_params: %{
-                   "response_type" => "token",
-                   "client_id" => client.id,
-                   "redirect_uri" => redirect_uri,
-                   "scope" => given_scope
-                 }
-               },
-               resource_owner,
-               ApplicationMock
-             ) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_scope,
-                  error_description: "Given scopes are unknown or unauthorized.",
-                  format: :fragment,
-                  redirect_uri: "https://redirect.uri",
-                  status: :bad_request
-                }}
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "token",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri,
+            "scope" => given_scope
+          }
+        },
+        resource_owner,
+        ApplicationMock
+      ) == {:authorize_error, %Error{
+        error: :invalid_scope,
+        error_description: "Given scopes are unknown or unauthorized.",
+        format: :fragment,
+        redirect_uri: "https://redirect.uri",
+        status: :bad_request
+      }}
     end
 
     test "returns an error if grant type is not allowed by the client", %{
@@ -457,25 +452,23 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
-                 query_params: %{
-                   "response_type" => "token",
-                   "client_id" => client.id,
-                   "redirect_uri" => redirect_uri,
-                   "scope" => ""
-                 }
-               },
-               resource_owner,
-               ApplicationMock
-             ) ==
-               {:authorize_error,
-                %Error{
-                  error: :unsupported_grant_type,
-                  error_description: "Client do not support given grant type.",
-                  format: :fragment,
-                  redirect_uri: redirect_uri,
-                  status: :bad_request
-                }}
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "token",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri,
+            "scope" => ""
+          }
+        },
+        resource_owner,
+        ApplicationMock
+      ) == {:authorize_error, %Error{
+        error: :unsupported_grant_type,
+        error_description: "Client do not support given grant type.",
+        format: :fragment,
+        redirect_uri: redirect_uri,
+        status: :bad_request
+      }}
     end
   end
 end

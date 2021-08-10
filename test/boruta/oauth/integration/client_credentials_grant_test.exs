@@ -31,7 +31,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     end
 
     test "returns an error if `grant_type` is 'client_credentials' and schema is invalid" do
-      assert Oauth.token(%{body_params: %{"grant_type" => "client_credentials"}}, ApplicationMock) == {:token_error, %Error{
+      assert Oauth.token(%Plug.Conn{body_params: %{"grant_type" => "client_credentials"}}, ApplicationMock) == {:token_error, %Error{
         error: :invalid_request,
         error_description: "Request body validation failed. Required properties client_id, client_secret are missing at #.",
         status: :bad_request
@@ -40,7 +40,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns an error if client_id/scret are invalid" do
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
@@ -57,7 +57,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns a token if client_id/scret are valid", %{client: client} do
       case Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => client.id,
@@ -86,7 +86,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     test "returns a token with public scope", %{client: client} do
       given_scope = "public"
       case  Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => client.id,
@@ -116,7 +116,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     test "returns an error with private scope", %{client: client} do
       given_scope = "private"
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => client.id,
@@ -139,7 +139,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     test "returns a token if scope is authorized", %{client_with_scope: client} do
       %{name: given_scope} = List.first(client.authorized_scopes)
       case Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => client.id,
@@ -169,7 +169,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     test "returns an error if scopes are unknown or unauthorized", %{client_with_scope: client} do
       given_scope = "bad_scope"
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => client.id,
@@ -187,7 +187,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns an error if grant type is not allowed", %{client_without_grant_type: client} do
       assert Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{
             "grant_type" => "client_credentials",
             "client_id" => client.id,

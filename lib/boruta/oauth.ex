@@ -21,7 +21,7 @@ defmodule Boruta.Oauth do
   Triggers `token_success` in case of success and `token_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
   @spec token(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
-  def token(conn, module) do
+  def token(%Plug.Conn{} = conn, module) when is_atom(module) do
     with {:ok, request} <- Request.token_request(conn),
          {:ok, tokens} <- Authorization.token(request),
          %TokenResponse{} = response <- TokenResponse.from_token(tokens) do
@@ -32,6 +32,7 @@ defmodule Boruta.Oauth do
     else
       {:error, %Error{} = error} ->
         module.token_error(conn, error)
+
       {:error, reason} ->
         %Error{
           status: :internal_server_error,
@@ -51,7 +52,8 @@ defmodule Boruta.Oauth do
           resource_owner :: ResourceOwner.t(),
           module :: atom()
         ) :: any()
-  def preauthorize(conn, resource_owner, module) do
+  def preauthorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module)
+      when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, authorization} <- Authorization.preauthorize(request) do
       module.preauthorize_success(
@@ -80,7 +82,8 @@ defmodule Boruta.Oauth do
           resource_owner :: ResourceOwner.t(),
           module :: atom()
         ) :: any()
-  def authorize(conn, resource_owner, module) do
+  def authorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module)
+      when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, tokens} <- Authorization.token(request),
          %AuthorizeResponse{} = response <- AuthorizeResponse.from_tokens(tokens) do
@@ -91,12 +94,14 @@ defmodule Boruta.Oauth do
     else
       {:error, %Error{} = error} ->
         formatted_authorize_error(conn, resource_owner, module, error)
+
       {:error, reason} ->
         error = %Error{
           status: :internal_server_error,
           error: :unknown_error,
           error_description: inspect(reason)
         }
+
         formatted_authorize_error(conn, resource_owner, module, error)
     end
   end
@@ -105,6 +110,7 @@ defmodule Boruta.Oauth do
     case Request.authorize_request(conn, resource_owner) do
       {:ok, request} ->
         module.authorize_error(conn, Error.with_format(error, request))
+
       _ ->
         module.authorize_error(conn, error)
     end
@@ -116,7 +122,7 @@ defmodule Boruta.Oauth do
   Triggers `introspect_success` in case of success and `introspect_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
   @spec introspect(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
-  def introspect(conn, module) do
+  def introspect(%Plug.Conn{} = conn, module) when is_atom(module) do
     with {:ok, request} <- Request.introspect_request(conn),
          {:ok, token} <- Introspect.token(request) do
       module.introspect_success(conn, IntrospectResponse.from_token(token))
@@ -135,19 +141,21 @@ defmodule Boruta.Oauth do
   Triggers `revoke_success` in case of success and `revoke_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
   @spec revoke(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
-  def revoke(conn, module) do
+  def revoke(%Plug.Conn{} = conn, module) when is_atom(module) do
     with {:ok, request} <- Request.revoke_request(conn),
          :ok <- Revoke.token(request) do
       module.revoke_success(conn)
     else
       {:error, error} ->
         module.revoke_error(conn, error)
+
       {:error, reason} ->
         error = %Error{
           status: :internal_server_error,
           error: :unknown_error,
           error_description: inspect(reason)
         }
+
         module.revoke_error(conn, error)
     end
   end

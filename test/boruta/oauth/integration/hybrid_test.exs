@@ -45,8 +45,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns an error if `response_type` is 'code' and schema is invalid" do
       assert Oauth.authorize(
-               %{query_params: %{"response_type" => "code token"}},
-               nil,
+               %Plug.Conn{query_params: %{"response_type" => "code token"}},
+               %ResourceOwner{},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -60,14 +60,14 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns an error if `client_id` is invalid" do
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
                    "redirect_uri" => "http://redirect.uri"
                  }
                },
-               nil,
+               %ResourceOwner{},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -80,14 +80,14 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns an error if `redirect_uri` is invalid", %{client: client} do
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => "http://bad.redirect.uri"
                  }
                },
-               nil,
+               %ResourceOwner{},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -102,14 +102,14 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri
                  }
                },
-               nil,
+               %ResourceOwner{},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -137,7 +137,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 token_type: "bearer"
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
@@ -164,7 +164,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       nonce = "nonce"
 
       Oauth.authorize(
-        %{
+        %Plug.Conn{
           query_params: %{
             "response_type" => "code id_token",
             "client_id" => client.id,
@@ -187,7 +187,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code id_token",
                    "client_id" => client.id,
@@ -225,7 +225,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code id_token",
                      "client_id" => client.id,
@@ -259,7 +259,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code id_token",
                      "client_id" => client.id,
@@ -314,7 +314,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code id_token token",
                      "client_id" => client.id,
@@ -364,7 +364,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
@@ -390,7 +390,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => client.id,
@@ -427,7 +427,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
@@ -463,7 +463,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 expires_in: expires_in
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
@@ -492,7 +492,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => client.id,
@@ -518,7 +518,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => client.id,
@@ -553,7 +553,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 state: state
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
@@ -583,7 +583,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
-               %{
+               %Plug.Conn{
                  query_params: %{
                    "response_type" => "code token",
                    "client_id" => client.id,
@@ -627,7 +627,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 code_challenge_method: code_challenge_method
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,
@@ -676,7 +676,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 code: value
               }} =
                Oauth.authorize(
-                 %{
+                 %Plug.Conn{
                    query_params: %{
                      "response_type" => "code token",
                      "client_id" => client.id,

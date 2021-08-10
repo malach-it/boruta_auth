@@ -62,7 +62,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns an error if `grant_type` is 'refresh_token' and schema is invalid" do
-      assert Oauth.token(%{body_params: %{"grant_type" => "refresh_token"}}, ApplicationMock) == {:token_error, %Error{
+      assert Oauth.token(%Plug.Conn{body_params: %{"grant_type" => "refresh_token"}}, ApplicationMock) == {:token_error, %Error{
         error: :invalid_request,
         error_description: "Request body validation failed. Required property refresh_token is missing at #.",
         status: :bad_request
@@ -71,7 +71,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
     test "returns an error if client is invalid" do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("6a2f41a3-c54c-fce8-32d2-0324e1c32e22", "test")
-      assert Oauth.token(%{
+      assert Oauth.token(%Plug.Conn{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => "refresh_token"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:token_error, %Error{
@@ -83,7 +83,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
     test "returns an error if refresh_token is invalid", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      assert Oauth.token(%{
+      assert Oauth.token(%Plug.Conn{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => "bad_refresh_token"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:token_error, %Error{
@@ -95,7 +95,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
     test "returns an error if access_token associated is expired", %{client: client, expired_access_token: token} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      assert Oauth.token(%{
+      assert Oauth.token(%Plug.Conn{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:token_error, %Error{
@@ -113,7 +113,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         using_basic_auth(client.id, client.secret)
 
       assert Oauth.token(
-               %{
+               %Plug.Conn{
                  body_params: %{
                    "grant_type" => "refresh_token",
                    "refresh_token" => token.refresh_token
@@ -138,7 +138,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         using_basic_auth(client.id, client.secret)
 
       assert Oauth.token(
-               %{
+               %Plug.Conn{
                  body_params: %{
                    "grant_type" => "refresh_token",
                    "refresh_token" => token.refresh_token
@@ -159,7 +159,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       ResourceOwners
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      assert Oauth.token(%{
+      assert Oauth.token(%Plug.Conn{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token, "scope" => "bad_scope"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:token_error, %Error{
@@ -171,7 +171,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
     test "returns an error if grant type is not allowed by client", %{client_without_grant_type: client, access_token: token} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      assert Oauth.token(%{
+      assert Oauth.token(%Plug.Conn{
         body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token, "scope" => "bad_scope"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:token_error, %Error{
@@ -186,7 +186,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.token(
-        %{
+        %Plug.Conn{
           body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token, "scope" => "scope"},
           req_headers: [{"authorization", authorization_header}]
         },
