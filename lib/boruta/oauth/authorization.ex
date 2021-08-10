@@ -525,11 +525,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
             {:ok, Map.put(tokens, :token, access_token)}
           end
 
-        _, _ ->
+        _, error ->
           {:error,
            %Error{
+             status: :internal_server_error,
              error: :internal_server_error,
-             error_description: "An error occured during token creation."
+             error_description: "An error occured during token creation: inspect(#{error})"
            }}
       end)
     end

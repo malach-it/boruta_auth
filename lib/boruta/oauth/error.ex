@@ -24,7 +24,7 @@ defmodule Boruta.Oauth.Error do
           redirect_uri: String.t() | nil,
           state: String.t() | nil
         }
-  defstruct status: :status,
+  defstruct status: nil,
             error: :error,
             error_description: "",
             format: nil,
