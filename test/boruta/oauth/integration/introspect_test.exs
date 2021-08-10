@@ -32,15 +32,15 @@ defmodule Boruta.OauthTest.IntrospectTest do
     end
 
     test "returns an error without params" do
-      assert Oauth.introspect(%{}, ApplicationMock) == {:introspect_error, %Error{
+      assert Oauth.introspect(%Plug.Conn{body_params: %{}}, ApplicationMock) == {:introspect_error, %Error{
         error: :invalid_request,
-        error_description: "Must provide body_params.",
+        error_description: "Request validation failed. Required properties client_id, client_secret, token are missing at #.",
         status: :bad_request
       }}
     end
 
     test "returns an error with invalid request" do
-      assert Oauth.introspect(%{body_params: %{}}, ApplicationMock) == {:introspect_error, %Error{
+      assert Oauth.introspect(%Plug.Conn{body_params: %{}}, ApplicationMock) == {:introspect_error, %Error{
         error: :invalid_request,
         error_description: "Request validation failed. Required properties client_id, client_secret, token are missing at #.",
         status: :bad_request
@@ -50,7 +50,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
     test "returns an error with invalid client_id/secret", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, "bad_secret")
 
-      assert Oauth.introspect(%{
+      assert Oauth.introspect(%Plug.Conn{
         body_params: %{"token" => "token"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:introspect_error, %Error{
@@ -63,7 +63,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
     test "returns an inactive token if token is inactive", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
-      assert Oauth.introspect(%{
+      assert Oauth.introspect(%Plug.Conn{
         body_params: %{"token" => "token"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:introspect_success,
@@ -84,7 +84,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      case Oauth.introspect(%{
+      case Oauth.introspect(%Plug.Conn{
         body_params: %{"token" => token.value},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) do

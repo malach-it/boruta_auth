@@ -27,7 +27,4 @@ defmodule Boruta.Oauth.Request.Authorize do
         {:error, %Error{status: :bad_request, error: :invalid_request, error_description: error_description}}
     end
   end
-  def request(%{}, _) do
-    {:error, %Error{status: :bad_request, error: :invalid_request, error_description: "Must provide query_params."}}
-  end
 end

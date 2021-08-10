@@ -31,15 +31,15 @@ defmodule Boruta.OauthTest.RevokeTest do
     end
 
     test "returns an error without params" do
-      assert Oauth.revoke(%{}, ApplicationMock) == {:revoke_error, %Error{
+      assert Oauth.revoke(%Plug.Conn{body_params: %{}}, ApplicationMock) == {:revoke_error, %Error{
         error: :invalid_request,
-        error_description: "Must provide body_params.",
+        error_description: "Request validation failed. Required properties client_id, client_secret, token are missing at #.",
         status: :bad_request
       }}
     end
 
     test "returns an error with invalid request" do
-      assert Oauth.revoke(%{body_params: %{}}, ApplicationMock) == {:revoke_error, %Error{
+      assert Oauth.revoke(%Plug.Conn{body_params: %{}}, ApplicationMock) == {:revoke_error, %Error{
         error: :invalid_request,
         error_description: "Request validation failed. Required properties client_id, client_secret, token are missing at #.",
         status: :bad_request
@@ -49,7 +49,7 @@ defmodule Boruta.OauthTest.RevokeTest do
     test "returns an error with invalid client_id/secret", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, "bad_secret")
 
-      assert Oauth.revoke(%{
+      assert Oauth.revoke(%Plug.Conn{
         body_params: %{"token" => "token"},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) == {:revoke_error, %Error{
@@ -63,7 +63,7 @@ defmodule Boruta.OauthTest.RevokeTest do
       ResourceOwners
       |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      case Oauth.revoke(%{
+      case Oauth.revoke(%Plug.Conn{
         body_params: %{"token" => token.value},
         req_headers: [{"authorization", authorization_header}]
       }, ApplicationMock) do
