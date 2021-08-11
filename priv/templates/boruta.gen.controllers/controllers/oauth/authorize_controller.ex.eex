@@ -12,7 +12,7 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
 
   def authorize(%Plug.Conn{query_params: query_params} = conn, _params) do
     current_user = conn.assigns[:current_user]
-    conn = store_user_return_to(conn, query_params)
+    conn = store_user_return_to(conn)
 
     authorize_response(
       conn,
@@ -92,34 +92,11 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
   @impl Boruta.Oauth.AuthorizeApplication
   def preauthorize_error(_conn, _response), do: :ok
 
-  defp store_user_return_to(conn, %{"code_challenge_method" => code_challenge_method} = params) do
+  defp store_user_return_to(conn) do
     conn
     |> put_session(
       :user_return_to,
-      Routes.authorize_path(conn, :authorize,
-        client_id: params["client_id"],
-        code_challenge: params["code_challenge"],
-        code_challenge_method: code_challenge_method,
-        redirect_uri: params["redirect_uri"],
-        response_type: params["response_type"],
-        scope: params["scope"],
-        state: params["state"]
-      )
-    )
-  end
-
-  defp store_user_return_to(conn, params) do
-    conn
-    |> put_session(
-      :user_return_to,
-      Routes.authorize_path(conn, :authorize,
-        client_id: params["client_id"],
-        code_challenge: params["code_challenge"],
-        redirect_uri: params["redirect_uri"],
-        response_type: params["response_type"],
-        scope: params["scope"],
-        state: params["state"]
-      )
+      current_path(conn)
     )
   end
 end
