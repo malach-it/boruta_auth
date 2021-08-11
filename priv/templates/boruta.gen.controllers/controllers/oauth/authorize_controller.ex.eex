@@ -10,7 +10,7 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
 
   def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module)
 
-  def authorize(%Plug.Conn{query_params: query_params} = conn, _params) do
+  def authorize(%Plug.Conn{} = conn, _params) do
     current_user = conn.assigns[:current_user]
     conn = store_user_return_to(conn)
 
