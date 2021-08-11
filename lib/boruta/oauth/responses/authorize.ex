@@ -121,4 +121,50 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   defp is_hybrid?(params) do
     !is_nil(params[:id_token] || params[:token])
   end
+
+  @spec redirect_to_url(__MODULE__.t()) :: url :: String.t()
+  def redirect_to_url(%__MODULE__{} = response) do
+    query_params = query_params(response)
+    url(response, query_params)
+  end
+
+  defp query_params(%__MODULE__{
+    type: :token,
+         access_token: value,
+         expires_in: expires_in,
+         state: nil
+       }) do
+    URI.encode_query(%{access_token: value, expires_in: expires_in})
+  end
+
+  defp query_params(%__MODULE__{
+      type: :token,
+         access_token: value,
+         expires_in: expires_in,
+         state: state
+       }) do
+    URI.encode_query(%{access_token: value, expires_in: expires_in, state: state})
+  end
+
+  defp query_params(%__MODULE__{
+    type: :code,
+         code: value,
+         state: nil
+       }) do
+    URI.encode_query(%{code: value})
+  end
+
+  defp query_params(%__MODULE__{
+         type: :code,
+         code: value,
+         state: state
+       }) do
+    URI.encode_query(%{code: value, state: state})
+  end
+
+  defp url(%__MODULE__{type: :token, redirect_uri: redirect_uri}, query_params),
+    do: "#{redirect_uri}##{query_params}"
+
+  defp url(%__MODULE__{type: :code, redirect_uri: redirect_uri}, query_params),
+    do: "#{redirect_uri}?#{query_params}"
 end

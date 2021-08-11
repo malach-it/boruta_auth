@@ -87,10 +87,9 @@ defmodule Boruta.Ecto.Client do
       :supported_grant_types,
       :pkce
     ])
-    |> validate_required([:authorization_code_ttl, :access_token_ttl])
-    |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
-    |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
-    |> validate_inclusion(:id_token_ttl, 1..id_token_max_ttl())
+    |> change_access_token_ttl()
+    |> change_authorization_code_ttl()
+    |> change_id_token_ttl()
     |> validate_redirect_uris
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -116,6 +115,33 @@ defmodule Boruta.Ecto.Client do
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+  end
+
+  defp change_authorization_code_ttl(changeset) do
+    case fetch_change(changeset, :authorization_code_ttl) do
+      {:ok, _authorization_code_ttl} ->
+        validate_inclusion(changeset, :authorization_code_ttl, 1..authorization_code_max_ttl())
+      :error ->
+        put_change(changeset, :authorization_code_ttl, authorization_code_max_ttl())
+    end
+  end
+
+  defp change_access_token_ttl(changeset) do
+    case fetch_change(changeset, :access_token_ttl) do
+      {:ok, _access_token_ttl} ->
+        validate_inclusion(changeset, :access_token_ttl, 1..access_token_max_ttl())
+      :error ->
+        put_change(changeset, :access_token_ttl, access_token_max_ttl())
+    end
+  end
+
+  defp change_id_token_ttl(changeset) do
+    case fetch_change(changeset, :id_token_ttl) do
+      {:ok, _id_token_ttl} ->
+        validate_inclusion(changeset, :id_token_ttl, 1..id_token_max_ttl())
+      :error ->
+        put_change(changeset, :id_token_ttl, id_token_max_ttl())
+    end
   end
 
   defp validate_redirect_uris(changeset) do

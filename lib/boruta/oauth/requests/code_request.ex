@@ -27,6 +27,7 @@ defmodule Boruta.Oauth.CodeRequest do
             nonce: "",
             scope: "",
             resource_owner: nil,
+            response_type: "code",
             grant_type: "authorization_code",
             code_challenge: "",
             code_challenge_method: "plain",

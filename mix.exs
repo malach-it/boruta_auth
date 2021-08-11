@@ -50,6 +50,7 @@ defmodule Boruta.MixProject do
       {:jose, "~> 1.11"},
       {:mox, "~> 0.5", only: :test},
       {:nebulex, "~> 2.0.0"},
+      {:phoenix, "~> 1.0"},
       {:plug, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
       {:puid, "~> 1.0"},
@@ -128,13 +129,15 @@ defmodule Boruta.MixProject do
           Boruta.CodesAdapter,
           Boruta.ClientsAdapter,
           Boruta.ScopesAdapter,
-          Boruta.ScopesAdapter,
+          Boruta.ScopesAdapter
+        ],
+        "Ecto Schemas": [
           Boruta.Ecto.Token,
           Boruta.Ecto.Client,
           Boruta.Ecto.Scope
         ],
         Admin: [
-          Boruta.Ecto.Admin,
+          Boruta.Ecto.Admin.Tokens,
           Boruta.Ecto.Admin.Clients,
           Boruta.Ecto.Admin.Scopes,
           Boruta.Ecto.Admin.Users

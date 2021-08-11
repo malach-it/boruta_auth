@@ -677,6 +677,25 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
+    test "returns an error if `client_id` is absent" do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "code" => "bad_code",
+                   "redirect_uri" => "http://redirect.uri"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_client,
+                  error_description: "Invalid client_id or redirect_uri.",
+                  status: :unauthorized
+                }}
+    end
+
     test "returns an error if `code` is invalid", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
