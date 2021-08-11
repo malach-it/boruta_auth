@@ -26,6 +26,7 @@ defmodule Boruta.Ecto.Clients do
         client
     end
   end
+  defp get_by(:from_database, id: nil, redirect_uri: _redirect_uri), do: nil
   defp get_by(:from_database, id: id, redirect_uri: redirect_uri) do
     redirect_uri_regex = "^#{redirect_uri}$"
     with %Ecto.Client{} = client <-
