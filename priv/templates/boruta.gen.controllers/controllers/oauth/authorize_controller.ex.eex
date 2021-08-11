@@ -38,37 +38,9 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
   @impl Boruta.Oauth.AuthorizeApplication
   def authorize_success(
         conn,
-        %AuthorizeResponse{
-          type: type,
-          redirect_uri: redirect_uri,
-          value: value,
-          expires_in: expires_in,
-          state: state
-        }
+        %AuthorizeResponse{} = response
       ) do
-    query =
-      case {type, state} do
-        {"access_token", nil} ->
-          URI.encode_query(%{access_token: value, expires_in: expires_in})
-
-        {"access_token", state} ->
-          URI.encode_query(%{access_token: value, expires_in: expires_in, state: state})
-
-        {"code", nil} ->
-          URI.encode_query(%{code: value})
-
-        {"code", state} ->
-          URI.encode_query(%{code: value, state: state})
-      end
-
-    url =
-      case type do
-        "access_token" -> "#{redirect_uri}##{query}"
-        "code" -> "#{redirect_uri}?#{query}"
-      end
-
-    conn
-    |> redirect(external: url)
+    redirect(conn, external: AuthorizeResponse.redirect_to_url(response))
   end
 
   @impl Boruta.Oauth.AuthorizeApplication

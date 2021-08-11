@@ -14,7 +14,8 @@ defmodule Boruta.Oauth do
   @moduledoc """
   Boruta OAuth entrypoint, handles OAuth requests.
 
-  Note : this module works in association with `Boruta.Oauth.Application` behaviour
+  > Note : this module follows inverted heaxagonal architecture, its functions will invoke functions of the given argument module as result.
+  > The definition of the callbacks are provided by either `Boruta.Oauth.Application` or `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication`, and `Boruta.Oauth.RevokeApplication`,
   """
 
   @behaviour Boruta.OauthModule
