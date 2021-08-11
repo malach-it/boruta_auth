@@ -87,37 +87,17 @@ config :boruta, Boruta.Oauth,
 ```
 
 ## Integration
-This implementation follows an hexagonal architecture to invert dependencies to Application layer.
-In order to expose endpoints of an OAuth server with Boruta, you need implement the behaviour `Boruta.Oauth.Application` with all needed callbacks for `token/2`, `authorize/2`, `introspect/2` and `revoke/2` calls from `Boruta.Oauth`.
+This implementation follows an hexagonal architecture, dependencies are inverted from Application layer.
 
-This library has specific interfaces to interact with `Plug.Conn` requests.
+In order to expose endpoints of an OAuth server with Boruta, you need implement either the behaviour `Boruta.Oauth.Application` or the behaviours `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication` and `Boruta.Oauth.RevokeApplication` to integrate these endpoints separatly. Those behaviours will help you creating callback functions which will be triggered by invoking `token/2`, `authorize/2`, `introspect/2` and `revoke/2` functions from `Boruta.Oauth` module.
 
-Here is an example of a token endpoint controller:
-```elixir
-defmodule MyApp.OauthController do
-  @behaviour Boruta.Oauth.Application
-  ...
-  def token(%Plug.Conn{} = conn, _params) do
-    conn |> Oauth.token(__MODULE__)
-  end
+A generator is provided to create phoenix controllers, views and templates needed to implement a basic OAuth server.
 
-  @impl Boruta.Oauth.Application
-  def token_success(conn, %TokenResponse{} = response) do
-    conn
-    |> put_view(OauthView)
-    |> render("token.json", response: response)
-  end
-
-  @impl Boruta.Oauth.Application
-  def token_error(conn, %Error{status: status, error: error, error_description: error_description}) do
-    conn
-    |> put_status(status)
-    |> put_view(OauthView)
-    |> render("error.json", error: error, error_description: error_description)
-  end
-  ...
-end
+```sh
+mix boruta.gen.controllers
 ```
+
+This task will create needed files and give you a guide to finish your setup.
 
 ## Straightforward testing
 You can also create a client and test it
@@ -135,7 +115,7 @@ alias Boruta.Oauth.{ClientCredentialsRequest, Token}
 ```
 
 ## Guides
-Some integration guides are provided as code samples.
+Some integration guides are provided with code samples.
 - [Authorization code grant](authorization_code.md)
 - [Client Credentials grant](client_credentials.md)
 - [Implicit grant](implicit.md)

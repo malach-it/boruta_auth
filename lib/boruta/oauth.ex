@@ -1,7 +1,5 @@
 defmodule Boruta.OauthModule do
-  @moduledoc """
-  `Boruta.Oauth` behaviour
-  """
+  @moduledoc false
 
   alias Boruta.Oauth.ResourceOwner
 

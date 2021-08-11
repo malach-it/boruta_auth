@@ -128,13 +128,15 @@ defmodule Boruta.MixProject do
           Boruta.CodesAdapter,
           Boruta.ClientsAdapter,
           Boruta.ScopesAdapter,
-          Boruta.ScopesAdapter,
+          Boruta.ScopesAdapter
+        ],
+        "Ecto Schemas": [
           Boruta.Ecto.Token,
           Boruta.Ecto.Client,
           Boruta.Ecto.Scope
         ],
         "Admin": [
-          Boruta.Ecto.Admin,
+          Boruta.Ecto.Admin.Tokens,
           Boruta.Ecto.Admin.Clients,
           Boruta.Ecto.Admin.Scopes,
           Boruta.Ecto.Admin.Users

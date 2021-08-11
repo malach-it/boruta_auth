@@ -1,6 +1,61 @@
 defmodule Mix.Tasks.Boruta.Gen.Controllers do
   @moduledoc """
-  Boruta OAuth controllers generation task
+  This task will help creation of a basic OAuth server by providing needed phoenix controllers, views and templates helping OAuth endpoints exposition.
+
+  All flows involving resource owners need its integration guided by `Boruta.Oauth.ResourceOwners` behaviour. For authorize endpoint, you'll need to assign current_user with a plug or so and setup login redirections which should raise an error where it is needed.
+
+  Controllers are unit tested using Mox, you'll need to add that dependency in order to run them (see below).
+
+  ## Examples
+  ```
+  mix boruta.gen.controllers
+  ```
+
+  ## Post instalation steps
+
+  * You can add OAuth routes in web application router as follow to expose controller actions
+
+  ```elixir
+  scope "/oauth", MyAppWeb.Oauth do
+    pipe_through :api
+
+    post "/revoke", RevokeController, :revoke
+    post "/token", TokenController, :token
+    post "/introspect", IntrospectController, :introspect
+  end
+
+  scope "/oauth", MyAppWeb.Oauth do
+    pipe_through [:browser]
+
+    get "/authorize", AuthorizeController, :authorize
+  end
+  ```
+
+  * Add following in config/config.exs to inject `Boruta.Oauth` dependency
+
+  ```elixir
+  config :myapp, :oauth_module, Boruta.Oauth
+  ```
+
+  ### Testing
+
+  * Add mox dependency in order to run controller unit tests
+
+  ```elixir
+  {:mox, "~> 0.5", only: :test}
+  ```
+
+  * Add following in config/test.exs
+
+  ```elixir
+  config :myapp, :oauth_module, Boruta.OauthMock
+  ```
+
+  * Add following in test/test_helper.exs
+
+  ```elixir
+  Mox.defmock(Boruta.OauthMock, for: Boruta.OauthModule)
+  ```
   """
 
   use Mix.Task
@@ -46,7 +101,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
     IO.puts("""
 
-    * Now you can add OAuth routes in application router as follow:
+    * You can add OAuth routes in web application router as follow to expose controller actions
 
         scope "/oauth", MyAppWeb.Oauth do
           pipe_through :api
@@ -62,11 +117,15 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
           get "/authorize", AuthorizeController, :authorize
         end
 
-    * Add following in config/config.exs
+    * Add following in config/config.exs to inject `Boruta.Oauth` dependency
 
         config :myapp, :oauth_module, Boruta.Oauth
 
-    ## Testing
+    ### Testing
+
+    * Add mox dependency in order to run controller unit tests
+
+        {:mox, "~> 0.5", only: :test}
 
     * Add following in config/test.exs
 
@@ -75,10 +134,6 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     * Add following in test/test_helper.exs
 
         Mox.defmock(Boruta.OauthMock, for: Boruta.OauthModule)
-
-    * Add mox dependency in order to run tests
-
-        {:mox, "~> 0.5", only: :test},
     """)
   end
 
