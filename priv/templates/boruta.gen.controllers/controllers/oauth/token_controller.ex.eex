@@ -7,10 +7,10 @@ defmodule <%= @web_module %>.Oauth.TokenController do
   alias Boruta.Oauth.TokenResponse
   alias <%= @web_module %>.OauthView
 
-  @oauth_module Application.get_env(:<%= @otp_app %>, :oauth_module)
+  def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module)
 
   def token(%Plug.Conn{} = conn, _params) do
-    conn |> @oauth_module.token(__MODULE__)
+    conn |> oauth_module().token(__MODULE__)
   end
 
   @impl Boruta.Oauth.TokenApplication
