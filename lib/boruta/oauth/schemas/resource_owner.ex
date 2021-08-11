@@ -6,7 +6,7 @@ defmodule Boruta.Oauth.ResourceOwner do
 
   @type t :: %__MODULE__{
     sub: String.t(),
-    username: String.t(),
-    last_login_at: DateTime.t()
+    username: String.t() | nil,
+    last_login_at: DateTime.t() | nil
   }
 end
