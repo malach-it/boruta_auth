@@ -29,11 +29,38 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
                "http://redirect.uri#access_token=value&expires_in=10&state=state"
     end
 
+    test "returns an url with hybrid type" do
+      response = %AuthorizeResponse{
+        type: :hybrid,
+        access_token: "access_token",
+        id_token: "id_token",
+        expires_in: 10,
+        redirect_uri: "http://redirect.uri"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri#access_token=access_token&expires_in=10&id_token=id_token"
+    end
+
+    test "returns an url with hybrid type, a state and a token_type" do
+      response = %AuthorizeResponse{
+        type: :hybrid,
+        access_token: "access_token",
+        id_token: "id_token",
+        expires_in: 10,
+        state: "state",
+        redirect_uri: "http://redirect.uri",
+        token_type: "token_type"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri#access_token=access_token&expires_in=10&id_token=id_token&state=state&token_type=token_type"
+    end
+
     test "returns an url with code type" do
       response = %AuthorizeResponse{
         type: :code,
         code: "value",
-        expires_in: 10,
         redirect_uri: "http://redirect.uri"
       }
 
@@ -44,7 +71,6 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
       response = %AuthorizeResponse{
         type: :code,
         code: "value",
-        expires_in: 10,
         state: "state",
         redirect_uri: "http://redirect.uri"
       }

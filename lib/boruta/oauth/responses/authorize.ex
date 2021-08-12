@@ -66,7 +66,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       state: state,
       code_challenge: code_challenge,
       code_challenge_method: code_challenge_method,
-      token_type: (if is_hybrid?(params), do: "bearer")
+      token_type: if(is_hybrid?(params), do: "bearer")
     }
   end
 
@@ -129,37 +129,26 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   end
 
   defp query_params(%__MODULE__{
-    type: :token,
-         access_token: value,
+         access_token: access_token,
+         code: code,
+         id_token: id_token,
          expires_in: expires_in,
-         state: nil
+         state: state,
+         token_type: token_type
        }) do
-    URI.encode_query(%{access_token: value, expires_in: expires_in})
-  end
-
-  defp query_params(%__MODULE__{
-      type: :token,
-         access_token: value,
-         expires_in: expires_in,
-         state: state
-       }) do
-    URI.encode_query(%{access_token: value, expires_in: expires_in, state: state})
-  end
-
-  defp query_params(%__MODULE__{
-    type: :code,
-         code: value,
-         state: nil
-       }) do
-    URI.encode_query(%{code: value})
-  end
-
-  defp query_params(%__MODULE__{
-         type: :code,
-         code: value,
-         state: state
-       }) do
-    URI.encode_query(%{code: value, state: state})
+    %{
+      code: code,
+      id_token: id_token,
+      access_token: access_token,
+      expires_in: expires_in,
+      state: state,
+      token_type: token_type
+    }
+    |> Enum.map(fn {param_type, value} ->
+      value && {param_type, value}
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> URI.encode_query()
   end
 
   defp url(%__MODULE__{type: :token, redirect_uri: redirect_uri}, query_params),
@@ -167,4 +156,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   defp url(%__MODULE__{type: :code, redirect_uri: redirect_uri}, query_params),
     do: "#{redirect_uri}?#{query_params}"
+
+  defp url(%__MODULE__{type: :hybrid, redirect_uri: redirect_uri}, query_params),
+    do: "#{redirect_uri}##{query_params}"
 end
