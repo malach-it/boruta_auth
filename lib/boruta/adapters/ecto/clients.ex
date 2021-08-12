@@ -20,6 +20,7 @@ defmodule Boruta.Ecto.Clients do
   end
 
   defp get_by(:from_cache, attrs), do: ClientStore.get(attrs)
+  defp get_by(:from_database, id: nil, secret: _secret), do: nil
   defp get_by(:from_database, id: id, secret: secret) do
     with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id, secret: secret),
       {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do

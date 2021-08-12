@@ -81,6 +81,16 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       }}
     end
 
+    test "returns an error if client is absent" do
+      assert Oauth.token(%Plug.Conn{
+        body_params: %{"grant_type" => "refresh_token", "refresh_token" => "refresh_token"},
+      }, ApplicationMock) == {:token_error, %Error{
+        error: :invalid_client,
+        error_description: "Invalid client_id or client_secret.",
+        status: :unauthorized
+      }}
+    end
+
     test "returns an error if refresh_token is invalid", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert Oauth.token(%Plug.Conn{

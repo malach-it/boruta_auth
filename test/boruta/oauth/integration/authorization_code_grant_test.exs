@@ -640,8 +640,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `client_id` is absent" do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
