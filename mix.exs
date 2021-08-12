@@ -50,7 +50,6 @@ defmodule Boruta.MixProject do
       {:mox, "~> 0.5", only: :test},
       {:nebulex, "~> 2.0.0"},
       {:phoenix, "~> 1.0"},
-      {:phoenix_html, "~> 2.13"},
       {:plug, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
       {:puid, "~> 1.0"},
