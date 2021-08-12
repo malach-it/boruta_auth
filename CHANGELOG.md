@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
        expires_in: 60
      }}
     ```
+    - add nonce column to tokens
+  ### Changed
+    - default column values migrations
   ### Security
     - codes are revoked after first usage
 ## [Unreleased]
@@ -34,8 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `list_active_tokens` Ecto admin function
     - `Boruta.AccessTokensAdapter`, `Boruta.CodesAdapter`, `Boruta.ClientsAdapter`, and `Boruta.ScopesAdapter` encapsulating adapters that are set in configuration.
     - `Boruta.Oauth.AuthorizeResponse.redirect_to_url/1` function
+    - `boruta.gen.migration` mix task
+    - `Boruta.Ecto` schemas documentation
   ### Security
     - do not issue access_tokens from other clients refresh tokens
+  ### Fixed
+    - internal server errors when no client_id provided to token and refresh_token grants
 ## [1.0.3] - 2021-07-29
   ### Security
     - Refresh token revocation

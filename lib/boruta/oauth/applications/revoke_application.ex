@@ -6,11 +6,11 @@ defmodule Boruta.Oauth.RevokeApplication do
   """
 
   @doc """
-  This function will be triggered in case of success triggering `Boruta.Oauth.revoke/2`
+  This function will be triggered in case of success invoking `Boruta.Oauth.revoke/2`
   """
   @callback revoke_success(conn :: Plug.Conn.t()) :: any()
   @doc """
-  This function will be triggered in case of failure triggering `Boruta.Oauth.revoke/2`
+  This function will be triggered in case of failure invoking `Boruta.Oauth.revoke/2`
   """
   @callback revoke_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
 end

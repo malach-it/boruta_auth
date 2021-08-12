@@ -6,7 +6,7 @@ defmodule Boruta.Oauth.TokenApplication do
   """
 
   @doc """
-  This function will be triggered in case of success triggering `Boruta.Oauth.token/2`
+  This function will be triggered in case of success invoking `Boruta.Oauth.token/2`
   """
   @callback token_success(
               conn :: Plug.Conn.t(),
@@ -14,7 +14,7 @@ defmodule Boruta.Oauth.TokenApplication do
             ) ::
               any()
   @doc """
-  This function will be triggered in case of failure triggering `Boruta.Oauth.token/2`
+  This function will be triggered in case of failure invoking `Boruta.Oauth.token/2`
   """
   @callback token_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) :: any()
 end

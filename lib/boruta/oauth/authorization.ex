@@ -82,7 +82,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
 
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, scope: scope}} <- preauthorize(request) do
-      # TODO rescue from creation errors
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
