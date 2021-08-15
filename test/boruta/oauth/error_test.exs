@@ -21,7 +21,8 @@ defmodule Boruta.Oauth.ErrorTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert Error.redirect_to_url(error) == "http://redirect.uri#error=error&error_description=Error+description"
+      assert Error.redirect_to_url(error) ==
+               "http://redirect.uri#error=error&error_description=Error+description"
     end
 
     test "returns an url with query" do
@@ -32,7 +33,34 @@ defmodule Boruta.Oauth.ErrorTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert Error.redirect_to_url(error) == "http://redirect.uri?error=error&error_description=Error+description"
+      assert Error.redirect_to_url(error) ==
+               "http://redirect.uri?error=error&error_description=Error+description"
+    end
+
+    test "returns an url with fragment with a state" do
+      error = %Error{
+        format: :fragment,
+        error: "error",
+        error_description: "Error description",
+        redirect_uri: "http://redirect.uri",
+        state: "state"
+      }
+
+      assert Error.redirect_to_url(error) ==
+               "http://redirect.uri#error=error&error_description=Error+description&state=state"
+    end
+
+    test "returns an url with query with a state" do
+      error = %Error{
+        format: :query,
+        error: "error",
+        error_description: "Error description",
+        redirect_uri: "http://redirect.uri",
+        state: "state"
+      }
+
+      assert Error.redirect_to_url(error) ==
+               "http://redirect.uri?error=error&error_description=Error+description&state=state"
     end
   end
 end

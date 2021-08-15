@@ -60,9 +60,15 @@ defmodule Boruta.Oauth.Error do
 
   defp query_params(%__MODULE__{
          error: error,
-         error_description: error_description
+         error_description: error_description,
+         state: state
        }) do
-    URI.encode_query(%{error: error, error_description: error_description})
+    %{error: error, error_description: error_description, state: state}
+    |> Enum.filter(fn
+      {_key, nil} -> false
+      _ -> true
+    end)
+    |> URI.encode_query()
   end
 
   defp url(%Error{redirect_uri: redirect_uri, format: :query}, query_params),
