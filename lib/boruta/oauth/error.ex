@@ -48,4 +48,26 @@ defmodule Boruta.Oauth.Error do
   end
 
   def with_format(error, _), do: error
+
+  @spec redirect_to_url(error :: t()) :: url :: String.t()
+  def redirect_to_url(%__MODULE__{format: nil}), do: ""
+
+  def redirect_to_url(%__MODULE__{} = error) do
+    query_params = query_params(error)
+
+    url(error, query_params)
+  end
+
+  defp query_params(%__MODULE__{
+         error: error,
+         error_description: error_description
+       }) do
+    URI.encode_query(%{error: error, error_description: error_description})
+  end
+
+  defp url(%Error{redirect_uri: redirect_uri, format: :query}, query_params),
+    do: "#{redirect_uri}?#{query_params}"
+
+  defp url(%Error{redirect_uri: redirect_uri, format: :fragment}, query_params),
+    do: "#{redirect_uri}##{query_params}"
 end
