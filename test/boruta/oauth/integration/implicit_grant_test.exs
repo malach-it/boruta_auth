@@ -123,7 +123,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
        %AuthorizeResponse{
          type: type,
          access_token: value,
-         expires_in: expires_in
+         expires_in: expires_in,
+         redirect_uri: ^redirect_uri
        }} =
         Oauth.authorize(
           %Plug.Conn{
@@ -220,7 +221,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                id_token: value
+                id_token: value,
+                redirect_uri: ^redirect_uri
               }} =
                Oauth.authorize(
                  %Plug.Conn{

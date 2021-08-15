@@ -298,6 +298,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
               base_token = %Token{
                 client: client,
                 resource_owner: resource_owner,
+                redirect_uri: redirect_uri,
                 sub: sub,
                 scope: scope,
                 inserted_at: DateTime.utc_now()
