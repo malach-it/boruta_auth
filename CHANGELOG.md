@@ -5,13 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.1.0]
   ### Added
     - `AuthorizeApplication`, `IntrospectApplication`, `RevokeApplication`, and `TokenApplication` behaviours allowing to implement separatly different OAuth use cases.
     - `list_active_tokens` Ecto admin function
     - `Boruta.AccessTokensAdapter`, `Boruta.CodesAdapter`, `Boruta.ClientsAdapter`, and `Boruta.ScopesAdapter` encapsulating adapters that are set in configuration.
     - `Boruta.Oauth.AuthorizeResponse.redirect_to_url/1` function
     - `Boruta.Oauth.Error.redirect_to_url/1` function
-    - `boruta.gen.migration` mix task
+    - `boruta.gen.controllers` mix task
     - `Boruta.Ecto` schemas documentation
   ### Security
     - do not issue access_tokens from other clients refresh tokens
