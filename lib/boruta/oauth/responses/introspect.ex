@@ -27,6 +27,7 @@ defmodule Boruta.Oauth.IntrospectResponse do
     private_key: nil
   ]
 
+  alias Boruta.Config
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.IntrospectResponse
   alias Boruta.Oauth.ResourceOwner
@@ -51,7 +52,7 @@ defmodule Boruta.Oauth.IntrospectResponse do
       username: username,
       scope: scope,
       sub: sub,
-      iss: "boruta", # TODO change to hostname
+      iss: Config.issuer(),
       exp: expires_at,
       iat: DateTime.to_unix(inserted_at),
       private_key: private_key
