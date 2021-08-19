@@ -108,10 +108,50 @@ defmodule Boruta.OauthTest.IntrospectTest do
           assert scope
           assert sub
           assert username
+          assert iss == "boruta"
+        _ -> assert false
+      end
+    end
+
+    test "returns a token introspected with custom issuer", %{client: client, token: token, resource_owner: resource_owner} do
+      issuer = "https://custom.issuer.com/"
+      set_config_value([:issuer], issuer)
+
+      ResourceOwners
+      |> stub(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
+      case Oauth.introspect(%Plug.Conn{
+        body_params: %{"token" => token.value},
+        req_headers: [{"authorization", authorization_header}]
+      }, ApplicationMock) do
+        {:introspect_success, %IntrospectResponse{
+          iss: iss,
+        }} ->
+          assert iss == issuer
+
+          # remove the custom issuer config to prevent other tests from failing
+          remove_config_value(:issuer)
+
         _ -> assert false
       end
     end
   end
+
+  defp set_config_value(path, value) do
+    :boruta
+    |> Application.get_env(Boruta.Oauth)
+    |> put_in(path, value)
+    |> put_env()
+  end
+
+  defp remove_config_value(key) do
+    :boruta
+    |> Application.get_env(Boruta.Oauth)
+    |> Keyword.delete(key)
+    |> put_env()
+  end
+
+  defp put_env(value), do: Application.put_env(:boruta, Boruta.Oauth, value)
 
   defp using_basic_auth(username, password) do
     authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
