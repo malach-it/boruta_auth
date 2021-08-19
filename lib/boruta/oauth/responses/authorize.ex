@@ -89,7 +89,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       access_token: value,
       id_token: params[:id_token] && params[:id_token].value,
       expires_in: expires_in,
-      state: state
+      state: state,
+      token_type: "bearer"
     }
   end
 

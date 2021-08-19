@@ -224,7 +224,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                 type: type,
                 id_token: value,
                 redirect_uri: ^redirect_uri,
-                state: ^state
+                state: ^state,
+                token_type: nil
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -309,7 +310,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                 type: type,
                 access_token: access_token,
                 id_token: id_token,
-                expires_in: expires_in
+                expires_in: expires_in,
+                token_type: "bearer"
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -358,7 +360,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
        %AuthorizeResponse{
          type: type,
          access_token: value,
-         expires_in: expires_in
+         expires_in: expires_in,
+         token_type: "bearer"
        }} =
         Oauth.authorize(
           %Plug.Conn{
@@ -404,7 +407,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
           %AuthorizeResponse{
             type: type,
             access_token: value,
-            expires_in: expires_in
+            expires_in: expires_in,
+            token_type: "bearer"
           }
         } ->
           assert type == :token
