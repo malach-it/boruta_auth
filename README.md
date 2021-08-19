@@ -57,6 +57,7 @@ defmodule MyApp.ResourceOwners do
 
   @impl Boruta.Oauth.ResourceOwners
   def check_password(resource_owner, password) do
+    user = Repo.get_by(User, id: resource_owner.sub)
     User.check_password(user, password)
   end
 

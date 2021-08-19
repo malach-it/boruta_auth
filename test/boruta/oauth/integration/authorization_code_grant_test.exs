@@ -72,8 +72,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized,
-                  format: :query,
-                  redirect_uri: "http://redirect.uri"
+                  format: nil,
+                  redirect_uri: nil
                 }}
     end
 
@@ -94,8 +94,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized,
-                  format: :query,
-                  redirect_uri: "http://bad.redirect.uri"
+                  format: nil,
+                  redirect_uri: nil
                 }}
     end
 
@@ -542,11 +542,56 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            code: value
          }} ->
           %Ecto.Token{
-            code_challenge_method: repo_code_challenge_method
+            code_challenge_method: repo_code_challenge_method,
+            code_challenge_hash: repo_code_challenge_hash
           } = Repo.get_by(Ecto.Token, value: value)
 
           assert repo_code_challenge_method == "plain"
+          assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
+        _ ->
+          assert false
+      end
+    end
 
+    @tag :pkce_256
+    test "code_challenge_method defaults to `S256`", %{
+        pkce_client: client,
+        resource_owner: resource_owner
+      } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+
+      given_state = "state"
+      given_code_challenge = :crypto.hash(:sha256, "challenge me") |> Base.url_encode64()
+      given_code_challenge_method = "S256"
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %Plug.Conn{
+               query_params: %{
+                 "response_type" => "code",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "state" => given_state,
+                 "code_challenge" => given_code_challenge,
+                 "code_challenge_method" => given_code_challenge_method
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           code: value
+         }} ->
+          %Ecto.Token{
+            code_challenge_method: repo_code_challenge_method,
+            code_challenge_hash: repo_code_challenge_hash
+          } = Repo.get_by(Ecto.Token, value: value)
+
+          assert repo_code_challenge_method == "S256"
+          assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
         _ ->
           assert false
       end
@@ -593,6 +638,19 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           code_challenge_method: "plain"
         )
 
+      given_code_challenge = :crypto.hash(:sha256, "strong random challenge me from client") |> Base.url_encode64()
+      pkce_code_s256 =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: given_code_challenge,
+          code_challenge_hash: Oauth.Token.hash(given_code_challenge),
+          code_challenge_method: "S256"
+        )
+
       expired_code =
         insert(
           :token,
@@ -630,6 +688,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        code: code,
        openid_code: openid_code,
        pkce_code: pkce_code,
+       pkce_code_s256: pkce_code_s256,
        bad_redirect_uri_code: bad_redirect_uri_code,
        expired_code: expired_code,
        code_with_scope: code_with_scope}
@@ -1078,6 +1137,48 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  "code" => code.value,
                  "redirect_uri" => redirect_uri,
                  "code_verifier" => code.code_challenge
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    @tag :pkce_256
+    test "returns a token with pkce `S256`", %{
+      pkce_client: client,
+      pkce_code_s256: code,
+      resource_owner: resource_owner
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      case Oauth.token(
+             %Plug.Conn{
+               req_headers: [{"authorization", authorization_header}],
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri,
+                 "code_verifier" => "strong random challenge me from client"
                }
              },
              ApplicationMock

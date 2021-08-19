@@ -3,6 +3,12 @@ defmodule Boruta.Oauth.ErrorTest do
 
   alias Boruta.Oauth.Error
 
+  describe "with_format/2" do
+    test "returns error with nil format when client is invalid" do
+      assert %Error{format: nil, redirect_uri: nil} = Error.with_format(%Error{error: :invalid_client}, %{})
+    end
+  end
+
   describe "redirect_to_url/1" do
     test "returns empty string" do
       error = %Error{

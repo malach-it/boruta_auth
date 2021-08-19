@@ -35,6 +35,10 @@ defmodule Boruta.Oauth.Error do
           error :: Error.t(),
           request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
         ) :: Error.t()
+  def with_format(%Error{error: :invalid_client} = error, _) do
+    %{error | format: nil, redirect_uri: nil}
+  end
+
   def with_format(%Error{} = error, %CodeRequest{redirect_uri: redirect_uri}) do
     %{error | format: :query, redirect_uri: redirect_uri}
   end

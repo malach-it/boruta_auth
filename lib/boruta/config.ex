@@ -18,26 +18,27 @@ defmodule Boruta.Config do
       authorization_code: 60,
       access_token: 60 * 60 * 24
     ],
-    token_generator: Boruta.TokenGenerator
+    token_generator: Boruta.TokenGenerator,
+    issuer: "https://issuer.com"
   ```
   """
 
   @defaults repo: Boruta.Repo,
-    cache_backend: Boruta.Cache,
-    contexts: [
-      access_tokens: Boruta.Ecto.AccessTokens,
-      clients: Boruta.Ecto.Clients,
-      codes: Boruta.Ecto.Codes,
-      resource_owners: nil,
-      scopes: Boruta.Ecto.Scopes
-    ],
-    max_ttl: [
-      authorization_code: 60,
-      access_token: 60 * 60 * 24,
-      id_token: 60 * 60 * 24
-    ],
-    token_generator: Boruta.TokenGenerator,
-    issuer: "boruta"
+            cache_backend: Boruta.Cache,
+            contexts: [
+              access_tokens: Boruta.Ecto.AccessTokens,
+              clients: Boruta.Ecto.Clients,
+              codes: Boruta.Ecto.Codes,
+              resource_owners: nil,
+              scopes: Boruta.Ecto.Scopes
+            ],
+            max_ttl: [
+              authorization_code: 60,
+              access_token: 60 * 60 * 24,
+              id_token: 60 * 60 * 24
+            ],
+            token_generator: Boruta.TokenGenerator,
+            issuer: "boruta"
 
   @spec repo() :: module()
   @doc false
