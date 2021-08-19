@@ -71,8 +71,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized,
-                  format: :query,
-                  redirect_uri: "http://redirect.uri"
+                  format: nil,
+                  redirect_uri: nil
                 }}
     end
 
@@ -93,8 +93,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   error: :invalid_client,
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized,
-                  format: :query,
-                  redirect_uri: "http://bad.redirect.uri"
+                  format: nil,
+                  redirect_uri: nil
                 }}
     end
 
