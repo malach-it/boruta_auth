@@ -217,12 +217,14 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
+      state = "state"
 
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
                 id_token: value,
-                redirect_uri: ^redirect_uri
+                redirect_uri: ^redirect_uri,
+                state: ^state
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -231,7 +233,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                      "client_id" => client.id,
                      "redirect_uri" => redirect_uri,
                      "scope" => "openid",
-                     "nonce" => nonce
+                     "nonce" => nonce,
+                     "state" => state
                    }
                  },
                  resource_owner,

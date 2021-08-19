@@ -301,6 +301,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                 redirect_uri: redirect_uri,
                 sub: sub,
                 scope: scope,
+                state: state,
                 inserted_at: DateTime.utc_now()
               }
 
