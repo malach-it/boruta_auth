@@ -19,8 +19,8 @@ defmodule Boruta.Oauth.TokenRequest do
           nonce: String.t()
         }
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
-  defstruct client_id: "",
-            redirect_uri: "",
+  defstruct client_id: nil,
+            redirect_uri: nil,
             state: "",
             scope: "",
             resource_owner: nil,

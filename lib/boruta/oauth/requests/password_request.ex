@@ -15,8 +15,8 @@ defmodule Boruta.Oauth.PasswordRequest do
           grant_type: String.t()
         }
   @enforce_keys [:client_id, :client_secret, :username, :password]
-  defstruct client_id: "",
-            client_secret: "",
+  defstruct client_id: nil,
+            client_secret: nil,
             username: "",
             password: "",
             scope: "",

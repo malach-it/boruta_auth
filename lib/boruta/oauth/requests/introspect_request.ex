@@ -12,5 +12,5 @@ defmodule Boruta.Oauth.IntrospectRequest do
           token: String.t()
         }
   @enforce_keys [:client_id, :client_secret, :token]
-  defstruct client_id: "", client_secret: "", token: ""
+  defstruct client_id: nil, client_secret: nil, token: nil
 end

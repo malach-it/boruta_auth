@@ -27,8 +27,8 @@ defmodule Boruta.Oauth.Error do
 
   @enforce_keys [:status, :error, :error_description]
   defstruct status: nil,
-            error: :error,
-            error_description: "",
+            error: nil,
+            error_description: nil,
             format: nil,
             redirect_uri: nil,
             state: nil
