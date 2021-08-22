@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ### Security
     - codes are revoked after first usage
 ## [Unreleased]
+  ### Fixed
+    - `boruta.gen.controllers` generated paths in umbrella apps
   ### Changed
     - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`
 ## [1.1.0]
