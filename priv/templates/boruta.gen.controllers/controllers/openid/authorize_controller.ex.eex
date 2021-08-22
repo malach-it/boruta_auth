@@ -1,4 +1,4 @@
-defmodule <%= @web_module %>.Oauth.AuthorizeController do
+defmodule <%= @web_module %>.Openid.AuthorizeController do
   @behaviour Boruta.Oauth.AuthorizeApplication
 
   use <%= @web_module %>, :controller
@@ -21,20 +21,8 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
     with {:unchanged, conn} <- prompt_redirection(conn),
          {:unchanged, conn} <- max_age_redirection(conn, resource_owner),
          {:unchanged, conn} <- login_redirection(conn) do
-      Oauth.authorize(conn, resource_owner, __MODULE__)
+      oauth_module().authorize(conn, resource_owner, __MODULE__)
     end
-  end
-
-  defp authorize_response(conn, %_{} = current_user) do
-    conn
-    |> oauth_module().authorize(
-      %ResourceOwner{sub: current_user.id, username: current_user.email},
-      __MODULE__
-    )
-  end
-
-  defp authorize_response(_conn, _params) do
-    redirect_to_login(conn)
   end
 
   @impl Boruta.Oauth.AuthorizeApplication
@@ -66,23 +54,11 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
   def authorize_error(
         conn,
         %Error{
-          error: error,
-          error_description: error_description,
-          format: format,
-          redirect_uri: redirect_uri
-        }
+          format: format
+        } = error
       )
       when not is_nil(format) do
-    query = URI.encode_query(%{error: error, error_description: error_description})
-
-    url =
-      case format do
-        :query -> "#{redirect_uri}?#{query}"
-        :fragment -> "#{redirect_uri}##{query}"
-      end
-
-    conn
-    |> redirect(external: url)
+    redirect(conn, external: Error.redirect_to_url(error))
   end
 
   def authorize_error(
@@ -121,10 +97,8 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
   end
 
   defp prompt_redirection(%Plug.Conn{query_params: %{"prompt" => "login"}} = conn) do
-    raise """
-    Here log out the user if logged in and redirect to login. After login, user may be redirected
-    to get_session(conn, :user_return_to)
-    """
+    # TODO here user may be logged out in order to force login
+    redirect_to_login(conn)
   end
 
   defp prompt_redirection(%Plug.Conn{} = conn), do: {:unchanged, conn}
@@ -160,27 +134,37 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
     {:unchanged, conn}
   end
 
+  defp login_redirection(%Plug.Conn{query_params: %{"prompt" => "none"}} = conn) do
+    {:unchanged, conn}
+  end
+
   defp login_redirection(%Plug.Conn{} = conn) do
-    login(conn)
+    redirect_to_login(conn)
   end
 
   defp get_resource_owner(conn) do
-    raise """
-    Here return a `Boruta.Oauth.ResourceOwner` from conn. As an exemple:
-      current_user = conn.assigns[:current_user] || %User{}
+    case conn.assigns[:current_user] do
+      nil -> %ResourceOwner{}
+      current_user ->
+        %ResourceOwner{
+          sub: current_user.id,
+          username: current_user.email,
+          last_login_at: current_user.last_login_at
+        }
+    end
+  end
 
-      %ResourceOwner{
-        sub: current_user.id,
-        username: current_user.email,
-        last_login_at: current_user.last_login_at
-      }
+  defp redirect_to_login(_conn) do
+    raise """
+    Here occurs the login process. After login, user may be redirected to
+    get_session(conn, :user_return_to)
     """
   end
 
-  defp redirect_to_login(conn) do
+  defp log_out_user(_conn) do
     raise """
-    Here occurs the login process. After login, user may be redirected
-    to get_session(conn, :user_return_to)
+    Here user shall be logged out then redirected to login. After login, user may be redirected to
+    get_session(conn, :user_return_to)
     """
   end
 end

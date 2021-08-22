@@ -1,4 +1,4 @@
-defmodule <%= @web_module %>.Controllers.RevokeControllerTest do
+defmodule <%= @web_module %>.Controllers.Oauth.RevokeControllerTest do
   use ExUnit.Case, async: true
   import Phoenix.ConnTest
 

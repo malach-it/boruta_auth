@@ -1,4 +1,4 @@
-defmodule <%= @web_module %>.Controllers.Oauth.AuthorizeControllerTest do
+defmodule <%= @web_module %>.Controllers.Openid.AuthorizeControllerTest do
   use ExUnit.Case, async: true
   import Plug.Conn
   import Phoenix.ConnTest
@@ -7,7 +7,7 @@ defmodule <%= @web_module %>.Controllers.Oauth.AuthorizeControllerTest do
 
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
-  alias <%= @web_module %>.Oauth.AuthorizeController
+  alias <%= @web_module %>.Openid.AuthorizeController
 
   setup :verify_on_exit!
 
@@ -20,11 +20,68 @@ defmodule <%= @web_module %>.Controllers.Oauth.AuthorizeControllerTest do
   end
 
   defmodule User do
-    defstruct id: 1, email: "test@test.test"
+    defstruct id: 1, email: "test@test.test", last_login_at: nil
   end
 
   describe "authorize/2" do
-    test "redirects to user login without current_user", %{conn: conn} do
+    test "redirects_to login if prompt=login", %{conn: conn} do
+      conn = %{conn | query_params: %{"prompt" => "login"}}
+
+      assert_authorize_redirected_to_login(conn)
+    end
+
+    test "redirects_to an error if prompt=none and user not logged in", %{conn: conn} do
+      conn = %{conn | query_params: %{"prompt" => "none"}}
+
+      error = %Error{
+        status: :unauthorized,
+        error: :invalid_resource_owner,
+        format: :fragment,
+        redirect_uri: "http://redirect.uri"
+      }
+
+      Boruta.OauthMock
+      |> expect(:authorize, fn conn, _resource_owner, module ->
+        module.authorize_error(conn, error)
+      end)
+
+      conn = AuthorizeController.authorize(conn, %{})
+
+      assert redirected_to(conn) =~ ~r/error=login_required/
+    end
+
+    test "redirects to login if user is logged in and max age is expired", %{conn: conn} do
+      current_user = %User{last_login_at: DateTime.utc_now()}
+      conn = assign(conn, :current_user, current_user)
+      conn = %{conn | query_params: %{"max_age" => "0"}}
+
+      assert_authorize_user_logged_out(conn)
+    end
+
+    test "authorizes if user is logged in and max age is not expired", %{conn: conn} do
+      current_user = %User{last_login_at: DateTime.utc_now()}
+      conn = assign(conn, :current_user, current_user)
+      conn = %{conn | query_params: %{"max_age" => "10"}}
+
+      response = %AuthorizeResponse{
+        type: :token,
+        redirect_uri: "http://redirect.uri",
+        access_token: "access_token",
+        expires_in: 10
+      }
+
+      Boruta.OauthMock
+      |> expect(:authorize, fn conn, _resource_owner, module ->
+        module.authorize_success(conn, response)
+      end)
+
+      conn = AuthorizeController.authorize(conn, %{})
+
+      assert redirected_to(conn) ==
+               "http://redirect.uri#access_token=access_token&expires_in=10"
+    end
+
+    test "redirects to user login when user not logged in", %{conn: conn} do
       assert_authorize_redirected_to_login(conn)
     end
 
@@ -187,6 +244,17 @@ defmodule <%= @web_module %>.Controllers.Oauth.AuthorizeControllerTest do
     assert_raise RuntimeError,
                  """
                  Here occurs the login process. After login, user may be redirected to
+                 get_session(conn, :user_return_to)
+                 """,
+                 fn ->
+                   AuthorizeController.authorize(conn, %{})
+                 end
+  end
+
+  defp assert_authorize_user_logged_out(conn) do
+    assert_raise RuntimeError,
+                 """
+                 Here user shall be logged out then redirected to login. After login, user may be redirected to
                  get_session(conn, :user_return_to)
                  """,
                  fn ->

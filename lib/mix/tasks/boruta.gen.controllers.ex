@@ -29,6 +29,12 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
     get "/authorize", AuthorizeController, :authorize
   end
+
+  scope "/openid", MyAppWeb.Openid do
+    pipe_through [:browser]
+
+    get "/authorize", AuthorizeController, :authorize
+  end
   ```
 
   * Add following in config/config.exs to inject `Boruta.Oauth` dependency
@@ -77,6 +83,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
   @test_files [
     "unit/oauth/controllers/authorize_controller_test.exs",
+    "unit/openid/controllers/authorize_controller_test.exs",
     "unit/oauth/controllers/introspect_controller_test.exs",
     "unit/oauth/controllers/revoke_controller_test.exs",
     "unit/oauth/controllers/token_controller_test.exs"
@@ -113,6 +120,12 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
         end
 
         scope "/oauth", MyAppWeb.Oauth do
+          pipe_through [:browser]
+
+          get "/authorize", AuthorizeController, :authorize
+        end
+
+        scope "/openid", MyAppWeb.Openid do
           pipe_through [:browser]
 
           get "/authorize", AuthorizeController, :authorize
