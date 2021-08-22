@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Client do
   OAuth client schema
   """
 
+  @enforce_keys [:id]
   defstruct id: nil,
             name: nil,
             secret: nil,

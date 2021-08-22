@@ -46,7 +46,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
     test "returns an error if `response_type` is 'code' and schema is invalid" do
       assert Oauth.authorize(
                %Plug.Conn{query_params: %{"response_type" => "code token"}},
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -67,7 +67,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                    "redirect_uri" => "http://redirect.uri"
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -87,7 +87,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                    "redirect_uri" => "http://bad.redirect.uri"
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -109,7 +109,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                    "redirect_uri" => redirect_uri
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: nil},
                ApplicationMock
              ) ==
                {:authorize_error,

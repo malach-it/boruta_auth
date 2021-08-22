@@ -20,6 +20,7 @@ defmodule Boruta.Oauth.HybridRequest do
           code_challenge_method: String.t(),
           response_types: list(String.t())
         }
+  @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct client_id: "",
             redirect_uri: "",
             state: "",

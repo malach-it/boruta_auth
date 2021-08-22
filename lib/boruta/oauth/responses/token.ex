@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.TokenResponse do
   Token response
   """
 
+  @enforce_keys [:access_token, :expires_in]
   defstruct token_type: "bearer",
             access_token: nil,
             expires_in: nil,
@@ -11,10 +12,10 @@ defmodule Boruta.Oauth.TokenResponse do
 
   @type t :: %__MODULE__{
           token_type: String.t(),
-          access_token: String.t(),
-          id_token: String.t(),
-          expires_in: integer(),
-          refresh_token: String.t()
+          access_token: String.t() | nil,
+          id_token: String.t() | nil,
+          expires_in: integer() | nil,
+          refresh_token: String.t() | nil
         }
 
   alias Boruta.Oauth.Token

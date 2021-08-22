@@ -2,6 +2,8 @@ defmodule Boruta.Oauth.ResourceOwner do
   @moduledoc """
   Oauth resource owner
   """
+
+  @enforce_keys [:sub]
   defstruct sub: nil, username: nil, last_login_at: nil
 
   @type t :: %__MODULE__{

@@ -13,5 +13,10 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
           grant_type: String.t(),
           code_verifier: String.t()
         }
-  defstruct client_id: "", redirect_uri: "", code: "", grant_type: "authorization_code", code_verifier: ""
+  @enforce_keys [:client_id, :redirect_uri, :code]
+  defstruct client_id: "",
+            redirect_uri: "",
+            code: "",
+            grant_type: "authorization_code",
+            code_verifier: ""
 end

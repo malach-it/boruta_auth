@@ -20,11 +20,12 @@ defmodule Boruta.Oauth.IdTokenTest do
     inserted_at = DateTime.utc_now()
     last_login_at = DateTime.utc_now()
     code = %Token{
+      type: "code",
       sub: "sub",
       client: client,
       value: "value",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{last_login_at: last_login_at},
+      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
       scope: "scope",
     }
     nonce = "nonce"
@@ -61,11 +62,12 @@ defmodule Boruta.Oauth.IdTokenTest do
     inserted_at = DateTime.utc_now()
     last_login_at = DateTime.utc_now()
     token = %Token{
+      type: "access_token",
       sub: "sub",
       client: client,
       value: "value",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{last_login_at: last_login_at},
+      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
       scope: "scope"
     }
     nonce = "nonce"
@@ -102,19 +104,21 @@ defmodule Boruta.Oauth.IdTokenTest do
     inserted_at = DateTime.utc_now()
     last_login_at = DateTime.utc_now()
     code = %Token{
+      type: "code",
       sub: "sub",
       client: client,
       value: "code",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{last_login_at: last_login_at},
+      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
       scope: "scope"
     }
     token = %Token{
+      type: "access_token",
       sub: "sub",
       client: client,
       value: "token",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{last_login_at: last_login_at},
+      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
       scope: "scope"
     }
     nonce = "nonce"
@@ -151,8 +155,9 @@ defmodule Boruta.Oauth.IdTokenTest do
     client = build_client()
     inserted_at = DateTime.utc_now()
     base_token = %Token{
+      type: "base_token",
       sub: "sub",
-      resource_owner: %ResourceOwner{},
+      resource_owner: %ResourceOwner{sub: "sub"},
       client: client,
       value: "token",
       inserted_at: inserted_at,

@@ -18,6 +18,7 @@ defmodule Boruta.Oauth.TokenRequest do
           grant_type: String.t(),
           nonce: String.t()
         }
+  @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct client_id: "",
             redirect_uri: "",
             state: "",
