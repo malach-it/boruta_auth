@@ -97,8 +97,7 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
   end
 
   defp prompt_redirection(%Plug.Conn{query_params: %{"prompt" => "login"}} = conn) do
-    # TODO here user may be logged out in order to force login
-    redirect_to_login(conn)
+    log_out_user(conn)
   end
 
   defp prompt_redirection(%Plug.Conn{} = conn), do: {:unchanged, conn}
