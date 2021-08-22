@@ -64,6 +64,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
   @module_paths [
     "controllers/oauth/authorize_controller.ex",
+    "controllers/openid/authorize_controller.ex",
     "controllers/oauth/introspect_controller.ex",
     "controllers/oauth/revoke_controller.ex",
     "controllers/oauth/token_controller.ex",

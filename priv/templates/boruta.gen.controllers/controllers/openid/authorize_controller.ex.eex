@@ -1,0 +1,186 @@
+defmodule <%= @web_module %>.Oauth.AuthorizeController do
+  @behaviour Boruta.Oauth.AuthorizeApplication
+
+  use <%= @web_module %>, :controller
+
+  alias Boruta.Oauth.AuthorizeResponse
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
+  alias <%= @web_module %>.OauthView
+
+  def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module)
+
+  def authorize(%Plug.Conn{} = conn, _params) do
+    conn =
+      conn
+      |> store_user_return_to()
+      |> put_unsigned_request()
+
+    resource_owner = get_resource_owner(conn)
+
+    with {:unchanged, conn} <- prompt_redirection(conn),
+         {:unchanged, conn} <- max_age_redirection(conn, resource_owner),
+         {:unchanged, conn} <- login_redirection(conn) do
+      Oauth.authorize(conn, resource_owner, __MODULE__)
+    end
+  end
+
+  defp authorize_response(conn, %_{} = current_user) do
+    conn
+    |> oauth_module().authorize(
+      %ResourceOwner{sub: current_user.id, username: current_user.email},
+      __MODULE__
+    )
+  end
+
+  defp authorize_response(_conn, _params) do
+    redirect_to_login(conn)
+  end
+
+  @impl Boruta.Oauth.AuthorizeApplication
+  def authorize_success(
+        conn,
+        %AuthorizeResponse{} = response
+      ) do
+    redirect(conn, external: AuthorizeResponse.redirect_to_url(response))
+  end
+
+  @impl Boruta.Oauth.AuthorizeApplication
+  def authorize_error(
+        %Plug.Conn{query_params: query_params} = conn,
+        %Error{status: :unauthorized, error: :invalid_resource_owner} = error
+      ) do
+    case query_params["prompt"] do
+      "none" ->
+        authorize_error(conn, %{
+          error
+          | error: :login_required,
+            error_description: "User is not logged in."
+        })
+
+      _ ->
+        redirect_to_login(conn)
+    end
+  end
+
+  def authorize_error(
+        conn,
+        %Error{
+          error: error,
+          error_description: error_description,
+          format: format,
+          redirect_uri: redirect_uri
+        }
+      )
+      when not is_nil(format) do
+    query = URI.encode_query(%{error: error, error_description: error_description})
+
+    url =
+      case format do
+        :query -> "#{redirect_uri}?#{query}"
+        :fragment -> "#{redirect_uri}##{query}"
+      end
+
+    conn
+    |> redirect(external: url)
+  end
+
+  def authorize_error(
+        conn,
+        %Error{status: status, error: error, error_description: error_description}
+      ) do
+    conn
+    |> put_status(status)
+    |> put_view(OauthView)
+    |> render("error.html", error: error, error_description: error_description)
+  end
+
+  defp put_unsigned_request(%Plug.Conn{query_params: query_params} = conn) do
+    unsigned_request_params =
+      with request <- Map.get(query_params, "request", ""),
+           {:ok, params} <- Joken.peek_claims(request) do
+        params
+      else
+        _ -> %{}
+      end
+
+    query_params = Map.merge(query_params, unsigned_request_params)
+
+    %{conn | query_params: query_params}
+  end
+
+  defp store_user_return_to(conn) do
+    # remove prompt and max_age params affecting redirections
+    conn
+    |> put_session(
+      :user_return_to,
+      current_path(conn)
+      |> String.replace(~r/prompt=(login|none)/, "")
+      |> String.replace(~r/max_age=(\d+)/, "")
+    )
+  end
+
+  defp prompt_redirection(%Plug.Conn{query_params: %{"prompt" => "login"}} = conn) do
+    raise """
+    Here log out the user if logged in and redirect to login. After login, user may be redirected
+    to get_session(conn, :user_return_to)
+    """
+  end
+
+  defp prompt_redirection(%Plug.Conn{} = conn), do: {:unchanged, conn}
+
+  defp max_age_redirection(
+         %Plug.Conn{query_params: %{"max_age" => max_age}} = conn,
+         %ResourceOwner{} = resource_owner
+       ) do
+    case login_expired?(resource_owner, max_age) do
+      true ->
+        log_out_user(conn)
+
+      false ->
+        {:unchanged, conn}
+    end
+  end
+
+  defp max_age_redirection(%Plug.Conn{} = conn, _resource_owner), do: {:unchanged, conn}
+
+  defp login_expired?(%ResourceOwner{last_login_at: last_login_at}, max_age) do
+    now = DateTime.utc_now() |> DateTime.to_unix()
+
+    with "" <> max_age <- max_age,
+         {max_age, _} <- Integer.parse(max_age),
+         true <- now - DateTime.to_unix(last_login_at) >= max_age do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  defp login_redirection(%Plug.Conn{assigns: %{current_user: _current_user}} = conn) do
+    {:unchanged, conn}
+  end
+
+  defp login_redirection(%Plug.Conn{} = conn) do
+    login(conn)
+  end
+
+  defp get_resource_owner(conn) do
+    raise """
+    Here return a `Boruta.Oauth.ResourceOwner` from conn. As an exemple:
+      current_user = conn.assigns[:current_user] || %User{}
+
+      %ResourceOwner{
+        sub: current_user.id,
+        username: current_user.email,
+        last_login_at: current_user.last_login_at
+      }
+    """
+  end
+
+  defp redirect_to_login(conn) do
+    raise """
+    Here occurs the login process. After login, user may be redirected
+    to get_session(conn, :user_return_to)
+    """
+  end
+end
