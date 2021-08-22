@@ -449,7 +449,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  error_description: "Code challenge is invalid.",
                  format: :query,
                  redirect_uri: "https://redirect.uri",
-                 status: :bad_request
+                 status: :bad_request,
+                 state: given_state
                }
              }
     end
