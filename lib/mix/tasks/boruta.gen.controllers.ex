@@ -86,13 +86,12 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
       Mix.raise "mix boruta.gen.controllers must be invoked from within your *_web application root directory"
     end
 
-    otp_app = Mix.Project.config() |> Keyword.fetch!(:app)
-    web_app = :"#{otp_app}_web"
+    otp_app = Mix.Phoenix.context_app()
+    web_module = Mix.Phoenix.base() |> Mix.Phoenix.web_module()
 
     assigns = [
-      web_module: web_app |> Atom.to_string() |> Phoenix.Naming.camelize(),
-      otp_app: otp_app,
-      web_app: web_app
+      web_module: Module.split(web_module) |> List.last(),
+      otp_app: otp_app
     ]
 
     copy_modules(otp_app, assigns)
