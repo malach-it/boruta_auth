@@ -84,6 +84,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   @test_files [
     "unit/oauth/controllers/authorize_controller_test.exs",
     "unit/openid/controllers/authorize_controller_test.exs",
+    "unit/openid/controllers/token_controller_test.exs",
     "unit/oauth/controllers/introspect_controller_test.exs",
     "unit/oauth/controllers/revoke_controller_test.exs",
     "unit/oauth/controllers/token_controller_test.exs"
