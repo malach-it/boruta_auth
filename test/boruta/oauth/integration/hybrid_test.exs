@@ -117,7 +117,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   error: :invalid_resource_owner,
                   error_description: "Resource owner is invalid.",
                   status: :unauthorized,
-                  format: :internal
+                  redirect_uri: redirect_uri
                 }}
     end
 
@@ -202,7 +202,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description: "OpenID requests require a nonce.",
-                  status: :bad_request
+                  status: :bad_request,
+                  redirect_uri: redirect_uri
                 }}
     end
 
@@ -405,7 +406,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  status: :bad_request
+                  status: :bad_request,
+                  redirect_uri: redirect_uri
                 }}
     end
 
@@ -507,7 +509,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  status: :bad_request
+                  status: :bad_request,
+                  redirect_uri: redirect_uri
                 }}
     end
 
@@ -533,7 +536,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
-                  status: :bad_request
+                  status: :bad_request,
+                  redirect_uri: redirect_uri
                 }}
     end
 
@@ -599,7 +603,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                  error: :invalid_request,
                  error_description: "Code challenge is invalid.",
                  status: :bad_request,
-                 state: given_state
+                 state: given_state,
+                 redirect_uri: redirect_uri
                }
              }
     end

@@ -35,9 +35,7 @@ defmodule <%= @web_module %>.Controllers.Openid.AuthorizeControllerTest do
 
       error = %Error{
         status: :unauthorized,
-        error: :invalid_resource_owner,
-        format: :fragment,
-        redirect_uri: "http://redirect.uri"
+        error: :invalid_resource_owner
       }
 
       Boruta.OauthMock

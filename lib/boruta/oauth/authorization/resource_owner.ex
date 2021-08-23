@@ -48,8 +48,7 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
     {:error, %Error{
       status: :unauthorized,
       error: :invalid_resource_owner,
-      error_description: "Resource owner is invalid.",
-      format: :internal
+      error_description: "Resource owner is invalid."
     }}
   end
 end

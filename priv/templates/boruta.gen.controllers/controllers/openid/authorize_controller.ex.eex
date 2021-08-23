@@ -43,7 +43,8 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
         authorize_error(conn, %{
           error
           | error: :login_required,
-            error_description: "User is not logged in."
+            error_description: "User is not logged in.",
+            format: :fragment
         })
 
       _ ->
