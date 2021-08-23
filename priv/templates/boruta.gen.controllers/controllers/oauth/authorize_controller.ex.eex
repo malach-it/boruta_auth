@@ -28,11 +28,8 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
     )
   end
 
-  defp authorize_response(_conn, _params) do
-    raise """
-    Here occurs the login process. After login, user may be redirected
-    to get_session(conn, :user_return_to)
-    """
+  defp authorize_response(conn, _params) do
+    redirect_to_login(conn)
   end
 
   @impl Boruta.Oauth.AuthorizeApplication
@@ -45,13 +42,10 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
 
   @impl Boruta.Oauth.AuthorizeApplication
   def authorize_error(
-        %Plug.Conn{},
+        %Plug.Conn{} = conn,
         %Error{status: :unauthorized, error: :invalid_resource_owner}
       ) do
-    raise """
-    Here occurs the login process. After login, user may be redirected
-    to get_session(conn, :user_return_to)
-    """
+    redirect_to_login(conn)
   end
 
   def authorize_error(
@@ -98,5 +92,12 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
       :user_return_to,
       current_path(conn)
     )
+  end
+
+  defp redirect_to_login(_conn) do
+    raise """
+    Here occurs the login process. After login, user may be redirected to
+    get_session(conn, :user_return_to)
+    """
   end
 end

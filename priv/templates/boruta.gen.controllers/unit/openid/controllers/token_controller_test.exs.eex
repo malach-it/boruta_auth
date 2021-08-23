@@ -15,31 +15,12 @@ defmodule <%= @web_module %>.Controllers.Oauth.TokenControllerTest do
   end
 
   describe "token/2" do
-    test "returns an oauth error", %{conn: conn} do
-      error = %Error{
-        status: :bad_request,
-        error: :unknown_error,
-        error_description: "Error description"
-      }
-
-      Boruta.OauthMock
-      |> expect(:token, fn conn, module ->
-        module.token_error(conn, error)
-      end)
-
-      conn = TokenController.token(conn, %{})
-
-      assert json_response(conn, 400) == %{
-        "error" => "unknown_error",
-        "error_description" => "Error description"
-      }
-    end
-
-    test "returns an oauth response", %{conn: conn} do
+    test "returns an openid response", %{conn: conn} do
       response = %TokenResponse{
         access_token: "access_token",
         expires_in: 10,
         token_type: "token_type",
+        id_token: "id_token",
         refresh_token: "refresh_token"
       }
 
@@ -52,6 +33,7 @@ defmodule <%= @web_module %>.Controllers.Oauth.TokenControllerTest do
 
       assert json_response(conn, 200) == %{
         "access_token" => "access_token",
+        "id_token" => "id_token",
         "expires_in" => 10,
         "token_type" => "token_type",
         "refresh_token" => "refresh_token"
