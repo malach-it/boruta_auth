@@ -40,7 +40,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     test "returns an error if `response_type` is 'token' and schema is invalid" do
       assert Oauth.authorize(
         %Plug.Conn{query_params: %{"response_type" => "token"}},
-        %ResourceOwner{},
+        %ResourceOwner{sub: "sub"},
         ApplicationMock
       ) == {:authorize_error, %Error{
         error: :invalid_request,
@@ -58,7 +58,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
             "redirect_uri" => "http://redirect.uri"
           }
         },
-        %ResourceOwner{},
+        %ResourceOwner{sub: "sub"},
         ApplicationMock
       ) == {:authorize_error, %Error{
         error: :invalid_client,
@@ -78,7 +78,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
             "redirect_uri" => "http://bad.redirect.uri"
           }
         },
-        %ResourceOwner{},
+        %ResourceOwner{sub: "sub"},
         ApplicationMock
       ) == {:authorize_error, %Error{
         error: :invalid_client,
@@ -90,8 +90,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     end
 
     test "returns an error if user is invalid", %{client: client} do
-      ResourceOwners
-      |> stub(:get_by, fn(_params) -> {:error, "Resource owner not found"} end)
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(
@@ -102,7 +100,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
             "redirect_uri" => redirect_uri
           }
         },
-        %ResourceOwner{},
+        %ResourceOwner{sub: nil},
         ApplicationMock
       ) == {:authorize_error,  %Error{
         error: :invalid_resource_owner,

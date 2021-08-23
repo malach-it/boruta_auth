@@ -29,6 +29,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
   Struct encapsulating an authorization success
   """
 
+  @enforce_keys [:client, :scope]
   defstruct response_types: [],
             client: nil,
             redirect_uri: nil,
@@ -44,15 +45,15 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
   @type t :: %__MODULE__{
           response_types: list(String.t()),
           client: Boruta.Oauth.Client.t(),
-          code: Boruta.Oauth.Token.t(),
-          redirect_uri: String.t(),
-          sub: String.t(),
-          resource_owner: Boruta.Oauth.ResourceOwner.t(),
+          code: Boruta.Oauth.Token.t() | nil,
+          redirect_uri: String.t() | nil,
+          sub: String.t() | nil,
+          resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
           scope: String.t(),
-          state: String.t(),
-          nonce: String.t(),
-          code_challenge: String.t(),
-          code_challenge_method: String.t()
+          state: String.t() | nil,
+          nonce: String.t() | nil,
+          code_challenge: String.t() | nil,
+          code_challenge_method: String.t() | nil
         }
 end
 
@@ -296,6 +297,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
           case String.match?(scope, ~r/#{Scope.openid().name}/) do
             true ->
               base_token = %Token{
+                type: "base_token",
                 client: client,
                 resource_owner: resource_owner,
                 redirect_uri: redirect_uri,

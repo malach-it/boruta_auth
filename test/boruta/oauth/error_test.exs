@@ -5,13 +5,22 @@ defmodule Boruta.Oauth.ErrorTest do
 
   describe "with_format/2" do
     test "returns error with nil format when client is invalid" do
-      assert %Error{format: nil, redirect_uri: nil} = Error.with_format(%Error{error: :invalid_client}, %{})
+      assert %Error{format: nil, redirect_uri: nil} =
+               Error.with_format(
+                 %Error{
+                   status: :bad_request,
+                   error: :invalid_client,
+                   error_description: "error_description"
+                 },
+                 %{}
+               )
     end
   end
 
   describe "redirect_to_url/1" do
     test "returns empty string" do
       error = %Error{
+        status: :bad_request,
         error: "error",
         error_description: "Error description"
       }
@@ -21,6 +30,7 @@ defmodule Boruta.Oauth.ErrorTest do
 
     test "returns an url with fragment" do
       error = %Error{
+        status: :bad_request,
         format: :fragment,
         error: "error",
         error_description: "Error description",
@@ -33,6 +43,7 @@ defmodule Boruta.Oauth.ErrorTest do
 
     test "returns an url with query" do
       error = %Error{
+        status: :bad_request,
         format: :query,
         error: "error",
         error_description: "Error description",
@@ -45,6 +56,7 @@ defmodule Boruta.Oauth.ErrorTest do
 
     test "returns an url with fragment with a state" do
       error = %Error{
+        status: :bad_request,
         format: :fragment,
         error: "error",
         error_description: "Error description",
@@ -58,6 +70,7 @@ defmodule Boruta.Oauth.ErrorTest do
 
     test "returns an url with query with a state" do
       error = %Error{
+        status: :bad_request,
         format: :query,
         error: "error",
         error_description: "Error description",

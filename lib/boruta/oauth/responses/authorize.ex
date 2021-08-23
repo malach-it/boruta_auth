@@ -5,6 +5,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   alias Boruta.Oauth.Error
 
+  @enforce_keys [:type, :redirect_uri]
   defstruct type: nil,
             redirect_uri: nil,
             code: nil,
@@ -20,7 +21,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
           type: :token | :code | :hybrid,
           redirect_uri: String.t(),
           expires_in: integer(),
-          code: String.t(),
+          code: String.t() | nil,
           id_token: String.t() | nil,
           access_token: String.t() | nil,
           state: String.t() | nil,
