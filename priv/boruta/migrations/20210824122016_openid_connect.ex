@@ -4,18 +4,40 @@ defmodule Boruta.Migrations.OpenidConnect do
   defmacro __using__(_args) do
     quote do
       def change do
+        # 20210720134116_add_default_to_scopes_name.exs
         alter table(:scopes) do
           modify(:name, :string, default: "")
         end
 
+        # 20210720134125_add_default_to_tokens_scope.exs
+        # 20210721213916_add_nonce_to_tokens.exs
         alter table(:tokens) do
           modify(:scope, :string, default: "")
           add(:nonce, :string)
         end
 
+        # 20210721200708_add_id_token_ttl_to_clients.exs
         alter table(:clients) do
           add(:id_token_ttl, :integer, default: 3600)
         end
+
+        # 20210824204150_add_oauth_prefix.exs
+        drop(unique_index(:clients, [:id, :secret]))
+        drop(index(:tokens, [:value]))
+        drop(unique_index(:tokens, [:client_id, :value]))
+        drop(unique_index(:tokens, [:client_id, :refresh_token]))
+        drop(unique_index(:scopes, [:name]))
+
+        rename(table(:tokens), to: table(:oauth_tokens))
+        rename(table(:clients), to: table(:oauth_clients))
+        rename(table(:scopes), to: table(:oauth_scopes))
+        rename(table(:clients_scopes), to: table(:oauth_clients_scopes))
+
+        create(unique_index(:oauth_clients, [:id, :secret]))
+        create(index(:oauth_tokens, [:value]))
+        create(unique_index(:oauth_tokens, [:client_id, :value]))
+        create(unique_index(:oauth_tokens, [:client_id, :refresh_token]))
+        create(unique_index(:oauth_scopes, [:name]))
       end
     end
   end
