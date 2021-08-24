@@ -116,13 +116,10 @@ alias Boruta.Oauth.{ClientCredentialsRequest, Token}
 ```
 
 ## Guides
-Some integration guides are provided with code samples.
-- [Authorization code grant](authorization_code.md)
-- [Client Credentials grant](client_credentials.md)
-- [Implicit grant](implicit.md)
-- [Resource Owner Password Credentials grant](resource_owner_password_credentials.md)
-- [Introspect](introspect.md)
-- [Revoke](revoke.md)
+
+Here are some code samples helping the integration:
+- [Notes about pkce](pkce.md)
+
 
 ## Feedback
 It is a work in progress, all feedbacks / feature requests / improvements are welcome
