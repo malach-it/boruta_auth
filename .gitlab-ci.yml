@@ -6,7 +6,7 @@ services:
   - postgres:latest
 
 .elixir-task:
-  image: elixir:1.10.3-alpine
+  image: elixir:1.11.4-alpine
   cache:
     paths:
     - _build/

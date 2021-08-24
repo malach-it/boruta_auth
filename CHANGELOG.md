@@ -29,11 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - add nonce column to tokens
   ### Changed
     - default column values migrations
+    - migration management `boruta.gen.migrations` does incremental changes
   ### Security
     - codes are revoked after first usage
-## [Unreleased]
   ### Fixed
     - `boruta.gen.controllers` generated paths in umbrella apps
+## [Unreleased]
   ### Changed
     - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`
 ## [1.1.0]

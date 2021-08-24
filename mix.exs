@@ -6,7 +6,7 @@ defmodule Boruta.MixProject do
       name: "Boruta core",
       app: :boruta,
       version: "1.1.0",
-      elixir: "~> 1.5",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -32,8 +32,8 @@ defmodule Boruta.MixProject do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "priv/boruta", "test/support"]
+  defp elixirc_paths(_), do: ["lib", "priv/boruta"]
 
   # Specifies your project dependencies.
   #
