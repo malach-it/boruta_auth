@@ -44,7 +44,7 @@ defmodule Boruta.Ecto.Client do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
-  schema "clients" do
+  schema "oauth_clients" do
     field(:name, :string)
     field(:secret, :string)
     field(:authorize_scope, :boolean, default: false)
@@ -69,7 +69,7 @@ defmodule Boruta.Ecto.Client do
     field(:public_key, :string)
     field(:private_key, :string)
 
-    many_to_many :authorized_scopes, Scope, join_through: "clients_scopes", on_replace: :delete
+    many_to_many :authorized_scopes, Scope, join_through: "oauth_clients_scopes", on_replace: :delete
 
     timestamps()
   end
