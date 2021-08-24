@@ -377,9 +377,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
          {:ok,
           %Token{
             client: ^client,
-            sub: sub
+            sub: sub,
+            scope: token_scope
           } = token} <- Authorization.AccessToken.authorize(refresh_token: refresh_token),
-         {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{token: token}) do
+         {:ok, scope} <- Authorization.Scope.authorize(scope: scope || token_scope, against: %{token: token}) do
       {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}}
     else
       {:ok, _token} ->
