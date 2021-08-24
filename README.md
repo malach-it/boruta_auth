@@ -1,8 +1,8 @@
 [![pipeline status](https://gitlab.com/patatoid/boruta_auth/badges/master/pipeline.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
 [![coverage report](https://gitlab.com/patatoid/boruta_auth/badges/master/coverage.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
 
-# Boruta OAuth provider core
-Boruta is the core of an OAuth provider giving business logic of authentication and authorization.
+# Boruta OAuth/OpenID Connect provider core
+Boruta is the core of an OAuth/OpenID Connect provider giving authentication and authorization business logic. a generator is provided to create phoenix controllers, views and templates.
 
 It is intended to follow RFCs:
 - [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)
@@ -10,7 +10,11 @@ It is intended to follow RFCs:
 - [RFC 7009 - OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
 - [RFC 7636 - Proof Key for Code Exchange by OAuth Public Clients](https://tools.ietf.org/html/rfc7636)
 
-As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
+And specification from OpenID Connect:
+- [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
+
+
+This package helps to create an authorization server implementing authorization code, implicit, client credentials and resource owner password credentials grants from OAuth and the additions to be OpenID Connect compliant.
 
 ## Documentation
 Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
@@ -25,8 +29,9 @@ If you plan to use Boruta builtin clients and tokens contexts, you'll need a mig
 ```sh
 mix boruta.gen.migration
 ```
+> Note: You may need to run the task above in case of package upgrade to have up to date database schema.
 
-2. Implement ResourceOwners context
+2. Implement ResourceOwners context _(optional)_
 
 In order to have user flows working, You need to implement `Boruta.Oauth.ResourceOwners`.
 
@@ -77,7 +82,7 @@ config :boruta, Boruta.Oauth,
     access_tokens: Boruta.Ecto.AccessTokens,
     clients: Boruta.Ecto.Clients,
     codes: Boruta.Ecto.Codes,
-    resource_owners: MyApp.ResourceOwners, # mandatory
+    resource_owners: MyApp.ResourceOwners, # mandatory for user flows
     scopes: Boruta.Ecto.Scopes
   ],
   max_ttl: [
@@ -88,17 +93,37 @@ config :boruta, Boruta.Oauth,
 ```
 
 ## Integration
-This implementation follows an hexagonal architecture, dependencies are inverted from Application layer.
+This implementation follows an inverted hexagonal architecture, dependencies are inverted from Application layer.
 
-In order to expose endpoints of an OAuth server with Boruta, you need implement either the behaviour `Boruta.Oauth.Application` or the behaviours `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication` and `Boruta.Oauth.RevokeApplication` to integrate these endpoints separatly. Those behaviours will help you creating callback functions which will be triggered by invoking `token/2`, `authorize/2`, `introspect/2` and `revoke/2` functions from `Boruta.Oauth` module.
+In order to expose endpoints of an OAuth/OpenID Connect server with Boruta, you need implement either the behaviour `Boruta.Oauth.Application` or the behaviours `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication` and `Boruta.Oauth.RevokeApplication` to integrate these endpoints separatly. Those behaviours will help you creating callback functions which will be triggered by invoking `token/2`, `authorize/2`, `introspect/2` and `revoke/2` functions from `Boruta.Oauth` module.
 
-A generator is provided to create phoenix controllers, views and templates needed to implement a basic OAuth server.
+A generator is provided to create phoenix controllers, views and templates needed to implement a basic OAuth/OpenID Connect server.
 
 ```sh
 mix boruta.gen.controllers
 ```
 
 This task will create needed files and give you a guide to finish your setup.
+
+## Migration from 1.X
+Version 2 brings OpenID Connect, several changes were made in order to stick to the specification:
+- `Boruta.Oauth.AuthorizeResponse` and `Boruta.Oauth.TokenResponse` do not provide token value in `value` field but prefer giving value by token type `code`, `access_token` or `id_token`.
+```
+%AuthorizeResponse{
+   type: "code",
+   value: value,
+   expires_in: 60
+}
+```
+becomes
+```
+%AuthorizeResponse{
+   type: :code,
+   code: value,
+   expires_in: 60
+}
+```
+- `boruta.gen.migration` task has been updated. Running the task will upgrade database schemas according to the new associated `Ecto.Schema`
 
 ## Straightforward testing
 You can also create a client and test it
@@ -116,13 +141,10 @@ alias Boruta.Oauth.{ClientCredentialsRequest, Token}
 ```
 
 ## Guides
-Some integration guides are provided with code samples.
-- [Authorization code grant](authorization_code.md)
-- [Client Credentials grant](client_credentials.md)
-- [Implicit grant](implicit.md)
-- [Resource Owner Password Credentials grant](resource_owner_password_credentials.md)
-- [Introspect](introspect.md)
-- [Revoke](revoke.md)
+
+Here are some code samples helping the integration:
+- [Notes about pkce](pkce.md)
+
 
 ## Feedback
 It is a work in progress, all feedbacks / feature requests / improvements are welcome

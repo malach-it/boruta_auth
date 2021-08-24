@@ -6,7 +6,7 @@ defmodule Boruta.MixProject do
       name: "Boruta core",
       app: :boruta,
       version: "1.1.0",
-      elixir: "~> 1.5",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -32,8 +32,8 @@ defmodule Boruta.MixProject do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "priv/boruta", "test/support"]
+  defp elixirc_paths(_), do: ["lib", "priv/boruta"]
 
   # Specifies your project dependencies.
   #
@@ -65,13 +65,7 @@ defmodule Boruta.MixProject do
       source_url: "https://gitlab.com/patatoid/boruta-core",
       extras: [
         "README.md",
-        "guides/client_credentials.md",
-        "guides/resource_owner_password_credentials.md",
-        "guides/authorization_code.md",
-        "guides/hybrid.md",
-        "guides/implicit.md",
-        "guides/introspect.md",
-        "guides/revoke.md"
+        "guides/pkce.md"
       ],
       groups_for_modules: [
         Applications: [

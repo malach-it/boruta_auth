@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0-rc.1]
   ### Added
-    - OpenID Connect [hybrid cretification test suite](https://www.certification.openid.net/plan-detail.html?plan=fF6XN5hqGMF5s&public=true) integration
+    - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) integration
       - hybrid flow
-      - authorization code and implicit grants OpenID Connect compatibility
+      - authorization code and implicit grants with OpenID Connect compatibility
   ### Changed
     - `Boruta.Oauth.AuthorizeResponse` and `Boruta.Oauth.TokenResponse` do not provide token value in `value` field but prefer giving value by token type `code`, `access_token` or `id_token`.
     ```
@@ -16,21 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
        type: "code",
        value: value,
        expires_in: 60
-     }}
+    }
     ```
     becomes
     ```
     %AuthorizeResponse{
-       type: "code",
+       type: :code,
        code: value,
        expires_in: 60
-     }}
+    }
     ```
     - add nonce column to tokens
   ### Changed
     - default column values migrations
+    - migration management `boruta.gen.migrations` does incremental changes
   ### Security
     - codes are revoked after first usage
+  ### Fixed
+    - `boruta.gen.controllers` generated paths in umbrella apps
 ## [Unreleased]
   ### Changed
     - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`
