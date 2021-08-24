@@ -4,6 +4,9 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
 
   Creates `clients`, `scopes` and `tokens` tables.
 
+  > __Note__: This task will create migration files to keep your integration up to date by checking migration file and module names to create missing ones.
+  > Thus it is not recommanded to change those since it will break the process.
+
   ## Examples
   ```
   mix boruta.gen.migration

@@ -16,15 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
        type: "code",
        value: value,
        expires_in: 60
-     }}
+    }
     ```
     becomes
     ```
     %AuthorizeResponse{
-       type: "code",
+       type: :code,
        code: value,
        expires_in: 60
-     }}
+    }
     ```
     - add nonce column to tokens
   ### Changed
