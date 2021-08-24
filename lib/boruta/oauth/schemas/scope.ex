@@ -32,5 +32,11 @@ defmodule Boruta.Oauth.Scope do
           against :: List | Boruta.Oauth.Token.t() | Boruta.Oauth.Client.t(),
           scope :: String.t()
         ) :: boolean()
+  @spec authorized?(
+          against :: List | Boruta.Oauth.Token.t() | Boruta.Oauth.Client.t(),
+          scope :: String.t(),
+          public_scopes :: list()
+        ) :: boolean()
   defdelegate authorized?(against, scope), to: __MODULE__.Authorize
+  defdelegate authorized?(against, scope, public_scopes), to: __MODULE__.Authorize
 end

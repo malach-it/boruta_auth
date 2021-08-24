@@ -77,7 +77,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
         Scope.authorized?(schema, scope)
 
       {_type, schema}, acc ->
-        acc || Scope.authorized?(schema, scope)
+        acc || Scope.authorized?(schema, scope, against[:public])
     end)
   end
 end
