@@ -8,8 +8,8 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
   import Mox
 
   alias Boruta.Oauth.Authorization.Scope
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
-  alias Boruta.Support.User
 
   describe "with empty scope" do
     test "returns an empty string if nil given" do
@@ -127,7 +127,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
 
   describe "with a resource_owner" do
     setup do
-      resource_owner = %User{}
+      resource_owner = %ResourceOwner{sub: "sub"}
       public_scope = insert(:scope, public: true)
       private_scope = insert(:scope, public: false)
       {:ok,
@@ -227,11 +227,11 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       public_scope = insert(:scope, public: true)
       private_scope = insert(:scope, public: false)
       client_with_scope = insert(:client, authorize_scope: true, authorized_scopes: [private_scope, public_scope])
-      resource_owner = %User{}
+      resource_owner = %ResourceOwner{sub: "sub"}
       {:ok,
         private_scope: private_scope,
         public_scope: public_scope,
-        client_with_scope: client_with_scope,
+        client_with_scope: to_oauth_schema(client_with_scope),
         resource_owner: resource_owner
       }
     end

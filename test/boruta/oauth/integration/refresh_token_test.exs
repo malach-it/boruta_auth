@@ -5,10 +5,12 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
   import Boruta.Factory
   import Mox
 
+  alias Boruta.Ecto
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.TokenResponse
+  alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
 
   describe "refresh_token" do
@@ -207,13 +209,38 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
             token_type: token_type,
             access_token: access_token,
             expires_in: expires_in,
-            refresh_token: refresh_token
+            refresh_token: refresh_token,
           }
         } ->
           assert token_type == "bearer"
           assert access_token
           assert expires_in
           assert refresh_token
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns token with associated access_token scope as default", %{client: client, access_token: token} do
+      ResourceOwners
+      |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
+      case Oauth.token(
+        %Plug.Conn{
+          body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token},
+          req_headers: [{"authorization", authorization_header}]
+        },
+        ApplicationMock
+      ) do
+        {:token_success,
+          %TokenResponse{
+            access_token: access_token
+          }
+        } ->
+          expected_scope = token.scope
+          assert %Ecto.Token{
+            scope: ^expected_scope
+          } = Repo.get_by(Ecto.Token, value: access_token)
         _ ->
           assert false
       end

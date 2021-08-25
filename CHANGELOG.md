@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ### Fixed
     - `boruta.gen.controllers` generated paths in umbrella apps
 ## [Unreleased]
+  ### Fixed
+    - `boruta.gen.controllers` generated paths in umbrella apps
+    - Refreshed tokens has associated access_token scope as default
   ### Changed
     - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`
 ## [1.1.0]
@@ -49,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ### Security
     - do not issue access_tokens from other clients refresh tokens
   ### Fixed
-    - internal server errors when no client_id provided to token and refresh_token grants
+    - Internal server errors when no client_id provided to token and refresh_token grants
 ## [1.0.3] - 2021-07-29
   ### Security
     - Refresh token revocation
