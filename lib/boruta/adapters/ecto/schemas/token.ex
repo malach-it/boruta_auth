@@ -31,7 +31,7 @@ defmodule Boruta.Ecto.Token do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime_usec
-  schema "tokens" do
+  schema "oauth_tokens" do
     field(:type, :string)
     field(:value, :string)
     field(:refresh_token, :string)
