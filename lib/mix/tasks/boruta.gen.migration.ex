@@ -35,6 +35,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         |> File.ls()
 
       migration_paths
+      |> Enum.sort()
       |> Enum.with_index()
       |> Enum.map(&create_migration_file(repo, &1))
     end)
