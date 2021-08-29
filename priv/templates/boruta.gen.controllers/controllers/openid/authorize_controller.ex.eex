@@ -145,7 +145,7 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
   defp get_resource_owner(conn) do
     case conn.assigns[:current_user] do
       nil ->
-        nil
+        %ResourceOwner{sub: nil}
 
       current_user ->
         %ResourceOwner{
