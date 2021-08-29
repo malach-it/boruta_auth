@@ -1,10 +1,9 @@
-defmodule <%= @web_module %>.Controllers.Oauth.TokenControllerTest do
+defmodule <%= @web_module %>.Controllers.Openid.TokenControllerTest do
   use ExUnit.Case, async: true
   import Phoenix.ConnTest
 
   import Mox
 
-  alias Boruta.Oauth.Error
   alias Boruta.Oauth.TokenResponse
   alias <%= @web_module %>.Oauth.TokenController
 
