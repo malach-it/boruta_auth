@@ -51,27 +51,22 @@ defmodule Boruta.Oauth.Authorization.Client do
 
   def authorize(id: id, secret: secret, grant_type: "refresh_token")
       when not is_nil(id) do
-    with %Client{
-           secret: client_secret,
-           supported_grant_types: supported_grant_types,
-           public_refresh_token: public_refresh_token
-         } = client <-
-           ClientsAdapter.get_by(id: id),
-         true <- Enum.member?(supported_grant_types, "refresh_token") do
-      case {public_refresh_token, client_secret == secret} do
+    with %Client{} = client <- ClientsAdapter.get_by(id: id),
+         true <- Client.grant_type_supported?(client, "refresh_token") do
+      case {Client.public_refresh_token?(client), Client.check_secret(client, secret)} do
         {true, _} ->
           {:ok, client}
 
-        {false, false} ->
+        {false, :ok} ->
+          {:ok, client}
+
+        {false, _} ->
           {:error,
            %Error{
              status: :unauthorized,
              error: :invalid_client,
              error_description: "Invalid client_id or client_secret."
            }}
-
-        {false, true} ->
-          {:ok, client}
       end
     else
       nil ->
@@ -94,9 +89,9 @@ defmodule Boruta.Oauth.Authorization.Client do
 
   def authorize(id: id, secret: secret, grant_type: grant_type)
       when not is_nil(id) and not is_nil(secret) do
-    with %Client{supported_grant_types: supported_grant_types} = client <-
+    with %Client{} = client <-
            ClientsAdapter.get_by(id: id, secret: secret),
-         true <- Enum.member?(supported_grant_types, grant_type) do
+         true <- Client.grant_type_supported?(client, grant_type) do
       {:ok, client}
     else
       nil ->
@@ -119,10 +114,8 @@ defmodule Boruta.Oauth.Authorization.Client do
 
   def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type)
       when not is_nil(id) and not is_nil(redirect_uri) do
-    with %Client{
-           supported_grant_types: supported_grant_types
-         } = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
-         true <- Enum.member?(supported_grant_types, grant_type) do
+    with %Client{} = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
+         true <- Client.grant_type_supported?(client, grant_type) do
       {:ok, client}
     else
       nil ->
@@ -150,11 +143,9 @@ defmodule Boruta.Oauth.Authorization.Client do
         code_verifier: code_verifier
       )
       when not is_nil(id) and not is_nil(redirect_uri) do
-    with %Client{
-           supported_grant_types: supported_grant_types
-         } = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
+    with %Client{} = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
          :ok <- validate_pkce(client, code_verifier),
-         true <- Enum.member?(supported_grant_types, grant_type) do
+         true <- Client.grant_type_supported?(client, grant_type) do
       {:ok, client}
     else
       nil ->
