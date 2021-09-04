@@ -706,7 +706,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                {:token_error,
                 %Error{
                   error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
+                  error_description: "Invalid client.",
                   status: :unauthorized
                 }}
     end

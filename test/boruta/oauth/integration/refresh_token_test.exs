@@ -18,6 +18,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       stub(ResourceOwners, :get_by, fn _params -> {:error, "No resource owner."} end)
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
+      public_refresh_token_client = insert(:client, public_refresh_token: true)
 
       expired_access_token =
         insert(
@@ -52,6 +53,17 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
           scope: "scope"
         )
 
+      public_refresh_token_access_token =
+        insert(
+          :token,
+          type: "access_token",
+          refresh_token: Boruta.TokenGenerator.generate(),
+          client: public_refresh_token_client,
+          redirect_uri: List.first(public_refresh_token_client.redirect_uris),
+          expires_at: :os.system_time(:seconds) + 10,
+          scope: "scope"
+        )
+
       other_client_access_token =
         insert(
           :token,
@@ -66,9 +78,11 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       {:ok,
        client: client,
        client_without_grant_type: client_without_grant_type,
+       public_refresh_token_client: public_refresh_token_client,
        expired_access_token: expired_access_token,
        revoked_access_token: revoked_access_token,
        access_token: access_token,
+       public_refresh_token_access_token: public_refresh_token_access_token,
        other_client_access_token: other_client_access_token}
     end
 
@@ -121,6 +135,25 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                {:token_error,
                 %Error{
                   error: :invalid_client,
+                  error_description: "Invalid client.",
+                  status: :unauthorized
+                }}
+    end
+
+    test "returns an error if `client_id` is invalid" do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+                   "grant_type" => "refresh_token",
+                   "refresh_token" => "refresh_token"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_client,
                   error_description: "Invalid client_id or client_secret.",
                   status: :unauthorized
                 }}
@@ -158,7 +191,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                {:token_error,
                 %Error{
                   error: :invalid_client,
-                  error_description: "Invalid client_id or client_secret.",
+                  error_description: "Invalid client.",
                   status: :unauthorized
                 }}
     end
@@ -315,6 +348,28 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                 }}
     end
 
+    test "returns an error if `client_id` is valid but `public_refresh_token` set to false", %{
+      client: client,
+      access_token: access_token
+    } do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "client_id" => client.id,
+                   "grant_type" => "refresh_token",
+                   "refresh_token" => access_token.refresh_token
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_client,
+                  error_description: "Invalid client_id or client_secret.",
+                  status: :unauthorized
+                }}
+    end
+
     test "returns token", %{client: client, access_token: token} do
       ResourceOwners
       |> stub(:authorized_scopes, fn _resource_owner -> [] end)
@@ -322,32 +377,29 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
-      case Oauth.token(
-             %Plug.Conn{
-               body_params: %{
-                 "grant_type" => "refresh_token",
-                 "refresh_token" => token.refresh_token,
-                 "scope" => "scope"
-               },
-               req_headers: [{"authorization", authorization_header}]
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token,
+                     "scope" => "scope"
+                   },
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
     end
 
     test "returns token with associated access_token scope as default", %{
@@ -383,6 +435,36 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         _ ->
           assert false
       end
+    end
+
+    test "returns token with public_refresh_token client", %{
+      public_refresh_token_client: client,
+      public_refresh_token_access_token: token
+    } do
+      ResourceOwners
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: "bearer",
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "client_id" => client.id,
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert access_token
+      assert expires_in
+      assert refresh_token
     end
   end
 

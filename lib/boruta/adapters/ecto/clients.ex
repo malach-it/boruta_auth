@@ -20,14 +20,18 @@ defmodule Boruta.Ecto.Clients do
   end
 
   defp get_by(:from_cache, attrs), do: ClientStore.get(attrs)
-  defp get_by(:from_database, id: nil, secret: _secret), do: nil
+  defp get_by(:from_database, id: id) do
+    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
+      {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
+        client
+    end
+  end
   defp get_by(:from_database, id: id, secret: secret) do
     with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id, secret: secret),
       {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
         client
     end
   end
-  defp get_by(:from_database, id: nil, redirect_uri: _redirect_uri), do: nil
   defp get_by(:from_database, id: id, redirect_uri: redirect_uri) do
     redirect_uri_regex = "^#{redirect_uri}$"
     with %Ecto.Client{} = client <-

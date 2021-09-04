@@ -49,6 +49,49 @@ defmodule Boruta.Oauth.Authorization.Client do
     end
   end
 
+  def authorize(id: id, secret: secret, grant_type: "refresh_token")
+      when not is_nil(id) do
+    with %Client{
+           secret: client_secret,
+           supported_grant_types: supported_grant_types,
+           public_refresh_token: public_refresh_token
+         } = client <-
+           ClientsAdapter.get_by(id: id),
+         true <- Enum.member?(supported_grant_types, "refresh_token") do
+      case {public_refresh_token, client_secret == secret} do
+        {true, _} ->
+          {:ok, client}
+
+        {false, false} ->
+          {:error,
+           %Error{
+             status: :unauthorized,
+             error: :invalid_client,
+             error_description: "Invalid client_id or client_secret."
+           }}
+
+        {false, true} ->
+          {:ok, client}
+      end
+    else
+      nil ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :invalid_client,
+           error_description: "Invalid client_id or client_secret."
+         }}
+
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
+         }}
+    end
+  end
+
   def authorize(id: id, secret: secret, grant_type: grant_type)
       when not is_nil(id) and not is_nil(secret) do
     with %Client{supported_grant_types: supported_grant_types} = client <-
@@ -74,7 +117,8 @@ defmodule Boruta.Oauth.Authorization.Client do
     end
   end
 
-  def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type) do
+  def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type)
+      when not is_nil(id) and not is_nil(redirect_uri) do
     with %Client{
            supported_grant_types: supported_grant_types
          } = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
@@ -104,7 +148,8 @@ defmodule Boruta.Oauth.Authorization.Client do
         redirect_uri: redirect_uri,
         grant_type: grant_type,
         code_verifier: code_verifier
-      ) do
+      )
+      when not is_nil(id) and not is_nil(redirect_uri) do
     with %Client{
            supported_grant_types: supported_grant_types
          } = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
@@ -143,7 +188,7 @@ defmodule Boruta.Oauth.Authorization.Client do
      %Error{
        status: :unauthorized,
        error: :invalid_client,
-       error_description: "Invalid client_id or client_secret."
+       error_description: "Invalid client."
      }}
   end
 

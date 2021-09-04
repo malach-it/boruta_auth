@@ -13,6 +13,7 @@ defmodule Boruta.Oauth.Client do
             access_token_ttl: nil,
             authorization_code_ttl: nil,
             pkce: nil,
+            public_refresh_token: nil,
             public_key: nil,
             private_key: nil
 
@@ -27,6 +28,7 @@ defmodule Boruta.Oauth.Client do
           access_token_ttl: integer(),
           authorization_code_ttl: integer(),
           pkce: boolean(),
+          public_refresh_token: boolean(),
           public_key: String.t(),
           private_key: String.t()
         }
