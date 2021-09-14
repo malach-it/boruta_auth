@@ -3,44 +3,43 @@ defmodule Boruta.Oauth.Token do
   Token schema. Representing both access tokens and codes.
   """
 
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Token
 
-  defstruct [
-    id: nil,
-    type: nil,
-    value: nil,
-    state: nil,
-    scope: nil,
-    redirect_uri: nil,
-    expires_at: nil,
-    client: nil,
-    sub: nil,
-    resource_owner: nil,
-    refresh_token: nil,
-    inserted_at: nil,
-    revoked_at: nil,
-    code_challenge: nil,
-    code_challenge_hash: nil,
-    code_challenge_method: nil
-  ]
+  defstruct id: nil,
+            type: nil,
+            value: nil,
+            state: nil,
+            scope: nil,
+            redirect_uri: nil,
+            expires_at: nil,
+            client: nil,
+            sub: nil,
+            resource_owner: nil,
+            refresh_token: nil,
+            inserted_at: nil,
+            revoked_at: nil,
+            code_challenge: nil,
+            code_challenge_hash: nil,
+            code_challenge_method: nil
 
   @type t :: %__MODULE__{
-    type:  String.t(),
-    value: String.t(),
-    state: String.t(),
-    scope: String.t(),
-    redirect_uri: String.t(),
-    expires_at: integer(),
-    client: Boruta.Oauth.Client.t(),
-    sub: String.t(),
-    resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
-    refresh_token: String.t(),
-    code_challenge: String.t(),
-    code_challenge_hash: String.t(),
-    code_challenge_method: String.t(),
-    inserted_at: DateTime.t(),
-    revoked_at: DateTime.t()
-  }
+          type: String.t(),
+          value: String.t(),
+          state: String.t(),
+          scope: String.t(),
+          redirect_uri: String.t(),
+          expires_at: integer(),
+          client: Boruta.Oauth.Client.t(),
+          sub: String.t(),
+          resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
+          refresh_token: String.t(),
+          code_challenge: String.t(),
+          code_challenge_hash: String.t(),
+          code_challenge_method: String.t(),
+          inserted_at: DateTime.t(),
+          revoked_at: DateTime.t()
+        }
   @doc """
   Determines if a token is expired
 
@@ -51,9 +50,29 @@ defmodule Boruta.Oauth.Token do
       iex> expired?(%Boruta.Oauth.Token{expires_at: 0}) # 1st january 1970
       true
   """
-  @spec expired?(%Token{expires_at: integer()}) :: :ok | boolean()
-  @spec expired?(%Token{expires_at: integer()}, now :: integer()) :: :ok | boolean()
-  def expired?(%Token{expires_at: expires_at}, now \\ :os.system_time(:seconds)) do
+  @spec expired?(token :: Token.t()) :: :ok | boolean()
+  @spec expired?(
+          token :: Token.t(),
+          type :: :access_token | :refresh_token
+        ) :: boolean()
+  @spec expired?(
+          token :: Token.t(),
+          type :: :access_token | :refresh_token,
+          now :: integer()
+        ) :: boolean()
+  def expired?(token, type \\ :access_token, now \\ :os.system_time(:seconds))
+
+  def expired?(%Token{expires_at: expires_at}, :access_token, now) do
+    now >= expires_at
+  end
+
+  def expired?(
+        %Token{inserted_at: inserted_at, client: %Client{refresh_token_ttl: refresh_token_ttl}},
+        :refresh_token,
+        now
+      ) do
+    expires_at = DateTime.add(inserted_at, refresh_token_ttl, :second) |> DateTime.to_unix()
+
     now >= expires_at
   end
 
@@ -82,8 +101,10 @@ defmodule Boruta.Oauth.Token do
       {:error, "Token revoked."}
   """
   @spec ensure_valid(token :: Token.t()) :: :ok | {:error, String.t()}
-  def ensure_valid(token) do
-    case {revoked?(token), expired?(token)} do
+  @spec ensure_valid(token :: Token.t(), type :: :access_token | :refresh_token) ::
+          :ok | {:error, String.t()}
+  def ensure_valid(token, type \\ :access_token) do
+    case {revoked?(token), expired?(token, type)} do
       {true, _} -> {:error, "Token revoked."}
       {_, true} -> {:error, "Token expired."}
       _ -> :ok
@@ -99,6 +120,6 @@ defmodule Boruta.Oauth.Token do
   """
   @spec hash(string :: String.t()) :: hashed_string :: String.t()
   def hash(string) do
-    :crypto.hash(:sha512, string) |> Base.encode16
+    :crypto.hash(:sha512, string) |> Base.encode16()
   end
 end

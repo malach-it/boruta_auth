@@ -71,6 +71,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:supported_grant_types, {:array, :string}, default: [], null: false)
         add(:authorization_code_ttl, :integer, null: false)
         add(:access_token_ttl, :integer, null: false)
+        add(:refresh_token_ttl, :integer, null: false)
         add(:pkce, :boolean, default: false, null: false)
         add(:public_refresh_token, :boolean, null: false, default: false)
         add(:public_key, :text, null: false)
