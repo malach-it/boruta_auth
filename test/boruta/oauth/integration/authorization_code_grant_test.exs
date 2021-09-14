@@ -657,11 +657,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if request is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{"grant_type" => "authorization_code"}
                },
                ApplicationMock
@@ -670,17 +667,14 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. #/client_id do match required pattern /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/. Required properties code, redirect_uri are missing at #.",
+                    "Request body validation failed. Required properties code, redirect_uri are missing at #.",
                   status: :bad_request
                 }}
     end
 
     test "returns an error if `client_id` is invalid" do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{
                    "grant_type" => "authorization_code",
                    "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
@@ -712,18 +706,16 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                {:token_error,
                 %Error{
                   error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
+                  error_description: "Invalid client.",
                   status: :unauthorized
                 }}
     end
 
     test "returns an error if `code` is invalid", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{
                    "grant_type" => "authorization_code",
                    "client_id" => client.id,
@@ -745,12 +737,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       client: client,
       bad_redirect_uri_code: bad_redirect_uri_code
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{
                    "grant_type" => "authorization_code",
                    "client_id" => client.id,
@@ -772,12 +762,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       client_without_grant_type: client,
       code: code
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{
                    "grant_type" => "authorization_code",
                    "client_id" => client.id,
@@ -796,8 +784,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 
@@ -805,7 +791,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       case Oauth.token(
              %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => client.id,
@@ -833,8 +818,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a token from cache", %{client: client, code: code, resource_owner: resource_owner} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 
@@ -843,7 +826,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       case Oauth.token(
              %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => client.id,
@@ -875,8 +857,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       code_with_scope: code,
       resource_owner: resource_owner
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
-
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 
@@ -884,7 +864,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       case Oauth.token(
              %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => client.id,
@@ -915,12 +894,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_client: client,
       pkce_code: code
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{
                    "grant_type" => "authorization_code",
                    "client_id" => client.id,
@@ -943,7 +920,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_code: code,
       resource_owner: resource_owner
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
@@ -951,7 +927,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert Oauth.token(
                %Plug.Conn{
-                 req_headers: [{"authorization", authorization_header}],
                  body_params: %{
                    "grant_type" => "authorization_code",
                    "client_id" => client.id,
@@ -975,7 +950,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_code: code,
       resource_owner: resource_owner
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
@@ -983,7 +957,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       case Oauth.token(
              %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => client.id,
@@ -1017,7 +990,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_code_s256: code,
       resource_owner: resource_owner
     } do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth("test", "test")
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
@@ -1025,7 +997,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       case Oauth.token(
              %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => client.id,
@@ -1052,10 +1023,5 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert false
       end
     end
-  end
-
-  defp using_basic_auth(username, password) do
-    authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
-    %{req_headers: [{"authorization", authorization_header}]}
   end
 end
