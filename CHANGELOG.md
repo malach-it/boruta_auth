@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
   ### Added
     - `public_refresh_token` per client configuration allowing to refresh tokens without providing client secret
+    - `refresh_token_ttl` per client configuration setting refresh tokens duration (along with `refresh_tokne_max_ttl` static configuration).
   ### Fixed
     - `boruta.gen.controllers` generated paths in umbrella apps
     - Refreshed tokens has associated access_token scope as default

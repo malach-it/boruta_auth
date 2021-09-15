@@ -51,7 +51,7 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
   end
   def authorize(refresh_token: refresh_token) do
     with %Token{} = token <- Boruta.AccessTokensAdapter.get_by(refresh_token: refresh_token),
-      :ok <- Token.ensure_valid(token) do
+      :ok <- Token.ensure_valid(token, :refresh_token) do
       {:ok, token}
     else
       {:error, error} ->
