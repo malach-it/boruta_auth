@@ -5,15 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.2.0]
   ### Added
-    - `public_refresh_token` per client configuration allowing to refresh tokens without providing client secret
-    - `refresh_token_ttl` per client configuration setting refresh tokens duration (along with `refresh_tokne_max_ttl` static configuration).
+    - `public_refresh_token` per client configuration allowing to refresh tokens without providing client secret.
+    - `refresh_token_ttl` per client configuration setting refresh tokens duration (along with `refresh_tokne_max_ttl` :boruta mix configuration).
+    - `issuer` :boruta mix configuration.
   ### Fixed
-    - `boruta.gen.controllers` generated paths in umbrella apps
-    - Refreshed tokens has associated access_token scope as default
-    - Requests with no client secret won't raise an error
+    - `boruta.gen.controllers` generated paths in umbrella apps.
+    - Refreshed tokens has associated access_token scope as default.
+    - Requests with no client secret won't raise an error.
   ### Changed
-    - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`
+    - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`.
 ## [1.1.0]
   ### Added
     - `AuthorizeApplication`, `IntrospectApplication`, `RevokeApplication`, and `TokenApplication` behaviours allowing to implement separatly different OAuth use cases.

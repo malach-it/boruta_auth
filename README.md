@@ -10,7 +10,7 @@ It is intended to follow RFCs:
 - [RFC 7009 - OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
 - [RFC 7636 - Proof Key for Code Exchange by OAuth Public Clients](https://tools.ietf.org/html/rfc7636)
 
-As it, it helps implement a provider for authorization code, implicit, client credentials and resource owner password credentials grants. Then it follows Introspection to check tokens.
+This package is meant to help to provide OAuth 2.0 in your applications implementing part or all of authorization code, implicit, client credentials, or resource owner password credentials grants. It also helps introspecting and revoking tokens.
 
 ## Documentation
 Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
@@ -28,7 +28,7 @@ mix boruta.gen.migration
 
 2. Implement ResourceOwners context
 
-In order to have user flows working, You need to implement `Boruta.Oauth.ResourceOwners`.
+In order to have user flows operational, You need to implement `Boruta.Oauth.ResourceOwners` behaviour.
 
 Here is an example implementation:
 ```elixir
@@ -68,7 +68,7 @@ end
 
 3. Configuration
 
-Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
+Boruta provides several configuration options that you can customize in `config.exs`. Those have following default values:
 ```elixir
 config :boruta, Boruta.Oauth,
   repo: MyApp.Repo, # mandatory
