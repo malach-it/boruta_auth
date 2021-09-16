@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Token do
   Token schema. Representing both access tokens and codes.
   """
 
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Token
 
   @enforce_keys [:type]
@@ -53,9 +54,29 @@ defmodule Boruta.Oauth.Token do
       iex> expired?(%Boruta.Oauth.Token{expires_at: 0}) # 1st january 1970
       true
   """
-  @spec expired?(%Token{expires_at: integer()}) :: :ok | boolean()
-  @spec expired?(%Token{expires_at: integer()}, now :: integer()) :: :ok | boolean()
-  def expired?(%Token{expires_at: expires_at}, now \\ :os.system_time(:seconds)) do
+  @spec expired?(token :: Token.t()) :: :ok | boolean()
+  @spec expired?(
+          token :: Token.t(),
+          type :: :access_token | :refresh_token
+        ) :: boolean()
+  @spec expired?(
+          token :: Token.t(),
+          type :: :access_token | :refresh_token,
+          now :: integer()
+        ) :: boolean()
+  def expired?(token, type \\ :access_token, now \\ :os.system_time(:seconds))
+
+  def expired?(%Token{expires_at: expires_at}, :access_token, now) do
+    now >= expires_at
+  end
+
+  def expired?(
+        %Token{inserted_at: inserted_at, client: %Client{refresh_token_ttl: refresh_token_ttl}},
+        :refresh_token,
+        now
+      ) do
+    expires_at = DateTime.add(inserted_at, refresh_token_ttl, :second) |> DateTime.to_unix()
+
     now >= expires_at
   end
 
@@ -84,8 +105,10 @@ defmodule Boruta.Oauth.Token do
       {:error, "Token revoked."}
   """
   @spec ensure_valid(token :: Token.t()) :: :ok | {:error, String.t()}
-  def ensure_valid(token) do
-    case {revoked?(token), expired?(token)} do
+  @spec ensure_valid(token :: Token.t(), type :: :access_token | :refresh_token) ::
+          :ok | {:error, String.t()}
+  def ensure_valid(token, type \\ :access_token) do
+    case {revoked?(token), expired?(token, type)} do
       {true, _} -> {:error, "Token revoked."}
       {_, true} -> {:error, "Token expired."}
       _ -> :ok

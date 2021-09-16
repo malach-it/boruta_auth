@@ -1,6 +1,7 @@
 defprotocol Boruta.Oauth.Scope.Authorize do
-  def authorized?(scope, schema)
-  def authorized?(scope, schema, public_scopes)
+  @moduledoc false
+
+  def authorized?(scope, schema, public_scopes \\ [])
 end
 
 defimpl Boruta.Oauth.Scope.Authorize, for: List do

@@ -27,6 +27,9 @@ defmodule Boruta.Oauth.Scope do
     String.split(scope, " ", trim: true)
   end
 
+  @doc """
+  Returns 'openid' scope
+  """
   @spec openid() :: t()
   def openid do
     %__MODULE__{
@@ -36,6 +39,9 @@ defmodule Boruta.Oauth.Scope do
     }
   end
 
+  @doc """
+  Determines if scope string contains openid scope.
+  """
   @spec contains_openid?(oauth_scope :: String.t()) :: boolean()
   def contains_openid?(scope) when is_binary(scope) do
     String.match?(scope, ~r/#{openid().name}/)
@@ -43,6 +49,9 @@ defmodule Boruta.Oauth.Scope do
 
   def contains_openid?(_scope), do: false
 
+  @doc """
+  Determines if artifact is authorized to access given scope.
+  """
   @spec authorized?(
           against :: List | Boruta.Oauth.Token.t() | Boruta.Oauth.Client.t(),
           scope :: String.t()
@@ -52,6 +61,5 @@ defmodule Boruta.Oauth.Scope do
           scope :: String.t(),
           public_scopes :: list()
         ) :: boolean()
-  defdelegate authorized?(against, scope), to: __MODULE__.Authorize
-  defdelegate authorized?(against, scope, public_scopes), to: __MODULE__.Authorize
+  defdelegate authorized?(against, scope, public_scopes \\ []), to: __MODULE__.Authorize
 end

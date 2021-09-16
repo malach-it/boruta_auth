@@ -14,7 +14,7 @@ And specification from OpenID Connect:
 - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
 
-This package helps to create an authorization server implementing authorization code, implicit, client credentials and resource owner password credentials grants from OAuth and the additions to be OpenID Connect compliant.
+This package is meant to help to provide OAuth 2.0/OpenID Connect to your applications implementing part or all of authorization code, implicit, hybrid, client credentials, or resource owner password credentials grants. It also helps introspecting and revoking tokens.
 
 ## Documentation
 Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
@@ -33,7 +33,7 @@ mix boruta.gen.migration
 
 2. Implement ResourceOwners context _(optional)_
 
-In order to have user flows working, You need to implement `Boruta.Oauth.ResourceOwners`.
+In order to have user flows operational, You need to implement `Boruta.Oauth.ResourceOwners` behaviour.
 
 Here is an example implementation:
 ```elixir
@@ -73,7 +73,7 @@ end
 
 3. Configuration
 
-Boruta provides several configuration options, to customize them you can add configurations in `config.exs` as following
+Boruta provides several configuration options that you can customize in `config.exs`. Those have following default values:
 ```elixir
 config :boruta, Boruta.Oauth,
   repo: MyApp.Repo, # mandatory
@@ -87,7 +87,9 @@ config :boruta, Boruta.Oauth,
   ],
   max_ttl: [
     authorization_code: 60,
-    access_token: 60 * 60 * 24
+    access_token: 60 * 60 * 24,
+    id_token: 60 * 60 * 24,
+    refresh_token: 60 * 60 * 24 * 30
   ],
   token_generator: Boruta.TokenGenerator
 ```
