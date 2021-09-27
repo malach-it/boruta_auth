@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+  ### Added
+    - `public_revoke` per client configuration allowing to revoke tokens without providing client secret.
+    - `introspect` and `revoke` supported grant types per client configuration.
 ## [1.2.0]
   ### Added
     - `public_refresh_token` per client configuration allowing to refresh tokens without providing client secret.
