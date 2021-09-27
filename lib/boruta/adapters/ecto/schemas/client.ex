@@ -39,7 +39,9 @@ defmodule Boruta.Ecto.Client do
     "password",
     "authorization_code",
     "refresh_token",
-    "implicit"
+    "implicit",
+    "revoke",
+    "introspect"
   ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -52,13 +54,7 @@ defmodule Boruta.Ecto.Client do
     field(:redirect_uris, {:array, :string}, default: [])
 
     field(:supported_grant_types, {:array, :string},
-      default: [
-        "client_credentials",
-        "password",
-        "authorization_code",
-        "refresh_token",
-        "implicit"
-      ]
+      default: @grant_types
     )
 
     field(:pkce, :boolean, default: false)

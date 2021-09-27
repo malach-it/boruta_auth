@@ -28,7 +28,7 @@ defmodule Boruta.Oauth.Introspect do
   {:ok, token :: Token.t()} |
   {:error , error :: Error.t()}
   def token(%IntrospectRequest{client_id: client_id, client_secret: client_secret, token: token}) do
-    with {:ok, _client} <- Authorization.Client.authorize(id: client_id, secret: client_secret),
+    with {:ok, _client} <- Authorization.Client.authorize(id: client_id, secret: client_secret, grant_type: "introspect"),
          {:ok, token} <- Authorization.AccessToken.authorize(value: token) do
       {:ok, token}
     else
