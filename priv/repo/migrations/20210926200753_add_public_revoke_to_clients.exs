@@ -3,7 +3,7 @@ defmodule Boruta.Repo.Migrations.AddPublicRevokeToClients do
 
   def change do
     alter table(:clients) do
-      add :public_revoke, :boolean, default: false
+      add :public_revoke, :boolean, null: false, default: false
     end
   end
 end

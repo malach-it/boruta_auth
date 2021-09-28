@@ -68,7 +68,20 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
         add(:redirect_uris, {:array, :string}, default: [], null: false)
         add(:scope, :string)
         add(:authorize_scope, :boolean, default: false, null: false)
-        add(:supported_grant_types, {:array, :string}, default: [], null: false)
+        add(
+          :supported_grant_types,
+          {:array, :string},
+          default: [
+            "client_credentials",
+            "password",
+            "authorization_code",
+            "refresh_token",
+            "implicit",
+            "revoke",
+            "introspect"
+          ],
+          null: false
+        )
         add(:authorization_code_ttl, :integer, null: false)
         add(:access_token_ttl, :integer, null: false)
         add(:refresh_token_ttl, :integer, null: false)
