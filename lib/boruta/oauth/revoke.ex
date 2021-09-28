@@ -30,7 +30,7 @@ defmodule Boruta.Oauth.Revoke do
     token: value,
     token_type_hint: token_type_hint
   }) do
-    with {:ok, _client} <- Authorization.Client.authorize(id: client_id, secret: client_secret) do
+    with {:ok, _client} <- Authorization.Client.authorize(id: client_id, secret: client_secret, grant_type: "revoke") do
       token = case token_type_hint do
         "refresh_token" ->
           with nil <- Boruta.AccessTokensAdapter.get_by(value: value),

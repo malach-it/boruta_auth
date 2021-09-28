@@ -26,6 +26,7 @@ defmodule Boruta.Ecto.Client do
           supported_grant_types: list(String.t()),
           pkce: boolean(),
           public_refresh_token: boolean(),
+          public_revoke: boolean(),
           access_token_ttl: integer(),
           authorization_code_ttl: integer(),
           refresh_token_ttl: integer(),
@@ -39,7 +40,9 @@ defmodule Boruta.Ecto.Client do
     "password",
     "authorization_code",
     "refresh_token",
-    "implicit"
+    "implicit",
+    "revoke",
+    "introspect"
   ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -52,17 +55,12 @@ defmodule Boruta.Ecto.Client do
     field(:redirect_uris, {:array, :string}, default: [])
 
     field(:supported_grant_types, {:array, :string},
-      default: [
-        "client_credentials",
-        "password",
-        "authorization_code",
-        "refresh_token",
-        "implicit"
-      ]
+      default: @grant_types
     )
 
     field(:pkce, :boolean, default: false)
     field(:public_refresh_token, :boolean, default: false)
+    field(:public_revoke, :boolean, default: false)
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
@@ -88,7 +86,8 @@ defmodule Boruta.Ecto.Client do
       :authorize_scope,
       :supported_grant_types,
       :pkce,
-      :public_refresh_token
+      :public_refresh_token,
+      :public_revoke
     ])
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
@@ -112,7 +111,8 @@ defmodule Boruta.Ecto.Client do
       :authorize_scope,
       :supported_grant_types,
       :pkce,
-      :public_refresh_token
+      :public_refresh_token,
+      :public_revoke
     ])
     |> validate_required([:authorization_code_ttl, :access_token_ttl, :refresh_token_ttl])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
