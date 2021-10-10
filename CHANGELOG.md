@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ### Added
     - `public_revoke` per client configuration allowing to revoke tokens without providing client secret.
     - `introspect` and `revoke` supported grant types per client configuration.
+  ### Security
+    - remove redirect_uris regex pattern check
 ## [1.2.0]
   ### Added
     - `public_refresh_token` per client configuration allowing to refresh tokens without providing client secret.
