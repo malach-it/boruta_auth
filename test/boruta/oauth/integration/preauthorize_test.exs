@@ -18,7 +18,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
-      client_with_regex = insert(:client, redirect_uris: ["https://(.+).uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
       client_with_scope =
@@ -31,7 +30,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       {:ok,
        client: client,
        client_with_scope: client_with_scope,
-       client_with_regex: client_with_regex,
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner}
     end
@@ -123,41 +121,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-
-      redirect_uri = List.first(client.redirect_uris)
-
-      case Oauth.preauthorize(
-             %Plug.Conn{
-               query_params: %{
-                 "response_type" => "token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:preauthorize_success,
-         %AuthorizationSuccess{
-           client: authorized_client,
-           redirect_uri: authorized_redirect_uri,
-           sub: authorized_sub
-         }} ->
-          assert authorized_client.id == client.id
-          assert authorized_redirect_uri == redirect_uri
-          assert authorized_sub == resource_owner.sub
-
-        _ ->
-          assert false
-      end
-    end
-
-    test "returns a token with regexes", %{
-      client_with_regex: client,
-      resource_owner: resource_owner
-    } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 

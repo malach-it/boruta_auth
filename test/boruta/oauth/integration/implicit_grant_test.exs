@@ -18,7 +18,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
-      client_with_regex = insert(:client, redirect_uris: ["https://(.+).uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
       client_with_scope = insert(:client,
         redirect_uris: ["https://redirect.uri"],
@@ -28,7 +27,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       {:ok,
         client: client,
         client_with_scope: client_with_scope,
-        client_with_regex: client_with_regex,
         client_without_grant_type: client_without_grant_type,
         resource_owner: resource_owner
       }
@@ -111,37 +109,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> stub(:get_by, fn (_params) -> {:ok, resource_owner} end)
-      redirect_uri = List.first(client.redirect_uris)
-
-      case Oauth.authorize(
-        %Plug.Conn{
-          query_params: %{
-            "response_type" => "token",
-            "client_id" => client.id,
-            "redirect_uri" => redirect_uri
-          }
-        },
-        resource_owner,
-        ApplicationMock
-      ) do
-        {:authorize_success,
-          %AuthorizeResponse{
-            type: type,
-            value: value,
-            expires_in: expires_in
-          }
-        } ->
-          assert type == "access_token"
-          assert value
-          assert expires_in
-        _ ->
-          assert false
-      end
-    end
-
-    test "returns a token with regexes", %{client_with_regex: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn (_params) -> {:ok, resource_owner} end)
       redirect_uri = List.first(client.redirect_uris)
