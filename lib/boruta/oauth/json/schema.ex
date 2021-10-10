@@ -145,7 +145,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "token_type_hint" => %{"type" => "string", "pattern" => "^(access_token|refresh_token)$"},
         "token" => %{"type" => "string"}
       },
-      "required" => ["client_id", "client_secret", "token"]
+      "required" => ["client_id", "token"]
     } |> Schema.resolve
   end
 

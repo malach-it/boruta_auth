@@ -34,17 +34,40 @@ defmodule Boruta.Oauth.Authorization.Client do
                :redirect_uri => nil,
                :status => :unauthorized
              }}
-  def authorize(id: id, secret: secret) when not is_nil(id) and not is_nil(secret) do
-    case ClientsAdapter.get_by(id: id, secret: secret) do
-      %Client{} = client ->
-        {:ok, client}
+  def authorize(id: id, secret: secret, grant_type: "revoke")
+      when not is_nil(id) do
+    with %Client{} = client <- ClientsAdapter.get_by(id: id),
+         true <- Client.grant_type_supported?(client, "revoke") do
+      case {Client.public_revoke?(client), Client.check_secret(client, secret)} do
+        {true, _} ->
+          {:ok, client}
 
+        {false, :ok} ->
+          {:ok, client}
+
+        {false, _} ->
+          {:error,
+           %Error{
+             status: :unauthorized,
+             error: :invalid_client,
+             error_description: "Invalid client_id or client_secret."
+           }}
+      end
+    else
       nil ->
         {:error,
          %Error{
            status: :unauthorized,
            error: :invalid_client,
            error_description: "Invalid client_id or client_secret."
+         }}
+
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
          }}
     end
   end

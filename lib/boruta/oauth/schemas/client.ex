@@ -17,6 +17,7 @@ defmodule Boruta.Oauth.Client do
             refresh_token_ttl: nil,
             pkce: nil,
             public_refresh_token: nil,
+            public_revoke: nil,
             public_key: nil,
             private_key: nil
 
@@ -34,6 +35,7 @@ defmodule Boruta.Oauth.Client do
           refresh_token_ttl: integer(),
           pkce: boolean(),
           public_refresh_token: boolean(),
+          public_revoke: boolean(),
           public_key: String.t(),
           private_key: String.t()
         }
@@ -54,5 +56,10 @@ defmodule Boruta.Oauth.Client do
   @spec public_refresh_token?(client :: t()) :: boolean()
   def public_refresh_token?(%__MODULE__{public_refresh_token: public_refresh_token}) do
     public_refresh_token
+  end
+
+  @spec public_revoke?(client :: t()) :: boolean()
+  def public_revoke?(%__MODULE__{public_revoke: public_revoke}) do
+    public_revoke
   end
 end

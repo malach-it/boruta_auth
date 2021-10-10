@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) integration
       - hybrid flow
       - authorization code and implicit grants with OpenID Connect compatibility
+    - `public_revoke` per client configuration allowing to revoke tokens without providing client secret.
+    - `introspect` and `revoke` supported grant types per client configuration.
   ### Changed
     - `Boruta.Oauth.AuthorizeResponse` and `Boruta.Oauth.TokenResponse` do not provide token value in `value` field but prefer giving value by token type `code`, `access_token` or `id_token`.
     ```
@@ -34,7 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - codes are revoked after first usage
   ### Fixed
     - `boruta.gen.controllers` generated paths in umbrella apps
-## [Unreleased]
+## [1.2.1]
+  ### Security
+    - remove redirect_uris regex pattern check
 ## [1.2.0]
   ### Added
     - `public_refresh_token` per client configuration allowing to refresh tokens without providing client secret.
