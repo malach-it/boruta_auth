@@ -39,14 +39,16 @@ defmodule Boruta.Oauth do
   @impl true
   def token(%Plug.Conn{} = conn, module) when is_atom(module) do
     with {:ok, request} <- Request.token_request(conn),
-         {:ok, token} <- Authorization.token(request) do
+         {:ok, tokens} <- Authorization.token(request),
+         %TokenResponse{} = response <- TokenResponse.from_token(tokens) do
       module.token_success(
         conn,
-        TokenResponse.from_token(token)
+        response
       )
     else
       {:error, %Error{} = error} ->
         module.token_error(conn, error)
+
       {:error, reason} ->
         %Error{
           status: :internal_server_error,
@@ -75,6 +77,7 @@ defmodule Boruta.Oauth do
         case Request.authorize_request(conn, resource_owner) do
           {:ok, request} ->
             module.preauthorize_error(conn, Error.with_format(error, request))
+
           _ ->
             module.preauthorize_error(conn, error)
         end
@@ -90,20 +93,23 @@ defmodule Boruta.Oauth do
   @impl true
   def authorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module) when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
-         {:ok, token} <- Authorization.token(request) do
+         {:ok, tokens} <- Authorization.token(request),
+         %AuthorizeResponse{} = response <- AuthorizeResponse.from_tokens(tokens) do
       module.authorize_success(
         conn,
-        AuthorizeResponse.from_token(token)
+        response
       )
     else
       {:error, %Error{} = error} ->
         formatted_authorize_error(conn, resource_owner, module, error)
+
       {:error, reason} ->
         error = %Error{
           status: :internal_server_error,
           error: :unknown_error,
           error_description: inspect(reason)
         }
+
         formatted_authorize_error(conn, resource_owner, module, error)
     end
   end
@@ -112,6 +118,7 @@ defmodule Boruta.Oauth do
     case Request.authorize_request(conn, resource_owner) do
       {:ok, request} ->
         module.authorize_error(conn, Error.with_format(error, request))
+
       _ ->
         module.authorize_error(conn, error)
     end
@@ -131,6 +138,7 @@ defmodule Boruta.Oauth do
     else
       {:error, %Error{error: :invalid_access_token} = error} ->
         module.introspect_success(conn, IntrospectResponse.from_error(error))
+
       {:error, %Error{} = error} ->
         module.introspect_error(conn, error)
     end
@@ -150,12 +158,14 @@ defmodule Boruta.Oauth do
     else
       {:error, error} ->
         module.revoke_error(conn, error)
+
       {:error, reason} ->
         error = %Error{
           status: :internal_server_error,
           error: :unknown_error,
           error_description: inspect(reason)
         }
+
         module.revoke_error(conn, error)
     end
   end

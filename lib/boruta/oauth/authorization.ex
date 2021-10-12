@@ -13,7 +13,14 @@ defprotocol Boruta.Oauth.Authorization do
   Creates and returns a token for given request, depending of implementation.
   """
   @spec token(request :: any()) ::
-          {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()} | {:error, Boruta.Oauth.Error.t()}
+          {:ok,
+           Boruta.Oauth.Token.t()
+           | %{
+               (type :: :code | :token | :id_token) =>
+                 token :: Boruta.Oauth.Token.t() | String.t()
+             }}
+          | {:error, reason :: term()}
+          | {:error, Boruta.Oauth.Error.t()}
   def token(request)
 end
 
@@ -22,22 +29,31 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
   Struct encapsulating an authorization success
   """
 
-  defstruct client: nil,
+  @enforce_keys [:client, :scope]
+  defstruct response_types: [],
+            client: nil,
             redirect_uri: nil,
+            resource_owner: nil,
             sub: nil,
             scope: nil,
             state: nil,
+            nonce: nil,
+            code: nil,
             code_challenge: nil,
             code_challenge_method: nil
 
   @type t :: %__MODULE__{
+          response_types: list(String.t()),
           client: Boruta.Oauth.Client.t(),
-          redirect_uri: String.t(),
-          sub: String.t(),
+          code: Boruta.Oauth.Token.t() | nil,
+          redirect_uri: String.t() | nil,
+          sub: String.t() | nil,
+          resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
           scope: String.t(),
-          state: String.t(),
-          code_challenge: String.t(),
-          code_challenge_method: String.t()
+          state: String.t() | nil,
+          nonce: String.t() | nil,
+          code_challenge: String.t() | nil,
+          code_challenge_method: String.t() | nil
         }
 end
 
@@ -67,13 +83,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
 
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, scope: scope}} <- preauthorize(request) do
-      AccessTokensAdapter.create(
-        %{
-          client: client,
-          scope: scope
-        },
-        refresh_token: true
-      )
+      with {:ok, access_token} <-
+             AccessTokensAdapter.create(
+               %{
+                 client: client,
+                 scope: scope
+               },
+               refresh_token: true
+             ) do
+        {:ok, %{token: access_token}}
+      end
     end
   end
 end
@@ -115,24 +134,30 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
            preauthorize(request) do
-      AccessTokensAdapter.create(
-        %{
-          client: client,
-          sub: sub,
-          scope: scope
-        },
-        refresh_token: true
-      )
+      with {:ok, access_token} <-
+             AccessTokensAdapter.create(
+               %{
+                 client: client,
+                 sub: sub,
+                 scope: scope
+               },
+               refresh_token: true
+             ) do
+        {:ok, %{token: access_token}}
+      end
     end
   end
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest do
   alias Boruta.AccessTokensAdapter
+  alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
-  alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.AuthorizationCodeRequest
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
 
   def preauthorize(%AuthorizationCodeRequest{
@@ -161,9 +186,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
       {:ok,
        %AuthorizationSuccess{
          client: client,
+         code: code,
          redirect_uri: redirect_uri,
          sub: sub,
-         scope: code.scope
+         scope: code.scope,
+         nonce: code.nonce
        }}
     end
   end
@@ -172,20 +199,33 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
     with {:ok,
           %AuthorizationSuccess{
             client: client,
+            code: code,
             redirect_uri: redirect_uri,
             sub: sub,
-            scope: scope
+            scope: scope,
+            nonce: nonce
           }} <-
-           preauthorize(request) do
-      AccessTokensAdapter.create(
-        %{
-          client: client,
-          redirect_uri: redirect_uri,
-          sub: sub,
-          scope: scope
-        },
-        refresh_token: true
-      )
+           preauthorize(request),
+         {:ok, access_token} <-
+           AccessTokensAdapter.create(
+             %{
+               client: client,
+               redirect_uri: redirect_uri,
+               sub: sub,
+               scope: scope
+             },
+             refresh_token: true
+           ),
+         {:ok, _code} <- CodesAdapter.revoke(code) do
+      case String.match?(scope, ~r/#{Scope.openid().name}/) do
+        true ->
+          id_token = IdToken.generate(%{token: access_token}, nonce)
+
+          {:ok, %{token: access_token, id_token: id_token}}
+
+        false ->
+          {:ok, %{token: access_token}}
+      end
     end
   end
 end
@@ -194,20 +234,22 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
   alias Boruta.AccessTokensAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
-  alias Boruta.Oauth.TokenRequest
+  alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
+  alias Boruta.Oauth.TokenRequest
 
-  def preauthorize(
-        %TokenRequest{
-          client_id: client_id,
-          redirect_uri: redirect_uri,
-          resource_owner: resource_owner,
-          state: state,
-          scope: scope,
-          grant_type: grant_type
-        }
-      ) do
+  def preauthorize(%TokenRequest{
+        response_types: response_types,
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        resource_owner: resource_owner,
+        state: state,
+        nonce: nonce,
+        scope: scope,
+        grant_type: grant_type
+      } = request) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -220,14 +262,18 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
-           ) do
+           ),
+         :ok <- Authorization.Nonce.authorize(request) do
       {:ok,
        %AuthorizationSuccess{
+         response_types: response_types,
+         resource_owner: resource_owner,
          client: client,
          redirect_uri: redirect_uri,
          sub: sub,
          scope: scope,
-         state: state
+         state: state,
+         nonce: nonce
        }}
     end
   end
@@ -235,22 +281,64 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
   def token(request) do
     with {:ok,
           %AuthorizationSuccess{
+            response_types: response_types,
+            resource_owner: resource_owner,
             client: client,
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
-            state: state
+            state: state,
+            nonce: nonce
           }} <- preauthorize(request) do
-      AccessTokensAdapter.create(
-        %{
-          client: client,
-          redirect_uri: redirect_uri,
-          sub: sub,
-          scope: scope,
-          state: state
-        },
-        refresh_token: false
-      )
+      response_types
+      |> Enum.sort_by(fn response_type -> response_type == "id_token" end)
+      |> Enum.reduce({:ok, %{}}, fn
+        "id_token", {:ok, tokens} when tokens == %{} ->
+          case String.match?(scope, ~r/#{Scope.openid().name}/) do
+            true ->
+              base_token = %Token{
+                type: "base_token",
+                client: client,
+                resource_owner: resource_owner,
+                redirect_uri: redirect_uri,
+                sub: sub,
+                scope: scope,
+                state: state,
+                inserted_at: DateTime.utc_now()
+              }
+
+              id_token = IdToken.generate(%{base_token: base_token}, nonce)
+              {:ok, %{id_token: id_token}}
+
+            false ->
+              {:ok, %{}}
+          end
+
+        "id_token", {:ok, tokens} ->
+          case String.match?(scope, ~r/#{Scope.openid().name}/) do
+            true ->
+              id_token = IdToken.generate(tokens, nonce)
+              {:ok, Map.put(tokens, :id_token, id_token)}
+
+            false ->
+              {:ok, tokens}
+          end
+
+        "token", {:ok, tokens} ->
+          with {:ok, access_token} <-
+                 AccessTokensAdapter.create(
+                   %{
+                     client: client,
+                     redirect_uri: redirect_uri,
+                     sub: sub,
+                     scope: scope,
+                     state: state
+                   },
+                   refresh_token: false
+                 ) do
+            {:ok, Map.put(tokens, :token, access_token)}
+          end
+      end)
     end
   end
 end
@@ -265,16 +353,19 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
-  def preauthorize(%CodeRequest{
-        client_id: client_id,
-        redirect_uri: redirect_uri,
-        resource_owner: resource_owner,
-        state: state,
-        scope: scope,
-        grant_type: grant_type,
-        code_challenge: code_challenge,
-        code_challenge_method: code_challenge_method
-      }) do
+  def preauthorize(
+        %CodeRequest{
+          client_id: client_id,
+          redirect_uri: redirect_uri,
+          resource_owner: resource_owner,
+          state: state,
+          nonce: nonce,
+          scope: scope,
+          grant_type: grant_type,
+          code_challenge: code_challenge,
+          code_challenge_method: code_challenge_method
+        } = request
+      ) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -287,7 +378,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
-           ) do
+           ),
+         :ok <- Authorization.Nonce.authorize(request) do
       case check_code_challenge(client, code_challenge, code_challenge_method) do
         :ok ->
           {:ok,
@@ -297,6 +389,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              sub: sub,
              scope: scope,
              state: state,
+             nonce: nonce,
              code_challenge: code_challenge,
              code_challenge_method: code_challenge_method
            }}
@@ -320,19 +413,24 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             sub: sub,
             scope: scope,
             state: state,
+            nonce: nonce,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method
           }} <-
            preauthorize(request) do
-      CodesAdapter.create(%{
-        client: client,
-        redirect_uri: redirect_uri,
-        sub: sub,
-        scope: scope,
-        state: state,
-        code_challenge: code_challenge,
-        code_challenge_method: code_challenge_method
-      })
+      with {:ok, code} <-
+             CodesAdapter.create(%{
+               client: client,
+               redirect_uri: redirect_uri,
+               sub: sub,
+               scope: scope,
+               state: state,
+               nonce: nonce,
+               code_challenge: code_challenge,
+               code_challenge_method: code_challenge_method
+             }) do
+        {:ok, %{code: code}}
+      end
     end
   end
 
@@ -351,6 +449,95 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
     do: {:error, :invalid_code_challenge}
 
   defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
+end
+
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
+  alias Boruta.AccessTokensAdapter
+  alias Boruta.CodesAdapter
+  alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.CodeRequest
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.HybridRequest
+  alias Boruta.Oauth.IdToken
+  alias Boruta.Oauth.Scope
+  alias Boruta.Oauth.Token
+
+  def preauthorize(%HybridRequest{response_types: response_types} = request) do
+    with {:ok, authorization} <-
+           Authorization.preauthorize(struct(CodeRequest, Map.from_struct(request))) do
+      {:ok, %{authorization | response_types: response_types}}
+    end
+  end
+
+  def token(request) do
+    with {:ok,
+          %AuthorizationSuccess{
+            response_types: response_types,
+            client: client,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            state: state,
+            nonce: nonce,
+            code_challenge: code_challenge,
+            code_challenge_method: code_challenge_method
+          }} <-
+           preauthorize(request) do
+      response_types
+      |> Enum.sort_by(fn response_type -> response_type == "id_token" end)
+      |> Enum.reduce({:ok, %{}}, fn
+        "code", {:ok, tokens} when tokens == %{} ->
+          with {:ok, code} <-
+                 CodesAdapter.create(%{
+                   client: client,
+                   redirect_uri: redirect_uri,
+                   sub: sub,
+                   scope: scope,
+                   state: state,
+                   nonce: nonce,
+                   code_challenge: code_challenge,
+                   code_challenge_method: code_challenge_method
+                 }) do
+            {:ok, Map.put(tokens, :code, code)}
+          end
+
+        "id_token", {:ok, tokens} ->
+          case String.match?(scope, ~r/#{Scope.openid().name}/) do
+            true ->
+              id_token = IdToken.generate(tokens, nonce)
+
+              {:ok, Map.put(tokens, :id_token, id_token)}
+
+            false ->
+              {:ok, tokens}
+          end
+
+        "token", {:ok, tokens} ->
+          with {:ok, access_token} <-
+                 AccessTokensAdapter.create(
+                   %{
+                     client: client,
+                     redirect_uri: redirect_uri,
+                     sub: sub,
+                     scope: scope,
+                     state: state
+                   },
+                   refresh_token: false
+                 ) do
+            {:ok, Map.put(tokens, :token, access_token)}
+          end
+
+        _, error ->
+          {:error,
+           %Error{
+             status: :internal_server_error,
+             error: :internal_server_error,
+             error_description: "An error occured during token creation: inspect(#{error})"
+           }}
+      end)
+    end
+  end
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
@@ -399,14 +586,17 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
   def token(request) do
     with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
            preauthorize(request) do
-      AccessTokensAdapter.create(
-        %{
-          client: client,
-          sub: sub,
-          scope: scope
-        },
-        refresh_token: true
-      )
+      with {:ok, access_token} <-
+             AccessTokensAdapter.create(
+               %{
+                 client: client,
+                 sub: sub,
+                 scope: scope
+               },
+               refresh_token: true
+             ) do
+        {:ok, %{token: access_token}}
+      end
     end
   end
 end

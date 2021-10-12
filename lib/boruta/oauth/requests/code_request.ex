@@ -12,19 +12,32 @@ defmodule Boruta.Oauth.CodeRequest do
           client_id: String.t(),
           redirect_uri: String.t(),
           state: String.t(),
+          nonce: String.t(),
           scope: String.t(),
           resource_owner: struct(),
           grant_type: String.t(),
           code_challenge: String.t(),
-          code_challenge_method: String.t()
+          code_challenge_method: String.t(),
+          response_types: String.t()
         }
-  defstruct client_id: "",
-            redirect_uri: "",
+
+  @enforce_keys [:client_id, :redirect_uri, :resource_owner]
+  defstruct client_id: nil,
+            redirect_uri: nil,
             state: "",
+            nonce: "",
             scope: "",
             resource_owner: nil,
             response_type: "code",
             grant_type: "authorization_code",
             code_challenge: "",
-            code_challenge_method: "plain"
+            code_challenge_method: "plain",
+            response_types: []
+
+  alias Boruta.Oauth.Scope
+
+  @spec require_nonce?(request :: __MODULE__.t()) :: boolean()
+  def require_nonce?(%__MODULE__{response_types: response_types, scope: scope}) do
+    Scope.contains_openid?(scope) && Enum.member?(response_types, "id_token")
+  end
 end

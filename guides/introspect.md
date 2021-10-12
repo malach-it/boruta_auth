@@ -38,7 +38,7 @@ Content-Type: application/json
 ### Code example
 - lib/my_app_web/views/oauth_view.ex
 
-```
+```elixir
 defmodule MyAppWeb.OauthView do
   use MyAppWeb, :view
 
@@ -82,7 +82,7 @@ end
 
 - lib/my_app_web/controllers/oauth_controller.ex
 
-```
+```elixir
 defmodule MyAppWeb.OauthController do
   @behaviour Boruta.Oauth.Application
 
@@ -120,7 +120,7 @@ end
 
 - lib/my_app_web/router.ex
 
-```
+```elixir
 defmodule MyAppWeb.Router do
   use MyAppWeb, :router
 

@@ -6,7 +6,7 @@ services:
   - postgres:latest
 
 .elixir-task:
-  image: elixir:1.10.3-alpine
+  image: elixir:1.11.4-alpine
   cache:
     paths:
     - _build/
@@ -15,6 +15,12 @@ services:
   - mix local.hex --force
   - mix local.rebar --force
   - mix deps.get
+
+compilation:
+  stage: test
+  extends: .elixir-task
+  script:
+  - mix compile --force --warnings-as-errors
 
 dialyzer:
   stage: test

@@ -4,10 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0-rc.1]
   ### Added
+    - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) integration
+      - hybrid flow
+      - authorization code and implicit grants with OpenID Connect compatibility
     - `public_revoke` per client configuration allowing to revoke tokens without providing client secret.
     - `introspect` and `revoke` supported grant types per client configuration.
+  ### Changed
+    - `Boruta.Oauth.AuthorizeResponse` and `Boruta.Oauth.TokenResponse` do not provide token value in `value` field but prefer giving value by token type `code`, `access_token` or `id_token`.
+    ```
+    %AuthorizeResponse{
+       type: "code",
+       value: value,
+       expires_in: 60
+    }
+    ```
+    becomes
+    ```
+    %AuthorizeResponse{
+       type: :code,
+       code: value,
+       expires_in: 60
+    }
+    ```
+    - add nonce column to tokens
+  ### Changed
+    - default column values migrations
+    - migration management `boruta.gen.migrations` does incremental changes
+  ### Security
+    - codes are revoked after first usage
+  ### Fixed
+    - `boruta.gen.controllers` generated paths in umbrella apps
+## [1.2.1]
   ### Security
     - remove redirect_uris regex pattern check
 ## [1.2.0]

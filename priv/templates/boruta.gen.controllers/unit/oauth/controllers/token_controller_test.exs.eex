@@ -1,4 +1,4 @@
-defmodule <%= @web_module %>.Controllers.TokenControllerTest do
+defmodule <%= @web_module %>.Controllers.Oauth.TokenControllerTest do
   use ExUnit.Case, async: true
   import Phoenix.ConnTest
 

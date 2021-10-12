@@ -20,11 +20,7 @@ defmodule Boruta.Oauth.Introspect do
       })
       {:ok, %Token{...}}
   """
-  @spec token(request :: %IntrospectRequest{
-    client_id: String.t(),
-    client_secret: String.t(),
-    token: String.t()
-  }) ::
+  @spec token(request :: IntrospectRequest.t()) ::
   {:ok, token :: Token.t()} |
   {:error , error :: Error.t()}
   def token(%IntrospectRequest{client_id: client_id, client_secret: client_secret, token: token}) do

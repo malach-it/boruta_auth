@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Client do
   OAuth client schema
   """
 
+  @enforce_keys [:id]
   defstruct id: nil,
             name: nil,
             secret: nil,
@@ -11,6 +12,7 @@ defmodule Boruta.Oauth.Client do
             redirect_uris: [],
             supported_grant_types: [],
             access_token_ttl: nil,
+            id_token_ttl: nil,
             authorization_code_ttl: nil,
             refresh_token_ttl: nil,
             pkce: nil,
@@ -28,6 +30,7 @@ defmodule Boruta.Oauth.Client do
           redirect_uris: list(String.t()),
           supported_grant_types: list(String.t()),
           access_token_ttl: integer(),
+          id_token_ttl: integer(),
           authorization_code_ttl: integer(),
           refresh_token_ttl: integer(),
           pkce: boolean(),

@@ -6,10 +6,11 @@ defmodule Boruta.Oauth.Token do
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Token
 
-  defstruct id: nil,
-            type: nil,
+  @enforce_keys [:type]
+  defstruct type: nil,
             value: nil,
             state: nil,
+            nonce: nil,
             scope: nil,
             redirect_uri: nil,
             expires_at: nil,
@@ -23,23 +24,26 @@ defmodule Boruta.Oauth.Token do
             code_challenge_hash: nil,
             code_challenge_method: nil
 
+  # TODO manage nil atribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
           type: String.t(),
-          value: String.t(),
-          state: String.t(),
+          value: String.t() | nil,
+          state: String.t() | nil,
+          nonce: String.t() | nil,
           scope: String.t(),
-          redirect_uri: String.t(),
-          expires_at: integer(),
-          client: Boruta.Oauth.Client.t(),
-          sub: String.t(),
+          redirect_uri: String.t() | nil,
+          expires_at: integer() | nil,
+          client: Boruta.Oauth.Client.t() | nil,
+          sub: String.t() | nil,
           resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
-          refresh_token: String.t(),
-          code_challenge: String.t(),
-          code_challenge_hash: String.t(),
-          code_challenge_method: String.t(),
-          inserted_at: DateTime.t(),
-          revoked_at: DateTime.t()
+          refresh_token: String.t() | nil,
+          code_challenge: String.t() | nil,
+          code_challenge_hash: String.t() | nil,
+          code_challenge_method: String.t() | nil,
+          inserted_at: DateTime.t() | nil,
+          revoked_at: DateTime.t() | nil
         }
+
   @doc """
   Determines if a token is expired
 

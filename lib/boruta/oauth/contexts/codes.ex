@@ -22,4 +22,11 @@ defmodule Boruta.Oauth.Codes do
     :code_challenge => String.t(),
     :code_challenge_method => String.t()
   }) :: code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
+
+  @doc """
+  Revokes the given `Boruta.Oauth.Token`.
+  """
+  @callback revoke(
+    token :: Boruta.Oauth.Token.t()
+  ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 end

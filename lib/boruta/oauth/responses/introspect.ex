@@ -15,6 +15,7 @@ defmodule Boruta.Oauth.IntrospectResponse do
     private_key: String.t()
   }
 
+  @enforce_keys [:active]
   defstruct [
     active: nil,
     client_id: nil,

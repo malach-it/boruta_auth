@@ -1,4 +1,4 @@
-defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
+defmodule <%= @web_module %>.Controllers.Oauth.AuthorizeControllerTest do
   use ExUnit.Case, async: true
   import Plug.Conn
   import Phoenix.ConnTest
@@ -24,11 +24,8 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
   end
 
   describe "authorize/2" do
-    @tag :skip
     test "redirects to user login without current_user", %{conn: conn} do
-      assert_raise RuntimeError, "should redirect to login", fn ->
-        AuthorizeController.authorize(conn, %{})
-      end
+      assert_authorize_redirected_to_login(conn)
     end
 
     test "returns an error page", %{conn: conn} do
@@ -102,9 +99,9 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = assign(conn, :current_user, current_user)
 
       response = %AuthorizeResponse{
-        type: "access_token",
+        type: :token,
         redirect_uri: "http://redirect.uri",
-        value: "value",
+        access_token: "access_token",
         expires_in: 10
       }
 
@@ -116,7 +113,7 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = AuthorizeController.authorize(conn, %{})
 
       assert redirected_to(conn) ==
-               "http://redirect.uri#access_token=value&expires_in=10"
+               "http://redirect.uri#access_token=access_token&expires_in=10"
     end
 
     test "redirects with an access_token and a state", %{conn: conn} do
@@ -124,9 +121,9 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = assign(conn, :current_user, current_user)
 
       response = %AuthorizeResponse{
-        type: "access_token",
+        type: :token,
         redirect_uri: "http://redirect.uri",
-        value: "value",
+        access_token: "access_token",
         expires_in: 10,
         state: "state"
       }
@@ -139,7 +136,7 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = AuthorizeController.authorize(conn, %{})
 
       assert redirected_to(conn) ==
-               "http://redirect.uri#access_token=value&expires_in=10&state=state"
+               "http://redirect.uri#access_token=access_token&expires_in=10&state=state"
     end
 
     test "redirects with an code", %{conn: conn} do
@@ -147,10 +144,9 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = assign(conn, :current_user, current_user)
 
       response = %AuthorizeResponse{
-        type: "code",
+        type: :code,
         redirect_uri: "http://redirect.uri",
-        value: "value",
-        expires_in: 10
+        code: "code"
       }
 
       Boruta.OauthMock
@@ -161,7 +157,7 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = AuthorizeController.authorize(conn, %{})
 
       assert redirected_to(conn) ==
-               "http://redirect.uri?code=value"
+               "http://redirect.uri?code=code"
     end
 
     test "redirects with an code and a state", %{conn: conn} do
@@ -169,10 +165,9 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = assign(conn, :current_user, current_user)
 
       response = %AuthorizeResponse{
-        type: "code",
+        type: :code,
         redirect_uri: "http://redirect.uri",
-        value: "value",
-        expires_in: 10,
+        code: "code",
         state: "state"
       }
 
@@ -184,7 +179,18 @@ defmodule <%= @web_module %>.Controllers.AuthorizeControllerTest do
       conn = AuthorizeController.authorize(conn, %{})
 
       assert redirected_to(conn) ==
-               "http://redirect.uri?code=value&state=state"
+               "http://redirect.uri?code=code&state=state"
     end
+  end
+
+  defp assert_authorize_redirected_to_login(conn) do
+    assert_raise RuntimeError,
+                 """
+                 Here occurs the login process. After login, user may be redirected to
+                 get_session(conn, :user_return_to)
+                 """,
+                 fn ->
+                   AuthorizeController.authorize(conn, %{})
+                 end
   end
 end

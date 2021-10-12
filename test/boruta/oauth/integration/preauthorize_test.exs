@@ -37,7 +37,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
     test "returns an error if `response_type` is 'token' and schema is invalid" do
       assert Oauth.preauthorize(
                %Plug.Conn{query_params: %{"response_type" => "token"}},
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:preauthorize_error,
@@ -58,7 +58,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
                    "redirect_uri" => "http://redirect.uri"
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:preauthorize_error,
@@ -80,7 +80,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
                    "redirect_uri" => "http://bad.redirect.uri"
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:preauthorize_error,
@@ -94,9 +94,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
     end
 
     test "returns an error if user is invalid", %{client: client} do
-      ResourceOwners
-      |> stub(:get_by, fn _params -> {:error, "Resourceowner not found"} end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.preauthorize(
@@ -107,7 +104,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
                    "redirect_uri" => redirect_uri
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: nil},
                ApplicationMock
              ) ==
                {:preauthorize_error,

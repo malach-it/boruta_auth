@@ -70,18 +70,16 @@ defmodule Boruta.Ecto.AdminTest do
       assert secret
     end
 
-    test "creates a client with an authorization_code ttl" do
-      authorization_code_ttl = 10
+    test "creates a client with token ttls" do
+      {:ok, %Client{
+        access_token_ttl: access_token_ttl,
+        authorization_code_ttl: authorization_code_ttl,
+        id_token_ttl: id_token_ttl
+      }} = Admin.create_client(@client_valid_attrs)
 
-      assert {:ok, %Client{authorization_code_ttl: ^authorization_code_ttl}} =
-               Admin.create_client(%{authorization_code_ttl: authorization_code_ttl})
-    end
-
-    test "creates a client with an access_token ttl" do
-      access_token_ttl = 10
-
-      assert {:ok, %Client{access_token_ttl: ^access_token_ttl}} =
-               Admin.create_client(%{access_token_ttl: access_token_ttl})
+      assert access_token_ttl
+      assert authorization_code_ttl
+      assert id_token_ttl
     end
 
     test "creates a client with authorized scopes" do

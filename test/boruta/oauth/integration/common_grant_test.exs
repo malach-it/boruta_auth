@@ -47,7 +47,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
 
   describe "authorize request" do
     test "returns an error without params" do
-      assert Oauth.authorize(%Plug.Conn{}, %ResourceOwner{}, ApplicationMock) ==
+      assert Oauth.authorize(%Plug.Conn{}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -58,7 +58,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
     end
 
     test "returns an error with empty params" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{}, ApplicationMock) ==
+      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -71,14 +71,14 @@ defmodule Boruta.OauthTest.CommonGrantTest do
     test "returns an error with invalid response_type" do
       assert Oauth.authorize(
                %Plug.Conn{query_params: %{"response_type" => "boom"}},
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Query params validation failed. #/response_type do match required pattern /^(token|code)$/.",
+                    "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token` for Hybrid requests and `token` or `id_token token` for Implicit requests.",
                   status: :bad_request
                 }}
     end

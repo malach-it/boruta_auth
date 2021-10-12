@@ -35,6 +35,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
 
     public_scopes =
       ScopesAdapter.public()
+      |> List.insert_at(0, Scope.openid())
       |> Enum.map(fn scope -> scope.name end)
 
     against = Map.put(against, :public, public_scopes)

@@ -6,7 +6,7 @@ defmodule Boruta.MixProject do
       name: "Boruta core",
       app: :boruta,
       version: "1.2.0",
-      elixir: "~> 1.5",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -32,8 +32,8 @@ defmodule Boruta.MixProject do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "priv/boruta", "test/support"]
+  defp elixirc_paths(_), do: ["lib", "priv/boruta"]
 
   # Specifies your project dependencies.
   #
@@ -46,6 +46,7 @@ defmodule Boruta.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
+      {:joken, "~> 2.0"},
       {:jose, "~> 1.11"},
       {:mox, "~> 0.5", only: :test},
       {:nebulex, "~> 2.0.0"},
@@ -64,65 +65,65 @@ defmodule Boruta.MixProject do
       source_url: "https://gitlab.com/patatoid/boruta-core",
       extras: [
         "README.md",
-        "guides/client_credentials.md",
-        "guides/resource_owner_password_credentials.md",
-        "guides/authorization_code.md",
-        "guides/implicit.md",
-        "guides/introspect.md",
-        "guides/revoke.md"
+        "guides/pkce.md"
       ],
       groups_for_modules: [
-        "Applications": [
+        Applications: [
           Boruta.Oauth.AuthorizeApplication,
           Boruta.Oauth.TokenApplication,
           Boruta.Oauth.IntrospectApplication,
           Boruta.Oauth.RevokeApplication
         ],
-        "Responses": [
+        Responses: [
           Boruta.Oauth.AuthorizeResponse,
           Boruta.Oauth.TokenResponse,
           Boruta.Oauth.IntrospectResponse
         ],
-        "Authorization": [
+        Authorization: [
           Boruta.Oauth.Authorization,
           Boruta.Oauth.Authorization.AccessToken,
           Boruta.Oauth.Authorization.Client,
           Boruta.Oauth.Authorization.Code,
+          Boruta.Oauth.Authorization.Nonce,
           Boruta.Oauth.Authorization.ResourceOwner,
           Boruta.Oauth.Authorization.Scope,
           Boruta.Oauth.AuthorizationSuccess
         ],
-        "Introspection": [
+        Introspection: [
           Boruta.Oauth.Introspect
         ],
-        "Revocation": [
+        Revocation: [
           Boruta.Oauth.Revoke
         ],
-        "Contexts": [
+        Contexts: [
           Boruta.Oauth.AccessTokens,
           Boruta.Oauth.Clients,
           Boruta.Oauth.Codes,
           Boruta.Oauth.ResourceOwners,
-          Boruta.Oauth.Scopes,
+          Boruta.Oauth.Scopes
         ],
-        "Schemas": [
+        Schemas: [
           Boruta.Oauth.Token,
+          Boruta.Oauth.IdToken,
           Boruta.Oauth.Client,
           Boruta.Oauth.Scope,
           Boruta.Oauth.ResourceOwner
         ],
         "OAuth request": [
-          Boruta.Oauth.TokenRequest,
-          Boruta.Oauth.PasswordRequest,
           Boruta.Oauth.AuthorizationCodeRequest,
           Boruta.Oauth.ClientCredentialsRequest,
           Boruta.Oauth.CodeRequest,
+          Boruta.Oauth.HybridRequest,
           Boruta.Oauth.IntrospectRequest,
+          Boruta.Oauth.PasswordRequest,
           Boruta.Oauth.RefreshTokenRequest,
           Boruta.Oauth.RevokeRequest,
+          Boruta.Oauth.TokenRequest,
           Boruta.Oauth.Request
         ],
         "Ecto Adapter": [
+          Boruta.Cache,
+          Boruta.Cache.Primary,
           Boruta.AccessTokensAdapter,
           Boruta.CodesAdapter,
           Boruta.ClientsAdapter,
@@ -134,19 +135,18 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.Client,
           Boruta.Ecto.Scope
         ],
-        "Admin": [
+        Admin: [
           Boruta.Ecto.Admin.Tokens,
           Boruta.Ecto.Admin.Clients,
           Boruta.Ecto.Admin.Scopes,
           Boruta.Ecto.Admin.Users
         ],
-        "Utilities": [
+        Utilities: [
           Boruta.BasicAuth,
           Boruta.Oauth.Validator,
-          Boruta.Oauth.TokenGenerator,
-          Boruta.Cache.Primary
+          Boruta.Oauth.TokenGenerator
         ],
-        "Errors": [
+        Errors: [
           Boruta.Oauth.Error
         ]
       ]

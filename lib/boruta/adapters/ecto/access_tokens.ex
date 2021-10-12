@@ -10,7 +10,6 @@ defmodule Boruta.Ecto.AccessTokens do
   alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
-  alias Ecto.Changeset
 
   @impl Boruta.Oauth.AccessTokens
   def get_by(attrs) do
@@ -83,11 +82,9 @@ defmodule Boruta.Ecto.AccessTokens do
 
   @impl Boruta.Oauth.AccessTokens
   def revoke(%Oauth.Token{value: value}) do
-    now = DateTime.utc_now()
-
     with {:ok, token} <-
            repo().get_by(Token, value: value)
-           |> Changeset.change(revoked_at: now)
+           |> Token.revoke_changeset()
            |> repo().update(),
          {:ok, token} <- TokenStore.invalidate(to_oauth_schema(token)) do
       {:ok, token}

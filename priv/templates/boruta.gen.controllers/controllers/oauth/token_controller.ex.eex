@@ -16,6 +16,8 @@ defmodule <%= @web_module %>.Oauth.TokenController do
   @impl Boruta.Oauth.TokenApplication
   def token_success(conn, %TokenResponse{} = response) do
     conn
+    |> put_resp_header("pragma", "no-cache")
+    |> put_resp_header("cache-control", "no-store")
     |> put_view(OauthView)
     |> render("token.json", response: response)
   end

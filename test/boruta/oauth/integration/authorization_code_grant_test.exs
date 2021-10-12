@@ -10,6 +10,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenResponse
@@ -44,7 +45,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `response_type` is 'code' and schema is invalid" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{"response_type" => "code"}}, %ResourceOwner{}, ApplicationMock) ==
+      assert Oauth.authorize(%Plug.Conn{query_params: %{"response_type" => "code"}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -63,7 +64,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    "redirect_uri" => "http://redirect.uri"
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -85,7 +86,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    "redirect_uri" => "http://bad.redirect.uri"
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -109,7 +110,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    "redirect_uri" => redirect_uri
                  }
                },
-               %ResourceOwner{},
+               %ResourceOwner{sub: nil},
                ApplicationMock
              ) ==
                {:authorize_error,
@@ -125,7 +126,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -143,10 +144,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           value: value,
+           code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -155,10 +156,34 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      Oauth.authorize(
+        %Plug.Conn{
+          query_params: %{
+            "response_type" => "code",
+            "client_id" => client.id,
+            "redirect_uri" => redirect_uri,
+            "nonce" => nonce
+          }
+        },
+        resource_owner,
+        ApplicationMock
+      )
+
+      assert %Ecto.Token{nonce: ^nonce} = Repo.get_by(Ecto.Token, type: "code")
+    end
+
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
@@ -178,10 +203,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           value: value,
+           code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -193,7 +218,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns an error with private scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "private"
       redirect_uri = List.first(client.redirect_uris)
@@ -226,7 +251,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
@@ -246,10 +271,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           value: value,
+           code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -263,9 +288,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       given_scope = %Scope{name: "resource_owner:scope"}
+
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [given_scope] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [given_scope] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -284,10 +310,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           value: value,
+           code: value,
            expires_in: expires_in
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
 
@@ -302,7 +328,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "bad_scope"
       redirect_uri = List.first(client.redirect_uris)
@@ -360,7 +386,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code with state", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
@@ -380,11 +406,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           value: value,
+           code: value,
            expires_in: expires_in,
            state: state
          }} ->
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
           assert state == given_state
@@ -400,7 +426,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
@@ -423,7 +449,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  error_description: "Code challenge is invalid.",
                  format: :query,
                  redirect_uri: "https://redirect.uri",
-                 status: :bad_request
+                 status: :bad_request,
+                 state: given_state
                }
              }
     end
@@ -434,7 +461,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       given_code_challenge = "code challenge"
@@ -458,7 +485,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           value: value,
+           code: value,
            expires_in: expires_in,
            state: state,
            code_challenge: code_challenge,
@@ -474,7 +501,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert repo_code_challenge_method == "S256"
           assert String.length(repo_code_challenge_hash) == 128
 
-          assert type == "code"
+          assert type == :code
           assert value
           assert expires_in
           assert state == given_state
@@ -492,7 +519,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       given_code_challenge = "code challenge"
@@ -513,7 +540,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            ) do
         {:authorize_success,
          %AuthorizeResponse{
-           value: value
+           code: value
          }} ->
           %Ecto.Token{
             code_challenge_method: repo_code_challenge_method,
@@ -557,7 +584,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            ) do
         {:authorize_success,
          %AuthorizeResponse{
-           value: value
+           code: value
          }} ->
           %Ecto.Token{
             code_challenge_method: repo_code_challenge_method,
@@ -587,6 +614,17 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris)
+        )
+
+      openid_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          scope: "openid",
+          nonce: "nonce"
         )
 
       pkce_code =
@@ -649,6 +687,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
        code: code,
+       openid_code: openid_code,
        pkce_code: pkce_code,
        pkce_code_s256: pkce_code_s256,
        bad_redirect_uri_code: bad_redirect_uri_code,
@@ -817,7 +856,109 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
-    test "returns a token from cache", %{client: client, code: code, resource_owner: resource_owner} do
+    test "returns an error if token is used twice", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      Oauth.token(
+        %Plug.Conn{
+          body_params: %{
+            "grant_type" => "authorization_code",
+            "client_id" => client.id,
+            "code" => code.value,
+            "redirect_uri" => redirect_uri
+          }
+        },
+        ApplicationMock
+      )
+
+      assert {:token_error,
+              %Error{
+                error: :invalid_grant,
+                error_description: "Given authorization code is invalid.",
+                status: :bad_request
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "returns a token and an id_token with openid scope", %{
+      client: client,
+      openid_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> stub(:claims, fn _sub, _scope -> %{} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           id_token: id_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert id_token
+          assert expires_in
+          assert refresh_token
+
+          signer =
+            Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+          {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
+          client_id = client.id
+          resource_owner_id = resource_owner.sub
+          nonce = code.nonce
+
+          assert %{
+                   "aud" => ^client_id,
+                   "iat" => _iat,
+                   "exp" => _exp,
+                   "sub" => ^resource_owner_id,
+                   "nonce" => ^nonce
+                 } = claims
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a token from cache", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
 

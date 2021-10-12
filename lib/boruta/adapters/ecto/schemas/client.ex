@@ -14,6 +14,7 @@ defmodule Boruta.Ecto.Client do
       repo: 0,
       access_token_max_ttl: 0,
       authorization_code_max_ttl: 0,
+      id_token_max_ttl: 0,
       refresh_token_max_ttl: 0
     ]
 
@@ -31,6 +32,7 @@ defmodule Boruta.Ecto.Client do
           authorization_code_ttl: integer(),
           refresh_token_ttl: integer(),
           authorized_scopes: Ecto.Association.NotLoaded.t() | list(Scope.t()),
+          id_token_ttl: integer(),
           public_key: list(String.t()),
           private_key: list(String.t())
         }
@@ -48,7 +50,7 @@ defmodule Boruta.Ecto.Client do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
-  schema "clients" do
+  schema "oauth_clients" do
     field(:name, :string)
     field(:secret, :string)
     field(:authorize_scope, :boolean, default: false)
@@ -64,12 +66,13 @@ defmodule Boruta.Ecto.Client do
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
+    field(:id_token_ttl, :integer)
     field(:refresh_token_ttl, :integer)
 
     field(:public_key, :string)
     field(:private_key, :string)
 
-    many_to_many :authorized_scopes, Scope, join_through: "clients_scopes", on_replace: :delete
+    many_to_many :authorized_scopes, Scope, join_through: "oauth_clients_scopes", on_replace: :delete
 
     timestamps()
   end
@@ -82,6 +85,7 @@ defmodule Boruta.Ecto.Client do
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
+      :id_token_ttl,
       :redirect_uris,
       :authorize_scope,
       :supported_grant_types,
@@ -91,6 +95,7 @@ defmodule Boruta.Ecto.Client do
     ])
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
+    |> change_id_token_ttl()
     |> change_refresh_token_ttl()
     |> validate_redirect_uris
     |> validate_supported_grant_types()
@@ -107,6 +112,7 @@ defmodule Boruta.Ecto.Client do
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
+      :id_token_ttl,
       :redirect_uris,
       :authorize_scope,
       :supported_grant_types,
@@ -147,6 +153,15 @@ defmodule Boruta.Ecto.Client do
         validate_inclusion(changeset, :refresh_token_ttl, 1..refresh_token_max_ttl())
       :error ->
         put_change(changeset, :refresh_token_ttl, refresh_token_max_ttl())
+    end
+  end
+
+  defp change_id_token_ttl(changeset) do
+    case fetch_change(changeset, :id_token_ttl) do
+      {:ok, _id_token_ttl} ->
+        validate_inclusion(changeset, :id_token_ttl, 1..id_token_max_ttl())
+      :error ->
+        put_change(changeset, :id_token_ttl, id_token_max_ttl())
     end
   end
 
