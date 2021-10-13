@@ -35,7 +35,7 @@ code_challenge = :crypto.hash(:sha256, code_verifier) |> Base.url_encode64(paddi
 
 # Then we are ready to build your URL.
 
-url = "http://localhost:4000/oauth/authorize?response_type=code&client_id=#{client_id}&redirect_uri=http://localhost:4000&state=#{state}&code_challenge=#{code_challenge}=&code_challenge_method=#{code_challenge_method}"
+url = "http://localhost:4000/oauth/authorize?response_type=code&client_id=#{client_id}&redirect_uri=http://localhost:4000&state=#{state}&code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}"
 
 "http://localhost:4000/oauth/authorize?response_type=code&client_id=client-id&redirect_uri=http://localhost:4000&state=a-random-verifiable-state-on-client&code_challenge=PdSbV6nNRlruDAqmULREHO_pLwfmNnNGA-HGIjmc6VA==&code_challenge_method=S256"
 
