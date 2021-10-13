@@ -71,11 +71,11 @@ defmodule Boruta.Ecto.Codes do
   defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_code_changeset
 
   @impl Boruta.Oauth.Codes
-  def revoke(%Oauth.Token{value: value}) do
+  def revoke(%Oauth.Token{value: value} = code) do
     with %Ecto.Token{} = token <- repo().get_by(Ecto.Token, value: value),
            {:ok, token} <- Ecto.Token.revoke_changeset(token)
            |> repo().update(),
-         {:ok, token} <- TokenStore.invalidate(to_oauth_schema(token)) do
+         {:ok, _token} <- TokenStore.invalidate(code) do
       {:ok, token}
     else
       nil -> {:error, "Code not found."}

@@ -123,8 +123,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns a code and a token without a nonce", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -157,8 +157,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "creates a code with a nonce", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -181,8 +181,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns an error without a nonce", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -212,9 +212,9 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -245,9 +245,9 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -299,9 +299,9 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -352,8 +352,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
@@ -384,8 +384,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns an error with private scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "private"
       redirect_uri = List.first(client.redirect_uris)
@@ -416,8 +416,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
@@ -453,8 +453,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       given_scope = %Scope{name: "resource_owner:scope"}
 
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [given_scope] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [given_scope] end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -487,8 +487,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "bad_scope"
       redirect_uri = List.first(client.redirect_uris)
@@ -543,8 +543,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
     test "returns a code with state", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
@@ -580,8 +580,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
@@ -614,8 +614,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       given_code_challenge = "code challenge"
@@ -669,8 +669,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       given_code_challenge = "code challenge"
