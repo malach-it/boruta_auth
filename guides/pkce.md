@@ -25,7 +25,7 @@ code_verifier = "a-strong-random-string"
 state = "a-random-verifiable-state-on-client"
 # When the code challenge method is S256, we must follow the standard code_challenge = BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
 code_challenge_method = "S256"
-code_challenge = :crypto.hash(:sha256, code_verifier) |> Base.url_encode64()
+code_challenge = :crypto.hash(:sha256, code_verifier) |> Base.url_encode64(padding: false)
 # Only if our client does not support sha256 crypto it goes through the plain method. Then code_challenge = code_verifier
 #
 # Keep in mind that it must be used only if your architecture does not support Sha256 crypto. otherwise use it.
