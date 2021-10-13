@@ -52,14 +52,14 @@ defmodule Boruta.Oauth.Scope do
   @doc """
   Determines if artifact is authorized to access given scope.
   """
-  @spec authorized?(
+  @spec authorized_scopes(
           against :: List | Boruta.Oauth.Token.t() | Boruta.Oauth.Client.t(),
-          scope :: String.t()
-        ) :: boolean()
-  @spec authorized?(
+          scopes :: list(String.t()),
+          public_scopes :: list(String.t())
+        ) :: authorized_scopes :: list(String.t())
+  @spec authorized_scopes(
           against :: List | Boruta.Oauth.Token.t() | Boruta.Oauth.Client.t(),
-          scope :: String.t(),
-          public_scopes :: list()
-        ) :: boolean()
-  defdelegate authorized?(against, scope, public_scopes \\ []), to: __MODULE__.Authorize
+          scopes :: list(String.t())
+        ) :: authorized_scopes :: list(String.t())
+  defdelegate authorized_scopes(against, scopes, public_scopes \\ []), to: __MODULE__.Authorize
 end

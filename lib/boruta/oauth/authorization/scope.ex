@@ -40,7 +40,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
 
     against = Map.put(against, :public, public_scopes)
 
-    authorized_scopes = authorized_scopes(scopes, against, [])
+    authorized_scopes = authorized_scopes(scopes, against)
 
     case Enum.empty?(scopes -- authorized_scopes) do
       true ->
@@ -57,28 +57,16 @@ defmodule Boruta.Oauth.Authorization.Scope do
     end
   end
 
-  defp authorized_scopes([], _against, authorized_scopes), do: authorized_scopes
-
-  defp authorized_scopes(scopes, against, authorized_scopes) do
-    [current_scope | scopes] = scopes
-
-    case authorized?(current_scope, against) do
-      true ->
-        authorized_scopes(scopes, against, authorized_scopes ++ [current_scope])
-
-      false ->
-        authorized_scopes(scopes, against, authorized_scopes)
-    end
-  end
-
-  defp authorized?(scope, against) do
+  defp authorized_scopes(scopes, against) do
     against
-    |> Enum.reduce(false, fn
-      {:token, schema}, _acc ->
-        Scope.authorized?(schema, scope)
+    |> Enum.reduce([], fn
+      {:token, token}, _acc ->
+        Scope.authorized_scopes(token, scopes)
 
       {_type, schema}, acc ->
-        acc || Scope.authorized?(schema, scope, against[:public])
+        current = Scope.authorized_scopes(schema, scopes, against[:public])
+
+        Enum.uniq(current ++ acc)
     end)
   end
 end
