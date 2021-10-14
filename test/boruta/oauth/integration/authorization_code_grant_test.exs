@@ -639,7 +639,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           code_challenge_method: "plain"
         )
 
-      given_code_challenge = :crypto.hash(:sha256, "strong random challenge me from client") |> Base.url_encode64()
+      given_code_challenge = :crypto.hash(:sha256, "strong random challenge me from client") |> Base.url_encode64(padding: false)
       pkce_code_s256 =
         insert(
           :token,

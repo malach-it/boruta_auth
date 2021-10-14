@@ -92,7 +92,7 @@ defmodule Boruta.Oauth.Authorization.Code do
          code_challenge_hash: code_challenge_hash,
          code_challenge_method: "S256"
   }, code_verifier) do
-    case :crypto.hash(:sha256, code_verifier) |> Base.url_encode64() |> Token.hash() == code_challenge_hash do
+    case :crypto.hash(:sha256, code_verifier) |> Base.url_encode64(padding: false) |> Token.hash() == code_challenge_hash do
       true -> :ok
       false -> {:error, :invalid_code_verifier}
     end
