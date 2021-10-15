@@ -111,7 +111,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -144,7 +144,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -175,9 +175,9 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn _sub, _scope -> %{} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn _sub, _scope -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -207,9 +207,9 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn _sub, _scope -> %{} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn _sub, _scope -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -260,7 +260,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -294,9 +294,9 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
-      |> stub(:claims, fn _sub, _scope -> %{} end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn _sub, _scope -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -348,8 +348,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
@@ -387,8 +387,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> resource_owner end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> resource_owner end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "bad_scope"
       redirect_uri = List.first(client.redirect_uris)
@@ -418,8 +418,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:get_by, fn _params -> resource_owner end)
-      |> stub(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> resource_owner end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
 

@@ -13,7 +13,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
   describe "client credentials grant" do
     setup do
-      stub(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
+      expect(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
       client = insert(:client)
       client_without_grant_type = insert(:client, supported_grant_types: [])
       client_with_scope = insert(:client,

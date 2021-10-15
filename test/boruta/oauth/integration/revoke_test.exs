@@ -63,7 +63,7 @@ defmodule Boruta.OauthTest.RevokeTest do
 
     test "revoke token if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
       case Oauth.revoke(%Plug.Conn{
@@ -78,7 +78,7 @@ defmodule Boruta.OauthTest.RevokeTest do
 
     test "revoke token if client has public revocation", %{public_revoke_client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> {:ok, resource_owner} end)
+      |> expect(:get_by, 2, fn(_params) -> {:ok, resource_owner} end)
 
       assert {:revoke_success} = Oauth.revoke(%Plug.Conn{
         body_params: %{"token" => token.value, "client_id" => client.id},

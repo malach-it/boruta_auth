@@ -82,7 +82,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
 
     test "returns a token introspected if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
+      |> expect(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.introspect(%Plug.Conn{
         body_params: %{"token" => token.value},
@@ -118,7 +118,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
       set_config_value([:issuer], issuer)
 
       ResourceOwners
-      |> stub(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
+      |> expect(:get_by, fn(_params) -> {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       case Oauth.introspect(%Plug.Conn{
         body_params: %{"token" => token.value},

@@ -142,7 +142,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       private_scope: private_scope
     } do
       ResourceOwners
-      |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
+      |> expect(:authorized_scopes, fn(_resource_owner) -> [] end)
       given_scope = Enum.join(["any", private_scope.name], " ")
 
       assert Scope.authorize(scope: given_scope, against: %{resource_owner: resource_owner}) == {
@@ -163,7 +163,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       public_scope: public_scope
     } do
       ResourceOwners
-      |> stub(:authorized_scopes, fn(_resource_owner) -> [public_scope, private_scope] end)
+      |> expect(:authorized_scopes, fn(_resource_owner) -> [public_scope, private_scope] end)
       given_scope = Enum.join(["any", private_scope.name], " ")
 
       assert Scope.authorize(scope: given_scope, against: %{resource_owner: resource_owner}) == {
@@ -182,7 +182,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
+      |> expect(:authorized_scopes, fn(_resource_owner) -> [] end)
       given_scope = Enum.join(["any1", "any2"], " ")
 
       assert Scope.authorize(scope: given_scope, against: %{resource_owner: resource_owner}) == {
@@ -202,7 +202,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       public_scope: public_scope
     } do
       ResourceOwners
-      |> stub(:authorized_scopes, fn(_resource_owner) -> [] end)
+      |> expect(:authorized_scopes, fn(_resource_owner) -> [] end)
       given_scope = Enum.join([public_scope.name], " ")
       authorized_scope = Scope.authorize(scope: given_scope, against: %{resource_owner: resource_owner})
 
@@ -215,7 +215,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       public_scope: public_scope
     } do
       ResourceOwners
-      |> stub(:authorized_scopes, fn(_resource_owner) -> [public_scope, private_scope] end)
+      |> expect(:authorized_scopes, fn(_resource_owner) -> [public_scope, private_scope] end)
       given_scope = Enum.join([private_scope.name], " ")
 
       assert Scope.authorize(scope: given_scope, against: %{resource_owner: resource_owner}) == {:ok, given_scope}
@@ -243,7 +243,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> stub(:authorized_scopes, fn(_resource_owner) -> [public_scope, private_scope] end)
+      |> expect(:authorized_scopes, fn(_resource_owner) -> [public_scope, private_scope] end)
       given_scope = public_scope.name
       assert Scope.authorize(
         scope: given_scope,
@@ -254,7 +254,7 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
 
   describe "with a token" do
     setup do
-      stub(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
+      expect(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
       token = insert(:token)
       public_scope = insert(:scope, public: true)
       private_scope = insert(:scope, public: false)
