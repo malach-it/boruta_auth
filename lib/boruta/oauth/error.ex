@@ -33,6 +33,9 @@ defmodule Boruta.Oauth.Error do
             redirect_uri: nil,
             state: nil
 
+  @doc """
+  Returns the OAuth error augmented with the format according to request type.
+  """
   @spec with_format(
           error :: Error.t(),
           request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
@@ -55,6 +58,9 @@ defmodule Boruta.Oauth.Error do
 
   def with_format(error, _), do: error
 
+  @doc """
+  Returns the URL to be redirected according to error format.
+  """
   @spec redirect_to_url(error :: t()) :: url :: String.t()
   def redirect_to_url(%__MODULE__{format: nil}), do: ""
 
