@@ -25,8 +25,7 @@ defmodule Boruta.Config do
   ```
   """
 
-  @defaults repo: Boruta.Repo,
-            cache_backend: Boruta.Cache,
+  @defaults cache_backend: Boruta.Cache,
             contexts: [
               access_tokens: Boruta.Ecto.AccessTokens,
               clients: Boruta.Ecto.Clients,

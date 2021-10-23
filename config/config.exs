@@ -16,4 +16,7 @@ config :boruta, Boruta.Cache,
 
 config :phoenix, :json_library, Jason
 
+config :boruta, Boruta.Oauth,
+  repo: Boruta.Repo
+
 import_config "#{Mix.env()}.exs"
