@@ -6,9 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
   ### Fixed
+    - better Ecto errors management
     - remove padding from pkce code challenge checks
     - reduce resource_owners adapter calls
-## [2.0.0-rc.1]
+## [2.0.0-rc.0]
   ### Added
     - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) integration
       - hybrid flow

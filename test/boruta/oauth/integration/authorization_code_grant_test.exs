@@ -45,7 +45,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns an error if `response_type` is 'code' and schema is invalid" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{"response_type" => "code"}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
+      assert Oauth.authorize(
+               %Plug.Conn{query_params: %{"response_type" => "code"}},
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -121,6 +125,39 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   format: :query,
                   redirect_uri: redirect_uri
                 }}
+    end
+
+    test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
+      resource_owner = %{resource_owner | sub: 1}
+
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :unknown_error,
+                 error_description: "\"Could not create code : sub is invalid\"",
+                 format: :query,
+                 redirect_uri: "https://redirect.uri",
+                 state: nil,
+                 status: :internal_server_error
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns a code", %{client: client, resource_owner: resource_owner} do
@@ -549,6 +586,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
           assert repo_code_challenge_method == "plain"
           assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
+
         _ ->
           assert false
       end
@@ -556,12 +594,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     @tag :pkce_256
     test "code_challenge_method defaults to `S256`", %{
-        pkce_client: client,
-        resource_owner: resource_owner
-      } do
+      pkce_client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-      |> expect(:authorized_scopes, fn (_resource_owner) -> [] end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
       given_code_challenge = :crypto.hash(:sha256, "challenge me") |> Base.url_encode64()
@@ -593,6 +631,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
           assert repo_code_challenge_method == "S256"
           assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
+
         _ ->
           assert false
       end
@@ -639,7 +678,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           code_challenge_method: "plain"
         )
 
-      given_code_challenge = :crypto.hash(:sha256, "strong random challenge me from client") |> Base.url_encode64(padding: false)
+      given_code_challenge =
+        :crypto.hash(:sha256, "strong random challenge me from client")
+        |> Base.url_encode64(padding: false)
+
       pkce_code_s256 =
         insert(
           :token,

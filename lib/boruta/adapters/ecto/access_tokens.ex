@@ -6,6 +6,7 @@ defmodule Boruta.Ecto.AccessTokens do
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
   import Ecto.Query, only: [from: 2]
 
+  alias Boruta.Ecto.Errors
   alias Boruta.Ecto.Token
   alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
@@ -74,6 +75,15 @@ defmodule Boruta.Ecto.AccessTokens do
     with {:ok, token} <- repo().insert(changeset),
          {:ok, token} <- token |> repo().reload() |> to_oauth_schema() |> TokenStore.put() do
       {:ok, token}
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        error_message =
+          Errors.message_from_changeset(changeset)
+
+        {:error, "Could not create access token : #{error_message}"}
+
+      error ->
+        error
     end
   end
 

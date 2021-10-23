@@ -5,7 +5,8 @@ defmodule Boruta.Ecto.Codes do
   import Boruta.Config, only: [repo: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
-  alias Boruta.Ecto
+  alias Boruta.Ecto.Errors
+  alias Boruta.Ecto.Token
   alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
 
@@ -16,8 +17,10 @@ defmodule Boruta.Ecto.Codes do
       token
     else
       {:error, "Not cached."} ->
-        with %Ecto.Token{} = token <- repo().get_by(Ecto.Token, type: "code", value: value, redirect_uri: redirect_uri),
-        {:ok, token} <- token
+        with %Token{} = token <-
+               repo().get_by(Token, type: "code", value: value, redirect_uri: redirect_uri),
+             {:ok, token} <-
+               token
                |> to_oauth_schema()
                |> TokenStore.put() do
           token
@@ -46,8 +49,8 @@ defmodule Boruta.Ecto.Codes do
     sub = params[:sub]
 
     changeset =
-      apply(Ecto.Token, changeset_method(client), [
-        %Ecto.Token{},
+      apply(Token, changeset_method(client), [
+        %Token{},
         %{
           client_id: client_id,
           sub: sub,
@@ -64,6 +67,13 @@ defmodule Boruta.Ecto.Codes do
     with {:ok, token} <- repo().insert(changeset),
          {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
       {:ok, token}
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        error_message = Errors.message_from_changeset(changeset)
+
+        {:error, "Could not create code : #{error_message}"}
+      error ->
+        error
     end
   end
 
@@ -72,14 +82,18 @@ defmodule Boruta.Ecto.Codes do
 
   @impl Boruta.Oauth.Codes
   def revoke(%Oauth.Token{value: value} = code) do
-    with %Ecto.Token{} = token <- repo().get_by(Ecto.Token, value: value),
-           {:ok, token} <- Ecto.Token.revoke_changeset(token)
+    with %Token{} = token <- repo().get_by(Token, value: value),
+         {:ok, token} <-
+           Token.revoke_changeset(token)
            |> repo().update(),
          {:ok, _token} <- TokenStore.invalidate(code) do
       {:ok, token}
     else
-      nil -> {:error, "Code not found."}
-      error -> error
+      nil ->
+        {:error, "Code not found."}
+
+      error ->
+        error
     end
   end
 end

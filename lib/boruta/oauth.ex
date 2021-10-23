@@ -50,11 +50,13 @@ defmodule Boruta.Oauth do
         module.token_error(conn, error)
 
       {:error, reason} ->
-        %Error{
+        error = %Error{
           status: :internal_server_error,
           error: :unknown_error,
           error_description: inspect(reason)
         }
+
+        module.token_error(conn, error)
     end
   end
 
