@@ -49,7 +49,7 @@ defmodule Boruta.MixProject do
       {:joken, "~> 2.0"},
       {:jose, "~> 1.11"},
       {:mox, "~> 0.5", only: :test},
-      {:nebulex, "~> 2.0.0"},
+      {:nebulex, "~> 2.0"},
       {:phoenix, "~> 1.0"},
       {:plug, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
