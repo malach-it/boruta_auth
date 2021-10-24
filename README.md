@@ -22,6 +22,9 @@ Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.
 ## Live example
 A live example can be found [here](http://oauth.boruta.patatoid.fr/)
 
+## Integration example
+An example of integration can be found [here](https://gitlab.com/patatoid/boruta_example)
+
 ## Setup
 1. Schemas migration
 
