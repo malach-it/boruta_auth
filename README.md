@@ -2,7 +2,7 @@
 [![coverage report](https://gitlab.com/patatoid/boruta_auth/badges/master/coverage.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
 
 # Boruta OAuth/OpenID Connect provider core
-Boruta is the core of an OAuth/OpenID Connect provider giving authentication and authorization business logic. a generator is provided to create phoenix controllers, views and templates.
+Boruta is the core of an OAuth/OpenID Connect provider giving authorization business logic. A generator is provided to create phoenix controllers, views and templates to have a basic provider up and running.
 
 It is intended to follow RFCs:
 - [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)
@@ -109,26 +109,6 @@ mix boruta.gen.controllers
 ```
 
 This task will create needed files and give you a guide to finish your setup.
-
-## Migration from 1.X
-Version 2 brings OpenID Connect, several changes were made in order to stick to the specification:
-- `Boruta.Oauth.AuthorizeResponse` and `Boruta.Oauth.TokenResponse` do not provide token value in `value` field but prefer giving value by token type `code`, `access_token` or `id_token`.
-```
-%AuthorizeResponse{
-   type: "code",
-   value: value,
-   expires_in: 60
-}
-```
-becomes
-```
-%AuthorizeResponse{
-   type: :code,
-   code: value,
-   expires_in: 60
-}
-```
-- `boruta.gen.migration` task has been updated. Running the task will upgrade database schemas according to the new associated `Ecto.Schema`
 
 ## Straightforward testing
 You can also create a client and test it
