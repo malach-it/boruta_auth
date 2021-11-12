@@ -8,7 +8,6 @@ defmodule Boruta.Oauth.Clients do
   """
   @callback get_by(
     [id: id :: String.t()] |
-    [id: id :: String.t(), secret: String.t()] |
     [id: id :: String.t(), redirect_uri: String.t()]
   ) :: client :: Boruta.Oauth.Client.t() | nil
 

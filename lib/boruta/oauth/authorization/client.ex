@@ -15,8 +15,7 @@ defmodule Boruta.Oauth.Authorization.Client do
       {:ok, %Boruta.Oauth.Client{...}}
   """
   @spec authorize(
-          [id: String.t(), secret: String.t()]
-          | [id: String.t(), secret: String.t(), grant_type: String.t()]
+          [id: String.t(), secret: String.t(), grant_type: String.t()]
           | [id: String.t(), redirect_uri: String.t(), grant_type: String.t()]
           | [
               id: String.t(),
@@ -34,49 +33,11 @@ defmodule Boruta.Oauth.Authorization.Client do
                :redirect_uri => nil,
                :status => :unauthorized
              }}
-  def authorize(id: id, secret: secret, grant_type: "revoke")
-      when not is_nil(id) do
+  def authorize(id: id, secret: secret, grant_type: grant_type)
+      when not is_nil(id) and grant_type in ["revoke", "refresh_token"] do
     with %Client{} = client <- ClientsAdapter.get_by(id: id),
-         true <- Client.grant_type_supported?(client, "revoke") do
-      case {Client.public_revoke?(client), Client.check_secret(client, secret)} do
-        {true, _} ->
-          {:ok, client}
-
-        {false, :ok} ->
-          {:ok, client}
-
-        {false, _} ->
-          {:error,
-           %Error{
-             status: :unauthorized,
-             error: :invalid_client,
-             error_description: "Invalid client_id or client_secret."
-           }}
-      end
-    else
-      nil ->
-        {:error,
-         %Error{
-           status: :unauthorized,
-           error: :invalid_client,
-           error_description: "Invalid client_id or client_secret."
-         }}
-
-      false ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :unsupported_grant_type,
-           error_description: "Client do not support given grant type."
-         }}
-    end
-  end
-
-  def authorize(id: id, secret: secret, grant_type: "refresh_token")
-      when not is_nil(id) do
-    with %Client{} = client <- ClientsAdapter.get_by(id: id),
-         true <- Client.grant_type_supported?(client, "refresh_token") do
-      case {Client.public_refresh_token?(client), Client.check_secret(client, secret)} do
+         true <- Client.grant_type_supported?(client, grant_type) do
+      case {apply(Client, :"public_#{grant_type}?", [client]), Client.check_secret(client, secret)} do
         {true, _} ->
           {:ok, client}
 
