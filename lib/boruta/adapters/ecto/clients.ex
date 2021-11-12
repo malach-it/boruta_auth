@@ -26,12 +26,7 @@ defmodule Boruta.Ecto.Clients do
         client
     end
   end
-  defp get_by(:from_database, id: id, secret: secret) do
-    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id, secret: secret),
-      {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
-        client
-    end
-  end
+
   defp get_by(:from_database, id: id, redirect_uri: redirect_uri) do
     with %Ecto.Client{} = client <-
            repo().one(
@@ -64,24 +59,6 @@ defmodule Boruta.Ecto.Clients do
         client.authorized_scopes
       nil ->
         []
-    end
-  end
-
-  @spec check_secret(client :: Oauth.Client.t(), secret :: String.t()) ::
-    :ok | {:error, String.t()}
-  def check_secret(%Oauth.Client{secret: client_secret}, secret) do
-    case client_secret == secret do
-      true -> :ok
-      false -> {:error, "Client secret do not match."}
-    end
-  end
-
-  @spec check_redirect_uri(client :: Oauth.Client.t(), redirect_uri :: String.t()) ::
-    :ok | {:error, String.t()}
-  def check_redirect_uri(%Oauth.Client{redirect_uris: client_redirect_uris}, redirect_uri) do
-    case Enum.member?(client_redirect_uris, redirect_uri) do
-      true -> :ok
-      false -> {:error, "Client redirect_uri do not match."}
     end
   end
 end

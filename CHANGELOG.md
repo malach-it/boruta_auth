@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - reduce resource_owners adapter calls
   ### Added
     - Domain wildcard for client redirect_uris
+  ### Removed
+    - Ecto `ClientsAdapter.get_by(id: id, secret: secret)` is removed in preference of `ClientsAdapter.get_by(id: id)` and `Oauth.Client.check_secret(client, secret)`.
 ## [2.0.0-rc.0]
   ### Added
     - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) integration

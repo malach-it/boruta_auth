@@ -3,7 +3,6 @@ defmodule Boruta.Ecto.ClientStore do
 
   import Boruta.Config, only: [cache_backend: 0]
 
-  alias Boruta.Ecto.Clients
   alias Boruta.Oauth.Client
 
   @spec get([id: String.t()] | [id: String.t(), secret: String.t()] | [id: String.t(), redirect_uri: String.t()]) ::
@@ -15,19 +14,10 @@ defmodule Boruta.Ecto.ClientStore do
       error -> error
     end
   end
-  def get(id: id, secret: secret) do
-    with %Client{} = client <- get_by_id(id),
-         :ok <- Clients.check_secret(client, secret) do
-      {:ok, client}
-    else
-      nil -> {:error, "Client not cached."}
-      error -> error
-    end
-  end
 
   def get(id: id, redirect_uri: redirect_uri) do
     with %Client{} = client <- get_by_id(id),
-         :ok <- Clients.check_redirect_uri(client, redirect_uri) do
+         :ok <- Client.check_redirect_uri(client, redirect_uri) do
       {:ok, client}
     else
       nil -> {:error, "Client not cached."}
