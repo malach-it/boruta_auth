@@ -46,10 +46,23 @@ defmodule Boruta.Oauth.Client do
   end
 
   @spec check_secret(client :: t(), secret :: String.t()) :: :ok | {:error, String.t()}
-  def check_secret(%__MODULE__{secret: client_secret}, secret) do
-    case client_secret == secret do
+  def check_secret(%__MODULE__{secret: secret}, secret), do: :ok
+  def check_secret(_client, _secret), do: {:error, "Invalid client secret."}
+
+  @spec check_redirect_uri(client :: t(), redirect_uri :: String.t()) ::
+          :ok | {:error, String.t()}
+  def check_redirect_uri(%__MODULE__{redirect_uris: client_redirect_uris}, redirect_uri) do
+    case Enum.any?(client_redirect_uris, fn client_redirect_uri ->
+           redirect_uri_regex =
+             client_redirect_uri
+             |> Regex.escape()
+             |> String.replace("\\*", "([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9])")
+             |> Regex.compile!()
+
+           Regex.match?(redirect_uri_regex, redirect_uri)
+         end) do
       true -> :ok
-      false -> {:error, "Invalid client secret."}
+      false -> {:error, "Client redirect_uri do not match."}
     end
   end
 

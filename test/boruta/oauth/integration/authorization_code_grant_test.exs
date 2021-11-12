@@ -23,6 +23,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
+      wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
       pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -38,6 +39,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       {:ok,
        client: client,
+       wildcard_redirect_uri_client: wildcard_redirect_uri_client,
        client_with_scope: client_with_scope,
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
@@ -167,30 +169,60 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.authorize(
-             %Plug.Conn{
-               query_params: %{
-                 "response_type" => "code",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:authorize_success,
-         %AuthorizeResponse{
-           type: type,
-           code: value,
-           expires_in: expires_in
-         }} ->
-          assert type == :code
-          assert value
-          assert expires_in
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert type == :code
+      assert value
+      assert expires_in
+    end
+
+    test "returns a code with a wildcard client redirect uri", %{
+      wildcard_redirect_uri_client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = "https://wildcard-redirect-uri.uri"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :code
+      assert value
+      assert expires_in
     end
 
     test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
