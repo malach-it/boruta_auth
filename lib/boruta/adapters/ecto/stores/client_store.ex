@@ -5,9 +5,9 @@ defmodule Boruta.Ecto.ClientStore do
 
   alias Boruta.Oauth.Client
 
-  @spec get([id: String.t()]) ::
+  @spec get_client(String.t()) ::
           {:ok, token :: Boruta.Oauth.Client.t()} | {:error, reason :: String.t()}
-  def get(id: id) do
+  def get_client(id) do
     case get_by_id(id) do
       %Client{} = client -> {:ok, client}
       nil -> {:error, "Client not cached."}

@@ -7,6 +7,6 @@ defmodule Boruta.ClientsAdapter do
 
   import Boruta.Config, only: [clients: 0]
 
-  def get_by(params), do: clients().get_by(params)
+  def get_client(id), do: clients().get_client(id)
   def authorized_scopes(params), do: clients().authorized_scopes(params)
 end

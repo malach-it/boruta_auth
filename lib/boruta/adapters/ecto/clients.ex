@@ -11,18 +11,19 @@ defmodule Boruta.Ecto.Clients do
   alias Boruta.Oauth
 
   @impl Boruta.Oauth.Clients
-  def get_by(attrs) do
-    case get_by(:from_cache, attrs) do
+  def get_client(id) do
+    case get_client(:from_cache, id) do
       {:ok, client} -> client
-      {:error, _reason} -> get_by(:from_database, attrs)
+      {:error, _reason} -> get_client(:from_database, id)
     end
   end
 
-  defp get_by(:from_cache, attrs), do: ClientStore.get(attrs)
-  defp get_by(:from_database, id: id) do
+  defp get_client(:from_cache, id), do: ClientStore.get_client(id)
+
+  defp get_client(:from_database, id) do
     with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
-      {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
-        client
+         {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put() do
+      client
     end
   end
 
@@ -43,6 +44,7 @@ defmodule Boruta.Ecto.Clients do
       %Ecto.Client{} = client ->
         {:ok, client} = to_oauth_schema(client) |> ClientStore.put()
         client.authorized_scopes
+
       nil ->
         []
     end

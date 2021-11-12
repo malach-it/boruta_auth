@@ -4,11 +4,9 @@ defmodule Boruta.Oauth.Clients do
   """
 
   @doc """
-  Returns a `Boruta.Oauth.Client` by id.
+  Returns a `Boruta.Oauth.Client` given id.
   """
-  @callback get_by(
-    [id: id :: String.t()]
-  ) :: client :: Boruta.Oauth.Client.t() | nil
+  @callback get_client(id :: any()) :: client :: Boruta.Oauth.Client.t() | nil
 
   @doc """
   Returns client authorized scopes. The scopes will be granted for every requests to the given client.
