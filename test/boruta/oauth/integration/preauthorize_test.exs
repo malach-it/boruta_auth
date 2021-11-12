@@ -19,8 +19,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
 
-      wildcard_redirect_uri_client =
-        insert(:client, redirect_uris: ["https://*.uri"])
+      wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
 
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -161,7 +160,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       ResourceOwners
       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
 
-      redirect_uri = "https://redirect.uri"
+      redirect_uri = "https://wildcard-redirect-uri.uri"
 
       assert {:preauthorize_success,
               %AuthorizationSuccess{

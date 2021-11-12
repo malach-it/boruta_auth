@@ -22,6 +22,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
+      wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
       pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -37,6 +38,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       {:ok,
        client: client,
+       wildcard_redirect_uri_client: wildcard_redirect_uri_client,
        client_with_scope: client_with_scope,
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
@@ -155,7 +157,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert expires_in
     end
 
-    test "creates a code with a nonce", %{client: client, resource_owner: resource_owner} do
+    test "creates a code and an id_token with a nonce", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
@@ -304,6 +306,62 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
 
       redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                access_token: access_token,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code id_token token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert code
+      assert id_token
+      assert access_token
+      assert expires_in
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+      {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
+
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce,
+               "c_hash" => _c_hash
+             } = claims
+    end
+
+    test "returns a code, a token and an id_token with a wildcard client redirect uri", %{
+      wildcard_redirect_uri_client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+
+      redirect_uri = "https://wildcard-redirect-uri.uri"
       nonce = "nonce"
 
       assert {:authorize_success,
