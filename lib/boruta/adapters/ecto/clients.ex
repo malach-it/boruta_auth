@@ -3,7 +3,6 @@ defmodule Boruta.Ecto.Clients do
 
   @behaviour Boruta.Oauth.Clients
 
-  import Ecto.Query, only: [from: 2]
   import Boruta.Config, only: [repo: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
@@ -22,19 +21,6 @@ defmodule Boruta.Ecto.Clients do
   defp get_by(:from_cache, attrs), do: ClientStore.get(attrs)
   defp get_by(:from_database, id: id) do
     with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
-      {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
-        client
-    end
-  end
-
-  defp get_by(:from_database, id: id, redirect_uri: redirect_uri) do
-    with %Ecto.Client{} = client <-
-           repo().one(
-             from c in Ecto.Client,
-               where:
-                 c.id == ^id and
-                   ^redirect_uri in c.redirect_uris
-           ),
       {:ok, client} <- to_oauth_schema(client) |> ClientStore.put() do
         client
     end

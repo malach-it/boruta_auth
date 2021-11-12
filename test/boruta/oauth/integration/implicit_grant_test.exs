@@ -154,7 +154,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      {:authorize_success,
+      assert {:authorize_success,
        %AuthorizeResponse{
          type: type,
          access_token: value,

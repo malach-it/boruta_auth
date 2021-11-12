@@ -4,11 +4,10 @@ defmodule Boruta.Oauth.Clients do
   """
 
   @doc """
-  Returns a `Boruta.Oauth.Client` by either id and secret ou by id and redirect_uri.
+  Returns a `Boruta.Oauth.Client` by id.
   """
   @callback get_by(
-    [id: id :: String.t()] |
-    [id: id :: String.t(), redirect_uri: String.t()]
+    [id: id :: String.t()]
   ) :: client :: Boruta.Oauth.Client.t() | nil
 
   @doc """

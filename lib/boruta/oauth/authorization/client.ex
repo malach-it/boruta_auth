@@ -37,7 +37,8 @@ defmodule Boruta.Oauth.Authorization.Client do
       when not is_nil(id) and grant_type in ["revoke", "refresh_token"] do
     with %Client{} = client <- ClientsAdapter.get_by(id: id),
          true <- Client.grant_type_supported?(client, grant_type) do
-      case {apply(Client, :"public_#{grant_type}?", [client]), Client.check_secret(client, secret)} do
+      case {apply(Client, :"public_#{grant_type}?", [client]),
+            Client.check_secret(client, secret)} do
         {true, _} ->
           {:ok, client}
 
@@ -98,24 +99,25 @@ defmodule Boruta.Oauth.Authorization.Client do
 
   def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type)
       when not is_nil(id) and not is_nil(redirect_uri) do
-    with %Client{} = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
+    with %Client{} = client <- ClientsAdapter.get_by(id: id),
+         :ok <- Client.check_redirect_uri(client, redirect_uri),
          true <- Client.grant_type_supported?(client, grant_type) do
       {:ok, client}
     else
-      nil ->
-        {:error,
-         %Error{
-           status: :unauthorized,
-           error: :invalid_client,
-           error_description: "Invalid client_id or redirect_uri."
-         }}
-
       false ->
         {:error,
          %Error{
            status: :bad_request,
            error: :unsupported_grant_type,
            error_description: "Client do not support given grant type."
+         }}
+
+      _ ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :invalid_client,
+           error_description: "Invalid client_id or redirect_uri."
          }}
     end
   end
@@ -127,19 +129,12 @@ defmodule Boruta.Oauth.Authorization.Client do
         code_verifier: code_verifier
       )
       when not is_nil(id) and not is_nil(redirect_uri) do
-    with %Client{} = client <- ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri),
+    with %Client{} = client <- ClientsAdapter.get_by(id: id),
+         :ok <- Client.check_redirect_uri(client, redirect_uri),
          :ok <- validate_pkce(client, code_verifier),
          true <- Client.grant_type_supported?(client, grant_type) do
       {:ok, client}
     else
-      nil ->
-        {:error,
-         %Error{
-           status: :unauthorized,
-           error: :invalid_client,
-           error_description: "Invalid client_id or redirect_uri."
-         }}
-
       false ->
         {:error,
          %Error{
@@ -154,6 +149,14 @@ defmodule Boruta.Oauth.Authorization.Client do
            status: :bad_request,
            error: :invalid_request,
            error_description: "PKCE request invalid."
+         }}
+
+      _ ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :invalid_client,
+           error_description: "Invalid client_id or redirect_uri."
          }}
     end
   end
