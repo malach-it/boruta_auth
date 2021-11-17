@@ -77,8 +77,7 @@ defmodule Boruta.Ecto.AccessTokens do
       {:ok, token}
     else
       {:error, %Ecto.Changeset{} = changeset} ->
-        error_message =
-          Errors.message_from_changeset(changeset)
+        error_message = Errors.message_from_changeset(changeset)
 
         {:error, "Could not create access token : #{error_message}"}
 
@@ -95,9 +94,8 @@ defmodule Boruta.Ecto.AccessTokens do
     with {:ok, token} <-
            repo().get_by(Token, value: value)
            |> Token.revoke_changeset()
-           |> repo().update(),
-         {:ok, token} <- TokenStore.invalidate(to_oauth_schema(token)) do
-      {:ok, token}
+           |> repo().update() do
+      TokenStore.invalidate(to_oauth_schema(token))
     end
   end
 end
