@@ -5,12 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+
+## [2.0.0-rc.1]
   ### Fixed
     - better Ecto errors management
     - remove padding from pkce code challenge checks
     - reduce resource_owners adapter calls
   ### Added
-    - Domain wildcard for client redirect_uris
+    - domain wildcard for client redirect_uris
   ### Removed
     - Ecto `ClientsAdapter.get_by(id: id, secret: secret)` is removed in preference of `ClientsAdapter.get_client(id)` and `Oauth.Client.check_secret(client, secret)`.
     - Ecto `ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri)` is removed in preference of `ClientsAdapter.get_client(id)` and `Oauth.Client.check_redirect_uri(client, redirect_uri)`.
