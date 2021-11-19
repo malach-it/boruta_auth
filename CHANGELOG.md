@@ -41,7 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     }
     ```
     - add nonce column to tokens
-  ### Changed
     - default column values migrations
     - migration management `boruta.gen.migrations` does incremental changes
   ### Security

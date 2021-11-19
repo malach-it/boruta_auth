@@ -166,7 +166,7 @@ defmodule Boruta.MixProject do
 
   defp description do
     """
-    Boruta is the core of an OAuth/OpenID Connect server providing authentication and authorization business logic.
+    Boruta is the core of an OAuth/OpenID Connect provider managing authorization business rules.
     """
   end
 
