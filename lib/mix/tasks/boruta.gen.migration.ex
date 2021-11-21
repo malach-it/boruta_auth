@@ -2,10 +2,16 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
   @moduledoc """
   Migration task for Boruta.
 
-  Creates `clients`, `scopes` and `tokens` tables.
+  Creates `oauth_clients`, `oauth_scopes` and `oauth_tokens` tables.
 
   > __Note__: This task will create migration files to keep your integration up to date by checking migration file and module names to create missing ones.
-  > Thus it is not recommanded to change those since it will break the process.
+  > Thus it is not recommanded to change naming since it will recreate the migration in further runs.
+
+  ## Provided migrations
+  - `create_boruta` creates base tables needed to provide OAuth 2.0
+  - `openid_connect` Boruta 2.0 refactoring, provide OpenID Connect
+  - `clients_refresh_tokens` client configurations for refresh tokens
+  - `clients_public_revoke` client configuration to revoke tokens without providing client secret
 
   ## Examples
   ```

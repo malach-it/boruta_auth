@@ -1,8 +1,6 @@
 defmodule Mix.Tasks.Boruta.Gen.Controllers do
   @moduledoc """
-  This task will help creation of a basic OAuth server by providing needed phoenix controllers, views and templates helping OAuth endpoints exposition.
-
-  All flows involving resource owners need its integration guided by `Boruta.Oauth.ResourceOwners` behaviour. For authorize endpoint, you'll need to assign current_user with a plug or so and setup login redirections which should raise an error where it is needed.
+  This task will help creation of a basic OAuth server by providing needed phoenix controllers, views and templates to expose OAuth endpoints.
 
   Controllers are unit tested using Mox, you'll need to add that dependency in order to run them (see below).
 
@@ -25,13 +23,13 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   end
 
   scope "/oauth", MyAppWeb.Oauth do
-    pipe_through [:browser]
+    pipe_through [:browser, :fetch_current_user]
 
     get "/authorize", AuthorizeController, :authorize
   end
 
   scope "/openid", MyAppWeb.Openid do
-    pipe_through [:browser]
+    pipe_through [:browser, :fetch_current_user]
 
     get "/authorize", AuthorizeController, :authorize
   end
@@ -62,6 +60,11 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   ```elixir
   Mox.defmock(Boruta.OauthMock, for: Boruta.OauthModule)
   ```
+
+  ### User flows
+
+  All flows involving resource owners need its integration guided by `Boruta.Oauth.ResourceOwners` behaviour.
+  For authorize endpoint, you'll need to assign current_user with a plug and setup login redirections which, with raw setup, raise an error where it is required.
   """
 
   use Mix.Task
@@ -120,13 +123,13 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
         end
 
         scope "/oauth", MyAppWeb.Oauth do
-          pipe_through [:browser]
+          pipe_through [:browser, :fetch_current_user]
 
           get "/authorize", AuthorizeController, :authorize
         end
 
         scope "/openid", MyAppWeb.Openid do
-          pipe_through [:browser]
+          pipe_through [:browser, :fetch_current_user]
 
           get "/authorize", AuthorizeController, :authorize
         end
@@ -148,6 +151,11 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     * Add following in test/test_helper.exs
 
         Mox.defmock(Boruta.OauthMock, for: Boruta.OauthModule)
+
+    ### User flows
+
+    All flows involving resource owners need its integration guided by `Boruta.Oauth.ResourceOwners` behaviour.
+    For authorize endpoint, you'll need to assign current_user with a plug and setup login redirections which, with raw setup, raise an error where it is required.
     """)
   end
 
