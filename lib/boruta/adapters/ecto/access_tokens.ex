@@ -91,11 +91,15 @@ defmodule Boruta.Ecto.AccessTokens do
 
   @impl Boruta.Oauth.AccessTokens
   def revoke(%Oauth.Token{value: value}) do
-    with {:ok, token} <-
-           repo().get_by(Token, value: value)
+    with %Token{} = token <- repo().get_by(Token, value: value),
+         {:ok, token} <-
+           token
            |> Token.revoke_changeset()
            |> repo().update() do
       TokenStore.invalidate(to_oauth_schema(token))
+    else
+      nil -> {:error, "Token not found."}
+      error -> error
     end
   end
 end
