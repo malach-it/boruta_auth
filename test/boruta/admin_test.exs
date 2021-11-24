@@ -173,9 +173,21 @@ defmodule Boruta.Ecto.AdminTest do
 
   describe "get_scopes_by_ids/1" do
     test "returns the scopes with given id" do
-      scopes = [scope_fixture(), scope_fixture()]
-      ids = Enum.map(scopes, fn %Scope{id: id} -> id end)
-      assert Admin.get_scopes_by_ids(ids) == scopes
+      scopes = [scope_fixture(), scope_fixture(), scope_fixture()]
+      expected_scopes = Enum.take(scopes, 2)
+      ids = Enum.map(expected_scopes, fn %Scope{id: id} -> id end)
+
+      assert Admin.get_scopes_by_ids(ids) == expected_scopes
+    end
+  end
+
+  describe "get_scopes_by_names/1" do
+    test "returns the scopes with given id" do
+      scopes = [scope_fixture(), scope_fixture(), scope_fixture()]
+      expected_scopes = Enum.take(scopes, 2)
+      names = Enum.map(expected_scopes, fn %Scope{name: name} -> name end)
+
+      assert Admin.get_scopes_by_names(names) == expected_scopes
     end
   end
 

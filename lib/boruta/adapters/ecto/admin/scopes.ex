@@ -40,6 +40,8 @@ defmodule Boruta.Ecto.Admin.Scopes do
 
   def get_scopes_by_ids(ids), do: repo().all(from s in Scope, where: s.id in ^ids)
 
+  def get_scopes_by_names(names), do: repo().all(from s in Scope, where: s.name in ^names)
+
   @doc """
   Creates a scope.
 
