@@ -143,6 +143,7 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.Admin.Users
         ],
         Utilities: [
+          Boruta.Cache,
           Boruta.BasicAuth,
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator
