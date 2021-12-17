@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
   ### Added
     - `Boruta.Ecto.Admin.get_scopes_by_names/1`
+    - `Boruta.Ecto.Client.grant_types/0`
 ## [2.0.0-rc.1]
   ### Fixed
     - better Ecto errors management

@@ -47,6 +47,12 @@ defmodule Boruta.Ecto.Client do
     "introspect"
   ]
 
+  @doc """
+  Returns grant types supported by the server. `Boruta.Ecto.Client` supported grant types attribute may be a subset of them.
+  """
+  @spec grant_types() :: grant_types :: list(String.t())
+  def grant_types, do: @grant_types
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
