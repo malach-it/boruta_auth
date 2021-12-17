@@ -86,7 +86,9 @@ defmodule Boruta.Ecto.Client do
     client
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
+      :id,
       :name,
+      :secret,
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
@@ -114,6 +116,7 @@ defmodule Boruta.Ecto.Client do
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
       :name,
+      :secret,
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
@@ -249,6 +252,10 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp put_secret(%Ecto.Changeset{data: data, changes: changes} = changeset) do
-    put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
+    case fetch_change(changeset, :secret) do
+      {:ok, _secret} -> changeset
+      :error ->
+        put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
+    end
   end
 end

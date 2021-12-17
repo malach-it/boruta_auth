@@ -61,6 +61,12 @@ defmodule Boruta.Ecto.AdminTest do
                )
     end
 
+    test "creates a client with a given id" do
+      id = SecureRandom.uuid()
+
+      assert {:ok, %Client{id: ^id}} = Admin.create_client(%{id: id})
+    end
+
     test "creates a client" do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
@@ -68,6 +74,12 @@ defmodule Boruta.Ecto.AdminTest do
     test "creates a client with a secret" do
       {:ok, %Client{secret: secret}} = Admin.create_client(@client_valid_attrs)
       assert secret
+    end
+
+    test "creates a client with a given secret" do
+      secret = SecureRandom.hex(64)
+
+      assert {:ok, %Client{secret: ^secret}} = Admin.create_client(%{secret: secret})
     end
 
     test "creates a client with token ttls" do
