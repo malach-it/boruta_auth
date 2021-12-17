@@ -65,6 +65,7 @@ defmodule Boruta.MixProject do
       source_url: "https://gitlab.com/patatoid/boruta-core",
       extras: [
         "README.md",
+        "guides/create_client.md",
         "guides/authorize_requests.md",
         "guides/pkce.md",
         "guides/migration.md"
