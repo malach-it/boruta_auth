@@ -94,7 +94,7 @@ defmodule Boruta.Ecto.AdminTest do
       assert id_token_ttl
     end
 
-    test "creates a client with authorized scopes" do
+    test "creates a client with authorized scopes by id" do
       scope = insert(:scope)
 
       assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
@@ -103,6 +103,26 @@ defmodule Boruta.Ecto.AdminTest do
                )
 
       assert authorized_scopes == [scope]
+    end
+
+    test "creates a client with authorized scopes by name" do
+      scope = insert(:scope)
+
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"name" => scope.name}])
+               )
+
+      assert authorized_scopes == [scope]
+    end
+
+    test "creates a client with authorized scopes by name (creates a scope)" do
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"name" => "new:scope"}])
+               )
+
+      assert [%Scope{name: "new:scope"}] = authorized_scopes
     end
 
     test "creates a client with key pair" do

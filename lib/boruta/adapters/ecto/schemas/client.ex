@@ -208,35 +208,22 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp parse_authorized_scopes(attrs) do
-    authorized_scope_attrs =
-      Enum.map(
-        attrs["authorized_scopes"] || attrs[:authorized_scopes] || [],
-        fn scope_attrs ->
-          case apply_action(Scope.assoc_changeset(%Scope{}, scope_attrs), :replace) do
-            {:ok, %Scope{id: id, name: name}} ->
-              %{
-                id: id || SecureRandom.uuid(),
-                name: name,
-                inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-                updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
-              }
+    Enum.map(
+      attrs["authorized_scopes"] || attrs[:authorized_scopes] || [],
+      fn scope_attrs ->
+        case apply_action(Scope.assoc_changeset(%Scope{}, scope_attrs), :replace) do
+          {:ok, %Scope{id: id}} when is_binary(id) ->
+            repo().get_by(Scope, id: id)
 
-            _ ->
-              nil
-          end
+          {:ok, %Scope{name: name}} when is_binary(name) ->
+            repo().get_by(Scope, name: name) || %Scope{name: name}
+
+          _ ->
+            nil
         end
-      )
-      |> Enum.reject(&is_nil/1)
-
-    # upserts given scopes and return them for following `put_assoc`
-    with {_n, scopes} <-
-           repo().insert_all(Scope, authorized_scope_attrs,
-             on_conflict: {:replace, [:name]},
-             conflict_target: [:name],
-             returning: true
-           ) do
-      scopes
-    end
+      end
+    )
+    |> Enum.reject(&is_nil/1)
   end
 
   defp generate_key_pair(changeset) do
