@@ -92,7 +92,7 @@ Example of introspect response:
     "exp": 1639752235,
     "iat": 1639748635,
     "iss": "https://oauth.boruta.patatoid.fr",
-    "scope": "",
+    "scope": "resource:read resource:write",
     "sub": "b69c4bb6-a47b-4254-9d87-cf42bb223262",
     "username": "test@test.test"
 }
