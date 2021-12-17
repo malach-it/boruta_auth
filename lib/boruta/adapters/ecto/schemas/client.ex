@@ -183,7 +183,7 @@ defmodule Boruta.Ecto.Client do
     validate_change(changeset, :supported_grant_types, fn :supported_grant_types, grant_types ->
       case Enum.empty?(grant_types -- @grant_types) do
         true -> []
-        false -> [supported_grant_types: "must be one of #{Enum.join(@grant_types, ", ")}"]
+        false -> [supported_grant_types: "must be part of #{Enum.join(@grant_types, ", ")}"]
       end
     end)
   end

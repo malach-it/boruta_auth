@@ -17,7 +17,9 @@ And specification from OpenID Connect:
 This package is meant to help to provide OAuth 2.0/OpenID Connect to your applications implementing part or all of authorization code, implicit, hybrid, client credentials, or resource owner password credentials grants. It also helps introspecting and revoking tokens.
 
 ## Documentation
-Documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
+Master branch documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
+
+Stable documentation is hosted on [hex.pm](https://hexdocs.pm/boruta/api-reference.html)
 
 ## Live example
 A live example can be found [here](http://oauth.boruta.patatoid.fr/)
