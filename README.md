@@ -129,7 +129,10 @@ alias Boruta.Oauth.{ClientCredentialsRequest, Token}
 
 ## Guides
 
-Here are some code samples helping the integration:
+Here are some code samples helping the integration of OAuth/OpenID Connect in your systems:
+
+- [How to create an OAuth client](create_client.md)
+- [Client request authorization](authorize_requests.md)
 - [Notes about pkce](pkce.md)
 
 
