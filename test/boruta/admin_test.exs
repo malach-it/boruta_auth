@@ -125,6 +125,15 @@ defmodule Boruta.Ecto.AdminTest do
       assert [%Scope{name: "new:scope"}] = authorized_scopes
     end
 
+    test "creates a client with authorized scopes by name (invalid name)" do
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"name" => "invalid scope"}])
+               )
+
+      assert [] = authorized_scopes
+    end
+
     test "creates a client with key pair" do
       assert {:ok, %Client{public_key: pem_public_key, private_key: pem_private_key}} =
                Admin.create_client(@client_valid_attrs)

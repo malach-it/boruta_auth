@@ -34,4 +34,4 @@ Boruta.Ecto.Admin.create_client(%{
 }) |> IO.inspect
 ```
 
-Or so, you can use all administration utilities described in [Boruta API documentation](https://hexdocs.pm/boruta/Boruta.Ecto.Admin.html) to get all entities you need to have your server up and running. If some are missing or can be improved do not hesitate to open an issue on [GitLab](https://gitlab.com/patatoid/boruta_auth/-/issues) it would be very welcome.
+Or so, you can use all administration utilities described in [Boruta API documentation](https://hexdocs.pm/boruta/Boruta.Ecto.Admin.html) to manage all entities you need to have your server up and running. If some are missing or can be improved do not hesitate to open an issue on [GitLab](https://gitlab.com/patatoid/boruta_auth/-/issues), it would be very welcome.
