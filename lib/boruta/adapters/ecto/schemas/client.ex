@@ -6,7 +6,6 @@ defmodule Boruta.Ecto.Client do
   use Ecto.Schema
 
   import Ecto.Changeset
-  import Ecto.Query, only: [from: 2]
 
   import Boruta.Config,
     only: [
@@ -62,9 +61,7 @@ defmodule Boruta.Ecto.Client do
     field(:authorize_scope, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
 
-    field(:supported_grant_types, {:array, :string},
-      default: @grant_types
-    )
+    field(:supported_grant_types, {:array, :string}, default: @grant_types)
 
     field(:pkce, :boolean, default: false)
     field(:public_refresh_token, :boolean, default: false)
@@ -78,7 +75,9 @@ defmodule Boruta.Ecto.Client do
     field(:public_key, :string)
     field(:private_key, :string)
 
-    many_to_many :authorized_scopes, Scope, join_through: "oauth_clients_scopes", on_replace: :delete
+    many_to_many :authorized_scopes, Scope,
+      join_through: "oauth_clients_scopes",
+      on_replace: :delete
 
     timestamps()
   end
@@ -87,7 +86,9 @@ defmodule Boruta.Ecto.Client do
     client
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
+      :id,
       :name,
+      :secret,
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
@@ -115,6 +116,7 @@ defmodule Boruta.Ecto.Client do
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
       :name,
+      :secret,
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
@@ -139,6 +141,7 @@ defmodule Boruta.Ecto.Client do
     case fetch_change(changeset, :access_token_ttl) do
       {:ok, _access_token_ttl} ->
         validate_inclusion(changeset, :access_token_ttl, 1..access_token_max_ttl())
+
       :error ->
         put_change(changeset, :access_token_ttl, access_token_max_ttl())
     end
@@ -148,6 +151,7 @@ defmodule Boruta.Ecto.Client do
     case fetch_change(changeset, :authorization_code_ttl) do
       {:ok, _authorization_code_ttl} ->
         validate_inclusion(changeset, :authorization_code_ttl, 1..authorization_code_max_ttl())
+
       :error ->
         put_change(changeset, :authorization_code_ttl, authorization_code_max_ttl())
     end
@@ -157,6 +161,7 @@ defmodule Boruta.Ecto.Client do
     case fetch_change(changeset, :refresh_token_ttl) do
       {:ok, _access_token_ttl} ->
         validate_inclusion(changeset, :refresh_token_ttl, 1..refresh_token_max_ttl())
+
       :error ->
         put_change(changeset, :refresh_token_ttl, refresh_token_max_ttl())
     end
@@ -166,6 +171,7 @@ defmodule Boruta.Ecto.Client do
     case fetch_change(changeset, :id_token_ttl) do
       {:ok, _id_token_ttl} ->
         validate_inclusion(changeset, :id_token_ttl, 1..id_token_max_ttl())
+
       :error ->
         put_change(changeset, :id_token_ttl, id_token_max_ttl())
     end
@@ -183,7 +189,7 @@ defmodule Boruta.Ecto.Client do
     validate_change(changeset, :supported_grant_types, fn :supported_grant_types, grant_types ->
       case Enum.empty?(grant_types -- @grant_types) do
         true -> []
-        false -> [supported_grant_types: "must be one of #{Enum.join(@grant_types, ", ")}"]
+        false -> [supported_grant_types: "must be part of #{Enum.join(@grant_types, ", ")}"]
       end
     end)
   end
@@ -202,25 +208,22 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp parse_authorized_scopes(attrs) do
-    authorized_scope_ids =
-      Enum.map(
-        attrs["authorized_scopes"] || attrs[:authorized_scopes] || [],
-        fn scope_attrs ->
-          case apply_action(Scope.assoc_changeset(%Scope{}, scope_attrs), :replace) do
-            {:ok, %{id: id}} -> id
-            _ -> nil
-          end
+    Enum.map(
+      attrs["authorized_scopes"] || attrs[:authorized_scopes] || [],
+      fn scope_attrs ->
+        case apply_action(Scope.assoc_changeset(%Scope{}, scope_attrs), :replace) do
+          {:ok, %Scope{id: id}} when is_binary(id) ->
+            repo().get_by(Scope, id: id)
+
+          {:ok, %Scope{name: name}} when is_binary(name) ->
+            repo().get_by(Scope, name: name) || %Scope{name: name}
+
+          _ ->
+            nil
         end
-      )
-
-    authorized_scope_ids =
-      authorized_scope_ids
-      |> Enum.reject(&is_nil/1)
-
-    repo().all(
-      from s in Scope,
-        where: s.id in ^authorized_scope_ids
+      end
     )
+    |> Enum.reject(&is_nil/1)
   end
 
   defp generate_key_pair(changeset) do
@@ -236,6 +239,10 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp put_secret(%Ecto.Changeset{data: data, changes: changes} = changeset) do
-    put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
+    case fetch_change(changeset, :secret) do
+      {:ok, _secret} -> changeset
+      :error ->
+        put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
+    end
   end
 end

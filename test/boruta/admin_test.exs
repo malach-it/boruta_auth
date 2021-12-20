@@ -61,6 +61,12 @@ defmodule Boruta.Ecto.AdminTest do
                )
     end
 
+    test "creates a client with a given id" do
+      id = SecureRandom.uuid()
+
+      assert {:ok, %Client{id: ^id}} = Admin.create_client(%{id: id})
+    end
+
     test "creates a client" do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
@@ -68,6 +74,12 @@ defmodule Boruta.Ecto.AdminTest do
     test "creates a client with a secret" do
       {:ok, %Client{secret: secret}} = Admin.create_client(@client_valid_attrs)
       assert secret
+    end
+
+    test "creates a client with a given secret" do
+      secret = SecureRandom.hex(64)
+
+      assert {:ok, %Client{secret: ^secret}} = Admin.create_client(%{secret: secret})
     end
 
     test "creates a client with token ttls" do
@@ -82,7 +94,7 @@ defmodule Boruta.Ecto.AdminTest do
       assert id_token_ttl
     end
 
-    test "creates a client with authorized scopes" do
+    test "creates a client with authorized scopes by id" do
       scope = insert(:scope)
 
       assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
@@ -91,6 +103,35 @@ defmodule Boruta.Ecto.AdminTest do
                )
 
       assert authorized_scopes == [scope]
+    end
+
+    test "creates a client with authorized scopes by name" do
+      scope = insert(:scope)
+
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"name" => scope.name}])
+               )
+
+      assert authorized_scopes == [scope]
+    end
+
+    test "creates a client with authorized scopes by name (creates a scope)" do
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"name" => "new:scope"}])
+               )
+
+      assert [%Scope{name: "new:scope"}] = authorized_scopes
+    end
+
+    test "creates a client with authorized scopes by name (invalid name)" do
+      assert {:ok, %Client{authorized_scopes: authorized_scopes}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :authorized_scopes, [%{"name" => "invalid scope"}])
+               )
+
+      assert [] = authorized_scopes
     end
 
     test "creates a client with key pair" do

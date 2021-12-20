@@ -65,6 +65,8 @@ defmodule Boruta.MixProject do
       source_url: "https://gitlab.com/patatoid/boruta-core",
       extras: [
         "README.md",
+        "guides/create_client.md",
+        "guides/authorize_requests.md",
         "guides/pkce.md",
         "guides/migration.md"
       ],
@@ -173,7 +175,7 @@ defmodule Boruta.MixProject do
 
   defp aliases do
     [
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]

@@ -34,8 +34,8 @@ defmodule Boruta.Ecto.Scope do
 
   def assoc_changeset(scope, attrs) do
     scope
-    |> cast(attrs, [:id])
-    |> validate_required([:id])
+    |> cast(attrs, [:id, :name])
+    |> validate_no_whitespace(:name)
   end
 
   defp validate_not_nil(changeset, field) do
