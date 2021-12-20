@@ -1,6 +1,6 @@
 # How to create an OAuth client
 
-Boruta goes with some administration utilities. The best way to create a client is to go by a seed script as follow:
+Boruta goes with some __administration utilities__. The best way to have an OAuth client up and running is to __create a client with a seed script__ as following example:
 
 ```elixir
 # priv/repo/seeds.exs
