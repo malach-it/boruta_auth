@@ -1,5 +1,6 @@
 [![pipeline status](https://gitlab.com/patatoid/boruta_auth/badges/master/pipeline.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
 [![coverage report](https://gitlab.com/patatoid/boruta_auth/badges/master/coverage.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
+[![downloads](https://img.shields.io/hexpm/dt/boruta)](https://hex.pm/packages/boruta)
 
 # Boruta OAuth/OpenID Connect provider core
 Boruta is the core of an OAuth/OpenID Connect provider giving authorization business logic. A generator is provided to create phoenix controllers, views and templates to have a basic provider up and running.
