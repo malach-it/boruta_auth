@@ -68,7 +68,8 @@ defmodule Boruta.MixProject do
         "guides/create_client.md",
         "guides/authorize_requests.md",
         "guides/pkce.md",
-        "guides/migration.md"
+        "guides/migration.md",
+        "CHANGELOG.md"
       ],
       groups_for_modules: [
         Applications: [

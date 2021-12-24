@@ -20,7 +20,7 @@ This package is meant to help to provide OAuth 2.0/OpenID Connect to your applic
 ## Documentation
 Master branch documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
 
-Stable documentation is hosted on [hex.pm](https://hexdocs.pm/boruta/api-reference.html)
+Stable documentation is hosted on [hexdocs.pm](https://hexdocs.pm/boruta/api-reference.html)
 
 ## Live example
 A live example can be found [here](http://oauth.boruta.patatoid.fr/)
