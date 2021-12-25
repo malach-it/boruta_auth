@@ -63,6 +63,7 @@ defmodule Boruta.MixProject do
     [
       main: "readme",
       source_url: "https://gitlab.com/patatoid/boruta-core",
+      source_ref: "master",
       extras: [
         "README.md",
         "guides/create_client.md",
