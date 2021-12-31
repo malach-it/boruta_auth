@@ -177,6 +177,33 @@ defmodule Boruta.Ecto.AdminTest do
     end
   end
 
+  describe "regenerate_client_secret/1,2" do
+    test "regenerates a client secret" do
+      %Client{secret: secret} = client = client_fixture()
+
+      assert {:ok, %Client{secret: new_secret}} =
+               Admin.regenerate_client_secret(client)
+
+      assert secret != new_secret
+
+      assert %Client{secret: new_secret} =
+               Repo.reload(client)
+
+      assert secret != new_secret
+    end
+
+    test "updates a client secret" do
+      secret = "a_secret"
+      client = client_fixture()
+
+      assert {:ok, %Client{secret: ^secret}} =
+               Admin.regenerate_client_secret(client, secret)
+
+      assert %Client{secret: ^secret} =
+               Repo.reload(client)
+    end
+  end
+
   describe "delete_client/1" do
     test "deletes the client" do
       client = client_fixture()
