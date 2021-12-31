@@ -64,6 +64,22 @@ defmodule Boruta.Ecto.Admin.Clients do
   end
 
   @doc """
+  Regenerates client secret. If a secret is provided as parameter updates it.
+
+  ## Examples
+
+      iex> regenerate_client_secret(client)
+      {:ok, %Client{}}
+
+  """
+  def regenerate_client_secret(%Client{} = client, secret \\ nil) do
+    with {:ok, client} <- client |> Client.secret_changeset(secret) |> repo().update(),
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id})do
+      {:ok, client}
+    end
+  end
+
+  @doc """
   Updates a client.
 
   ## Examples

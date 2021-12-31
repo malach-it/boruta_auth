@@ -109,6 +109,7 @@ defmodule Boruta.Ecto.Client do
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
     |> generate_key_pair()
     |> put_secret()
+    |> validate_required(:secret)
   end
 
   def update_changeset(client, attrs) do
@@ -135,6 +136,13 @@ defmodule Boruta.Ecto.Client do
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+  end
+
+  def secret_changeset(client, secret \\ nil) do
+    client
+    |> cast(%{secret: secret}, [:secret])
+    |> put_secret()
+    |> validate_required(:secret)
   end
 
   defp change_access_token_ttl(changeset) do
@@ -240,6 +248,8 @@ defmodule Boruta.Ecto.Client do
 
   defp put_secret(%Ecto.Changeset{data: data, changes: changes} = changeset) do
     case fetch_change(changeset, :secret) do
+      {:ok, nil} ->
+        put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
       {:ok, _secret} -> changeset
       :error ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
