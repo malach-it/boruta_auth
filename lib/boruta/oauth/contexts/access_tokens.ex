@@ -19,7 +19,8 @@ defmodule Boruta.Oauth.AccessTokens do
     :sub => String.t(),
     optional(:redirect_uri) => String.t(),
     :scope => String.t(),
-    optional(:state) => String.t()
+    optional(:state) => String.t(),
+    optional(:previous_token) => String.t()
   }, options :: [
     refresh_token: boolean()
   ]) :: token :: Boruta.Oauth.Token.t() | {:error, reason :: term()}

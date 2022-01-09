@@ -55,6 +55,7 @@ defmodule Boruta.Ecto.AccessTokens do
     sub = params[:sub]
     state = params[:state]
     redirect_uri = params[:redirect_uri]
+    previous_token = params[:previous_token]
 
     token_attributes = %{
       client_id: client_id,
@@ -62,7 +63,8 @@ defmodule Boruta.Ecto.AccessTokens do
       redirect_uri: redirect_uri,
       state: state,
       scope: scope,
-      access_token_ttl: access_token_ttl
+      access_token_ttl: access_token_ttl,
+      previous_token: previous_token
     }
 
     changeset =

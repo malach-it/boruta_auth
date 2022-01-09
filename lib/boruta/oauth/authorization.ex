@@ -38,6 +38,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             scope: nil,
             state: nil,
             nonce: nil,
+            access_token: nil,
             code: nil,
             code_challenge: nil,
             code_challenge_method: nil
@@ -45,6 +46,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
   @type t :: %__MODULE__{
           response_types: list(String.t()),
           client: Boruta.Oauth.Client.t(),
+          access_token: Boruta.Oauth.Token.t() | nil,
           code: Boruta.Oauth.Token.t() | nil,
           redirect_uri: String.t() | nil,
           sub: String.t() | nil,
@@ -568,7 +570,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
             scope: token_scope
           } = token} <- Authorization.AccessToken.authorize(refresh_token: refresh_token),
          {:ok, scope} <- Authorization.Scope.authorize(scope: scope || token_scope, against: %{token: token}) do
-      {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}}
+      {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, access_token: token}}
     else
       {:ok, _token} ->
         {:error,
@@ -584,11 +586,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
   end
 
   def token(request) do
-    with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
+    with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, access_token: access_token}} <-
            preauthorize(request) do
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
+                 previous_token: access_token.value,
                  client: client,
                  sub: sub,
                  scope: scope

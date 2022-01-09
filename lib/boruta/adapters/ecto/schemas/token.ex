@@ -35,6 +35,7 @@ defmodule Boruta.Ecto.Token do
     field(:type, :string)
     field(:value, :string)
     field(:refresh_token, :string)
+    field(:previous_token, :string)
     field(:state, :string)
     field(:nonce, :string)
     field(:scope, :string, default: "")
@@ -66,7 +67,7 @@ defmodule Boruta.Ecto.Token do
 
   def changeset_with_refresh_token(token, attrs) do
     token
-    |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :nonce, :scope])
+    |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :nonce, :scope, :previous_token])
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
