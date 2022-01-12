@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ability to insert/update clients with given id/secret
 - inserting/updating a client inserts non existing authorized_scopes
 
+### Changed
+
+- store previous token while refreshing access tokens (need to run `boruta.gen.migration` mix task to be up to date)
+
 ## [2.0.0-rc.1] - 2021-11-17
 
 ### Fixed

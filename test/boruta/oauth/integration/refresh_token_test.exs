@@ -21,23 +21,27 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       client_without_grant_type = insert(:client, supported_grant_types: [])
       public_refresh_token_client = insert(:client, public_refresh_token: true)
 
-      expired_access_token = insert(
-        :token,
-        type: "access_token",
-        refresh_token: Boruta.TokenGenerator.generate(),
-        client: client,
-        redirect_uri: List.first(client.redirect_uris),
-        expires_at: :os.system_time(:seconds) - 10
-      )
-      expired_refresh_token = insert(
-        :token,
-        type: "access_token",
-        refresh_token: Boruta.TokenGenerator.generate(),
-        client: expired_refresh_token_client,
-        redirect_uri: List.first(client.redirect_uris),
-      )
+      expired_access_token =
+        insert(
+          :token,
+          type: "access_token",
+          refresh_token: Boruta.TokenGenerator.generate(),
+          client: client,
+          redirect_uri: List.first(client.redirect_uris),
+          expires_at: :os.system_time(:seconds) - 10
+        )
+
+      expired_refresh_token =
+        insert(
+          :token,
+          type: "access_token",
+          refresh_token: Boruta.TokenGenerator.generate(),
+          client: expired_refresh_token_client,
+          redirect_uri: List.first(client.redirect_uris)
+        )
 
       {:ok, revoked_at} = (:os.system_time(:seconds) - 10) |> DateTime.from_unix()
+
       revoked_access_token =
         insert(
           :token,
@@ -82,17 +86,16 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         )
 
       {:ok,
-        client: client,
-        client_without_grant_type: client_without_grant_type,
-        public_refresh_token_client: public_refresh_token_client,
-        expired_refresh_token_client: expired_refresh_token_client,
-        expired_access_token: expired_access_token,
-        expired_refresh_token: expired_refresh_token,
-        revoked_access_token: revoked_access_token,
-        public_refresh_token_access_token: public_refresh_token_access_token,
-        access_token: access_token,
-        other_client_access_token: other_client_access_token
-      }
+       client: client,
+       client_without_grant_type: client_without_grant_type,
+       public_refresh_token_client: public_refresh_token_client,
+       expired_refresh_token_client: expired_refresh_token_client,
+       expired_access_token: expired_access_token,
+       expired_refresh_token: expired_refresh_token,
+       revoked_access_token: revoked_access_token,
+       public_refresh_token_access_token: public_refresh_token_access_token,
+       access_token: access_token,
+       other_client_access_token: other_client_access_token}
     end
 
     test "returns an error if `grant_type` is 'refresh_token' and schema is invalid" do
@@ -235,13 +238,32 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         using_basic_auth(client.id, client.secret)
 
       assert {:token_success,
-          %TokenResponse{
-            token_type: "bearer",
-            access_token: _access_token,
-            expires_in: _expires_in,
-            refresh_token: _refresh_token,
-          }
-        } = Oauth.token(
+              %TokenResponse{
+                token_type: "bearer",
+                access_token: _access_token,
+                expires_in: _expires_in,
+                refresh_token: _refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token
+                   },
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error if refresh_token is expired", %{
+      expired_refresh_token: token,
+      expired_refresh_token_client: client
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "refresh_token",
@@ -250,34 +272,39 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                  req_headers: [{"authorization", authorization_header}]
                },
                ApplicationMock
-             )
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_refresh_token,
+                  error_description: "Token expired.",
+                  status: :bad_request
+                }}
     end
 
-    test "returns an error if refresh_token is expired", %{expired_refresh_token: token, expired_refresh_token_client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-      assert Oauth.token(%Plug.Conn{
-        body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token},
-        req_headers: [{"authorization", authorization_header}]
-      }, ApplicationMock) == {:token_error, %Error{
-        error: :invalid_refresh_token,
-        error_description: "Token expired.",
-        status: :bad_request
-      }}
-    end
+    test "returns a token if access_token associated is expired", %{
+      client: client,
+      expired_access_token: token
+    } do
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
 
-    test "returns a token if access_token associated is expired", %{client: client, expired_access_token: token} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
       assert {:token_success,
-          %TokenResponse{
-            token_type: "bearer",
-            access_token: _access_token,
-            expires_in: _expires_in,
-            refresh_token: _refresh_token,
-          }
-        } = Oauth.token(%Plug.Conn{
-        body_params: %{"grant_type" => "refresh_token", "refresh_token" => token.refresh_token},
-        req_headers: [{"authorization", authorization_header}]
-      }, ApplicationMock)
+              %TokenResponse{
+                token_type: "bearer",
+                access_token: _access_token,
+                expires_in: _expires_in,
+                refresh_token: _refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token
+                   },
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
     end
 
     test "returns an error if access_token associated belongs to an other client", %{
@@ -472,6 +499,38 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         _ ->
           assert false
       end
+    end
+
+    test "stores previous token", %{
+      client: client,
+      access_token: token
+    } do
+      ResourceOwners
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert {:token_success,
+              %TokenResponse{
+                access_token: access_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token
+                   },
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
+
+      expected_previous_token = token.value
+
+      assert %Ecto.Token{
+               previous_token: ^expected_previous_token
+             } = Repo.get_by(Ecto.Token, value: access_token)
     end
 
     test "returns token with public_refresh_token client", %{
