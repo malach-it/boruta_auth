@@ -34,6 +34,7 @@ defmodule Boruta.Oauth.IntrospectResponse do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
+  @spec from_token(token :: Token.t()) :: introspect_response :: t()
   def from_token(%Token{
     client: %Client{id: id, private_key: private_key},
     sub: sub,
@@ -60,5 +61,6 @@ defmodule Boruta.Oauth.IntrospectResponse do
     }
   end
 
+  @spec from_error(error :: Boruta.Oauth.Error.t()) :: introspect_response :: %IntrospectResponse{active: false}
   def from_error(_), do: %IntrospectResponse{active: false}
 end
