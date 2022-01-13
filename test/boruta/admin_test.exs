@@ -333,9 +333,7 @@ defmodule Boruta.Ecto.AdminTest do
       _revoked_token =
         insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
 
-      query = Admin.list_active_tokens()
-
-      assert [^active_token] = Repo.all(query)
+      assert Admin.list_active_tokens() == [active_token]
     end
 
     test "returns active tokens with a queryable" do
@@ -350,9 +348,7 @@ defmodule Boruta.Ecto.AdminTest do
       _revoked_token =
         insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
 
-      query = Admin.list_active_tokens(from t in Token, where: t.scope == "test")
-
-      assert [^active_token] = Repo.all(query)
+      assert Admin.list_active_tokens(from t in Token, where: t.scope == "test") == [active_token]
     end
   end
 end

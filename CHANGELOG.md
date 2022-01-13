@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - store previous token while refreshing access tokens (need to run `boruta.gen.migration` mix task to be up to date)
+- `Boruta.Ecto.Admin.list_active_tokens` returns query result instead of an `Ecto.Query`
 
 ## [2.0.0-rc.1] - 2021-11-17
 

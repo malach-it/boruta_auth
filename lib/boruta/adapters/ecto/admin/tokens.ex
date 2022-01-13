@@ -3,6 +3,7 @@ defmodule Boruta.Ecto.Admin.Tokens do
   `Boruta.Ecto.Token` resource administration.
   """
 
+  import Boruta.Config, only: [repo: 0]
   import Ecto.Query, warn: false
 
   alias Boruta.Ecto.Token
@@ -12,7 +13,7 @@ defmodule Boruta.Ecto.Admin.Tokens do
 
   ## Examples
 
-      iex> list_active_tokens() |> MyApp.Repo.all()
+      iex> list_active_tokens()
       [%Token{}, ...]
 
   """
@@ -23,5 +24,6 @@ defmodule Boruta.Ecto.Admin.Tokens do
     queryable
     |> where([t], t.expires_at >= ^now)
     |> where([t], is_nil(t.revoked_at))
+    |> repo().all()
   end
 end
