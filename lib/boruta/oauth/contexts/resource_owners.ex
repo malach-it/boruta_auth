@@ -28,7 +28,7 @@ defmodule Boruta.Oauth.ResourceOwners do
   @type claims :: %{
           String.t() => String.t() | claims()
         }
-  @callback claims(sub :: String.t(), scope :: String.t()) :: claims :: claims()
+  @callback claims(resource_owner :: ResourceOwner.t(), scope :: String.t()) :: claims :: claims()
 
   @optional_callbacks claims: 2
 end

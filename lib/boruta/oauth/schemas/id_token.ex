@@ -77,7 +77,7 @@ defmodule Boruta.Oauth.IdToken do
       last_login_at -> DateTime.to_unix(last_login_at)
     end
 
-    resource_owners().claims(sub, scope)
+    resource_owners().claims(resource_owner, scope)
     |> Map.put("sub", sub)
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)

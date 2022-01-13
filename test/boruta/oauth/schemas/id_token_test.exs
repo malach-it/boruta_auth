@@ -10,22 +10,25 @@ defmodule Boruta.Oauth.IdTokenTest do
   setup :verify_on_exit!
 
   setup do
+    sub = "resource_owner_sub"
+    resource_owner = %ResourceOwner{sub: sub}
     claims = %{"resource_owner_claim" => "claim"}
-    expect(Boruta.Support.ResourceOwners, :claims, fn (_sub, _scope) -> claims end)
-    {:ok, claims: claims}
+    expect(Boruta.Support.ResourceOwners, :claims, fn (%ResourceOwner{sub: ^sub}, _scope) -> claims end)
+    {:ok, resource_owner: resource_owner, claims: claims}
   end
 
-  test "generates an id token with a code" do
+  test "generates an id token with a code", %{resource_owner: resource_owner} do
     client = build_client()
     inserted_at = DateTime.utc_now()
     last_login_at = DateTime.utc_now()
+    resource_owner = %{resource_owner|last_login_at: last_login_at}
     code = %Token{
       type: "code",
       sub: "sub",
       client: client,
       value: "value",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
+      resource_owner: resource_owner,
       scope: "scope",
     }
     nonce = "nonce"
@@ -57,17 +60,18 @@ defmodule Boruta.Oauth.IdTokenTest do
     } = claims
   end
 
-  test "generates an id token with a token" do
+  test "generates an id token with a token", %{resource_owner: resource_owner} do
     client = build_client()
     inserted_at = DateTime.utc_now()
     last_login_at = DateTime.utc_now()
+    resource_owner = %{resource_owner|last_login_at: last_login_at}
     token = %Token{
       type: "access_token",
       sub: "sub",
       client: client,
       value: "value",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
+      resource_owner: resource_owner,
       scope: "scope"
     }
     nonce = "nonce"
@@ -99,17 +103,18 @@ defmodule Boruta.Oauth.IdTokenTest do
     } = claims
   end
 
-  test "generates an id token with a token and a code" do
+  test "generates an id token with a token and a code", %{resource_owner: resource_owner} do
     client = build_client()
     inserted_at = DateTime.utc_now()
     last_login_at = DateTime.utc_now()
+    resource_owner = %{resource_owner|last_login_at: last_login_at}
     code = %Token{
       type: "code",
       sub: "sub",
       client: client,
       value: "code",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
+      resource_owner: resource_owner,
       scope: "scope"
     }
     token = %Token{
@@ -118,7 +123,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       client: client,
       value: "token",
       inserted_at: inserted_at,
-      resource_owner: %ResourceOwner{sub: "sub", last_login_at: last_login_at},
+      resource_owner: resource_owner,
       scope: "scope"
     }
     nonce = "nonce"
@@ -151,13 +156,13 @@ defmodule Boruta.Oauth.IdTokenTest do
     } = claims
   end
 
-  test "generates an id token with a base token" do
+  test "generates an id token with a base token", %{resource_owner: resource_owner} do
     client = build_client()
     inserted_at = DateTime.utc_now()
     base_token = %Token{
       type: "base_token",
       sub: "sub",
-      resource_owner: %ResourceOwner{sub: "sub"},
+      resource_owner: resource_owner,
       client: client,
       value: "token",
       inserted_at: inserted_at,
