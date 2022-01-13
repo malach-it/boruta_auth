@@ -12,6 +12,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
   - `openid_connect` Boruta 2.0 refactoring, provide OpenID Connect
   - `clients_refresh_tokens` client configurations for refresh tokens
   - `clients_public_revoke` client configuration to revoke tokens without providing client secret
+  - `store_previous_token` store previous token while refreshing access tokens
 
   ## Examples
   ```
