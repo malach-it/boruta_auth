@@ -3,8 +3,8 @@ defmodule Boruta.Ecto.Admin.Clients do
   `Boruta.Ecto.Client` resource administration.
   """
 
-  import Ecto.Query, warn: false
   import Boruta.Config, only: [repo: 0]
+  import Ecto.Query, warn: false
 
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.Clients

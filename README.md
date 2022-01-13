@@ -97,7 +97,8 @@ config :boruta, Boruta.Oauth,
     id_token: 60 * 60 * 24,
     refresh_token: 60 * 60 * 24 * 30
   ],
-  token_generator: Boruta.TokenGenerator
+  token_generator: Boruta.TokenGenerator,
+  issuer: "boruta"
 ```
 
 ## Integration

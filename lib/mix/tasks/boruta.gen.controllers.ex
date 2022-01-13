@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Boruta.Gen.Controllers do
   @moduledoc """
-  This task will help creation of a basic OAuth server by providing needed phoenix controllers, views and templates to expose OAuth endpoints.
+  This task will help creation of a basic OAuth/OpenID Connect server by providing needed phoenix controllers, views and templates to expose OAuth endpoints.
 
   Controllers are unit tested using Mox, you'll need to add that dependency in order to run them (see below).
 

@@ -38,8 +38,26 @@ defmodule Boruta.Ecto.Admin.Scopes do
   """
   def get_scope!(id), do: repo().get!(Scope, id)
 
+  @doc """
+  Return scopes corresponding to the given ids.
+
+  ## Examples
+
+      iex> get_scopes_by_ids(["9864decf-8aa4-4387-a7e4-19d1a059c912", "7b6ec16d-ad8f-4332-ac55-559184ec0f51"])
+      [%Scope{}, ...]
+
+  """
   def get_scopes_by_ids(ids), do: repo().all(from s in Scope, where: s.id in ^ids)
 
+  @doc """
+  Return scopes corresponding to the given names.
+
+  ## Examples
+
+      iex> get_scopes_by_names(["first:scope", "second:scope"])
+      [%Scope{}, ...]
+
+  """
   def get_scopes_by_names(names), do: repo().all(from s in Scope, where: s.name in ^names)
 
   @doc """

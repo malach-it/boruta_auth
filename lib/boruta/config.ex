@@ -2,7 +2,7 @@ defmodule Boruta.Config do
   @moduledoc """
   Utilities to access Boruta configuration ad set defaults.
 
-  Configuration can be set as following in `config.exs` (this configuration is the default)
+  Boruta configuration can be set as following in `config.exs` overriding following default configuration
   ```
   config :boruta, Boruta.Oauth,
     repo: MyApp.Repo, # mandatory
@@ -11,7 +11,7 @@ defmodule Boruta.Config do
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
       codes: Boruta.Ecto.Codes,
-      resource_owners: MyApp.ResourceOwners, # mandatory
+      resource_owners: MyApp.ResourceOwners, # mandatory for user flows
       scopes: Boruta.Ecto.Scopes
     ],
     max_ttl: [
@@ -21,7 +21,7 @@ defmodule Boruta.Config do
       refresh_token: 60 * 60 * 24 * 30
     ],
     token_generator: Boruta.TokenGenerator,
-    issuer: "https://issuer.com"
+    issuer: "boruta"
   ```
   """
 
