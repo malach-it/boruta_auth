@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Authorization.Code do
   @moduledoc """
-  Code authorization
+  Check against given params and return the corresponding code
   """
 
   alias Boruta.CodesAdapter

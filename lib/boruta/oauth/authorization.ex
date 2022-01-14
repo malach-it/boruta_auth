@@ -1,5 +1,6 @@
 defprotocol Boruta.Oauth.Authorization do
   @moduledoc """
+  OAuth requests authorization
   """
 
   @doc """
@@ -10,7 +11,7 @@ defprotocol Boruta.Oauth.Authorization do
   def preauthorize(request)
 
   @doc """
-  Creates and returns a token for given request, depending of implementation.
+  Creates and returns tokens for given request, depending of implementation.
   """
   @spec token(request :: any()) ::
           {:ok,
@@ -26,7 +27,7 @@ end
 
 defmodule Boruta.Oauth.AuthorizationSuccess do
   @moduledoc """
-  Struct encapsulating an authorization success
+  Struct encapsulating an authorization success data
   """
 
   @enforce_keys [:client, :scope]

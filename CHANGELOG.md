@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - store previous token while refreshing access tokens (need to run `boruta.gen.migration` mix task to be up to date)
-- `Boruta.Ecto.Admin.list_active_tokens` returns query result instead of an `Ecto.Query`
+- `Boruta.Ecto.Admin.list_active_tokens/0,1` returns query result instead of an `Ecto.Query`
 - `Boruta.Oauth.ResourceOwners.claims/2` callback takes a `Boruta.Oauth.ResourceOwner` struct instead of `sub` as parameter
 
 ## [2.0.0-rc.1] - 2021-11-17

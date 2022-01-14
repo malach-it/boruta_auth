@@ -1,4 +1,8 @@
 defmodule Boruta.Oauth.IdToken do
+  @moduledoc """
+  OpenID Connect id token schema and utilities
+  """
+
   defmodule Token do
     @moduledoc false
 

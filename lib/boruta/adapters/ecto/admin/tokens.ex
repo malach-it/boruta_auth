@@ -1,6 +1,6 @@
 defmodule Boruta.Ecto.Admin.Tokens do
   @moduledoc """
-  `Boruta.Ecto.Token` resource administration.
+  `Boruta.Ecto.Token` resource administration
   """
 
   import Boruta.Config, only: [repo: 0]

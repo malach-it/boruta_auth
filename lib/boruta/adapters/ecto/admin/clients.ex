@@ -1,6 +1,6 @@
 defmodule Boruta.Ecto.Admin.Clients do
   @moduledoc """
-  `Boruta.Ecto.Client` resource administration.
+  `Boruta.Ecto.Client` resource administration
   """
 
   import Boruta.Config, only: [repo: 0]

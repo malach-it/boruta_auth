@@ -2,7 +2,7 @@ defmodule Boruta.Oauth.Request do
   @moduledoc """
   Build an oauth request struct from given input.
 
-  Note : Input must have the shape or be a `%Plug.Conn{}` request.
+  > __Note__: Input must have the shape or be a `%Plug.Conn{}` request.
   """
 
   alias Boruta.Oauth.Request

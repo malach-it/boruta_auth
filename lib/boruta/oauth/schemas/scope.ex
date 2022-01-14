@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Scope do
   @moduledoc """
-  Schema defining an independent OAuth scope
+  OAuth scope schema and utilities
   """
 
   @enforce_keys [:name]

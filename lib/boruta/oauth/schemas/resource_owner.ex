@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.ResourceOwner do
   @moduledoc """
-  Oauth resource owner
+  Oauth resource owner schema
   """
 
   @enforce_keys [:sub]

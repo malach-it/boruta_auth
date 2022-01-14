@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Revoke do
   @moduledoc """
-  OAuth Revoke
+  Access token revocation
   """
 
   alias Boruta.Oauth.Authorization

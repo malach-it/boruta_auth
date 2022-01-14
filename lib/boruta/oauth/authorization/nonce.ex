@@ -1,9 +1,17 @@
 defprotocol Boruta.Oauth.Authorization.Nonce do
   @moduledoc """
-  OpenID Connect nonce authorization
+  Check OpenID Connect nonce against given request
   """
 
-  @spec authorize(request :: any) :: :ok | {:error, Boruta.Oauth.Error.t()}
+  @doc """
+  Authorize the given request corresponding the nonce value.
+
+  ## Examples
+      iex> authorize(%CodeRequest{...})
+      :ok
+  """
+  @spec authorize(request :: Boruta.Oauth.CodeRequest.t() | Boruta.Oauth.TokenRequest.t()) ::
+          :ok | {:error, Boruta.Oauth.Error.t()}
   def authorize(request)
 end
 
@@ -14,11 +22,13 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.CodeRequest do
   def authorize(%Boruta.Oauth.CodeRequest{nonce: nonce} = request) do
     case {CodeRequest.require_nonce?(request), nonce} do
       {true, nonce} when nonce in [nil, ""] ->
-        {:error, %Error{
-          status: :bad_request,
-          error: :invalid_request,
-          error_description: "OpenID requests require a nonce."
-        }}
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "OpenID requests require a nonce."
+         }}
+
       _ ->
         :ok
     end
@@ -31,18 +41,14 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.TokenRequest do
 
   def authorize(%Boruta.Oauth.TokenRequest{nonce: nonce} = request) do
     case {TokenRequest.require_nonce?(request), nonce} do
-      {true, ""} ->
-        {:error, %Error{
-          status: :bad_request,
-          error: :invalid_request,
-          error_description: "OpenID requests require a nonce."
-        }}
-      {true, nil} ->
-        {:error, %Error{
-          status: :bad_request,
-          error: :invalid_request,
-          error_description: "OpenID requests require a nonce."
-        }}
+      {true, nonce} when nonce in [nil, ""] ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "OpenID requests require a nonce."
+         }}
+
       _ ->
         :ok
     end

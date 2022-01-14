@@ -50,7 +50,7 @@ def MyAppWeb.Plugs.Authorization do
 end
 ```
 
-Then you can use the plug in your router and controllers:
+Then you can invoke those plugs in your router and controllers:
 ```elixir
 # lib/my_app_web/router.ex
 ...
@@ -80,7 +80,7 @@ Then you can use the plug in your router and controllers:
 
 ## In a microservice environment
 
-With an authorization server set up, an __introspect endpoint__ is exposed to check token validity and provide security information as describe in [RFC](https://datatracker.ietf.org/doc/html/rfc7662.html). You can create your own plugs as above but instead of using Boruta API, __request the authorization server__ to get an introspected token and all information needed to perform authorization.
+With an authorization server set up, an __introspect endpoint__ is exposed to check token validity and provide security information as described in [RFC](https://datatracker.ietf.org/doc/html/rfc7662.html). You can create your own plugs as above but instead of using Boruta API, __request the authorization server__ to get an introspected token and all information needed to perform authorization.
 
 > Note: the grant type `introspect` must be active on the client you are performing the requests with.
 

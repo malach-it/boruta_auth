@@ -12,10 +12,11 @@ end
 
 defmodule Boruta.Oauth do
   @moduledoc """
-  Boruta OAuth entrypoint, handles OAuth requests.
+  OAuth requests entrypoint, provides authorization artifacts to clients as stated in [RFC](https://datatracker.ietf.org/doc/html/rfc6749#section-4).
 
-  > Note : this module follows inverted heaxagonal architecture, its functions will invoke functions of the given argument module as result.
-  > The definition of the callbacks are provided by either `Boruta.Oauth.Application` or `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication`, and `Boruta.Oauth.RevokeApplication`,
+  > __Note__: this module follows inverted heaxagonal architecture, its functions will invoke callbacks of the given module argument and return its result.
+  >
+  > The definition of those callbacks are provided by either `Boruta.Oauth.Application` or `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication`, and `Boruta.Oauth.RevokeApplication`,
   """
 
   @behaviour Boruta.OauthModule
@@ -87,7 +88,7 @@ defmodule Boruta.Oauth do
   end
 
   @doc """
-  Process an authorize request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
+  Process an authorize and hybrid requests as respectively stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749) and [OpenID Connect Core 1.0 incorporating errata set 1](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth).
 
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """

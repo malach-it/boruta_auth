@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.AuthorizeResponse do
   @moduledoc """
-  Authorize response
+  Response returned in case of authorization request success. Provides utilities and mandatory data needed to respond to the authorize part of implicit, code and hybrid flows.
   """
 
   alias Boruta.Oauth.Error

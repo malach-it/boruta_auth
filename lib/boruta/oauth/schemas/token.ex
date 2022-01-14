@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Token do
   @moduledoc """
-  Token schema. Representing both access tokens and codes.
+  OAuth access token and code schema and utilities
   """
 
   alias Boruta.Oauth.Client

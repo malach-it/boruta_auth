@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Validator do
   @moduledoc """
-  Utility to validate the request according to the given parameters.
+  Utility to validate the request according to the given parameters
   """
 
   # TODO find a way to difference query from body params
@@ -10,7 +10,7 @@ defmodule Boruta.Oauth.Validator do
   @doc """
   Validates given OAuth parameters.
   ## Examples
-      iex> validate(%{
+      iex> validate(:token, %{
         "grant_type" => "client_credentials",
         "client_id" => "client_id",
         "client_secret" => "client_secret"
@@ -21,10 +21,10 @@ defmodule Boruta.Oauth.Validator do
         "client_secret" => "client_secret"
       }}
 
-      iex> validate(%{})
-      {:error, "Request is not a valid OAuth request. Need a grant_type or a response_type param."}
+      iex> validate(:authorize, %{})
+      {:error, "Request is not a valid OAuth request. Need a response_type param."}
   """
-  @spec validate(action :: atom(), params :: map()) ::
+  @spec validate(action :: :token | :authorize | :introspect | :revoke, params :: map()) ::
           {:ok, params :: map()} | {:error, message :: String.t()}
   def validate(:token, %{"grant_type" => grant_type} = params)
       when grant_type in ["password", "client_credentials", "authorization_code", "refresh_token"] do
@@ -81,7 +81,8 @@ defmodule Boruta.Oauth.Validator do
   end
 
   def validate(:authorize, %{"response_type" => _}) do
-    {:error, "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token` for Hybrid requests and `token` or `id_token token` for Implicit requests."}
+    {:error,
+     "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token` for Hybrid requests and `token` or `id_token token` for Implicit requests."}
   end
 
   def validate(:introspect, params) do

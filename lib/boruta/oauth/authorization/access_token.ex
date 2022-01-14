@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Authorization.AccessToken do
   @moduledoc """
-  Access token authorization
+  Check against given params and return the corresponding access token
   """
 
   alias Boruta.Oauth.Error

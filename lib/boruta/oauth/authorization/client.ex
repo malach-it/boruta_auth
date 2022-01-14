@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Authorization.Client do
   @moduledoc """
-  Client authorization
+  Check against given params and return the corresponding client
   """
 
   alias Boruta.ClientsAdapter

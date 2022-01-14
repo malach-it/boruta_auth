@@ -1,6 +1,6 @@
 defmodule Boruta do
   @moduledoc """
-  Boruta is the core of an OAuth/OpenID Connect provider giving authorization business logic.
+  Boruta is the core of an OAuth/OpenID Connect provider implementing authorization business rules.
 
   [Documentation](README.md)
   """

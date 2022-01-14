@@ -1,6 +1,6 @@
 defmodule Boruta.AccessTokensAdapter do
   @moduledoc """
-  Encapsulate injected access_tokens adapter in context configuration.
+  Encapsulate injected `Boruta.Oauth.AccessTokens` adapter in context configuration.
   """
 
   @behaviour Boruta.Oauth.AccessTokens

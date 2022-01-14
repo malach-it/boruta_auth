@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Authorization.Scope do
   @moduledoc """
-  Scope authorization
+  Check against given params and return the corresponding scopes
   """
 
   alias Boruta.Oauth.Client
@@ -61,6 +61,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
     against
     |> Enum.reduce([], fn
       {:token, token}, _acc ->
+        # token authorized scopes are only a subset of token scopes
         Scope.authorized_scopes(token, scopes)
 
       {_type, schema}, acc ->

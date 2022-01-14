@@ -3,7 +3,7 @@
 [![downloads](https://img.shields.io/hexpm/dt/boruta)](https://hex.pm/packages/boruta)
 
 # Boruta OAuth/OpenID Connect provider core
-Boruta is the core of an OAuth/OpenID Connect provider giving authorization business logic. A generator is provided to create phoenix controllers, views and templates to have a basic provider up and running.
+Boruta is the core of an OAuth/OpenID Connect provider giving authorization business rules. A generator is provided to create phoenix controllers, views and templates to have a basic provider up and running.
 
 It is intended to follow RFCs:
 - [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)

@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Client do
   @moduledoc """
-  OAuth client schema
+  OAuth client schema and utilities
   """
 
   @enforce_keys [:id]

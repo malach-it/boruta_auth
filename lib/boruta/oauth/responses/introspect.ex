@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.IntrospectResponse do
   @moduledoc """
-  Introspect response
+  Response returned in case of introspection request success. Provides mandatory data needed to respond to token introspection.
   """
 
   @type t :: %__MODULE__{

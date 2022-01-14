@@ -1,6 +1,6 @@
 defmodule Boruta.CodesAdapter do
   @moduledoc """
-  Encapsulate injected codes adapter in context configuration.
+  Encapsulate injected `Boruta.Oauth.Codes` adapter in context configuration.
   """
 
   @behaviour Boruta.Oauth.Codes

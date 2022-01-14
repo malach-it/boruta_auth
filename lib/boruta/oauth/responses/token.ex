@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.TokenResponse do
   @moduledoc """
-  Token response
+  Response returned in case of access token request success. Provides utilities and mandatory data needed to respond to the token part of client credentials, resource owner password, code and hybrid flows.
   """
 
   @enforce_keys [:access_token, :expires_in]

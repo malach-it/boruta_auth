@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.Introspect do
   @moduledoc """
-  OAuth Introspect
+  Access token introspection
   """
 
   alias Boruta.Oauth.Authorization
