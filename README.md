@@ -59,7 +59,7 @@ defmodule MyApp.ResourceOwners do
     end
   end
   def get_by(sub: sub) do
-    with %User{id: id, email: email} = user <- Repo.get_by(User, id: sub) do
+    with %User{id: id, email: email} <- Repo.get_by(User, id: sub) do
       {:ok, %ResourceOwner{sub: id, username: email}}
     else
       _ -> {:error, "User not found."}
@@ -69,7 +69,10 @@ defmodule MyApp.ResourceOwners do
   @impl Boruta.Oauth.ResourceOwners
   def check_password(resource_owner, password) do
     user = Repo.get_by(User, id: resource_owner.sub)
-    User.check_password(user, password)
+    case User.valid_password?(user, password) do
+      true -> :ok
+      false -> {:error, "Invalid email or password."}
+    end
   end
 
   @impl Boruta.Oauth.ResourceOwners
