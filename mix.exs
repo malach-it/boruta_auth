@@ -66,6 +66,7 @@ defmodule Boruta.MixProject do
       source_ref: "master",
       extras: [
         "README.md",
+        "guides/provider_integration.md",
         "guides/create_client.md",
         "guides/authorize_requests.md",
         "guides/pkce.md",
