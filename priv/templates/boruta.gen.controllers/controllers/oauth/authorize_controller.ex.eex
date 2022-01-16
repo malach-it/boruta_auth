@@ -23,7 +23,7 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
   defp authorize_response(conn, %_{} = current_user) do
     conn
     |> oauth_module().authorize(
-      %ResourceOwner{sub: current_user.id, username: current_user.email},
+      %ResourceOwner{sub: to_string(current_user.id), username: current_user.email},
       __MODULE__
     )
   end
