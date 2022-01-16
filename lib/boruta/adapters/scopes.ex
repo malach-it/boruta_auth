@@ -1,6 +1,6 @@
 defmodule Boruta.ScopesAdapter do
   @moduledoc """
-  Encapsulate injected `Boruta.Oauth.Scopes` adapter in context configuration.
+  Encapsulate injected `Boruta.Oauth.Scopes` adapter in context configuration
   """
   @behaviour Boruta.Oauth.Scopes
 

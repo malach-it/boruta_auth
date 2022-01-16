@@ -6,7 +6,7 @@ defmodule <%= @web_module %>.Oauth.RevokeController do
   alias Boruta.Oauth.Error
   alias <%= @web_module %>.OauthView
 
-  def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module)
+  def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module, Boruta.Oauth)
 
   def revoke(%Plug.Conn{} = conn, _params) do
     conn |> oauth_module().revoke(__MODULE__)

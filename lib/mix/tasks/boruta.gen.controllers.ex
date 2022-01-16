@@ -35,12 +35,6 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   end
   ```
 
-  * Add following in config/config.exs to inject `Boruta.Oauth` dependency
-
-  ```elixir
-  config :myapp, :oauth_module, Boruta.Oauth
-  ```
-
   ### Testing
 
   * Add mox dependency in order to run controller unit tests
@@ -133,10 +127,6 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
           get "/authorize", AuthorizeController, :authorize
         end
-
-    * Add following in config/config.exs to inject `Boruta.Oauth` dependency
-
-        config :myapp, :oauth_module, Boruta.Oauth
 
     ### Testing
 

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Boruta.Ecto.Client.grant_types/0`
 - ability to insert/update clients with given id/secret
 - inserting/updating a client inserts non existing authorized_scopes
+- `oauth_module` injection in `boruta.gen.controllers` generated controllers defalut to `Boruta.Oauth`
 
 ### Changed
 

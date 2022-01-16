@@ -1,6 +1,6 @@
 defmodule Boruta.ClientsAdapter do
   @moduledoc """
-  Encapsulate injected `Boruta.Oauth.Clients` adapter in context configuration.
+  Encapsulate injected `Boruta.Oauth.Clients` adapter in context configuration
   """
 
   @behaviour Boruta.Oauth.Clients

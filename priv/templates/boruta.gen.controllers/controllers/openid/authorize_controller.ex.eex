@@ -8,7 +8,7 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
   alias Boruta.Oauth.ResourceOwner
   alias <%= @web_module %>.OauthView
 
-  def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module)
+  def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module, Boruta.Oauth)
 
   def authorize(%Plug.Conn{} = conn, _params) do
     conn =
