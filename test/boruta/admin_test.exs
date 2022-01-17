@@ -351,4 +351,27 @@ defmodule Boruta.Ecto.AdminTest do
       assert Admin.list_active_tokens(from t in Token, where: t.scope == "test") == [active_token]
     end
   end
+
+  describe "delete_inactive_tokens/0,1" do
+    test "deletes inactive tokens" do
+      _active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10)
+      expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10) |> Repo.reload()
+      _revoked_token =
+        insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+
+      assert Admin.delete_inactive_tokens() == {1, [expired_token]}
+    end
+
+    test "deletes inactive tokens until given date" do
+      _active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10)
+      _not_to_delete_expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10)
+      expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 11) |> Repo.reload()
+      _revoked_token =
+        insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+
+      past_datetime = DateTime.utc_now() |> DateTime.add(-10, :second)
+
+      assert Admin.delete_inactive_tokens(past_datetime) == {1, [expired_token]}
+    end
+  end
 end

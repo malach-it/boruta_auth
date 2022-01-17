@@ -21,4 +21,6 @@ defmodule Boruta.Ecto.Admin do
 
   defdelegate list_active_tokens(), to: Boruta.Ecto.Admin.Tokens
   defdelegate list_active_tokens(queryable), to: Boruta.Ecto.Admin.Tokens
+  defdelegate delete_inactive_tokens(), to: Boruta.Ecto.Admin.Tokens
+  defdelegate delete_inactive_tokens(until), to: Boruta.Ecto.Admin.Tokens
 end
