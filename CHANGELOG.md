@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Boruta.Ecto.Admin.get_scopes_by_names/1`
 - `Boruta.Ecto.Admin.regenerate_client_secret/1,2`
+- `Boruta.Ecto.Admin.delete_inactive_tokens/0,1`
 - `Boruta.Ecto.Client.grant_types/0`
 - ability to insert/update clients with given id/secret
 - inserting/updating a client inserts non existing authorized_scopes
