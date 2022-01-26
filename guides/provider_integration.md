@@ -1,5 +1,5 @@
 # Setting up Boruta OAuth/OpenID Connect provider
-Boruta provides as its core all authorization business rules in order to handle underlying authorization logic of OAuth and OpenID Connect. Then it provides a generator that helps creating required controllers, views and templates as we will see.
+Boruta provides as its core all authorization business rules in order to handle underlying authorization logic of OAuth and OpenID Connect. Then it provides a generator that helps to create required controllers, views and templates as we will see.
 
 ## 1. Bootstrap the application
 
@@ -27,7 +27,7 @@ Once the application up, we can pass to the authorization part. First, you can a
 
   def deps do
   ...
-      {:boruta, git: "https://gitlab.com/patatoid/boruta_auth.git"},
+      {:boruta, "~> 2.0"}
   ...
   end
 ```
