@@ -40,6 +40,22 @@ defmodule Boruta.Oauth.Client do
           private_key: String.t()
         }
 
+  @grant_types [
+    "client_credentials",
+    "password",
+    "authorization_code",
+    "refresh_token",
+    "implicit",
+    "revoke",
+    "introspect"
+  ]
+
+  @doc """
+  Returns grant types supported by the server. `Boruta.Oauth.Client` supported `grant_types` attribute may be a subset of them.
+  """
+  @spec grant_types() :: grant_types :: list(String.t())
+  def grant_types, do: @grant_types
+
   @spec grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, grant_type) do
     Enum.member?(supported_grant_types, grant_type)

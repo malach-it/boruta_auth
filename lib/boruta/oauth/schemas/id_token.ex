@@ -18,6 +18,12 @@ defmodule Boruta.Oauth.IdToken do
   @signature_alg "RS512"
   @hash_alg :sha512
 
+  @spec signature_alg() :: signature_alg :: String.t()
+  def signature_alg, do: @signature_alg
+
+  @spec hash_alg() :: hash_alg :: atom()
+  def hash_alg, do: @hash_alg
+
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
             sub: String.t(),
@@ -76,10 +82,12 @@ defmodule Boruta.Oauth.IdToken do
          nonce
        ) do
     iat = DateTime.to_unix(inserted_at)
-    auth_time = case resource_owner.last_login_at do
-      nil -> :os.system_time(:seconds)
-      last_login_at -> DateTime.to_unix(last_login_at)
-    end
+
+    auth_time =
+      case resource_owner.last_login_at do
+        nil -> :os.system_time(:seconds)
+        last_login_at -> DateTime.to_unix(last_login_at)
+      end
 
     resource_owners().claims(resource_owner, scope)
     |> Map.put("sub", sub)

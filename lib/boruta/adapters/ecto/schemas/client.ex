@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Client do
     ]
 
   alias Boruta.Ecto.Scope
+  alias Boruta.Oauth
 
   @type t :: %__MODULE__{
           secret: String.t(),
@@ -36,22 +37,6 @@ defmodule Boruta.Ecto.Client do
           private_key: list(String.t())
         }
 
-  @grant_types [
-    "client_credentials",
-    "password",
-    "authorization_code",
-    "refresh_token",
-    "implicit",
-    "revoke",
-    "introspect"
-  ]
-
-  @doc """
-  Returns grant types supported by the server. `Boruta.Ecto.Client` supported grant types attribute may be a subset of them.
-  """
-  @spec grant_types() :: grant_types :: list(String.t())
-  def grant_types, do: @grant_types
-
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
@@ -61,7 +46,7 @@ defmodule Boruta.Ecto.Client do
     field(:authorize_scope, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
 
-    field(:supported_grant_types, {:array, :string}, default: @grant_types)
+    field(:supported_grant_types, {:array, :string}, default: Oauth.Client.grant_types())
 
     field(:pkce, :boolean, default: false)
     field(:public_refresh_token, :boolean, default: false)
@@ -194,10 +179,12 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp validate_supported_grant_types(changeset) do
-    validate_change(changeset, :supported_grant_types, fn :supported_grant_types, grant_types ->
-      case Enum.empty?(grant_types -- @grant_types) do
+    server_grant_types = Oauth.Client.grant_types()
+
+    validate_change(changeset, :supported_grant_types, fn :supported_grant_types, current_grant_types ->
+      case Enum.empty?(current_grant_types -- server_grant_types) do
         true -> []
-        false -> [supported_grant_types: "must be part of #{Enum.join(@grant_types, ", ")}"]
+        false -> [supported_grant_types: "must be part of #{Enum.join(server_grant_types, ", ")}"]
       end
     end)
   end
