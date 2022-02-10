@@ -141,6 +141,9 @@ Here are some guides helping the integration of OAuth/OpenID Connect in your sys
 - [Client request authorization](guides/authorize_requests.md)
 - [Notes about pkce](guides/pkce.md)
 
+## Product
+
+This package is part of the vision of a wider product, targetting to provide a full-featured IAM solution. [Here](https://docs.google.com/presentation/d/1seuUaICy6YHt8u29pRZa4-ocOEf5bDMts5GSTv6TMM4/edit?usp=sharing) is a presentation that aims to give a vision of the product and key steps in order to achieve the goal to bring identity to organizations empowering user privacy and control. Feel free to comment or to reach out.
 
 ## Feedback
 It is a work in progress, all feedbacks / feature requests / improvements are welcome
