@@ -26,9 +26,9 @@ defmodule Boruta.Ecto.Admin.Tokens do
   end
 
   @spec delete_inactive_tokens() ::
-          {number_of_deleted_tokens :: integer(), deleted_tokens :: list(Token.t())}
+          {number_of_deleted_tokens :: integer(), nil}
   @spec delete_inactive_tokens(until :: DateTime.t()) ::
-          {number_of_deleted_tokens :: integer(), deleted_tokens :: list(Token.t())}
+          {number_of_deleted_tokens :: integer(), nil}
   def delete_inactive_tokens(until \\ DateTime.utc_now()) do
     until = DateTime.to_unix(until)
     from(t in Token, as: :parent)
@@ -37,7 +37,6 @@ defmodule Boruta.Ecto.Admin.Tokens do
       [parent: t],
       not exists(active_tokens_query() |> where([t], parent_as(:parent).id == t.id))
     )
-    |> select([t], t)
     |> repo().delete_all()
   end
 
