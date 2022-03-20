@@ -83,11 +83,12 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "creates a client with token ttls" do
-      {:ok, %Client{
-        access_token_ttl: access_token_ttl,
-        authorization_code_ttl: authorization_code_ttl,
-        id_token_ttl: id_token_ttl
-      }} = Admin.create_client(@client_valid_attrs)
+      {:ok,
+       %Client{
+         access_token_ttl: access_token_ttl,
+         authorization_code_ttl: authorization_code_ttl,
+         id_token_ttl: id_token_ttl
+       }} = Admin.create_client(@client_valid_attrs)
 
       assert access_token_ttl
       assert authorization_code_ttl
@@ -181,13 +182,11 @@ defmodule Boruta.Ecto.AdminTest do
     test "regenerates a client secret" do
       %Client{secret: secret} = client = client_fixture()
 
-      assert {:ok, %Client{secret: new_secret}} =
-               Admin.regenerate_client_secret(client)
+      assert {:ok, %Client{secret: new_secret}} = Admin.regenerate_client_secret(client)
 
       assert secret != new_secret
 
-      assert %Client{secret: new_secret} =
-               Repo.reload(client)
+      assert %Client{secret: new_secret} = Repo.reload(client)
 
       assert secret != new_secret
     end
@@ -196,11 +195,9 @@ defmodule Boruta.Ecto.AdminTest do
       secret = "a_secret"
       client = client_fixture()
 
-      assert {:ok, %Client{secret: ^secret}} =
-               Admin.regenerate_client_secret(client, secret)
+      assert {:ok, %Client{secret: ^secret}} = Admin.regenerate_client_secret(client, secret)
 
-      assert %Client{secret: ^secret} =
-               Repo.reload(client)
+      assert %Client{secret: ^secret} = Repo.reload(client)
     end
   end
 
@@ -354,24 +351,51 @@ defmodule Boruta.Ecto.AdminTest do
 
   describe "delete_inactive_tokens/0,1" do
     test "deletes inactive tokens" do
-      _active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10)
-      expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10) |> Repo.reload()
-      _revoked_token =
-        insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+      now = :os.system_time(:second)
 
-      assert Admin.delete_inactive_tokens() == {1, [expired_token]}
+      _active_token = insert(:token, expires_at: now)
+      _expired_token = insert(:token, expires_at: now - 1)
+      _active_revoked_token =
+        insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+      _expired_revoked_token =
+        insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+
+      assert Admin.delete_inactive_tokens(DateTime.from_unix!(now)) == {2, nil}
     end
 
     test "deletes inactive tokens until given date" do
-      _active_token = insert(:token, expires_at: :os.system_time(:seconds) + 10)
-      _not_to_delete_expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 10)
-      expired_token = insert(:token, expires_at: :os.system_time(:seconds) - 11) |> Repo.reload()
-      _revoked_token =
-        insert(:token, expires_at: :os.system_time(:seconds) + 10, revoked_at: DateTime.utc_now())
+      now = :os.system_time(:second)
 
-      past_datetime = DateTime.utc_now() |> DateTime.add(-10, :second)
+      _active_token = insert(:token, expires_at: now)
+      _expired_token = insert(:token, expires_at: now - 1)
+      _active_revoked_token =
+        insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+      _expired_revoked_token =
+        insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+      _past_expired_token = insert(:token, expires_at: now - 11)
+      _past_expired_revoked_token =
+        insert(:token, expires_at: now - 11, revoked_at: DateTime.from_unix!(now))
 
-      assert Admin.delete_inactive_tokens(past_datetime) == {1, [expired_token]}
+      past_datetime = DateTime.from_unix!(now) |> DateTime.add(-10, :second)
+      assert Admin.delete_inactive_tokens(past_datetime) == {2, nil}
+    end
+
+    test "deletes inactive tokens until given future date" do
+      now = :os.system_time(:second)
+
+      _active_token = insert(:token, expires_at: now)
+      _expired_token = insert(:token, expires_at: now - 1)
+      _active_revoked_token =
+        insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+      _expired_revoked_token =
+        insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+      _future_active_token = insert(:token, expires_at: now + 10)
+      _future_active_revoked_token =
+        insert(:token, expires_at: now + 10, revoked_at: DateTime.from_unix!(now))
+
+      future_datetime = DateTime.utc_now() |> DateTime.add(10, :second)
+
+      assert Admin.delete_inactive_tokens(future_datetime) == {3, nil}
     end
   end
 end
