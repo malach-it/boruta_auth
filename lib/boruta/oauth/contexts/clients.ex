@@ -12,4 +12,9 @@ defmodule Boruta.Oauth.Clients do
   Returns client authorized scopes. The scopes will be granted for every requests to the given client.
   """
   @callback authorized_scopes(client :: Boruta.Oauth.Client.t()) :: list(Boruta.Oauth.Scope.t())
+
+  @doc """
+  Returns all clients jwk public keys
+  """
+  @callback list_clients_jwk() :: list(%JOSE.JWK{})
 end
