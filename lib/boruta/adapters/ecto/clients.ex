@@ -46,7 +46,7 @@ defmodule Boruta.Ecto.Clients do
     Enum.map(clients, fn %Ecto.Client{id: client_id, public_key: public_key} ->
       {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
 
-      Map.put(jwk, :kid, client_id)
+      Map.put(jwk, "kid", client_id)
     end)
   end
 

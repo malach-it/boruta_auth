@@ -1,0 +1,19 @@
+defmodule <%= @web_module %>.Openid.JwksController do
+  @behaviour Boruta.Openid.JwksApplication
+
+  use <%= @web_module %>, :controller
+
+  alias <%= @web_module %>.OpenidView
+
+  def openid_module, do: Application.get_env(:<%= @otp_app %>, :openid_module, Boruta.Openid)
+
+  def jwks_index(conn, _params) do
+    openid_module().jwks(conn, __MODULE__)
+  end
+
+  def jwk_list(conn, jwk_keys) do
+    conn
+    |> put_view(OpenidView)
+    |> render("jwks.json", jwk_keys: jwk_keys)
+  end
+end
