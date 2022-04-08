@@ -1,6 +1,7 @@
 defmodule Boruta.OpenidModule do
   @moduledoc false
   @callback jwks(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
+  @callback userinfo(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
 end
 
 defmodule Boruta.Openid do
