@@ -48,8 +48,15 @@ defmodule Boruta.Oauth.Error do
     %{error | format: :query, redirect_uri: redirect_uri, state: state}
   end
 
+  def with_format(%Error{error: :invalid_resource_owner} = error, %HybridRequest{
+        redirect_uri: redirect_uri,
+        state: state
+      }) do
+    %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
+  end
+
   def with_format(%Error{} = error, %HybridRequest{redirect_uri: redirect_uri, state: state}) do
-    %{error | redirect_uri: redirect_uri, state: state}
+    %{error | format: :query, redirect_uri: redirect_uri, state: state}
   end
 
   def with_format(%Error{} = error, %TokenRequest{redirect_uri: redirect_uri, state: state}) do

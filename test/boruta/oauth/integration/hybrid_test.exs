@@ -116,6 +116,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              ) ==
                {:authorize_error,
                 %Error{
+                  format: :fragment,
                   error: :invalid_resource_owner,
                   error_description: "Resource owner is invalid.",
                   status: :unauthorized,
@@ -202,6 +203,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              ) ==
                {:authorize_error,
                 %Error{
+                  format: :query,
                   error: :invalid_request,
                   error_description: "OpenID requests require a nonce.",
                   status: :bad_request,
@@ -462,6 +464,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              ) ==
                {:authorize_error,
                 %Error{
+                  format: :query,
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
                   status: :bad_request,
@@ -565,6 +568,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              ) ==
                {:authorize_error,
                 %Error{
+                  format: :query,
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
                   status: :bad_request,
@@ -592,6 +596,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              ) ==
                {:authorize_error,
                 %Error{
+                  format: :query,
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
                   status: :bad_request,
@@ -658,6 +663,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              ) == {
                :authorize_error,
                %Boruta.Oauth.Error{
+                 format: :query,
                  error: :invalid_request,
                  error_description: "Code challenge is invalid.",
                  status: :bad_request,
