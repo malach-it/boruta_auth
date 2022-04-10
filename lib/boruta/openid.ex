@@ -26,18 +26,37 @@ defmodule Boruta.Openid do
     module.jwk_list(conn, jwk_keys)
   end
 
+  def userinfo(%{body_params: %{"access_token" => access_token}} = conn, module) do
+    fetch_userinfo(access_token, conn, module)
+  end
+
   def userinfo(conn, module) do
     with [authorization_header] <- Plug.Conn.get_req_header(conn, "authorization"),
          [_authorization_header, access_token] <-
-           Regex.run(~r/Bearer (.+)/, authorization_header),
-         {:ok, %Token{resource_owner: %ResourceOwner{} = resource_owner, scope: scope}} <-
-           AccessToken.authorize(value: access_token) do
-      userinfo = resource_owner
-      |> resource_owners().claims(scope)
-      |> Map.put(:sub, resource_owner.sub)
-
-      module.userinfo_fetched(conn, userinfo)
+           Regex.run(~r/Bearer (.+)/, authorization_header) do
+      fetch_userinfo(access_token, conn, module)
     else
+      _ ->
+        module.unauthorized(conn, %Error{
+          status: :bad_request,
+          error: :invalid_bearer,
+          error_description:
+            "Invalid bearer from Authorization header."
+        })
+    end
+  end
+
+  @dialyzer {:nowarn_function, fetch_userinfo: 3}
+  defp fetch_userinfo(access_token, conn, module) when is_binary(access_token) do
+    case AccessToken.authorize(value: access_token) do
+      {:ok, %Token{resource_owner: %ResourceOwner{} = resource_owner, scope: scope}} ->
+        userinfo =
+          resource_owner
+          |> resource_owners().claims(scope)
+          |> Map.put(:sub, resource_owner.sub)
+
+        module.userinfo_fetched(conn, userinfo)
+
       {:error, error} ->
         module.unauthorized(conn, error)
 
@@ -45,8 +64,17 @@ defmodule Boruta.Openid do
         module.unauthorized(conn, %Error{
           status: :bad_request,
           error: :invalid_bearer,
-          error_description: "Invalid bearer from Authorization header."
+          error_description:
+            "You must provide an access_token either as an authorization header or body param."
         })
     end
+  end
+
+  defp fetch_userinfo(_access_token, conn, module) do
+    module.unauthorized(conn, %Error{
+      status: :bad_request,
+      error: :invalid_access_token,
+      error_description: "Provided access token is invalid."
+    })
   end
 end
