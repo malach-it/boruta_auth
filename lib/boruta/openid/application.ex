@@ -7,7 +7,7 @@ defmodule Boruta.Openid.Application do
   """
 
   @doc """
-  This function will be triggered in case of success invoking `Boruta.Oauth.jwks/2`
+  This function will be triggered in case of success invoking `Boruta.Openid.jwks/2`
   """
   @callback jwk_list(conn :: Plug.Conn.t(), jwk_keys :: list(%JOSE.JWK{})) ::
               any()
