@@ -79,7 +79,8 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.TokenApplication,
           Boruta.Oauth.IntrospectApplication,
           Boruta.Oauth.RevokeApplication,
-          Boruta.Openid.JwksApplication
+          Boruta.Openid.JwksApplication,
+          Boruta.Openid.UserinfoApplication
         ],
         Responses: [
           Boruta.Oauth.AuthorizeResponse,

@@ -5,12 +5,12 @@ defmodule Boruta.Openid.UserinfoApplication do
   """
 
   @doc """
-  This function will be triggered in case of success invoking `Boruta.Oauth.userinfo/2`
+  This function will be triggered in case of success invoking `Boruta.Openid.userinfo/2`
   """
-  @callback userinfo_fetched(Plug.Conn.t(), map()) :: any()
+  @callback userinfo_fetched(conn :: Plug.Conn.t(), userinfo :: map()) :: any()
 
   @doc """
-  This function will be triggered when request is unauthorized invoking `Boruta.Oauth.userinfo/2`
+  This function will be triggered when request is unauthorized invoking `Boruta.Openid.userinfo/2`
   """
-  @callback unauthorized(Plug.Conn.t(), Boruta.Oauth.Error.t()) :: any()
+  @callback unauthorized(conn :: Plug.Conn.t(), error :: Boruta.Oauth.Error.t()) :: any()
 end

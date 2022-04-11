@@ -12,12 +12,12 @@ defmodule Boruta.Openid.Application do
   @callback jwk_list(conn :: Plug.Conn.t(), jwk_keys :: list(%JOSE.JWK{})) ::
               any()
   @doc """
-  This function will be triggered in case of success invoking `Boruta.Oauth.userinfo/2`
+  This function will be triggered in case of success invoking `Boruta.Openid.userinfo/2`
   """
   @callback userinfo_fetched(conn :: Plug.Conn.t(), userinfo :: map()) ::
               any()
   @doc """
-  This function will be triggered when request is unauthorized invoking `Boruta.Oauth.userinfo/2`
+  This function will be triggered when request is unauthorized invoking `Boruta.Openid.userinfo/2`
   """
   @callback unauthorized(conn :: Plug.Conn.t(), error :: Boruta.Oauth.Error.t()) ::
               any()
