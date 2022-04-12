@@ -19,7 +19,7 @@ In order to run the newly created application, you have to set up dependencies a
 ```
 Here is the application up and running, starting the web server with `mix phx.server` you'll be able to visit `http://localhost:4000` with your favorite browser.
 
-## 2. Bootstrap Boruta _[commit](https://gitlab.com/patatoid/boruta_example/-/commit/fef019e22cb51c5a82b87193bc95676e8ccefbf0)_
+## 2. Bootstrap Boruta
 
 Once the application up, we can pass to the authorization part. First, you can add the Boruta dependency in `mix.exs`
 ```elixir
@@ -40,7 +40,7 @@ After that, you'll be able to generate controllers in order to expose Oauth and 
 
 It will print the remaining steps to have the provider up and running as described in [documentation](https://patatoid.gitlab.io/boruta_auth/Mix.Tasks.Boruta.Gen.Controllers.html). From there we will skip the testing part which uses Mox in order to mock Boruta and focus tests on the application layer.
 
-## 3. Configure Boruta _[commit](https://gitlab.com/patatoid/boruta_example/-/commit/cf3e4e3a9d2b0baf5ed24a8c38062fa34d2f3ea0)_
+## 3. Configure Boruta
 
 As described in `boruta.gen.controllers` mix task output, you need to expose controller actions in `router.ex` as follow
 
@@ -73,11 +73,12 @@ And give mandatory boruta configuration
 # config/config.exs
 
 config :boruta, Boruta.Oauth,
-  repo: BorutaExample.Repo
+  repo: BorutaExample.Repo,
+  issuer: "https://example.com"
 ```
 Here client credentials flow should be up. For user flows you need further configuration and to implement `Boruta.Oauth.ResourceOwners` context.
 
-## 4. User flows _[commit #1](https://gitlab.com/patatoid/boruta_example/-/commit/10c573e3663d1ba533f7613b8b1fe7e9eb266e06), [commit #2](https://gitlab.com/patatoid/boruta_example/-/commit/f88bec800cd8e46b624075e6024d5b83ccbda056)_
+## 4. User flows
 
 In order to have user flows operational, you need to implement `Boruta.Oauth.ResourceOwners` context as described in [Boruta README](https://patatoid.gitlab.io/boruta_auth/readme.html). Here it would look like
 ```elixir
@@ -92,15 +93,15 @@ defmodule BorutaExample.ResourceOwners do
 
   @impl Boruta.Oauth.ResourceOwners
   def get_by(username: username) do
-    with %User{id: id, email: email} <- Repo.get_by(User, email: username) do
-      {:ok, %ResourceOwner{sub: to_string(id), username: email}}
+    with %User{id: id, email: email, last_login_at: last_login_at} <- Repo.get_by(User, email: username) do
+      {:ok, %ResourceOwner{sub: to_string(id), username: email, last_login_at: last_login_at}}
     else
       _ -> {:error, "User not found."}
     end
   end
   def get_by(sub: sub) do
-    with %User{id: id, email: email} <- Repo.get_by(User, id: sub) do
-      {:ok, %ResourceOwner{sub: to_string(id), username: email}}
+    with %User{id: id, email: email, last_login_at: last_login_at} <- Repo.get_by(User, id: sub) do
+      {:ok, %ResourceOwner{sub: to_string(id), username: email, last_login_at: last_login_at}}
     else
       _ -> {:error, "User not found."}
     end
@@ -117,6 +118,10 @@ defmodule BorutaExample.ResourceOwners do
 
   @impl Boruta.Oauth.ResourceOwners
   def authorized_scopes(%ResourceOwner{}), do: []
+
+
+  @impl Boruta.Oauth.ResourceOwners
+  def claims(_resource_owner, _scope), do: %{}
 end
 ```
 
@@ -145,7 +150,7 @@ Last, you'll have to setup is the redirection in the OAuth authorize controller
 
 Here all OAuth flows should be up and running !
 
-## 5. OpenID Connect _[commit #1](https://gitlab.com/patatoid/boruta_example/-/commit/a1bbf67ea4182c7adda0f30788a4d0e9722e6cbc)_, _[commit #2](https://gitlab.com/patatoid/boruta_example/-/commit/a99740613d6efebbd5b2729d40edf9b5eb9c7860)_
+## 5. OpenID Connect
 
 In order to setup OpenID Connect flows, you need to tweak `phx.gen.auth` in order to redirect to login after logging out
 ```elixir
@@ -193,12 +198,15 @@ end
 # lib/boruta_example/accounts.ex:223
 
 ...
-   def generate_user_session_token(user) do
-     {token, user_token} = UserToken.build_session_token(user)
-     Repo.insert!(user_token)
-     user |> User.login_changeset() |> Repo.update!()
-     token
-   end
+  def update_last_login_at(user) do
+    user |> User.login_changeset() |> Repo.update!()
+  end
+
+...
+  def log_in_user(conn, user, params \\ %{}) do
+    token = Accounts.generate_user_session_token(user)
+    Accounts.update_last_login_at(user)
+    ...
 
 # lib/boruta_example/accounts/user.ex
 
