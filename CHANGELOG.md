@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Changed
+
+- `Admin.delete_inactive_tokens/0,1` does not return deleted tokens
+
 ### Fixed
+
 - generated openid authorize controller prompt=none error params type
 
 ## [2.0.0] - 2022-01-26
