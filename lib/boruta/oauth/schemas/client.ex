@@ -51,7 +51,7 @@ defmodule Boruta.Oauth.Client do
   ]
 
   @doc """
-  Returns grant types supported by the server. `Boruta.Oauth.Client` supported `grant_types` attribute may be a subset of them.
+  Returns grant types supported by the server. `Boruta.Oauth.Client` `supported_grant_types` attribute may be a subset of them.
   """
   @spec grant_types() :: grant_types :: list(String.t())
   def grant_types, do: @grant_types
