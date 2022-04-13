@@ -17,7 +17,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
     assert {:unauthorized,
             %Boruta.Oauth.Error{
-              error: :invalid_bearer,
+              error: :invalid_request,
               error_description: "Invalid bearer from Authorization header.",
               status: :bad_request
             }} = Openid.userinfo(conn, ApplicationMock)
@@ -31,7 +31,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:unauthorized,
               %Boruta.Oauth.Error{
-                error: :invalid_bearer,
+                error: :invalid_request,
                 error_description: "Invalid bearer from Authorization header.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
@@ -59,7 +59,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:unauthorized,
               %Boruta.Oauth.Error{
-                error: :invalid_bearer,
+                error: :invalid_request,
                 error_description:
                   "You must provide an access_token either as an authorization header or body param.",
                 status: :bad_request
@@ -94,7 +94,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:unauthorized,
               %Boruta.Oauth.Error{
-                error: :invalid_access_token,
+                error: :invalid_request,
                 error_description: "Provided access token is invalid.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
@@ -118,7 +118,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:unauthorized,
               %Boruta.Oauth.Error{
-                error: :invalid_bearer,
+                error: :invalid_request,
                 error_description:
                   "You must provide an access_token either as an authorization header or body param.",
                 status: :bad_request

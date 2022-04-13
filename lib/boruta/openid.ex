@@ -39,7 +39,7 @@ defmodule Boruta.Openid do
       _ ->
         module.unauthorized(conn, %Error{
           status: :bad_request,
-          error: :invalid_bearer,
+          error: :invalid_request,
           error_description:
             "Invalid bearer from Authorization header."
         })
@@ -63,7 +63,7 @@ defmodule Boruta.Openid do
       _ ->
         module.unauthorized(conn, %Error{
           status: :bad_request,
-          error: :invalid_bearer,
+          error: :invalid_request,
           error_description:
             "You must provide an access_token either as an authorization header or body param."
         })
@@ -73,7 +73,7 @@ defmodule Boruta.Openid do
   defp fetch_userinfo(_access_token, conn, module) do
     module.unauthorized(conn, %Error{
       status: :bad_request,
-      error: :invalid_access_token,
+      error: :invalid_request,
       error_description: "Provided access token is invalid."
     })
   end
