@@ -1,5 +1,5 @@
 defmodule Boruta.Ecto.AdminTest do
-  use Boruta.DataCase, async: true
+  use Boruta.DataCase
 
   import Boruta.Factory
   import Ecto.Query, only: [from: 2]
