@@ -23,7 +23,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
             }} = Openid.userinfo(conn, ApplicationMock)
   end
 
-  describe "fetch userinfo" do
+  describe "fetch userinfo (authorization header)" do
     test "returns unauthorized with a bad authorization header" do
       conn =
         %Plug.Conn{}
@@ -59,9 +59,9 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:unauthorized,
               %Boruta.Oauth.Error{
-                error: :invalid_request,
+                error: :invalid_access_token,
                 error_description:
-                  "You must provide an access_token either as an authorization header or body param.",
+                  "Provided access token is invalid.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end
@@ -95,7 +95,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
       assert {:unauthorized,
               %Boruta.Oauth.Error{
                 error: :invalid_request,
-                error_description: "Provided access token is invalid.",
+                error_description: "Invalid bearer from body params.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end
@@ -118,9 +118,9 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:unauthorized,
               %Boruta.Oauth.Error{
-                error: :invalid_request,
+                error: :invalid_access_token,
                 error_description:
-                  "You must provide an access_token either as an authorization header or body param.",
+                  "Provided access token is invalid.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end

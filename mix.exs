@@ -152,6 +152,7 @@ defmodule Boruta.MixProject do
         Utilities: [
           Boruta.Cache,
           Boruta.BasicAuth,
+          Boruta.Oauth.BearerToken,
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator
         ],
