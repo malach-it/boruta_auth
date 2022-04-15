@@ -10,7 +10,7 @@ defmodule Boruta.Openid do
 
   > __Note__: this module follows inverted heaxagonal architecture, its functions will invoke callbacks of the given module argument and return its result.
   >
-  > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Oauth.JwksApplication`
+  > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
   import Boruta.Config, only: [clients: 0]

@@ -87,6 +87,12 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.TokenResponse,
           Boruta.Oauth.IntrospectResponse
         ],
+        Admin: [
+          Boruta.Ecto.Admin.Tokens,
+          Boruta.Ecto.Admin.Clients,
+          Boruta.Ecto.Admin.Scopes,
+          Boruta.Ecto.Admin.Users
+        ],
         Authorization: [
           Boruta.Oauth.Authorization,
           Boruta.Oauth.Authorization.AccessToken,
@@ -142,12 +148,6 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.Token,
           Boruta.Ecto.Client,
           Boruta.Ecto.Scope
-        ],
-        Admin: [
-          Boruta.Ecto.Admin.Tokens,
-          Boruta.Ecto.Admin.Clients,
-          Boruta.Ecto.Admin.Scopes,
-          Boruta.Ecto.Admin.Users
         ],
         Utilities: [
           Boruta.Cache,
