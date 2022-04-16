@@ -35,16 +35,17 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
 
   @impl Boruta.Oauth.AuthorizeApplication
   def authorize_error(
-        %Plug.Conn{query_params: query_params} = conn,
-        %Error{status: :unauthorized, error: :invalid_resource_owner} = error
+        %Plug.Conn{} = conn,
+        %Error{status: :unauthorized, error: :login_required} = error
       ) do
-    case query_params["prompt"] do
-      "none" ->
-        redirect(conn, external: Error.redirect_to_url(error))
+    redirect(conn, external: Error.redirect_to_url(error))
+  end
 
-      _ ->
-        redirect_to_login(conn)
-    end
+  def authorize_error(
+        %Plug.Conn{} = conn,
+        %Error{status: :unauthorized, error: :invalid_resource_owner}
+      ) do
+    redirect_to_login(conn)
   end
 
   def authorize_error(

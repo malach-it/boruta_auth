@@ -43,7 +43,7 @@ defmodule <%= @web_module %>.Oauth.AuthorizeController do
   @impl Boruta.Oauth.AuthorizeApplication
   def authorize_error(
         %Plug.Conn{} = conn,
-        %Error{status: :unauthorized, error: :invalid_resource_owner}
+        %Error{status: :unauthorized}
       ) do
     redirect_to_login(conn)
   end
