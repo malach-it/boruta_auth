@@ -26,7 +26,8 @@ defmodule Boruta.Oauth.TokenRequest do
             resource_owner: nil,
             grant_type: "implicit",
             nonce: nil,
-            response_types: []
+            response_types: [],
+            prompt: ""
 
   alias Boruta.Oauth.Scope
 

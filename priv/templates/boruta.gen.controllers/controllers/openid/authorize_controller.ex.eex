@@ -40,11 +40,7 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
       ) do
     case query_params["prompt"] do
       "none" ->
-        authorize_error(conn, %{
-          error
-          | error: :login_required,
-            error_description: "User is not logged in."
-        })
+        redirect(conn, external: Error.redirect_to_url(error))
 
       _ ->
         redirect_to_login(conn)
