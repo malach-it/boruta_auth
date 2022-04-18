@@ -30,5 +30,6 @@ defmodule Boruta.Oauth.HybridRequest do
             grant_type: "authorization_code",
             code_challenge: "",
             code_challenge_method: "plain",
-            response_types: []
+            response_types: [],
+            prompt: ""
 end

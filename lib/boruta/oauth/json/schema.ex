@@ -64,7 +64,8 @@ defmodule Boruta.Oauth.Json.Schema do
         },
         "state" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},
-        "redirect_uri" => %{"type" => "string"}
+        "redirect_uri" => %{"type" => "string"},
+        "prompt" => %{"type" => "string"}
       },
       "required" => ["response_type", "client_id", "redirect_uri"]
     } |> Schema.resolve
@@ -111,6 +112,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "state" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
+        "prompt" => %{"type" => "string"},
         "code_challenge" => %{"type" => "string"},
         "code_challenge_method" => %{
           "type" => "string",

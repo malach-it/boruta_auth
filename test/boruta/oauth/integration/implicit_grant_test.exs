@@ -120,6 +120,31 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                 }}
     end
 
+    test "returns an error if user is invalid (prompt=none)", %{client: client} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "token",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "prompt" => "none"
+                 }
+               },
+               %ResourceOwner{sub: nil},
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :login_required,
+                  error_description: "User is not logged in.",
+                  status: :unauthorized,
+                  format: :fragment,
+                  redirect_uri: redirect_uri
+                }}
+    end
+
     test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
       resource_owner = %{resource_owner | sub: 1}
 
