@@ -39,6 +39,7 @@ test:
   extends: .elixir-task
   script:
   - mix test --trace --cover
+  coverage: '/\d+.\d+\%\s+\|\s+Total/'
   variables:
     POSTGRES_DATABASE: boruta_test
     POSTGRES_HOST: postgres
