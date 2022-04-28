@@ -3,7 +3,11 @@ defmodule Boruta.Oauth.Token do
   OAuth access token and code schema and utilities
   """
 
+  import Boruta.Config, only: [resource_owners: 0]
+
   alias Boruta.Oauth.Client
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
   @enforce_keys [:type]
@@ -125,5 +129,24 @@ defmodule Boruta.Oauth.Token do
   @spec hash(string :: String.t()) :: hashed_string :: String.t()
   def hash(string) do
     :crypto.hash(:sha512, string) |> Base.encode16()
+  end
+
+  def userinfo(%Token{resource_owner: %ResourceOwner{} = resource_owner, scope: scope}) do
+    userinfo =
+      resource_owner
+      |> resource_owners().claims(scope)
+      |> Map.put(:sub, resource_owner.sub)
+
+    {:ok, userinfo}
+  end
+
+  def userinfo(_token) do
+    {:error,
+     %Error{
+       status: :bad_request,
+       error: :invalid_access_token,
+       error_description:
+         "Provided access token is invalid."
+     }}
   end
 end

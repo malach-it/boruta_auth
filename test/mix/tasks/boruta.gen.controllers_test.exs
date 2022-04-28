@@ -14,6 +14,7 @@ defmodule Mix.Tasks.Boruta.Gen.ControllersTest do
     "unit/oauth/controllers/revoke_controller_test.exs",
     "unit/openid/controllers/authorize_controller_test.exs",
     "unit/openid/controllers/jwks_controller_test.exs",
+    "unit/openid/controllers/userinfo_controller_test.exs",
     "unit/openid/controllers/token_controller_test.exs",
     "views/oauth_view.ex",
     "views/openid_view.ex"

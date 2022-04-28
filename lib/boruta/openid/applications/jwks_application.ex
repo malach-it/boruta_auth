@@ -1,7 +1,7 @@
 defmodule Boruta.Openid.JwksApplication do
   @moduledoc """
   Implement this behaviour in the application layer of your OpenID Connect provider.
-  This behaviour gives all callbacks triggered invoking `Boruta.Openid.jwks/2` functions.
+  This behaviour gives all callbacks triggered invoking `Boruta.Openid.jwks/2` function.
   """
 
   @doc """

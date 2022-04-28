@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - OpenID Connect prompt=none login_required errors in domain
 - OpenID Connect jwks endpoint domain and application layer generation
+- OpenID Connect userinfo endpoint domain and application layer generation
 
 ## [2.0.1] - 2022-04-12
 

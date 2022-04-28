@@ -79,12 +79,19 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.TokenApplication,
           Boruta.Oauth.IntrospectApplication,
           Boruta.Oauth.RevokeApplication,
-          Boruta.Openid.JwksApplication
+          Boruta.Openid.JwksApplication,
+          Boruta.Openid.UserinfoApplication
         ],
         Responses: [
           Boruta.Oauth.AuthorizeResponse,
           Boruta.Oauth.TokenResponse,
           Boruta.Oauth.IntrospectResponse
+        ],
+        Admin: [
+          Boruta.Ecto.Admin.Tokens,
+          Boruta.Ecto.Admin.Clients,
+          Boruta.Ecto.Admin.Scopes,
+          Boruta.Ecto.Admin.Users
         ],
         Authorization: [
           Boruta.Oauth.Authorization,
@@ -142,15 +149,10 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.Client,
           Boruta.Ecto.Scope
         ],
-        Admin: [
-          Boruta.Ecto.Admin.Tokens,
-          Boruta.Ecto.Admin.Clients,
-          Boruta.Ecto.Admin.Scopes,
-          Boruta.Ecto.Admin.Users
-        ],
         Utilities: [
           Boruta.Cache,
           Boruta.BasicAuth,
+          Boruta.Oauth.BearerToken,
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator
         ],

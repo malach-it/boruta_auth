@@ -25,6 +25,8 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   scope "/openid", MyAppWeb.Openid do
     pipe_through [:api]
 
+    get "/userinfo", UserinfoController, :userinfo
+    post "/userinfo", UserinfoController, :userinfo
     get "/jwks", JwksController, :jwks_index
   end
 
@@ -81,6 +83,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     "controllers/oauth/authorize_controller.ex",
     "controllers/openid/authorize_controller.ex",
     "controllers/openid/jwks_controller.ex",
+    "controllers/openid/userinfo_controller.ex",
     "controllers/oauth/introspect_controller.ex",
     "controllers/oauth/revoke_controller.ex",
     "controllers/oauth/token_controller.ex",
@@ -97,6 +100,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     "unit/openid/controllers/authorize_controller_test.exs",
     "unit/openid/controllers/token_controller_test.exs",
     "unit/openid/controllers/jwks_controller_test.exs",
+    "unit/openid/controllers/userinfo_controller_test.exs",
     "unit/oauth/controllers/introspect_controller_test.exs",
     "unit/oauth/controllers/revoke_controller_test.exs",
     "unit/oauth/controllers/token_controller_test.exs"
@@ -135,6 +139,8 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
         scope "/openid", MyAppWeb.Openid do
           pipe_through [:api]
 
+          get "/userinfo", UserinfoController, :userinfo
+          post "/userinfo", UserinfoController, :userinfo
           get "/jwks", JwksController, :jwks_index
         end
 
