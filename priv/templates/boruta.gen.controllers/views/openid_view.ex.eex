@@ -1,0 +1,7 @@
+defmodule <%= @web_module %>.OpenidView do
+  use <%= @web_module %>, :view
+
+  def render("jwks.json", %{jwk_keys: jwk_keys}) do
+    %{keys: jwk_keys}
+  end
+end

@@ -22,11 +22,21 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     post "/introspect", IntrospectController, :introspect
   end
 
+  scope "/openid", MyAppWeb.Openid do
+    pipe_through [:api]
+
+    get "/jwks", JwksController, :jwks_index
+  end
+
+  ####
+
   scope "/oauth", MyAppWeb.Oauth do
     pipe_through [:browser, :fetch_current_user]
 
     get "/authorize", AuthorizeController, :authorize
   end
+
+  ## OR
 
   scope "/openid", MyAppWeb.Openid do
     pipe_through [:browser, :fetch_current_user]
@@ -47,12 +57,14 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
   ```elixir
   config :myapp, :oauth_module, Boruta.OauthMock
+  config :myapp, :openid_module, Boruta.OpenidMock
   ```
 
   * Add following in test/test_helper.exs
 
   ```elixir
   Mox.defmock(Boruta.OauthMock, for: Boruta.OauthModule)
+  Mox.defmock(Boruta.OpenidMock, for: Boruta.OpenidModule)
   ```
 
   ### User flows
@@ -68,10 +80,12 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   @module_paths [
     "controllers/oauth/authorize_controller.ex",
     "controllers/openid/authorize_controller.ex",
+    "controllers/openid/jwks_controller.ex",
     "controllers/oauth/introspect_controller.ex",
     "controllers/oauth/revoke_controller.ex",
     "controllers/oauth/token_controller.ex",
-    "views/oauth_view.ex"
+    "views/oauth_view.ex",
+    "views/openid_view.ex"
   ]
 
   @raw_file_paths [
@@ -82,6 +96,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     "unit/oauth/controllers/authorize_controller_test.exs",
     "unit/openid/controllers/authorize_controller_test.exs",
     "unit/openid/controllers/token_controller_test.exs",
+    "unit/openid/controllers/jwks_controller_test.exs",
     "unit/oauth/controllers/introspect_controller_test.exs",
     "unit/oauth/controllers/revoke_controller_test.exs",
     "unit/oauth/controllers/token_controller_test.exs"
@@ -116,11 +131,22 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
           post "/introspect", IntrospectController, :introspect
         end
 
+
+        scope "/openid", MyAppWeb.Openid do
+          pipe_through [:api]
+
+          get "/jwks", JwksController, :jwks_index
+        end
+
+        ####
+
         scope "/oauth", MyAppWeb.Oauth do
           pipe_through [:browser, :fetch_current_user]
 
           get "/authorize", AuthorizeController, :authorize
         end
+
+        ## OR
 
         scope "/openid", MyAppWeb.Openid do
           pipe_through [:browser, :fetch_current_user]
@@ -137,10 +163,12 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     * Add following in config/test.exs
 
         config :myapp, :oauth_module, Boruta.OauthMock
+        config :myapp, :openid_module, Boruta.OpenidMock
 
     * Add following in test/test_helper.exs
 
         Mox.defmock(Boruta.OauthMock, for: Boruta.OauthModule)
+        Mox.defmock(Boruta.OpenidMock, for: Boruta.OpenidModule)
 
     ### User flows
 

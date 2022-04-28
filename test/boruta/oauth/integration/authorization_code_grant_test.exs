@@ -1,5 +1,4 @@
 defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
-  use ExUnit.Case
   use Boruta.DataCase
 
   import Boruta.Factory

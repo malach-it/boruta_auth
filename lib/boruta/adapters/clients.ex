@@ -9,4 +9,5 @@ defmodule Boruta.ClientsAdapter do
 
   def get_client(id), do: clients().get_client(id)
   def authorized_scopes(params), do: clients().authorized_scopes(params)
+  def list_clients_jwk, do: clients().list_clients_jwk()
 end

@@ -4,6 +4,7 @@ defmodule Mix.Tasks.Boruta.Gen.ControllersTest do
   @module_paths [
     "controllers/oauth/authorize_controller.ex",
     "controllers/openid/authorize_controller.ex",
+    "controllers/openid/jwks_controller.ex",
     "controllers/oauth/token_controller.ex",
     "controllers/oauth/introspect_controller.ex",
     "controllers/oauth/revoke_controller.ex",
@@ -12,8 +13,10 @@ defmodule Mix.Tasks.Boruta.Gen.ControllersTest do
     "unit/oauth/controllers/introspect_controller_test.exs",
     "unit/oauth/controllers/revoke_controller_test.exs",
     "unit/openid/controllers/authorize_controller_test.exs",
+    "unit/openid/controllers/jwks_controller_test.exs",
     "unit/openid/controllers/token_controller_test.exs",
-    "views/oauth_view.ex"
+    "views/oauth_view.ex",
+    "views/openid_view.ex"
   ]
 
   test "compiles files without any errors" do
