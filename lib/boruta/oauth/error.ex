@@ -19,6 +19,7 @@ defmodule Boruta.Oauth.Error do
             | :invalid_scope
             | :invalid_code
             | :invalid_resource_owner
+            | :login_required
             | :unknown_error,
           error_description: String.t(),
           format: :query | :fragment | nil,
