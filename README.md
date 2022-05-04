@@ -28,7 +28,7 @@ An example of integration can be found [here](https://gitlab.com/patatoid/boruta
 
 This package passed succesfully basic and implicit OpenID Profiles certification as of May 1st, 2022 for its version [2.1.0](https://hex.pm/packages/boruta/2.1.0). This certification was performed with the above example server which followed documented integration steps listed in the below guides section.
 
-![OpenID Certification watermark](images/oid-certification-mark.png)
+![OpenID Certification watermark](https://gitlab.com/patatoid/boruta_auth/-/raw/master/images/oid-certification-mark.png)
 
 ## Guides
 
