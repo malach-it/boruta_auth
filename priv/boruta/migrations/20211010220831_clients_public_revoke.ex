@@ -29,11 +29,12 @@ defmodule Boruta.Migrations.ClientsPublicRevoke do
         execute("""
         ALTER TABLE oauth_clients
           ALTER COLUMN supported_grant_types TYPE varchar(255)[]
-            USING ARRAY(
-              SELECT supported_grant_type
-              FROM supported_grant_types
-              WHERE supported_grant_type NOT IN ('revoke', 'introspect')
-            )
+            USING array_remove(supported_grant_types, 'revoke')
+        """)
+        execute("""
+        ALTER TABLE oauth_clients
+          ALTER COLUMN supported_grant_types TYPE varchar(255)[]
+            USING array_remove(supported_grant_types, 'introspect')
         """)
 
         execute("""
