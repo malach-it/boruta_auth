@@ -2,16 +2,36 @@ defmodule Boruta.Repo.Migrations.AddRevokeAndIntrospectToClientsSupportedGrantTy
   use Ecto.Migration
 
   def up do
-     execute("""
-      ALTER TABLE oauth_clients
-        ALTER COLUMN supported_grant_types TYPE varchar(255)[]
-          USING (supported_grant_types || ARRAY['revoke'::varchar(255), 'introspect'::varchar(255)])
-      """)
+    execute("""
+    ALTER TABLE oauth_clients
+      ALTER COLUMN supported_grant_types TYPE varchar(255)[]
+        USING (supported_grant_types || ARRAY['revoke'::varchar(255), 'introspect'::varchar(255)])
+    """)
 
-     execute("""
-      ALTER TABLE oauth_clients
-        ALTER COLUMN supported_grant_types
-          SET DEFAULT ARRAY['client_credentials', 'password', 'authorization_code', 'refresh_token', 'implicit', 'revoke', 'introspect']
-     """)
+    execute("""
+     ALTER TABLE oauth_clients
+       ALTER COLUMN supported_grant_types
+         SET DEFAULT ARRAY['client_credentials', 'password', 'authorization_code', 'refresh_token', 'implicit', 'revoke', 'introspect']
+    """)
+  end
+
+  def down do
+    execute("""
+    ALTER TABLE oauth_clients
+      ALTER COLUMN supported_grant_types TYPE varchar(255)[]
+        USING array_remove(supported_grant_types, 'revoke')
+    """)
+
+    execute("""
+    ALTER TABLE oauth_clients
+      ALTER COLUMN supported_grant_types TYPE varchar(255)[]
+        USING array_remove(supported_grant_types, 'introspect')
+    """)
+
+    execute("""
+     ALTER TABLE oauth_clients
+       ALTER COLUMN supported_grant_types
+         SET DEFAULT ARRAY['client_credentials', 'password', 'authorization_code', 'refresh_token', 'implicit']
+    """)
   end
 end
