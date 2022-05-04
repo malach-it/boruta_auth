@@ -73,6 +73,11 @@ defmodule Boruta.Migrations.OpenidConnect do
         rename(table(:oauth_scopes), to: table(:scopes))
         rename(table(:oauth_clients_scopes), to: table(:clients_scopes))
 
+        # migration history changed, for old migrations retrocompatibility
+        drop_if_exists(constraint(:clients_scopes, "clients_scopes_client_id_fkey"))
+        drop_if_exists(constraint(:clients_scopes, "clients_scopes_scope_id_fkey"))
+        drop_if_exists(constraint(:tokens, "tokens_client_id_fkey"))
+
         alter table(:clients_scopes) do
           modify(:client_id, references(:clients, type: :uuid, on_delete: :delete_all))
           modify(:scope_id, references(:scopes, type: :uuid, on_delete: :delete_all))
@@ -107,7 +112,6 @@ defmodule Boruta.Migrations.OpenidConnect do
         alter table(:scopes) do
           modify(:name, :string)
         end
-
       end
     end
   end
