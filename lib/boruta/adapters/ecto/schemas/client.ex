@@ -85,6 +85,7 @@ defmodule Boruta.Ecto.Client do
       :public_refresh_token,
       :public_revoke
     ])
+    |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
     |> change_id_token_ttl()

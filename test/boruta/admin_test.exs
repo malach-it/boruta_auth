@@ -67,6 +67,13 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{id: ^id}} = Admin.create_client(%{id: id})
     end
 
+    test "return an error if id already exists" do
+      id = SecureRandom.uuid()
+
+      assert {:ok, %Client{id: ^id}} = Admin.create_client(%{id: id})
+      assert {:error, %Ecto.Changeset{}} = Admin.create_client(%{id: id})
+    end
+
     test "creates a client" do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
