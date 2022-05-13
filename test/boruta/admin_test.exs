@@ -74,6 +74,12 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:error, %Ecto.Changeset{}} = Admin.create_client(%{id: id})
     end
 
+    test "return an error if id is invalid" do
+      id = "not an uuid"
+
+      assert {:error, %Ecto.Changeset{}} = Admin.create_client(%{id: id})
+    end
+
     test "creates a client" do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end

@@ -37,7 +37,7 @@ defmodule Boruta.Ecto.Client do
           private_key: list(String.t())
         }
 
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
   schema "oauth_clients" do
