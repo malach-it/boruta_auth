@@ -366,7 +366,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 type: type,
                 code: code,
                 id_token: id_token,
-                expires_in: expires_in
+                expires_in: expires_in,
+                token_type: nil
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -401,6 +402,43 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                "nonce" => ^nonce,
                "c_hash" => _c_hash
              } = claims
+    end
+
+    test "returns a code and a token", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                access_token: access_token,
+                expires_in: expires_in,
+                token_type: "bearer"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert code
+      assert access_token
+      assert expires_in
     end
 
     test "returns a code, a token and an id_token", %{
