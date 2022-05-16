@@ -20,23 +20,29 @@ defmodule Boruta.Oauth.Request do
       })
       {:ok, %ClientCredentialsRequest{...}}
   """
-  @spec token_request(conn :: Plug.Conn.t() | %{
-    optional(:req_headers) => list(),
-    body_params: map()
-  }) ::
-    {:error,
-     %Boruta.Oauth.Error{
-       :error => :invalid_request,
-       :error_description => String.t(),
-       :format => nil,
-       :redirect_uri => nil,
-       :status => :bad_request
-     }}
-    | {:ok, oauth_request :: %Boruta.Oauth.AuthorizationCodeRequest{}
-      | %Boruta.Oauth.ClientCredentialsRequest{}
-      | %Boruta.Oauth.AuthorizationCodeRequest{}
-      | %Boruta.Oauth.TokenRequest{}
-      | %Boruta.Oauth.PasswordRequest{}}
+  @spec token_request(
+          conn ::
+            Plug.Conn.t()
+            | %{
+                optional(:req_headers) => list(),
+                body_params: map()
+              }
+        ) ::
+          {:error,
+           %Boruta.Oauth.Error{
+             :error => :invalid_request,
+             :error_description => String.t(),
+             :format => nil,
+             :redirect_uri => nil,
+             :status => :bad_request
+           }}
+          | {:ok,
+             oauth_request ::
+               %Boruta.Oauth.AuthorizationCodeRequest{}
+               | %Boruta.Oauth.ClientCredentialsRequest{}
+               | %Boruta.Oauth.AuthorizationCodeRequest{}
+               | %Boruta.Oauth.TokenRequest{}
+               | %Boruta.Oauth.PasswordRequest{}}
   defdelegate token_request(conn), to: Request.Token, as: :request
 
   @doc """
@@ -58,19 +64,22 @@ defmodule Boruta.Oauth.Request do
       {:ok, %TokenRequest{...}}
   """
   @spec authorize_request(
-    conn :: Plug.Conn.t() | %{body_params: map()},
-    resource_owner :: struct
-  ) ::
-    {:error,
-     %Boruta.Oauth.Error{
-       :error => :invalid_request,
-       :error_description => String.t(),
-       :format => nil,
-       :redirect_uri => nil,
-       :status => :bad_request
-     }}
-    | {:ok, oauth_request :: %Boruta.Oauth.CodeRequest{}
-      | %Boruta.Oauth.TokenRequest{}}
+          conn :: Plug.Conn.t() | %{body_params: map()},
+          resource_owner :: struct
+        ) ::
+          {:error,
+           %Boruta.Oauth.Error{
+             :error => :invalid_request,
+             :error_description => String.t(),
+             :format => nil,
+             :redirect_uri => nil,
+             :status => :bad_request
+           }}
+          | {:ok,
+             oauth_request ::
+               %Boruta.Oauth.CodeRequest{}
+               | %Boruta.Oauth.TokenRequest{}
+               | %Boruta.Oauth.HybridRequest{}}
   defdelegate authorize_request(conn, resource_owner), to: Request.Authorize, as: :request
 
   @doc """
@@ -86,19 +95,23 @@ defmodule Boruta.Oauth.Request do
       })
       {:ok, %IntrospectRequest{...}}
   """
-  @spec introspect_request(conn :: Plug.Conn.t() | %{
-    optional(:req_headers) => list(),
-    body_params: map()
-  }) ::
-    {:error,
-     %Boruta.Oauth.Error{
-       :error => :invalid_request,
-       :error_description => String.t(),
-       :format => nil,
-       :redirect_uri => nil,
-       :status => :bad_request
-     }}
-    | {:ok, request :: %Boruta.Oauth.IntrospectRequest{}}
+  @spec introspect_request(
+          conn ::
+            Plug.Conn.t()
+            | %{
+                optional(:req_headers) => list(),
+                body_params: map()
+              }
+        ) ::
+          {:error,
+           %Boruta.Oauth.Error{
+             :error => :invalid_request,
+             :error_description => String.t(),
+             :format => nil,
+             :redirect_uri => nil,
+             :status => :bad_request
+           }}
+          | {:ok, request :: %Boruta.Oauth.IntrospectRequest{}}
   defdelegate introspect_request(conn), to: Request.Introspect, as: :request
 
   @doc """
@@ -114,18 +127,22 @@ defmodule Boruta.Oauth.Request do
       })
       {:ok, %RevokeRequest{...}}
   """
-  @spec revoke_request(conn :: Plug.Conn.t() | %{
-    optional(:req_headers) => list(),
-    body_params: map()
-  }) ::
-    {:error,
-     %Boruta.Oauth.Error{
-       :error => :invalid_request,
-       :error_description => String.t(),
-       :format => nil,
-       :redirect_uri => nil,
-       :status => :bad_request
-     }}
-    | {:ok, request :: %Boruta.Oauth.RevokeRequest{}}
+  @spec revoke_request(
+          conn ::
+            Plug.Conn.t()
+            | %{
+                optional(:req_headers) => list(),
+                body_params: map()
+              }
+        ) ::
+          {:error,
+           %Boruta.Oauth.Error{
+             :error => :invalid_request,
+             :error_description => String.t(),
+             :format => nil,
+             :redirect_uri => nil,
+             :status => :bad_request
+           }}
+          | {:ok, request :: %Boruta.Oauth.RevokeRequest{}}
   defdelegate revoke_request(conn), to: Request.Revoke, as: :request
 end

@@ -88,29 +88,30 @@ defmodule Boruta.Oauth.Request.Base do
       true ->
         {:ok,
          %HybridRequest{
-           response_types: response_types,
            client_id: params["client_id"],
-           redirect_uri: params["redirect_uri"],
-           resource_owner: params["resource_owner"],
-           state: params["state"],
            code_challenge: params["code_challenge"],
            code_challenge_method: params["code_challenge_method"],
-           scope: params["scope"],
            nonce: params["nonce"],
-           prompt: params["prompt"]
+           prompt: params["prompt"],
+           redirect_uri: params["redirect_uri"],
+           resource_owner: params["resource_owner"],
+           response_mode: params["response_mode"],
+           response_types: response_types,
+           scope: params["scope"],
+           state: params["state"]
          }}
 
       false ->
         {:ok,
          %TokenRequest{
-           response_types: response_types,
            client_id: params["client_id"],
+           nonce: params["nonce"],
+           prompt: params["prompt"],
            redirect_uri: params["redirect_uri"],
            resource_owner: params["resource_owner"],
-           state: params["state"],
+           response_types: response_types,
            scope: params["scope"],
-           nonce: params["nonce"],
-           prompt: params["prompt"]
+           state: params["state"]
          }}
     end
   end

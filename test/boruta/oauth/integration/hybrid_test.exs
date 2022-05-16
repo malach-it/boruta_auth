@@ -60,6 +60,27 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 }}
     end
 
+    test "returns an error if `response_mode` is invalid" do
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code token",
+                   "response_mode" => "invalid_response_mode",
+                   "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+                   "redirect_uri" => "http://redirect.uri"
+                 }
+               },
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Query params validation failed. #/response_mode do match required pattern /^(query|fragment)$/.",
+                  status: :bad_request
+                }}
+    end
+
     test "returns an error if `client_id` is invalid" do
       assert Oauth.authorize(
                %Plug.Conn{
@@ -236,7 +257,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 }}
     end
 
-    test "returns an error as fragment without a nonce and `id_token token` response types", %{client: client, resource_owner: resource_owner} do
+    test "returns an error as fragment without a nonce and `code id_token` response types", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
@@ -246,7 +267,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert Oauth.authorize(
                %Plug.Conn{
                  query_params: %{
-                   "response_type" => "id_token",
+                   "response_type" => "code id_token",
                    "client_id" => client.id,
                    "redirect_uri" => redirect_uri,
                    "scope" => "openid"
@@ -258,6 +279,36 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                {:authorize_error,
                 %Error{
                   format: :fragment,
+                  error: :invalid_request,
+                  error_description: "OpenID requests require a nonce.",
+                  status: :bad_request,
+                  redirect_uri: redirect_uri
+                }}
+    end
+
+    test "returns an error as query params with `response_mode=query`, without a nonce, and `code id_token` response types", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code id_token",
+                   "response_mode" => "query",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "scope" => "openid"
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+      ) ==
+               {:authorize_error,
+                %Error{
+                  format: :query,
                   error: :invalid_request,
                   error_description: "OpenID requests require a nonce.",
                   status: :bad_request,

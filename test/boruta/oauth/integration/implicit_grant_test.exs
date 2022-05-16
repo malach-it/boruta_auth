@@ -301,6 +301,35 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
     end
 
+    test "returns an error as fragment without a nonce and `id_token token` response types", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "id_token token",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "scope" => "openid"
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+      ) ==
+               {:authorize_error,
+                %Error{
+                  format: :fragment,
+                  error: :invalid_request,
+                  error_description: "OpenID requests require a nonce.",
+                  status: :bad_request,
+                  redirect_uri: redirect_uri
+                }}
+    end
+
     test "returns an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
