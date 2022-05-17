@@ -129,10 +129,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   end
 
   defp has_access_token?(params) do
-    case Map.fetch(params, :token) do
-      {:ok, _access_token} -> true
-      :error -> false
-    end
+    Map.has_key?(params, :token)
   end
 
   @spec redirect_to_url(__MODULE__.t()) :: url :: String.t()
