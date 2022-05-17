@@ -154,11 +154,11 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   @spec redirect_to_url(__MODULE__.t()) :: url :: String.t()
   def redirect_to_url(%__MODULE__{} = response) do
-    query_params = query_params(response)
-    url(response, query_params)
+    params = params(response)
+    url(response, params)
   end
 
-  defp query_params(%__MODULE__{
+  defp params(%__MODULE__{
          access_token: access_token,
          code: code,
          id_token: id_token,
@@ -181,28 +181,28 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     |> URI.encode_query()
   end
 
-  defp url(%__MODULE__{type: :token, redirect_uri: redirect_uri}, query_params),
-    do: "#{redirect_uri}##{query_params}"
+  defp url(%__MODULE__{type: :token, redirect_uri: redirect_uri}, params),
+    do: "#{redirect_uri}##{params}"
 
-  defp url(%__MODULE__{type: :code, redirect_uri: redirect_uri}, query_params),
-    do: "#{redirect_uri}?#{query_params}"
+  defp url(%__MODULE__{type: :code, redirect_uri: redirect_uri}, params),
+    do: "#{redirect_uri}?#{params}"
 
   defp url(
          %__MODULE__{type: :hybrid, response_mode: "query", redirect_uri: redirect_uri},
-         query_params
+         params
        ),
-       do: "#{redirect_uri}?#{query_params}"
+       do: "#{redirect_uri}?#{params}"
 
   defp url(
          %__MODULE__{type: :hybrid, response_mode: "fragment", redirect_uri: redirect_uri},
-         query_params
+         params
        ),
-       do: "#{redirect_uri}##{query_params}"
+       do: "#{redirect_uri}##{params}"
 
   # fallback to fragment since it is the hybrid default response mode
   defp url(
          %__MODULE__{type: :hybrid, response_mode: nil, redirect_uri: redirect_uri},
-         query_params
+         params
        ),
-       do: "#{redirect_uri}##{query_params}"
+       do: "#{redirect_uri}##{params}"
 end
