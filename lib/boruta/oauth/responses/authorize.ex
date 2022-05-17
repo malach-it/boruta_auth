@@ -67,7 +67,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       state: state,
       code_challenge: code_challenge,
       code_challenge_method: code_challenge_method,
-      token_type: if(is_hybrid?(params), do: "bearer")
+      token_type: if(has_token_type?(params), do: "bearer")
     }
   end
 
@@ -120,8 +120,16 @@ defmodule Boruta.Oauth.AuthorizeResponse do
      }}
   end
 
+  defp has_token_type?(params) do
+    is_hybrid?(params) && has_access_token?(params)
+  end
+
   defp is_hybrid?(params) do
     !is_nil(params[:id_token] || params[:token])
+  end
+
+  defp has_access_token?(params) do
+    Map.has_key?(params, :token)
   end
 
   @spec redirect_to_url(__MODULE__.t()) :: url :: String.t()

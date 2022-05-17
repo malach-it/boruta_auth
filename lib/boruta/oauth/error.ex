@@ -54,19 +54,19 @@ defmodule Boruta.Oauth.Error do
         redirect_uri: redirect_uri,
         state: state,
         prompt: "none"
-      }) do
+      } = request) do
     %{
       error
       | error: :login_required,
         error_description: "User is not logged in.",
-        format: :fragment,
+        format: response_mode(request),
         redirect_uri: redirect_uri,
         state: state
     }
   end
 
-  def with_format(%Error{} = error, %HybridRequest{redirect_uri: redirect_uri, state: state}) do
-    %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
+  def with_format(%Error{} = error, %HybridRequest{redirect_uri: redirect_uri, state: state} = request) do
+    %{error | format: response_mode(request), redirect_uri: redirect_uri, state: state}
   end
 
   def with_format(%Error{error: :invalid_resource_owner} = error, %TokenRequest{
@@ -89,6 +89,11 @@ defmodule Boruta.Oauth.Error do
   end
 
   def with_format(error, _), do: error
+
+  defp response_mode(%HybridRequest{response_mode: "query"}), do: :query
+  defp response_mode(%HybridRequest{response_mode: "fragment"}), do: :fragment
+  # fallback to fragment since it is the hybrid default response mode
+  defp response_mode(%HybridRequest{response_mode: nil}), do: :fragment
 
   @doc """
   Returns the URL to be redirected according to error format.

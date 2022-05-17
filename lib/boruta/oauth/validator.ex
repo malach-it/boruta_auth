@@ -65,13 +65,7 @@ defmodule Boruta.Oauth.Validator do
              "code token",
              "code id_token token"
            ] do
-    response_type = response_types |> String.split(" ") |> List.first()
-
-    case ExJsonSchema.Validator.validate(
-           apply(Schema, String.to_atom(response_type), []),
-           params,
-           error_formatter: BorutaFormatter
-         ) do
+    case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
 
@@ -113,5 +107,20 @@ defmodule Boruta.Oauth.Validator do
 
   def validate(:authorize, _params) do
     {:error, "Request is not a valid OAuth request. Need a response_type param."}
+  end
+
+  defp validate_multiple_response_types(%{"response_type" => response_types} = params) do
+    response_types
+    |> String.split(" ")
+    |> Enum.reduce_while(:ok, fn response_type, _acc ->
+      case ExJsonSchema.Validator.validate(
+             apply(Schema, String.to_atom(response_type), []),
+             params,
+             error_formatter: BorutaFormatter
+           ) do
+        :ok -> {:cont, :ok}
+        {:error, errors} -> {:halt, {:error, errors}}
+      end
+    end)
   end
 end

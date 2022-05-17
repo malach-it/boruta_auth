@@ -7,16 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Added
+
+- handle `response_mode` in hybrid requests
+
 ### Fixed
 
-- Generated migrations can be rollbacked
+- respond to authorize requests with `token_type` only when an access token is returned
+- generated migrations can be rollbacked
 - clients pkey constraint do not crash on admin create
 
 ## [2.1.2] - 2022-05-02
 
 ### Fixed
 
-- Hybrid requests shall return all errors as fragment
+- hybrid requests shall return all errors as fragment
 
 ## [2.1.1] - 2022-04-30
 

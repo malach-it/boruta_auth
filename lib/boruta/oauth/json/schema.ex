@@ -58,6 +58,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "token"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
         "client_id" => %{
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
@@ -76,6 +77,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "id_token"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
         "client_id" => %{
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
@@ -105,6 +107,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "code"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
         "client_id" => %{
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
