@@ -5,7 +5,7 @@ defmodule Boruta.MixProject do
     [
       name: "Boruta core",
       app: :boruta,
-      version: "2.1.2",
+      version: "2.1.3",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -175,7 +175,7 @@ defmodule Boruta.MixProject do
 
   defp description do
     """
-    Boruta is the core of an OAuth/OpenID Connect provider managing authorization business rules.
+    Boruta is the core of an OAuth/OpenID Connect provider bringing authorization to your applications.
     """
   end
 
