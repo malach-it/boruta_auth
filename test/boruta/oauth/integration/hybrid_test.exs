@@ -404,6 +404,60 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              } = claims
     end
 
+    test "returns a code and an id_token with `response_mode=query`", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                expires_in: expires_in,
+                token_type: nil,
+                response_mode: "query"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code id_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce,
+                     "response_mode" => "query"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert code
+      assert id_token
+      assert expires_in
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+      {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
+
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce,
+               "c_hash" => _c_hash
+             } = claims
+    end
+
     test "returns a code and a token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
@@ -429,6 +483,45 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                      "redirect_uri" => redirect_uri,
                      "scope" => "openid",
                      "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert code
+      assert access_token
+      assert expires_in
+    end
+
+    test "returns a code and a token with `response_mode=query`", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                access_token: access_token,
+                expires_in: expires_in,
+                token_type: "bearer",
+                response_mode: "query"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce,
+                     "response_mode" => "query"
                    }
                  },
                  resource_owner,
@@ -469,6 +562,64 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                      "redirect_uri" => redirect_uri,
                      "scope" => "openid",
                      "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert code
+      assert id_token
+      assert access_token
+      assert expires_in
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+      {:ok, claims} = IdToken.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
+
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce,
+               "c_hash" => _c_hash
+             } = claims
+    end
+
+    test "returns a code, a token and an id_token with `response_mode=query`", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                access_token: access_token,
+                expires_in: expires_in,
+                response_mode: "query"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code id_token token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce,
+                     "response_mode" => "query"
                    }
                  },
                  resource_owner,

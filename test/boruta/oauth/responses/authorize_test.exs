@@ -16,6 +16,34 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
                "http://redirect.uri#access_token=value&expires_in=10"
     end
 
+    test "returns a fragment according to `response_mode` for hybrid requests" do
+      response = %AuthorizeResponse{
+        type: :hybrid,
+        code: "value",
+        access_token: "value",
+        expires_in: 10,
+        redirect_uri: "http://redirect.uri",
+        response_mode: "fragment"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri#access_token=value&code=value&expires_in=10"
+    end
+
+    test "returns query params according to `response_mode` for hybrid requests" do
+      response = %AuthorizeResponse{
+        type: :hybrid,
+        code: "value",
+        access_token: "value",
+        expires_in: 10,
+        redirect_uri: "http://redirect.uri",
+        response_mode: "query"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri?access_token=value&code=value&expires_in=10"
+    end
+
     test "returns an url with access_token type and a state" do
       response = %AuthorizeResponse{
         type: :token,

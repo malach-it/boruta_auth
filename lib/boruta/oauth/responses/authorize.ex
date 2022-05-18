@@ -6,36 +6,44 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   alias Boruta.Oauth.Error
 
   @enforce_keys [:type, :redirect_uri]
-  defstruct type: nil,
-            redirect_uri: nil,
+  defstruct access_token: nil,
             code: nil,
-            id_token: nil,
-            access_token: nil,
-            expires_in: nil,
-            state: nil,
             code_challenge: nil,
             code_challenge_method: nil,
-            token_type: nil
+            expires_in: nil,
+            id_token: nil,
+            redirect_uri: nil,
+            response_mode: nil,
+            state: nil,
+            token_type: nil,
+            type: nil
 
   @type t :: %__MODULE__{
-          type: :token | :code | :hybrid,
-          redirect_uri: String.t(),
-          expires_in: integer(),
-          code: String.t() | nil,
-          id_token: String.t() | nil,
           access_token: String.t() | nil,
-          state: String.t() | nil,
+          code: String.t() | nil,
           code_challenge: String.t() | nil,
           code_challenge_method: String.t() | nil,
-          token_type: String.t() | nil
+          expires_in: integer(),
+          id_token: String.t() | nil,
+          redirect_uri: String.t(),
+          response_mode: String.t() | nil,
+          state: String.t() | nil,
+          token_type: String.t() | nil,
+          type: :token | :code | :hybrid
         }
 
   alias Boruta.Oauth.AuthorizeResponse
+  alias Boruta.Oauth.CodeRequest
+  alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.Token
+  alias Boruta.Oauth.TokenRequest
 
-  @spec from_tokens(%{
-          (type :: :code | :token | :id_token) => token :: Boruta.Oauth.Token.t() | String.t()
-        }) :: t()
+  @spec from_tokens(
+          %{
+            (type :: :code | :token | :id_token) => token :: Boruta.Oauth.Token.t() | String.t()
+          },
+          request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
+        ) :: t()
   def from_tokens(
         %{
           code: %Token{
@@ -46,7 +54,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method
           }
-        } = params
+        } = params,
+        request
       ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
@@ -55,6 +64,12 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       case is_hybrid?(params) do
         true -> :hybrid
         false -> :code
+      end
+
+    response_mode =
+      case request.__struct__ do
+        HybridRequest -> request.response_mode
+        _ -> nil
       end
 
     %AuthorizeResponse{
@@ -67,7 +82,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       state: state,
       code_challenge: code_challenge,
       code_challenge_method: code_challenge_method,
-      token_type: if(has_token_type?(params), do: "bearer")
+      token_type: if(has_token_type?(params), do: "bearer"),
+      response_mode: response_mode
     }
   end
 
@@ -79,7 +95,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             redirect_uri: redirect_uri,
             state: state
           }
-        } = params
+        } = params,
+        _request
       ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
@@ -95,13 +112,16 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     }
   end
 
-  def from_tokens(%{
-        id_token: %Token{
-          value: id_token,
-          redirect_uri: redirect_uri,
-          state: state
-        }
-      }) do
+  def from_tokens(
+        %{
+          id_token: %Token{
+            value: id_token,
+            redirect_uri: redirect_uri,
+            state: state
+          }
+        },
+        _request
+      ) do
     %AuthorizeResponse{
       type: :token,
       redirect_uri: redirect_uri,
@@ -110,7 +130,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     }
   end
 
-  def from_tokens(_) do
+  def from_tokens(_params, _request) do
     {:error,
      %Error{
        status: :bad_request,
@@ -134,11 +154,11 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   @spec redirect_to_url(__MODULE__.t()) :: url :: String.t()
   def redirect_to_url(%__MODULE__{} = response) do
-    query_params = query_params(response)
-    url(response, query_params)
+    params = params(response)
+    url(response, params)
   end
 
-  defp query_params(%__MODULE__{
+  defp params(%__MODULE__{
          access_token: access_token,
          code: code,
          id_token: id_token,
@@ -161,12 +181,28 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     |> URI.encode_query()
   end
 
-  defp url(%__MODULE__{type: :token, redirect_uri: redirect_uri}, query_params),
-    do: "#{redirect_uri}##{query_params}"
+  defp url(%__MODULE__{type: :token, redirect_uri: redirect_uri}, params),
+    do: "#{redirect_uri}##{params}"
 
-  defp url(%__MODULE__{type: :code, redirect_uri: redirect_uri}, query_params),
-    do: "#{redirect_uri}?#{query_params}"
+  defp url(%__MODULE__{type: :code, redirect_uri: redirect_uri}, params),
+    do: "#{redirect_uri}?#{params}"
 
-  defp url(%__MODULE__{type: :hybrid, redirect_uri: redirect_uri}, query_params),
-    do: "#{redirect_uri}##{query_params}"
+  defp url(
+         %__MODULE__{type: :hybrid, response_mode: "query", redirect_uri: redirect_uri},
+         params
+       ),
+       do: "#{redirect_uri}?#{params}"
+
+  defp url(
+         %__MODULE__{type: :hybrid, response_mode: "fragment", redirect_uri: redirect_uri},
+         params
+       ),
+       do: "#{redirect_uri}##{params}"
+
+  # fallback to fragment since it is the hybrid default response mode
+  defp url(
+         %__MODULE__{type: :hybrid, response_mode: nil, redirect_uri: redirect_uri},
+         params
+       ),
+       do: "#{redirect_uri}##{params}"
 end

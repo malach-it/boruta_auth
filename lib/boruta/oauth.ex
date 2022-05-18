@@ -97,7 +97,7 @@ defmodule Boruta.Oauth do
   def authorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module) when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, tokens} <- Authorization.token(request),
-         %AuthorizeResponse{} = response <- AuthorizeResponse.from_tokens(tokens) do
+         %AuthorizeResponse{} = response <- AuthorizeResponse.from_tokens(tokens, request) do
       module.authorize_success(
         conn,
         response
