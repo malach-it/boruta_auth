@@ -406,7 +406,7 @@ defmodule Boruta.Ecto.AdminTest do
       _future_active_revoked_token =
         insert(:token, expires_at: now + 10, revoked_at: DateTime.from_unix!(now))
 
-      future_datetime = DateTime.utc_now() |> DateTime.add(10, :second)
+      future_datetime = DateTime.from_unix!(now) |> DateTime.add(10, :second)
 
       assert Admin.delete_inactive_tokens(future_datetime) == {3, nil}
     end
