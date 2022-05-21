@@ -1,9 +1,9 @@
 # Setting up Boruta OAuth/OpenID Connect provider
-Boruta provides as its core all authorization business rules in order to handle underlying authorization logic of OAuth and OpenID Connect. Then it provides a generator that helps to create required controllers, views and templates as we will see.
+Boruta provides as its core all authorization business rules in order to handle the underlying authorization logic of OAuth and OpenID Connect. Then it provides a generator that helps to create required controllers, views, and templates as we will see.
 
 ## 1. Bootstrap the application
 
-We will start by botsrapping a Phoenix web application with authentication capabilities provided by `phx.gen.auth` since OAuth and OpenID Connect specifications does not provide any recommandations about how to authenticate users. Instead, it provides all protocols required to authorize them to secure an HTTP service, with relative identity information in destination to the client brought by OpenID Connect core. Here we go, first bootstrapping the application:
+We will start by botsrapping a Phoenix web application with authentication capabilities provided by `phx.gen.auth` since OAuth and OpenID Connect specifications do not provide any recommendations about how to authenticate users. Instead, it provides all protocols required to authorize them to secure an HTTP service, with relative identity information in destination to the client brought by OpenID Connect core. Here we go, first bootstrapping the application:
 ```sh
 ~> mix phx.new boruta_example
 ```
@@ -13,15 +13,15 @@ Then the authentication
 ```
 We have now a web application in which we can log in. If you want to know more about those, have a look at [phx.new](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.New.html) and [phx.gen.auth](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Gen.Auth.html) documentations.
 
-In order to run the newly created application, you have to set up dependencies and database. You'll find development database configuration in `config/dev.exs` file, fill it with valid PostgreSQL credentials, you would be able to run
+In order to run the newly created application, you have to set up dependencies and the database. You'll find the development database configuration in `config/dev.exs` file, fill it with valid PostgreSQL credentials, you would be able to run
 ```sh
 ~> mix do deps.get, ecto.setup
 ```
-Here is the application up and running, starting the web server with `mix phx.server` you'll be able to visit `http://localhost:4000` with your favorite browser.
+Here is the application up and running, starting the webserver with `mix phx.server` you'll be able to visit `http://localhost:4000` with your favorite browser.
 
 ## 2. Bootstrap Boruta
 
-Once the application up, we can pass to the authorization part. First, you can add the Boruta dependency in `mix.exs`
+Once the application is up, we can go on to the authorization part. First, you can add the Boruta dependency in `mix.exs`
 ```elixir
 # mix.exs
 
@@ -32,13 +32,13 @@ Once the application up, we can pass to the authorization part. First, you can a
   end
 ```
 
-After that, you'll be able to generate controllers in order to expose Oauth and OpenID Connect core specifications endpoints and database migrations to persist required clients, scopes and tokens needed by your newly created provider.
+After that, you'll be able to generate controllers in order to expose Oauth and OpenID Connect core specifications endpoints and database migrations to persist required clients, scopes, and tokens needed by your newly created provider.
 
 ```sh
 ~> mix do deps.get, boruta.gen.migration, ecto.migrate, boruta.gen.controllers
 ```
 
-It will print the remaining steps to have the provider up and running as described in [documentation](https://patatoid.gitlab.io/boruta_auth/Mix.Tasks.Boruta.Gen.Controllers.html). From there we will skip the testing part which uses Mox in order to mock Boruta and focus tests on the application layer.
+It will print the remaining steps to have the provider up and running as described in the [documentation](https://patatoid.gitlab.io/boruta_auth/Mix.Tasks.Boruta.Gen.Controllers.html). From there we will skip the testing part which uses Mox in order to mock Boruta and focus tests on the application layer.
 
 ## 3. Configure Boruta
 
@@ -76,7 +76,7 @@ config :boruta, Boruta.Oauth,
   repo: BorutaExample.Repo,
   issuer: "https://example.com"
 ```
-Here client credentials flow should be up. For user flows you need further configuration and to implement `Boruta.Oauth.ResourceOwners` context.
+Here client credentials flow should be up. For user flows you need further configuration and implement `Boruta.Oauth.ResourceOwners` context.
 
 ## 4. User flows
 
@@ -125,7 +125,7 @@ defmodule BorutaExample.ResourceOwners do
 end
 ```
 
-and inject it with main configuration
+and inject it with the main configuration
 
 ```elixir
 # config/config.exs
@@ -148,7 +148,7 @@ Last, you'll have to setup is the redirection in the OAuth authorize controller
   end
 ```
 
-Here all OAuth flows should be up and running !
+Here all OAuth flows should be up and running!
 
 ## 5. OpenID Connect
 
@@ -180,7 +180,7 @@ And set redirections in the OpenID authorize controller
   end
 ```
 
-Last, you need to store `last_login_at` field of users to keep track of timestamp when user logs in
+Last, you need to store the `last_login_at` field of users to keep track of the timestamp when users log in
 
 ```elixir
 # priv/repo/migrations/<timestamp>_add_last_login_at_to_users.exs
@@ -226,5 +226,5 @@ end
 Here we are! You have a basic OpenID Connect provider. You can now create a client as described [here](https://patatoid.gitlab.io/boruta_auth/create_client.html) and start using it.
 Departing from there, you can use any OAuth/OpenID Connect client of your choice.
 
-Hope you enjoyed so far. The process can definitely improved at some points, all contributions of any kind will be very welcome.
+Hope you enjoyed the way so far. The process can definitely be improved at some points, all contributions of any kind will be very welcome.
 
