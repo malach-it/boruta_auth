@@ -27,7 +27,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: client,
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) - 10
@@ -37,7 +36,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: expired_refresh_token_client,
           redirect_uri: List.first(client.redirect_uris)
         )
@@ -48,7 +46,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: client,
           redirect_uri: List.first(client.redirect_uris),
           revoked_at: revoked_at
@@ -58,7 +55,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: client,
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) + 10,
@@ -69,7 +65,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: public_refresh_token_client,
           redirect_uri: List.first(public_refresh_token_client.redirect_uris),
           expires_at: :os.system_time(:seconds) + 10,
@@ -80,7 +75,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: insert(:client),
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) + 10,
