@@ -40,8 +40,15 @@ defmodule Boruta.OauthTest.CommonGrantTest do
                 }}
     end
 
-    @tag :skip
-    test "with basic authorization header" do
+    test "returns an error with invalid grant_type (bad format)" do
+      assert Oauth.token(%Plug.Conn{body_params: %{"grant_type" => nil}}, ApplicationMock) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description:
+                    "Request body validation failed. The type at #/grant_type `null` do not match the required types [\"string\"].",
+                  status: :bad_request
+                }}
     end
   end
 
@@ -78,13 +85,9 @@ defmodule Boruta.OauthTest.CommonGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token` for Hybrid requests and `token` or `id_token token` for Implicit requests.",
+                    "Invalid response_type param, may be on of `code` for Authorization Code request, `code id_token`, `code token`, `code id_token token` for Hybrid requests, or `token`, `id_token token` for Implicit requests.",
                   status: :bad_request
                 }}
-    end
-
-    @tag :skip
-    test "with basic authorization header" do
     end
   end
 end

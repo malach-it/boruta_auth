@@ -6,6 +6,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
   import Mox
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.OauthMapper
+  alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
@@ -25,7 +27,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: client,
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) - 10
@@ -35,7 +36,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: expired_refresh_token_client,
           redirect_uri: List.first(client.redirect_uris)
         )
@@ -46,7 +46,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: client,
           redirect_uri: List.first(client.redirect_uris),
           revoked_at: revoked_at
@@ -56,7 +55,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: client,
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) + 10,
@@ -67,7 +65,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: public_refresh_token_client,
           redirect_uri: List.first(public_refresh_token_client.redirect_uris),
           expires_at: :os.system_time(:seconds) + 10,
@@ -78,7 +75,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
         insert(
           :token,
           type: "access_token",
-          refresh_token: Boruta.TokenGenerator.generate(),
           client: insert(:client),
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) + 10,
@@ -224,8 +220,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_refresh_token,
-                  error_description: "Provided refresh token is incorrect.",
+                  error: :invalid_grant,
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -275,8 +271,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_refresh_token,
-                  error_description: "Token expired.",
+                  error: :invalid_grant,
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -327,7 +323,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                {:token_error,
                 %Error{
                   error: :invalid_grant,
-                  error_description: "Given refresh token is invalid.",
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -352,7 +348,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                {:token_error,
                 %Error{
                   error: :invalid_grant,
-                  error_description: "Given refresh token is invalid.",
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -440,6 +436,40 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token,
+                     "scope" => "scope"
+                   },
+                   req_headers: [{"authorization", authorization_header}, {"other", "header"}]
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
+    end
+
+    test "returns token (using cache)", %{client: client, access_token: token} do
+      ResourceOwners
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      token |> OauthMapper.to_oauth_schema() |> TokenStore.put()
 
       assert {:token_success,
               %TokenResponse{

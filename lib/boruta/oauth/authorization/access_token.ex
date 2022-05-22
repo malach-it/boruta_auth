@@ -32,28 +32,12 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
-      {:error, :token_revoked} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_grant,
-           error_description: "Given access token is invalid."
-         }}
-
-      {:error, error} ->
+      _ ->
         {:error,
          %Error{
            status: :bad_request,
            error: :invalid_access_token,
-           error_description: error
-         }}
-
-      nil ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_access_token,
-           error_description: "Provided access token is invalid."
+           error_description: "Given access token is invalid, revoked, or expired."
          }}
     end
   end
@@ -63,28 +47,12 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
       :ok <- Token.ensure_valid(token, :refresh_token) do
       {:ok, token}
     else
-      {:error, "Token revoked."} ->
+      _ ->
         {:error,
          %Error{
            status: :bad_request,
            error: :invalid_grant,
-           error_description: "Given refresh token is invalid."
-         }}
-
-      {:error, error} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_refresh_token,
-           error_description: error
-         }}
-
-      nil ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_refresh_token,
-           error_description: "Provided refresh token is incorrect."
+           error_description: "Given refresh token is invalid, revoked, or expired."
          }}
     end
   end

@@ -72,8 +72,6 @@ defmodule Boruta.Ecto.Codes do
         error_message = Errors.message_from_changeset(changeset)
 
         {:error, "Could not create code : #{error_message}"}
-      error ->
-        error
     end
   end
 

@@ -6,6 +6,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
   import Mox
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.ScopeStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
@@ -314,6 +315,38 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                   status: :bad_request,
                   redirect_uri: redirect_uri
                 }}
+    end
+
+    test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
+      resource_owner = %{resource_owner | sub: 1}
+
+      ResourceOwners
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_error,
+       %Boruta.Oauth.Error{
+         error: :unknown_error,
+         error_description: "An error occured during token creation: \"Could not create code : sub is invalid\".",
+         format: :fragment,
+         redirect_uri: "https://redirect.uri",
+         state: nil,
+         status: :internal_server_error
+       }} =
+        Oauth.authorize(
+          %Plug.Conn{
+            query_params: %{
+              "response_type" => "code token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri,
+              "scope" => "openid"
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
     end
 
     test "does not return an id_token without `openid` scope", %{
@@ -711,6 +744,40 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert value
+      assert expires_in
+    end
+
+    test "returns a code with public scope (from cache)", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      given_scope = "public"
+      redirect_uri = List.first(client.redirect_uris)
+
+      ScopeStore.put_public([%Scope{name: "public"}])
 
       assert {:authorize_success,
               %AuthorizeResponse{

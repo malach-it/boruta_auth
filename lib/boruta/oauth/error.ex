@@ -88,8 +88,6 @@ defmodule Boruta.Oauth.Error do
     %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
   end
 
-  def with_format(error, _), do: error
-
   defp response_mode(%HybridRequest{response_mode: "query"}), do: :query
   defp response_mode(%HybridRequest{response_mode: "fragment"}), do: :fragment
   # fallback to fragment since it is the hybrid default response mode

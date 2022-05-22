@@ -163,14 +163,4 @@ defmodule Boruta.Oauth.Json.Schema do
       "required" => ["grant_type"]
     } |> Schema.resolve
   end
-
-  def response_type do
-    %{
-      "type" => "object",
-      "properties" => %{
-        "response_type" => %{"type" => "string", "pattern" => "^(token|code|id_token)$"},
-      },
-      "required" => ["response_type"]
-    } |> Schema.resolve
-  end
 end

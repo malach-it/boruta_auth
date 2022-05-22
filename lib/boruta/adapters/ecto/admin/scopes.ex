@@ -72,7 +72,7 @@ defmodule Boruta.Ecto.Admin.Scopes do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_scope(attrs \\ %{}) do
+  def create_scope(attrs) do
     with {:ok, scope} <- %Scope{} |> Scope.changeset(attrs) |> repo().insert(),
          :ok <- Scopes.invalidate(:public) do
       {:ok, scope}

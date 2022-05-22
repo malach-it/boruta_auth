@@ -13,14 +13,13 @@ defmodule Boruta.Openid do
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
-  import Boruta.Config, only: [clients: 0]
-
+  alias Boruta.ClientsAdapter
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Token
 
   def jwks(conn, module) do
-    jwk_keys = clients().list_clients_jwk()
+    jwk_keys = ClientsAdapter.list_clients_jwk()
 
     module.jwk_list(conn, jwk_keys)
   end

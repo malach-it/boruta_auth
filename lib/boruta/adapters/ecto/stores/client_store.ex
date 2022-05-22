@@ -11,7 +11,6 @@ defmodule Boruta.Ecto.ClientStore do
     case get_by_id(id) do
       %Client{} = client -> {:ok, client}
       nil -> {:error, "Client not cached."}
-      error -> error
     end
   end
 

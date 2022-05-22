@@ -159,7 +159,7 @@ defmodule Boruta.Oauth do
          :ok <- Revoke.token(request) do
       module.revoke_success(conn)
     else
-      {:error, error} ->
+      {:error, %Error{} = error} ->
         module.revoke_error(conn, error)
 
       {:error, reason} ->

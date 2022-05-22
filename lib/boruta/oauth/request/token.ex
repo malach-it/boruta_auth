@@ -8,7 +8,6 @@ defmodule Boruta.Oauth.Request.Token do
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PasswordRequest
-  alias Boruta.Oauth.TokenRequest
   alias Boruta.Oauth.Validator
 
   @spec request(conn :: Plug.Conn.t() | map()) ::
@@ -22,8 +21,6 @@ defmodule Boruta.Oauth.Request.Token do
      }}
     | {:ok, oauth_request :: AuthorizationCodeRequest.t()
       | ClientCredentialsRequest.t()
-      | AuthorizationCodeRequest.t()
-      | TokenRequest.t()
       | PasswordRequest.t()}
   def request(%{
     req_headers: req_headers,
@@ -33,10 +30,10 @@ defmodule Boruta.Oauth.Request.Token do
       {:ok, authorization_header} ->
         request(%{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{} = body_params
+          body_params: body_params
         })
       {:error, _reason} ->
-        request(%{body_params: %{} = body_params})
+        request(%{body_params: body_params})
     end
   end
 

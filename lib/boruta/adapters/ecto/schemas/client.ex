@@ -124,7 +124,7 @@ defmodule Boruta.Ecto.Client do
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
   end
 
-  def secret_changeset(client, secret \\ nil) do
+  def secret_changeset(client, secret) do
     client
     |> cast(%{secret: secret}, [:secret])
     |> put_secret()

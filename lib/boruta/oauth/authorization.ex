@@ -170,6 +170,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
         grant_type: grant_type,
         code_verifier: code_verifier
       }) do
+    # TODO check client secret for confidential clients
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -531,12 +532,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
             {:ok, Map.put(tokens, :token, access_token)}
           end
 
-        _, error ->
+        _, {:error, error} ->
           {:error,
            %Error{
              status: :internal_server_error,
-             error: :internal_server_error,
-             error_description: "An error occured during token creation: inspect(#{error})"
+             error: :unknown_error,
+             error_description: "An error occured during token creation: #{inspect(error)}."
            }}
       end)
     end
@@ -558,6 +559,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
         scope: scope,
         grant_type: grant_type
       }) do
+    # TODO set client secret check optional for confidential clients
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -578,7 +580,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
          %Error{
            status: :bad_request,
            error: :invalid_grant,
-           error_description: "Given refresh token is invalid."
+           error_description: "Given refresh token is invalid, revoked, or expired."
          }}
 
       error ->

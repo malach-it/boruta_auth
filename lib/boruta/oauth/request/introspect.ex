@@ -27,10 +27,10 @@ defmodule Boruta.Oauth.Request.Introspect do
       {:ok, authorization_header} ->
         request(%{
           req_headers: [{"authorization", authorization_header}],
-          body_params: %{} = body_params
+          body_params: body_params
         })
       {:error, _reason} ->
-        request(%{body_params: %{} = body_params})
+        request(%{body_params: body_params})
     end
   end
 
@@ -53,8 +53,5 @@ defmodule Boruta.Oauth.Request.Introspect do
       {:error, error_description} ->
         {:error, %Error{status: :bad_request, error: :invalid_request, error_description: error_description}}
     end
-  end
-  def request(%{}) do
-    {:error, %Error{status: :bad_request, error: :invalid_request, error_description: "Must provide body_params."}}
   end
 end

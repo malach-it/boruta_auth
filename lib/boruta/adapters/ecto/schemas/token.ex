@@ -167,12 +167,11 @@ defmodule Boruta.Ecto.Token do
     put_change(changeset, :code_challenge_method, code_challenge_method)
   end
 
-  defp encrypt_code_challenge(%Ecto.Changeset{valid?: true} = changeset) do
+  defp encrypt_code_challenge(changeset) do
     changeset
     |> put_change(
       :code_challenge_hash,
       changeset |> get_field(:code_challenge, "") |> Oauth.Token.hash()
     )
   end
-  defp encrypt_code_challenge(changeset), do: changeset
 end

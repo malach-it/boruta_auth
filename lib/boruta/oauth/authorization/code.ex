@@ -31,21 +31,17 @@ defmodule Boruta.Oauth.Authorization.Code do
            }}
           | {:ok, Token.t()}
   def authorize(%{value: value, redirect_uri: redirect_uri, client: %Client{pkce: false}}) do
+    # TODO check if token was issued to an other client
     with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
-      {:error, "Token revoked."} ->
-        {:error, %Error{status: :bad_request, error: :invalid_grant, error_description: "Given authorization code is invalid."}}
-      {:error, error} ->
-        {:error, %Error{status: :bad_request, error: :invalid_code, error_description: error}}
-
-      nil ->
+      _ ->
         {:error,
          %Error{
            status: :bad_request,
-           error: :invalid_code,
-           error_description: "Provided authorization code is incorrect."
+           error: :invalid_grant,
+           error_description: "Given authorization code is invalid, revoked, or expired."
          }}
     end
   end
@@ -56,43 +52,52 @@ defmodule Boruta.Oauth.Authorization.Code do
         client: %Client{pkce: true},
         code_verifier: code_verifier
       }) do
+    # TODO check if token was issued to an other client
     with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
          :ok <- check_code_challenge(token, code_verifier),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
       {:error, :invalid_code_verifier} ->
-        {:error, %Error{status: :bad_request, error: :invalid_request, error_description: "Code verifier is invalid."}}
-      {:error, :token_revoked} ->
-        {:error, %Error{status: :bad_request, error: :invalid_grant, error_description: "Given authorization code is invalid."}}
-      {:error, error} ->
-        {:error, %Error{status: :bad_request, error: :invalid_code, error_description: error}}
-
-      nil ->
         {:error,
          %Error{
            status: :bad_request,
-           error: :invalid_code,
-           error_description: "Provided authorization code is incorrect."
+           error: :invalid_request,
+           error_description: "Code verifier is invalid."
+         }}
+
+      _ ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_grant,
+           error_description: "Given authorization code is invalid, revoked, or expired."
          }}
     end
   end
 
-  defp check_code_challenge(%Token{
-         code_challenge_hash: code_challenge_hash,
-         code_challenge_method: "plain"
-  }, code_verifier) do
+  defp check_code_challenge(
+         %Token{
+           code_challenge_hash: code_challenge_hash,
+           code_challenge_method: "plain"
+         },
+         code_verifier
+       ) do
     case Token.hash(code_verifier) == code_challenge_hash do
       true -> :ok
       false -> {:error, :invalid_code_verifier}
     end
   end
 
-  defp check_code_challenge(%Token{
-         code_challenge_hash: code_challenge_hash,
-         code_challenge_method: "S256"
-  }, code_verifier) do
-    case :crypto.hash(:sha256, code_verifier) |> Base.url_encode64(padding: false) |> Token.hash() == code_challenge_hash do
+  defp check_code_challenge(
+         %Token{
+           code_challenge_hash: code_challenge_hash,
+           code_challenge_method: "S256"
+         },
+         code_verifier
+       ) do
+    case :crypto.hash(:sha256, code_verifier) |> Base.url_encode64(padding: false) |> Token.hash() ==
+           code_challenge_hash do
       true -> :ok
       false -> {:error, :invalid_code_verifier}
     end
