@@ -5,6 +5,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   import Mox
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.ScopeStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
@@ -255,6 +256,42 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.authorize(
+             %Plug.Conn{
+               query_params: %{
+                 "response_type" => "code",
+                 "client_id" => client.id,
+                 "redirect_uri" => redirect_uri,
+                 "scope" => given_scope
+               }
+             },
+             resource_owner,
+             ApplicationMock
+           ) do
+        {:authorize_success,
+         %AuthorizeResponse{
+           type: type,
+           code: value,
+           expires_in: expires_in
+         }} ->
+          assert type == :code
+          assert value
+          assert expires_in
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a code with public scope (from cache)", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      given_scope = "public"
+      redirect_uri = List.first(client.redirect_uris)
+      ScopeStore.put_public([%Scope{name: "public"}])
 
       case Oauth.authorize(
              %Plug.Conn{
@@ -709,6 +746,32 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           code_challenge_method: "plain"
         )
 
+      expired_pkce_code =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: "code challenge",
+          code_challenge_hash: Oauth.Token.hash("code challenge"),
+          code_challenge_method: "plain",
+          expires_at: :os.system_time(:seconds) - 10
+        )
+
+      revoked_pkce_code =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: "code challenge",
+          code_challenge_hash: Oauth.Token.hash("code challenge"),
+          code_challenge_method: "plain",
+          revoked_at: DateTime.utc_now()
+        )
+
       given_code_challenge =
         :crypto.hash(:sha256, "strong random challenge me from client")
         |> Base.url_encode64(padding: false)
@@ -733,6 +796,16 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris),
           expires_at: :os.system_time(:seconds) - 10
+        )
+
+      revoked_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          revoked_at: DateTime.utc_now()
         )
 
       bad_redirect_uri_code =
@@ -760,11 +833,14 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
        code: code,
+       expired_code: expired_code,
+       revoked_code: revoked_code,
        openid_code: openid_code,
        pkce_code: pkce_code,
+       expired_pkce_code: expired_pkce_code,
+       revoked_pkce_code: revoked_pkce_code,
        pkce_code_s256: pkce_code_s256,
        bad_redirect_uri_code: bad_redirect_uri_code,
-       expired_code: expired_code,
        code_with_scope: code_with_scope}
     end
 
@@ -839,8 +915,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_code,
-                  error_description: "Provided authorization code is incorrect.",
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -864,8 +940,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_code,
-                  error_description: "Provided authorization code is incorrect.",
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -891,6 +967,56 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is expired", %{client: client, expired_code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is revoked", %{client: client, revoked_code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -954,7 +1080,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:token_error,
               %Error{
                 error: :invalid_grant,
-                error_description: "Given authorization code is invalid.",
+                error_description: "Given authorization code is invalid, revoked, or expired.",
                 status: :bad_request
               }} =
                Oauth.token(
@@ -1155,6 +1281,66 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description: "Code verifier is invalid.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is expired with pkce", %{
+      pkce_client: client,
+      expired_pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "code_verifier" => code.code_challenge
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is revoked with pkce", %{
+      pkce_client: client,
+      revoked_pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "code_verifier" => code.code_challenge
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end

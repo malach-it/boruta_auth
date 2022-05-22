@@ -15,6 +15,15 @@ defmodule Boruta.MixProject do
       package: package(),
       description: description(),
       source_url: "https://gitlab.com/patatoid/boruta_auth",
+      test_coverage: [
+        ignore_modules: [
+          Boruta.Repo,
+          Boruta.Cache,
+          Boruta.Factory,
+          Mix.Tasks.Boruta.Gen.Controllers,
+          Mix.Tasks.Boruta.Gen.Migration
+        ]
+      ],
       dialyzer: [
         plt_add_apps: [:mix]
       ]

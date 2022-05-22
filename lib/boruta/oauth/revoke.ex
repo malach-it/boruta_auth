@@ -41,13 +41,13 @@ defmodule Boruta.Oauth.Revoke do
       token =
         case token_type_hint do
           "refresh_token" ->
-            with nil <- Boruta.AccessTokensAdapter.get_by(value: value) do
-              Boruta.AccessTokensAdapter.get_by(refresh_token: value)
+            with nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value) do
+              Boruta.AccessTokensAdapter.get_by(value: value)
             end
 
           _ ->
-            with nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value) do
-              Boruta.AccessTokensAdapter.get_by(value: value)
+            with nil <- Boruta.AccessTokensAdapter.get_by(value: value) do
+              Boruta.AccessTokensAdapter.get_by(refresh_token: value)
             end
         end
 

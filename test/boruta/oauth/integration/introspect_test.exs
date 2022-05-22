@@ -174,6 +174,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
 
       case Oauth.introspect(
              %Plug.Conn{
+               req_headers: [{"first", "header"}, {"second", "header"}],
                body_params: %{
                  "token" => token.value,
                  "client_id" => client.id,

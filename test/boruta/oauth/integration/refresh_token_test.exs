@@ -226,8 +226,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_refresh_token,
-                  error_description: "Provided refresh token is incorrect.",
+                  error: :invalid_grant,
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -277,8 +277,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_refresh_token,
-                  error_description: "Token expired.",
+                  error: :invalid_grant,
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -329,7 +329,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                {:token_error,
                 %Error{
                   error: :invalid_grant,
-                  error_description: "Given refresh token is invalid.",
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -354,7 +354,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                {:token_error,
                 %Error{
                   error: :invalid_grant,
-                  error_description: "Given refresh token is invalid.",
+                  error_description: "Given refresh token is invalid, revoked, or expired.",
                   status: :bad_request
                 }}
     end
@@ -457,7 +457,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                      "refresh_token" => token.refresh_token,
                      "scope" => "scope"
                    },
-                   req_headers: [{"authorization", authorization_header}]
+                   req_headers: [{"authorization", authorization_header}, {"other", "header"}]
                  },
                  ApplicationMock
                )

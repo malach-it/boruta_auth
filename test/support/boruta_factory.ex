@@ -32,6 +32,7 @@ defmodule Boruta.Factory do
       client: build(:client),
       type: "access_token",
       value: Boruta.TokenGenerator.generate(),
+      refresh_token: Boruta.TokenGenerator.generate(),
       expires_at: :os.system_time(:seconds) + 10
     }
   end

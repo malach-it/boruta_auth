@@ -40,6 +40,17 @@ defmodule Boruta.OauthTest.RevokeTest do
       }}
     end
 
+    test "returns an error with invalid basic header" do
+      assert Oauth.revoke(%Plug.Conn{
+        body_params: %{"token" => "token"},
+        req_headers: [{"authorization", "Basic invalid_basic_header"}, {"other", "header"}]
+      }, ApplicationMock) == {:revoke_error, %Error{
+        error: :invalid_request,
+        error_description: "Given credentials are invalid.",
+        status: :bad_request
+      }}
+    end
+
     test "returns an error with invalid client_id/secret", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, "bad_secret")
 
@@ -53,7 +64,18 @@ defmodule Boruta.OauthTest.RevokeTest do
       }}
     end
 
-    test "revoke token if token is active", %{client: client, token: token, resource_owner: resource_owner} do
+    test "returns an error with invalid client_id/secret in body", %{client: client} do
+      assert Oauth.revoke(%Plug.Conn{
+        body_params: %{"token" => "token", "client_id" => client.id, "secret" => "bad_secret"},
+        req_headers: [{"first", "header"}, {"other", "header"}]
+      }, ApplicationMock) == {:revoke_error, %Error{
+        error: :invalid_client,
+        error_description: "Invalid client_id or client_secret.",
+        status: :unauthorized
+      }}
+    end
+
+    test "revoke token by value if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
@@ -65,6 +87,52 @@ defmodule Boruta.OauthTest.RevokeTest do
         {:revoke_success} ->
           assert Boruta.AccessTokensAdapter.get_by(value: token.value).revoked_at
         _ -> assert false
+      end
+    end
+
+    test "revoke token by refresh token if token is active", %{client: client, token: token, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
+
+      case Oauth.revoke(%Plug.Conn{
+        body_params: %{"token" => token.refresh_token},
+        req_headers: [{"authorization", authorization_header}]
+      }, ApplicationMock) do
+        {:revoke_success} ->
+          assert Boruta.AccessTokensAdapter.get_by(value: token.value).revoked_at
+        _ -> assert false
+      end
+    end
+
+    test "revoke token by value if token is active with token hint", %{client: client, token: token, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
+
+      case Oauth.revoke(%Plug.Conn{
+        body_params: %{"token" => token.value, "token_type_hint" => "refresh_token"},
+        req_headers: [{"authorization", authorization_header}]
+      }, ApplicationMock) do
+        {:revoke_success} ->
+          assert Boruta.AccessTokensAdapter.get_by(value: token.value).revoked_at
+        _ -> assert false
+      end
+    end
+
+    test "revoke token by refresh token if token is active with token hint", %{client: client, token: token, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
+
+      case Oauth.revoke(%Plug.Conn{
+        body_params: %{"token" => token.refresh_token, "token_type_hint" => "refresh_token"},
+        req_headers: [{"authorization", authorization_header}]
+      }, ApplicationMock) do
+        {:revoke_success} ->
+          assert Boruta.AccessTokensAdapter.get_by(value: token.value).revoked_at
+        _ ->
+          assert false
       end
     end
 

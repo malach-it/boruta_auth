@@ -45,7 +45,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
       assert {:unauthorized,
               %Boruta.Oauth.Error{
                 error: :invalid_access_token,
-                error_description: "Provided access token is invalid.",
+                error_description: "Given access token is invalid, revoked, or expired.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end
@@ -106,7 +106,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
       assert {:unauthorized,
               %Boruta.Oauth.Error{
                 error: :invalid_access_token,
-                error_description: "Provided access token is invalid.",
+                error_description: "Given access token is invalid, revoked, or expired.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end

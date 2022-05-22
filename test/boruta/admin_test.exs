@@ -80,8 +80,22 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:error, %Ecto.Changeset{}} = Admin.create_client(%{id: id})
     end
 
+    test "returns an error if given grant types are invalid" do
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{supported_grant_types: ["unknown"]})
+               )
+    end
+
     test "creates a client" do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
+    end
+
+    test "creates a client with supproted_grant_types" do
+      assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{supported_grant_types: ["client_credentials"]})
+               )
     end
 
     test "creates a client with a secret" do

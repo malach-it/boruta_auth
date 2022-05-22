@@ -580,7 +580,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
          %Error{
            status: :bad_request,
            error: :invalid_grant,
-           error_description: "Given refresh token is invalid."
+           error_description: "Given refresh token is invalid, revoked, or expired."
          }}
 
       error ->

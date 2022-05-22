@@ -6,6 +6,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
   import Mox
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.ScopeStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
@@ -743,6 +744,40 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       given_scope = "public"
       redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert value
+      assert expires_in
+    end
+
+    test "returns a code with public scope (from cache)", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      given_scope = "public"
+      redirect_uri = List.first(client.redirect_uris)
+
+      ScopeStore.put_public([%Scope{name: "public"}])
 
       assert {:authorize_success,
               %AuthorizeResponse{
