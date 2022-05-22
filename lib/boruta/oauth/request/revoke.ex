@@ -62,7 +62,4 @@ defmodule Boruta.Oauth.Request.Revoke do
         {:error, %Error{status: :bad_request, error: :invalid_request, error_description: error_description}}
     end
   end
-  def request(%{}) do
-    {:error, %Error{status: :bad_request, error: :invalid_request, error_description: "Must provide body_params."}}
-  end
 end

@@ -78,7 +78,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Invalid response_type param, may be on of `code id_token`, `code token`, or `code id_token token` for Hybrid requests and `token` or `id_token token` for Implicit requests.",
+                    "Invalid response_type param, may be on of `code` for Authorization Code request, `code id_token`, `code token`, `code id_token token` for Hybrid requests, or `token`, `id_token token` for Implicit requests.",
                   status: :bad_request
                 }}
     end

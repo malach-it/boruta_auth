@@ -6,6 +6,8 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
   import Mox
 
   alias Boruta.Ecto
+  alias Boruta.Ecto.OauthMapper
+  alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
@@ -440,6 +442,40 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
 
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token,
+                     "scope" => "scope"
+                   },
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
+    end
+
+    test "returns token (using cache)", %{client: client, access_token: token} do
+      ResourceOwners
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      token |> OauthMapper.to_oauth_schema() |> TokenStore.put()
 
       assert {:token_success,
               %TokenResponse{

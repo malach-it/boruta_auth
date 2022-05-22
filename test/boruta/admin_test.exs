@@ -95,17 +95,42 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{secret: ^secret}} = Admin.create_client(%{secret: secret})
     end
 
-    test "creates a client with token ttls" do
+    test "creates a client with default token ttls" do
       {:ok,
        %Client{
          access_token_ttl: access_token_ttl,
          authorization_code_ttl: authorization_code_ttl,
+         refresh_token_ttl: refresh_token_ttl,
          id_token_ttl: id_token_ttl
        }} = Admin.create_client(@client_valid_attrs)
 
       assert access_token_ttl
       assert authorization_code_ttl
+      assert refresh_token_ttl
       assert id_token_ttl
+    end
+
+    test "creates a client with token ttls" do
+      {:ok,
+       %Client{
+         access_token_ttl: access_token_ttl,
+         authorization_code_ttl: authorization_code_ttl,
+         refresh_token_ttl: refresh_token_ttl,
+         id_token_ttl: id_token_ttl
+       }} =
+        Admin.create_client(
+          Map.merge(@client_valid_attrs, %{
+            access_token_ttl: 1,
+            authorization_code_ttl: 1,
+            refresh_token_ttl: 1,
+            id_token_ttl: 1
+          })
+        )
+
+      assert access_token_ttl == 1
+      assert authorization_code_ttl == 1
+      assert refresh_token_ttl == 1
+      assert id_token_ttl == 1
     end
 
     test "creates a client with authorized scopes by id" do
@@ -188,6 +213,27 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.update_client(client, %{"authorized_scopes" => [%{"id" => scope.id}]})
 
       assert authorized_scopes == [scope]
+    end
+  end
+
+  describe "regenerate_client_secret/1" do
+    test "regenerates client secret" do
+      client = client_fixture()
+      secret = client.secret
+
+      assert {:ok, %Client{secret: new_secret}} = Admin.regenerate_client_secret(client)
+      refute new_secret == secret
+    end
+
+    test "regenerates client secret given a secret" do
+      client = client_fixture()
+      secret = client.secret
+      new_secret = "new_secret"
+
+      assert {:ok, %Client{secret: ^new_secret}} =
+               Admin.regenerate_client_secret(client, new_secret)
+
+      refute new_secret == secret
     end
   end
 
@@ -363,13 +409,30 @@ defmodule Boruta.Ecto.AdminTest do
   end
 
   describe "delete_inactive_tokens/0,1" do
+    test "deletes inactive tokens (no given date)" do
+      now = :os.system_time(:second)
+
+      _active_token = insert(:token, expires_at: now)
+      _expired_token = insert(:token, expires_at: now - 1)
+
+      _active_revoked_token =
+        insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+
+      _expired_revoked_token =
+        insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+
+      assert Admin.delete_inactive_tokens() == {2, nil}
+    end
+
     test "deletes inactive tokens" do
       now = :os.system_time(:second)
 
       _active_token = insert(:token, expires_at: now)
       _expired_token = insert(:token, expires_at: now - 1)
+
       _active_revoked_token =
         insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+
       _expired_revoked_token =
         insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
 
@@ -381,11 +444,15 @@ defmodule Boruta.Ecto.AdminTest do
 
       _active_token = insert(:token, expires_at: now)
       _expired_token = insert(:token, expires_at: now - 1)
+
       _active_revoked_token =
         insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+
       _expired_revoked_token =
         insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+
       _past_expired_token = insert(:token, expires_at: now - 11)
+
       _past_expired_revoked_token =
         insert(:token, expires_at: now - 11, revoked_at: DateTime.from_unix!(now))
 
@@ -398,11 +465,15 @@ defmodule Boruta.Ecto.AdminTest do
 
       _active_token = insert(:token, expires_at: now)
       _expired_token = insert(:token, expires_at: now - 1)
+
       _active_revoked_token =
         insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+
       _expired_revoked_token =
         insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+
       _future_active_token = insert(:token, expires_at: now + 10)
+
       _future_active_revoked_token =
         insert(:token, expires_at: now + 10, revoked_at: DateTime.from_unix!(now))
 

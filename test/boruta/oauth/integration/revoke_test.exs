@@ -40,20 +40,12 @@ defmodule Boruta.OauthTest.RevokeTest do
       }}
     end
 
-    test "returns an error with invalid request" do
-      assert Oauth.revoke(%Plug.Conn{body_params: %{}}, ApplicationMock) == {:revoke_error, %Error{
-        error: :invalid_request,
-        error_description: "Request validation failed. Required properties client_id, token are missing at #.",
-        status: :bad_request
-      }}
-    end
-
     test "returns an error with invalid client_id/secret", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, "bad_secret")
 
       assert Oauth.revoke(%Plug.Conn{
         body_params: %{"token" => "token"},
-        req_headers: [{"authorization", authorization_header}]
+        req_headers: [{"authorization", authorization_header}, {"other", "header"}]
       }, ApplicationMock) == {:revoke_error, %Error{
         error: :invalid_client,
         error_description: "Invalid client_id or client_secret.",

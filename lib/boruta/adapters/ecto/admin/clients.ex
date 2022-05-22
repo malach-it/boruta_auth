@@ -57,7 +57,7 @@ defmodule Boruta.Ecto.Admin.Clients do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_client(attrs \\ %{}) do
+  def create_client(attrs) do
     %Client{}
     |> Client.create_changeset(attrs)
     |> repo().insert()
