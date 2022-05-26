@@ -115,10 +115,11 @@ defmodule Boruta.Ecto.Client do
       :public_refresh_token,
       :public_revoke
     ])
-    |> validate_required([:authorization_code_ttl, :access_token_ttl, :refresh_token_ttl])
+    |> validate_required([:authorization_code_ttl, :access_token_ttl, :refresh_token_ttl, :id_token_ttl])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
+    |> validate_inclusion(:refresh_token_ttl, 1..id_token_max_ttl())
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
