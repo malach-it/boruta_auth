@@ -20,10 +20,17 @@ defmodule Boruta.Config do
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
+    algorithms: [
+      id_token_signature: [
+        alg: :RS512
+      ]
+    ],
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
   """
+
+  alias Boruta.Oauth.IdToken
 
   @defaults cache_backend: Boruta.Cache,
             contexts: [
@@ -38,6 +45,11 @@ defmodule Boruta.Config do
               access_token: 60 * 60 * 24,
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
+            ],
+            algorithms: [
+              id_token_signature: [
+                alg: :RS512
+              ]
             ],
             token_generator: Boruta.TokenGenerator,
             issuer: "boruta"
@@ -106,6 +118,22 @@ defmodule Boruta.Config do
   @doc false
   def scopes do
     Keyword.fetch!(oauth_config(), :contexts)[:scopes]
+  end
+
+  @spec id_token_signature_alg() :: atom()
+  @doc false
+  def id_token_signature_alg do
+    value = Keyword.fetch!(oauth_config(), :algorithms)[:id_token_signature][:alg]
+    signature_algorithms = IdToken.signature_algorithms
+
+    case Enum.member?(signature_algorithms, value) do
+      true -> value
+      false ->
+        raise """
+        Invalid id_token signature algorithm configuration, may be on of #{inspect(signature_algorithms)}
+        """
+
+    end
   end
 
   @spec resource_owners() :: module()
