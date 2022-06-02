@@ -15,14 +15,19 @@ defmodule Boruta.Oauth.IdToken do
 
   alias Boruta.Oauth
 
-  @signature_alg "RS512"
-  @hash_alg :sha512
+  @signature_alg :RS512
 
-  @spec signature_alg() :: signature_alg :: String.t()
+  @hashing_algorithms [
+    RS512: :SHA512
+  ]
+
+  @spec signature_alg() :: signature_alg :: atom()
   def signature_alg, do: @signature_alg
 
   @spec hash_alg() :: hash_alg :: atom()
-  def hash_alg, do: @hash_alg
+  def hash_alg do
+    @hashing_algorithms[signature_alg()]
+  end
 
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
@@ -100,7 +105,9 @@ defmodule Boruta.Oauth.IdToken do
   end
 
   defp sign(payload, private_key) do
-    signer = Joken.Signer.create(@signature_alg, %{"pem" => private_key})
+    signer = signature_alg()
+             |> Atom.to_string()
+             |> Joken.Signer.create(%{"pem" => private_key})
 
     with {:ok, token, _payload} <- Token.encode_and_sign(payload, signer) do
       token
@@ -108,7 +115,11 @@ defmodule Boruta.Oauth.IdToken do
   end
 
   defp hash(string) do
-    :crypto.hash(@hash_alg, string)
+    hash_alg()
+    |> Atom.to_string()
+    |> String.downcase()
+    |> String.to_atom()
+    |> :crypto.hash(string)
     |> binary_part(0, 32)
     |> Base.url_encode64(padding: false)
   end

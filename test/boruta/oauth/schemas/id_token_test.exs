@@ -54,10 +54,12 @@ defmodule Boruta.Oauth.IdTokenTest do
       "exp" => _exp,
       "sub" => "sub",
       "nonce" => ^nonce,
-      "c_hash" => _c_hash,
+      "c_hash" => c_hash,
       "auth_time" => ^auth_time,
       "resource_owner_claim" => "claim"
     } = claims
+
+    assert c_hash == "7CyD7ey2AwTRVOvbhb369hqSvRQuccT3sloVuctfPAo"
   end
 
   test "generates an id token with a token", %{resource_owner: resource_owner} do
@@ -97,10 +99,12 @@ defmodule Boruta.Oauth.IdTokenTest do
       "exp" => _exp,
       "sub" => "sub",
       "nonce" => ^nonce,
-      "at_hash" => _at_hash,
+      "at_hash" => at_hash,
       "auth_time" => ^auth_time,
       "resource_owner_claim" => "claim"
     } = claims
+
+    assert at_hash == "7CyD7ey2AwTRVOvbhb369hqSvRQuccT3sloVuctfPAo"
   end
 
   test "generates an id token with a token and a code", %{resource_owner: resource_owner} do
@@ -112,7 +116,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       type: "code",
       sub: "sub",
       client: client,
-      value: "code",
+      value: "value",
       inserted_at: inserted_at,
       resource_owner: resource_owner,
       scope: "scope"
@@ -121,7 +125,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       type: "access_token",
       sub: "sub",
       client: client,
-      value: "token",
+      value: "value",
       inserted_at: inserted_at,
       resource_owner: resource_owner,
       scope: "scope"
@@ -149,11 +153,14 @@ defmodule Boruta.Oauth.IdTokenTest do
       "exp" => _exp,
       "sub" => "sub",
       "nonce" => ^nonce,
-      "at_hash" => _at_hash,
-      "c_hash" => _c_hash,
+      "at_hash" => at_hash,
+      "c_hash" => c_hash,
       "auth_time" => ^auth_time,
       "resource_owner_claim" => "claim"
     } = claims
+
+    assert at_hash == "7CyD7ey2AwTRVOvbhb369hqSvRQuccT3sloVuctfPAo"
+    assert c_hash == "7CyD7ey2AwTRVOvbhb369hqSvRQuccT3sloVuctfPAo"
   end
 
   test "generates an id token with a base token", %{resource_owner: resource_owner} do
