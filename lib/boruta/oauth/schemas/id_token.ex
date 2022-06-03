@@ -15,18 +15,25 @@ defmodule Boruta.Oauth.IdToken do
 
   alias Boruta.Oauth
 
-  @hashing_algorithms [
-    RS256: :SHA256,
-    RS384: :SHA384,
-    RS512: :SHA512
+  @signature_algorithms [
+    RS256: {:asymmetric, :SHA256},
+    RS384: {:asymmetric, :SHA384},
+    RS512: {:asymmetric, :SHA512},
+    HS256: {:symmetric, :SHA256},
+    HS384: {:symmetric, :SHA384},
+    HS512: {:symmetric, :SHA512}
   ]
 
   @spec signature_algorithms() :: list(atom())
-  def signature_algorithms, do: Keyword.keys(@hashing_algorithms)
+  def signature_algorithms, do: Keyword.keys(@signature_algorithms)
 
   @spec hash_alg(Oauth.Client.t()) :: hash_alg :: atom()
   def hash_alg(%Oauth.Client{id_token_signature_alg: signature_alg}),
-    do: @hashing_algorithms[String.to_atom(signature_alg)]
+    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 1)
+
+  @spec signature_type(Oauth.Client.t()) :: signature_type :: atom()
+  def signature_type(%Oauth.Client{id_token_signature_alg: signature_alg}),
+    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 0)
 
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
@@ -103,11 +110,22 @@ defmodule Boruta.Oauth.IdToken do
     |> Map.put("nonce", nonce)
   end
 
-  defp sign(payload, %Oauth.Client{
-         id_token_signature_alg: signature_alg,
-         private_key: private_key
-       }) do
-    signer = Joken.Signer.create(signature_alg, %{"pem" => private_key})
+  defp sign(
+         payload,
+         %Oauth.Client{
+           id_token_signature_alg: signature_alg,
+           private_key: private_key,
+           secret: secret
+         } = client
+       ) do
+    signer =
+      case signature_type(client) do
+        :symmetric ->
+          Joken.Signer.create(signature_alg, secret)
+
+        :asymmetric ->
+          Joken.Signer.create(signature_alg, %{"pem" => private_key})
+      end
 
     with {:ok, token, _payload} <- Token.encode_and_sign(payload, signer) do
       token
