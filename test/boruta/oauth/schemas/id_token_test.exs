@@ -216,27 +216,8 @@ defmodule Boruta.Oauth.IdTokenTest do
   end
 
   describe "with RS256 algorithm configuration" do
-    setup do
-      current_config = Application.get_env(:boruta, Boruta.Oauth)
-
-      rs256_config =
-        Keyword.merge(current_config,
-          algorithms: [
-            id_token_signature: [
-              alg: :RS256
-            ]
-          ]
-        )
-
-      Application.put_env(:boruta, Boruta.Oauth, rs256_config)
-
-      on_exit(fn ->
-        Application.put_env(:boruta, Boruta.Oauth, current_config)
-      end)
-    end
-
     test "generates an id token with a token and a code", %{resource_owner: resource_owner} do
-      client = build_client()
+      client = %{build_client()|id_token_signature_alg: "RS256"}
       inserted_at = DateTime.utc_now()
       last_login_at = DateTime.utc_now()
       resource_owner = %{resource_owner | last_login_at: last_login_at}
@@ -296,27 +277,8 @@ defmodule Boruta.Oauth.IdTokenTest do
   end
 
   describe "with RS384 algorithm configuration" do
-    setup do
-      current_config = Application.get_env(:boruta, Boruta.Oauth)
-
-      rs384_config =
-        Keyword.merge(current_config,
-          algorithms: [
-            id_token_signature: [
-              alg: :RS384
-            ]
-          ]
-        )
-
-      Application.put_env(:boruta, Boruta.Oauth, rs384_config)
-
-      on_exit(fn ->
-        Application.put_env(:boruta, Boruta.Oauth, current_config)
-      end)
-    end
-
     test "generates an id token with a token and a code", %{resource_owner: resource_owner} do
-      client = build_client()
+      client = %{build_client()|id_token_signature_alg: "RS384"}
       inserted_at = DateTime.utc_now()
       last_login_at = DateTime.utc_now()
       resource_owner = %{resource_owner | last_login_at: last_login_at}
@@ -375,64 +337,11 @@ defmodule Boruta.Oauth.IdTokenTest do
     end
   end
 
-  describe "with unknown algorithm configuration" do
-    setup do
-      current_config = Application.get_env(:boruta, Boruta.Oauth)
-
-      unknown_config =
-        Keyword.merge(current_config,
-          algorithms: [
-            id_token_signature: [
-              alg: :unknown
-            ]
-          ]
-        )
-
-      Application.put_env(:boruta, Boruta.Oauth, unknown_config)
-
-      on_exit(fn ->
-        Application.put_env(:boruta, Boruta.Oauth, current_config)
-      end)
-    end
-
-    test "raises an error", %{resource_owner: resource_owner} do
-      client = build_client()
-      inserted_at = DateTime.utc_now()
-      last_login_at = DateTime.utc_now()
-      resource_owner = %{resource_owner | last_login_at: last_login_at}
-
-      code = %Token{
-        type: "code",
-        sub: "sub",
-        client: client,
-        value: "value",
-        inserted_at: inserted_at,
-        resource_owner: resource_owner,
-        scope: "scope"
-      }
-
-      token = %Token{
-        type: "access_token",
-        sub: "sub",
-        client: client,
-        value: "value",
-        inserted_at: inserted_at,
-        resource_owner: resource_owner,
-        scope: "scope"
-      }
-
-      nonce = "nonce"
-
-      assert_raise RuntimeError, fn ->
-        IdToken.generate(%{token: token, code: code}, nonce)
-      end
-    end
-  end
-
   def build_client do
     %Client{
       id: "client_id",
       id_token_ttl: 10,
+      id_token_signature_alg: "RS512",
       private_key:
         "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVO\nf8cU8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa\n9QyHsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8Wd\nSq3dGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/\nU8xDZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2t\npyQ0AEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQABAoIBAG0dg/upL8k1IWiv\n8BNphrXIYLYQmiiBQTPJWZGvWIC2sl7i40yvCXjDjiRnZNK9HwgL94XtALCXYRFR\nJD41bRA3MO5A0HSPIWwJXwS10/cU56HVCNHjwKa6Rz/QiG2kNASMZEMzlvHtrjna\ndx36/sjI3HH8gh1BaTZyiuDE72SMkPbL838jfL1YY9uJ0u6hWFDbdn3sqPfJ6Cnz\n1cu0piT35nkilnIGCNYA0i3lyMeo4XrdXaAJdN9nnqbCi5ewQWqaHbrIIY5LTgzJ\nYlOr3IiecyokFxHCbULXle60u0KqXYgBHmlQJJr1Dj4c9AkQmefjC2jRMlhOrIzo\nIkIUeMECgYEA+MNLB+w6vv1ogqzM3M1OLt6bziWJCn+XkziuMrCiY9KeDD+S70+E\nhfbhM5RjCE3wxC/k59039laT973BmdMHxrDd2zSjOFmCIORv5yrD5oBHMaMZcwuQ\n45Xisi4aoQoOhyznSnjo/RjeQB7qEDzXFznLLNT79HzqyAtCWD3UIu8CgYEA2yik\n9FKl7HJEY94D2K6vNh1AHGnkwIQC72pXzlUrVuwQYngj6/Gkhw8ayFBApHfwVCXj\no9rDYPdNrrAs0Zz0JsiJp6bOCEKCrMYE16UiejUUAg/OZ5eg6+3m3/iWatkzLUuK\n1LIkVBJlEyY0uPuAaBF0V0VleNvfCGhVYOn46+ECgYAUD4OsduNh5YOZDiBTKgdF\nBlSgMiyz+QgbKjX6Bn6B+EkgibvqqonwV7FffHbkA40H9SjLfe52YhL6poXHRtpY\nroillcAX2jgBOQrBJJS5sNyM5y81NNiRUdP/NHKXS/1R71ATlF6NkoTRvOx5NL7P\ns6xryB0tYSl5ylamUQ4bZwKBgHF6FB9mA//wErVbKcayfIqajq2nrwh30kVBXQG7\nW9uAE+PIrWDoF/bOvWFnHHGMoOYRUFNxXKUCqDiBhFNs34aNY6lpV1kzhxIK3ksC\neF2qyhdfM9Kz0mEXJ+pkfw4INNWJPfNv4hueArPtnnMB1rUMBJ+DkU0JG+zwiPTL\ncVZBAoGBAM6kOsh5KGn3aI83g9ZO0TrKLXXFotxJt31Wu11ydj9K33/Qj3UXcxd4\nJPXr600F0DkLeUKBob6BALeHFWcrSz5FGLGRqdRxdv+L6g18WH5m2xEs7o6M6e5I\nIhyUC60ZewJ2M8rV4KgCJJdZE2kENlSgjU92IDVPT9Oetrc7hQJd\n-----END RSA PRIVATE KEY-----\n\n"
     }

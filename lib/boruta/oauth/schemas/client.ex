@@ -18,6 +18,7 @@ defmodule Boruta.Oauth.Client do
             pkce: nil,
             public_refresh_token: nil,
             public_revoke: nil,
+            id_token_signature_alg: nil,
             public_key: nil,
             private_key: nil
 
@@ -36,6 +37,7 @@ defmodule Boruta.Oauth.Client do
           pkce: boolean(),
           public_refresh_token: boolean(),
           public_revoke: boolean(),
+          id_token_signature_alg: String.t(),
           public_key: String.t(),
           private_key: String.t()
         }

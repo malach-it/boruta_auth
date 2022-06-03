@@ -33,6 +33,7 @@ defmodule Boruta.Ecto.Client do
           refresh_token_ttl: integer(),
           authorized_scopes: Ecto.Association.NotLoaded.t() | list(Scope.t()),
           id_token_ttl: integer(),
+          id_token_signature_alg: String.t(),
           public_key: list(String.t()),
           private_key: list(String.t())
         }
@@ -57,6 +58,7 @@ defmodule Boruta.Ecto.Client do
     field(:id_token_ttl, :integer)
     field(:refresh_token_ttl, :integer)
 
+    field(:id_token_signature_alg, :string, default: "RS512")
     field(:public_key, :string)
     field(:private_key, :string)
 
@@ -83,15 +85,17 @@ defmodule Boruta.Ecto.Client do
       :supported_grant_types,
       :pkce,
       :public_refresh_token,
-      :public_revoke
+      :public_revoke,
+      :id_token_signature_alg
     ])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
     |> change_id_token_ttl()
     |> change_refresh_token_ttl()
-    |> validate_redirect_uris
+    |> validate_redirect_uris()
     |> validate_supported_grant_types()
+    |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
     |> generate_key_pair()
     |> put_secret()
@@ -113,7 +117,8 @@ defmodule Boruta.Ecto.Client do
       :supported_grant_types,
       :pkce,
       :public_refresh_token,
-      :public_revoke
+      :public_revoke,
+      :id_token_signature_alg
     ])
     |> validate_required([:authorization_code_ttl, :access_token_ttl, :refresh_token_ttl, :id_token_ttl])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
@@ -122,6 +127,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_inclusion(:refresh_token_ttl, 1..id_token_max_ttl())
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
+    |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
   end
 
@@ -202,6 +208,11 @@ defmodule Boruta.Ecto.Client do
       _ ->
         "`#{uri}` is invalid"
     end
+  end
+
+  defp validate_id_token_signature_alg(changeset) do
+    signature_algorithms = Enum.map(Oauth.IdToken.signature_algorithms(), &Atom.to_string/1)
+    validate_inclusion(changeset, :id_token_signature_alg, signature_algorithms)
   end
 
   defp parse_authorized_scopes(attrs) do

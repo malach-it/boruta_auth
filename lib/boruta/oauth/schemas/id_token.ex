@@ -11,7 +11,7 @@ defmodule Boruta.Oauth.IdToken do
     def token_config, do: %{}
   end
 
-  import Boruta.Config, only: [resource_owners: 0, issuer: 0, id_token_signature_alg: 0]
+  import Boruta.Config, only: [resource_owners: 0, issuer: 0]
 
   alias Boruta.Oauth
 
@@ -24,13 +24,9 @@ defmodule Boruta.Oauth.IdToken do
   @spec signature_algorithms() :: list(atom())
   def signature_algorithms, do: Keyword.keys(@hashing_algorithms)
 
-  @spec signature_alg() :: signature_alg :: atom()
-  def signature_alg, do: id_token_signature_alg()
-
-  @spec hash_alg() :: hash_alg :: atom()
-  def hash_alg do
-    @hashing_algorithms[signature_alg()]
-  end
+  @spec hash_alg(Oauth.Client.t()) :: hash_alg :: atom()
+  def hash_alg(%Oauth.Client{id_token_signature_alg: signature_alg}),
+    do: @hashing_algorithms[String.to_atom(signature_alg)]
 
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
@@ -57,7 +53,7 @@ defmodule Boruta.Oauth.IdToken do
   def generate(tokens, nonce) do
     {base_token, payload} = payload(tokens, nonce, %{})
 
-    value = sign(payload, base_token.client.private_key)
+    value = sign(payload, base_token.client)
     %{base_token | type: "id_token", value: value}
   end
 
@@ -65,14 +61,14 @@ defmodule Boruta.Oauth.IdToken do
     tokens
     |> Map.put(:base_token, code)
     |> Map.delete(:code)
-    |> payload(nonce, Map.put(acc, "c_hash", hash(code.value)))
+    |> payload(nonce, Map.put(acc, "c_hash", hash(code.value, code.client)))
   end
 
   defp payload(%{token: token} = tokens, nonce, acc) do
     tokens
     |> Map.put(:base_token, token)
     |> Map.delete(:token)
-    |> payload(nonce, Map.put(acc, "at_hash", hash(token.value)))
+    |> payload(nonce, Map.put(acc, "at_hash", hash(token.value, token.client)))
   end
 
   defp payload(%{base_token: base_token}, nonce, acc) do
@@ -107,19 +103,19 @@ defmodule Boruta.Oauth.IdToken do
     |> Map.put("nonce", nonce)
   end
 
-  defp sign(payload, private_key) do
-    signer =
-      signature_alg()
-      |> Atom.to_string()
-      |> Joken.Signer.create(%{"pem" => private_key})
+  defp sign(payload, %Oauth.Client{
+         id_token_signature_alg: signature_alg,
+         private_key: private_key
+       }) do
+    signer = Joken.Signer.create(signature_alg, %{"pem" => private_key})
 
     with {:ok, token, _payload} <- Token.encode_and_sign(payload, signer) do
       token
     end
   end
 
-  defp hash(string) do
-    hash_alg()
+  defp hash(string, client) do
+    hash_alg(client)
     |> Atom.to_string()
     |> String.downcase()
     |> String.to_atom()
