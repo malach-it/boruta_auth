@@ -105,6 +105,7 @@ defmodule Boruta.Oauth.IdToken do
       end
 
     resource_owners().claims(resource_owner, scope)
+    |> Map.merge(resource_owner.extra_claims)
     |> Map.put("sub", sub)
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)

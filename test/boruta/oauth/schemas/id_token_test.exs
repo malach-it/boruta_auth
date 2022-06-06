@@ -204,6 +204,52 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
+    {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
+    client_id = client.id
+
+    assert %{
+             "aud" => ^client_id,
+             "iat" => _iat,
+             "exp" => _exp,
+             "sub" => "sub",
+             "nonce" => ^nonce,
+             "auth_time" => _auth_time,
+             "resource_owner_claim" => "claim"
+           } = claims
+  end
+
+  test "generates an id token with resource owner extra claims" do
+    resource_owner = %ResourceOwner{
+      sub: "resource_owner_sub",
+      extra_claims: %{"resource_owner_extra_claim" => "claim"}
+    }
+
+    client = build_client()
+    inserted_at = DateTime.utc_now()
+
+    base_token = %Token{
+      type: "base_token",
+      sub: "sub",
+      resource_owner: resource_owner,
+      client: client,
+      value: "token",
+      inserted_at: inserted_at,
+      scope: "scope"
+    }
+
+    nonce = "nonce"
+
+    assert %{
+             sub: "sub",
+             client: ^client,
+             inserted_at: ^inserted_at,
+             scope: "scope",
+             value: value,
+             type: "id_token"
+           } = IdToken.generate(%{base_token: base_token}, nonce)
+
+    signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
     assert {:ok, claims} = IdToken.Token.verify_and_validate(value, signer)
     client_id = client.id
     assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
@@ -215,7 +261,8 @@ defmodule Boruta.Oauth.IdTokenTest do
              "sub" => "sub",
              "nonce" => ^nonce,
              "auth_time" => _auth_time,
-             "resource_owner_claim" => "claim"
+             "resource_owner_claim" => "claim",
+             "resource_owner_extra_claim" => "claim"
            } = claims
   end
 

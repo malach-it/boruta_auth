@@ -6,13 +6,13 @@ defmodule Boruta.Oauth.ResourceOwners do
   alias Boruta.Oauth.ResourceOwner
 
   @doc """
-  Returns a resource owner by (username, password) or (id). Returns nil for non matching results.
+  Returns a resource owner by (username) or (id).
   """
   @callback get_by([username: String.t()] | [sub: String.t()]) ::
               {:ok, resource_owner :: ResourceOwner.t()} | {:error, String.t()}
 
   @doc """
-  Determines if given password is correct.
+  Determines if given password is valid for the given resource owner.
   """
   @callback check_password(resource_owner :: ResourceOwner.t(), password :: String.t()) ::
               :ok | {:error, String.t()}
@@ -23,7 +23,7 @@ defmodule Boruta.Oauth.ResourceOwners do
   @callback authorized_scopes(resource_owner :: ResourceOwner.t()) :: list(Boruta.Oauth.Scope.t())
 
   @doc """
-  Returns `id_token` identity claims for the given resource owner
+  Returns `id_token` identity claims for the given resource owner. Those claims will be present in resulting `id_token` of OpenID Connect flows.
   """
   @type claims :: %{
           String.t() => String.t() | claims()
