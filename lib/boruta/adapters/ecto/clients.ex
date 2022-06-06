@@ -43,11 +43,8 @@ defmodule Boruta.Ecto.Clients do
   def list_clients_jwk do
     clients = repo().all(Ecto.Client)
 
-    Enum.map(clients, fn %Ecto.Client{id: client_id, public_key: public_key} ->
-      {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
-
-      Map.put(jwk, "kid", client_id)
-    end)
+    Enum.map(clients, &rsa_key/1) ++
+      Enum.map(clients, &hmac_key/1)
   end
 
   defp authorized_scopes(:from_database, %Oauth.Client{id: id}) do
@@ -59,5 +56,19 @@ defmodule Boruta.Ecto.Clients do
       nil ->
         []
     end
+  end
+
+  defp rsa_key(%Ecto.Client{id: client_id, public_key: public_key}) do
+    {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
+
+    Map.put(jwk, "kid", client_id)
+  end
+
+  defp hmac_key(%Ecto.Client{id: client_id, secret: secret}) do
+    %{
+      "kid" => client_id,
+      "kty" => "oct",
+      "k" => secret
+    }
   end
 end
