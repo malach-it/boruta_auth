@@ -16,6 +16,7 @@ Boruta.Ecto.Admin.create_client(%{
   authorization_code_ttl: 60, # one minute
   refresh_token_ttl: 60 * 60 * 24 * 30, # one month
   id_token_ttl: 60 * 60 * 24, # one day
+  id_token_signature_alg: "RS256", # ID token signature algorithm, defaults to "RS512"
   redirect_uris: ["http://redirect.uri"], # OAuth client redirect_uris
   authorize_scope: true, # take following authorized_scopes into account (skip public scopes)
   authorized_scopes: [%{name: "a:scope"}], # scopes that are authorized using this client

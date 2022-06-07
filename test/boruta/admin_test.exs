@@ -8,6 +8,7 @@ defmodule Boruta.Ecto.AdminTest do
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.Scope
   alias Boruta.Ecto.Token
+  alias Boruta.Oauth.IdToken
   alias Boruta.Repo
 
   @client_valid_attrs %{
@@ -200,6 +201,29 @@ defmodule Boruta.Ecto.AdminTest do
       cipher_text = :public_key.encrypt_private(message, private_key)
       assert :public_key.decrypt_public(cipher_text, public_key) == message
     end
+
+    test "creates a client with default id token signature alg" do
+      assert {:ok, %Client{id_token_signature_alg: "RS512"}} =
+               Admin.create_client(@client_valid_attrs)
+    end
+
+    test "returns an error with bad id token signature alg" do
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :id_token_signature_alg, "bad_alg")
+               )
+    end
+
+    test "creates a client with id token signature alg" do
+      Enum.map(IdToken.signature_algorithms(), fn alg ->
+        assert {:ok, client} =
+                 Admin.create_client(
+                   Map.put(@client_valid_attrs, :id_token_signature_alg, Atom.to_string(alg))
+                 )
+
+        assert client.id_token_signature_alg == Atom.to_string(alg)
+      end)
+    end
   end
 
   describe "update_client/2" do
@@ -212,6 +236,29 @@ defmodule Boruta.Ecto.AdminTest do
                })
 
       assert client == Admin.get_client!(client.id)
+    end
+
+    test "retuns an error with a bad id token signature alg" do
+      client = client_fixture()
+      assert {:error, %Ecto.Changeset{}} =
+               Admin.update_client(
+                 client,
+                 Map.put(@client_update_attrs, :id_token_signature_alg, "bad_alg")
+               )
+    end
+
+    test "updates the client with an id token signature alg" do
+      client = client_fixture()
+
+      Enum.map(IdToken.signature_algorithms(), fn alg ->
+        assert {:ok, client} =
+                 Admin.update_client(
+                   client,
+                   Map.put(@client_update_attrs, :id_token_signature_alg, Atom.to_string(alg))
+                 )
+
+        assert client.id_token_signature_alg == Atom.to_string(alg)
+      end)
     end
 
     test "updates the client" do

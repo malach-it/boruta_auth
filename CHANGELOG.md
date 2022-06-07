@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
+
 ### Added
 
 - handle `response_mode` in hybrid requests
 - client id_token validation for ecto adapter
+- per client id token signature algorithm configuration (introduce a database schema change)
 
 ### Changed
 
