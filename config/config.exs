@@ -2,7 +2,7 @@
 # should only configure the :boruta application itself
 # and only for organization purposes. All other config goes to
 # the umbrella root.
-use Mix.Config
+import Config
 
 config :boruta,
   ecto_repos: [Boruta.Repo]
@@ -19,4 +19,4 @@ config :phoenix, :json_library, Jason
 config :boruta, Boruta.Oauth,
   repo: Boruta.Repo
 
-import_config "#{Mix.env()}.exs"
+import_config "#{config_env()}.exs"
