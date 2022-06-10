@@ -113,6 +113,7 @@ defmodule Boruta.Oauth.IdToken do
   defp sign(
          payload,
          %Oauth.Client{
+           id: client_id,
            id_token_signature_alg: signature_alg,
            private_key: private_key,
            secret: secret
@@ -124,7 +125,7 @@ defmodule Boruta.Oauth.IdToken do
           Joken.Signer.create(signature_alg, secret)
 
         :asymmetric ->
-          Joken.Signer.create(signature_alg, %{"pem" => private_key})
+          Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => client_id})
       end
 
     with {:ok, token, _payload} <- Token.encode_and_sign(payload, signer) do
