@@ -1021,6 +1021,32 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
+    test "returns an error if code was issued to an other client", %{code: code, resource_owner: resource_owner} do
+      client = insert(:client)
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) ==
+             {:token_error,
+              %Error{
+                error: :invalid_grant,
+                error_description: "Given authorization code is invalid, revoked, or expired.",
+                status: :bad_request
+              }}
+    end
+
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)

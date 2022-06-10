@@ -30,9 +30,13 @@ defmodule Boruta.Oauth.Authorization.Code do
              :status => :bad_request
            }}
           | {:ok, Token.t()}
-  def authorize(%{value: value, redirect_uri: redirect_uri, client: %Client{pkce: false}}) do
-    # TODO check if token was issued to an other client
-    with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
+  def authorize(%{
+        value: value,
+        redirect_uri: redirect_uri,
+        client: %Client{id: client_id, pkce: false}
+      }) do
+    with %Token{client: %Client{id: ^client_id}} = token <-
+           CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
@@ -49,11 +53,11 @@ defmodule Boruta.Oauth.Authorization.Code do
   def authorize(%{
         value: value,
         redirect_uri: redirect_uri,
-        client: %Client{pkce: true},
+        client: %Client{id: client_id, pkce: true},
         code_verifier: code_verifier
       }) do
-    # TODO check if token was issued to an other client
-    with %Token{} = token <- CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
+    with %Token{client: %Client{id: ^client_id}} = token <-
+           CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
          :ok <- check_code_challenge(token, code_verifier),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
