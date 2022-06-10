@@ -276,8 +276,8 @@ defmodule Boruta.Oauth.IdTokenTest do
                "resource_owner_claim" => "claim"
              } = claims
 
-      assert at_hash == "zUJATVKtVcz6mspK3IKKpYAK2dOFoGcfvL9yQRgyBhk"
-      assert c_hash == "zUJATVKtVcz6mspK3IKKpYAK2dOFoGcfvL9yQRgyBhk"
+      assert at_hash == "zUJATVKtVcz6mspK3IKKpQ"
+      assert c_hash == "zUJATVKtVcz6mspK3IKKpQ"
     end
   end
 
@@ -338,8 +338,8 @@ defmodule Boruta.Oauth.IdTokenTest do
                "resource_owner_claim" => "claim"
              } = claims
 
-      assert at_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8SqL22Yf7gOFlk"
-      assert c_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8SqL22Yf7gOFlk"
+      assert at_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8Sq"
+      assert c_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8Sq"
     end
   end
 
@@ -399,8 +399,8 @@ defmodule Boruta.Oauth.IdTokenTest do
                "resource_owner_claim" => "claim"
              } = claims
 
-      assert at_hash == "zUJATVKtVcz6mspK3IKKpYAK2dOFoGcfvL9yQRgyBhk"
-      assert c_hash == "zUJATVKtVcz6mspK3IKKpYAK2dOFoGcfvL9yQRgyBhk"
+      assert at_hash == "zUJATVKtVcz6mspK3IKKpQ"
+      assert c_hash == "zUJATVKtVcz6mspK3IKKpQ"
     end
   end
 
@@ -460,8 +460,8 @@ defmodule Boruta.Oauth.IdTokenTest do
                "resource_owner_claim" => "claim"
              } = claims
 
-      assert at_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8SqL22Yf7gOFlk"
-      assert c_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8SqL22Yf7gOFlk"
+      assert at_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8Sq"
+      assert c_hash == "tGx8OeFdPcLNxQ5Cp6KBgaB0zu8Yx8Sq"
     end
   end
 
