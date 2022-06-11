@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - do not not issue an access token in authorization code and hybrid grants if code was issued to an other client
 
+### Fixed
+
+- id token `at_hash` and `c_hash` binary sizes for SHA256 and SHA384 signature hash algorithms
+
 ## [2.1.4] - 2022-06-07
 
 Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.

@@ -16,24 +16,28 @@ defmodule Boruta.Oauth.IdToken do
   alias Boruta.Oauth
 
   @signature_algorithms [
-    RS256: {:asymmetric, :SHA256},
-    RS384: {:asymmetric, :SHA384},
-    RS512: {:asymmetric, :SHA512},
-    HS256: {:symmetric, :SHA256},
-    HS384: {:symmetric, :SHA384},
-    HS512: {:symmetric, :SHA512}
+    RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
+    RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
+    RS512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
+    HS256: [type: :symmetric, hash_algorithm: :SHA256, binary_size: 16],
+    HS384: [type: :symmetric, hash_algorithm: :SHA384, binary_size: 24],
+    HS512: [type: :symmetric, hash_algorithm: :SHA512, binary_size: 32]
   ]
 
   @spec signature_algorithms() :: list(atom())
   def signature_algorithms, do: Keyword.keys(@signature_algorithms)
 
-  @spec hash_alg(Oauth.Client.t()) :: hash_alg :: atom()
-  def hash_alg(%Oauth.Client{id_token_signature_alg: signature_alg}),
-    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 1)
-
   @spec signature_type(Oauth.Client.t()) :: signature_type :: atom()
   def signature_type(%Oauth.Client{id_token_signature_alg: signature_alg}),
-    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 0)
+    do: @signature_algorithms[String.to_atom(signature_alg)][:type]
+
+  @spec hash_alg(Oauth.Client.t()) :: hash_alg :: atom()
+  def hash_alg(%Oauth.Client{id_token_signature_alg: signature_alg}),
+    do: @signature_algorithms[String.to_atom(signature_alg)][:hash_algorithm]
+
+  @spec hash_binary_size(Oauth.Client.t()) :: binary_size :: integer()
+  def hash_binary_size(%Oauth.Client{id_token_signature_alg: signature_alg}),
+    do: @signature_algorithms[String.to_atom(signature_alg)][:binary_size]
 
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
@@ -139,7 +143,7 @@ defmodule Boruta.Oauth.IdToken do
     |> String.downcase()
     |> String.to_atom()
     |> :crypto.hash(string)
-    |> binary_part(0, 32)
+    |> binary_part(0, hash_binary_size(client))
     |> Base.url_encode64(padding: false)
   end
 end
