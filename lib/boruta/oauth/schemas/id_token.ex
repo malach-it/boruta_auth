@@ -16,12 +16,12 @@ defmodule Boruta.Oauth.IdToken do
   alias Boruta.Oauth
 
   @signature_algorithms [
-    RS256: {:asymmetric, :SHA256, 16},
-    RS384: {:asymmetric, :SHA384, 24},
-    RS512: {:asymmetric, :SHA512, 32},
-    HS256: {:symmetric, :SHA256, 16},
-    HS384: {:symmetric, :SHA384, 24},
-    HS512: {:symmetric, :SHA512, 32}
+    RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
+    RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
+    RS512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
+    HS256: [type: :symmetric, hash_algorithm: :SHA256, binary_size: 16],
+    HS384: [type: :symmetric, hash_algorithm: :SHA384, binary_size: 24],
+    HS512: [type: :symmetric, hash_algorithm: :SHA512, binary_size: 32]
   ]
 
   @spec signature_algorithms() :: list(atom())
@@ -29,15 +29,15 @@ defmodule Boruta.Oauth.IdToken do
 
   @spec signature_type(Oauth.Client.t()) :: signature_type :: atom()
   def signature_type(%Oauth.Client{id_token_signature_alg: signature_alg}),
-    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 0)
+    do: @signature_algorithms[String.to_atom(signature_alg)][:type]
 
   @spec hash_alg(Oauth.Client.t()) :: hash_alg :: atom()
   def hash_alg(%Oauth.Client{id_token_signature_alg: signature_alg}),
-    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 1)
+    do: @signature_algorithms[String.to_atom(signature_alg)][:hash_algorithm]
 
   @spec hash_binary_size(Oauth.Client.t()) :: binary_size :: integer()
   def hash_binary_size(%Oauth.Client{id_token_signature_alg: signature_alg}),
-    do: elem(@signature_algorithms[String.to_atom(signature_alg)], 2)
+    do: @signature_algorithms[String.to_atom(signature_alg)][:binary_size]
 
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
