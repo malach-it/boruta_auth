@@ -15,7 +15,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
   def to_oauth_schema(%Ecto.Token{} = token) do
     token = repo().preload(token, [:client])
     client = OauthMapper.to_oauth_schema(token.client)
-    resource_owner = with "" <> sub <- token.sub, # token is linked to a resource_owner
+    resource_owner = token.resource_owner || with "" <> sub <- token.sub, # token is linked to a resource_owner
       {:ok, resource_owner} <- resource_owners().get_by(sub: sub) do
       resource_owner
     else

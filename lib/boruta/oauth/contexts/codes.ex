@@ -20,7 +20,8 @@ defmodule Boruta.Oauth.Codes do
     :scope => String.t(),
     :state => String.t(),
     :code_challenge => String.t(),
-    :code_challenge_method => String.t()
+    :code_challenge_method => String.t(),
+    :resource_owner => Boruta.Oauth.ResourceOwner.t()
   }) :: code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
 
   @doc """

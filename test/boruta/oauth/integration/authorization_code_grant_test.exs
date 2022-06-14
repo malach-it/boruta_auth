@@ -133,7 +133,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner = %{resource_owner | sub: 1}
 
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
@@ -164,7 +163,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a code", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
@@ -197,7 +195,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = "https://wildcard-redirect-uri.uri"
@@ -227,7 +224,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
@@ -251,7 +247,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "public"
@@ -286,7 +281,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a code with public scope (from cache)", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "public"
@@ -322,7 +316,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns an error with private scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "private"
@@ -355,7 +348,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
@@ -395,7 +387,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       given_scope = %Scope{name: "resource_owner:scope"}
 
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [given_scope] end)
 
       redirect_uri = List.first(client.redirect_uris)
@@ -432,7 +423,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "bad_scope"
@@ -490,7 +480,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a code with state", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
@@ -530,7 +519,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
@@ -565,7 +553,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
@@ -623,7 +610,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"
@@ -666,7 +652,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_state = "state"

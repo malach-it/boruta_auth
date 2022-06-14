@@ -48,6 +48,8 @@ defmodule Boruta.Ecto.Token do
     field(:access_token_ttl, :integer, virtual: true)
     field(:authorization_code_ttl, :integer, virtual: true)
 
+    field(:resource_owner, :map, virtual: true)
+
     belongs_to(:client, Client)
     field(:sub, :string)
 

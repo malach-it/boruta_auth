@@ -359,7 +359,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                      "state" => state
                    }
                  },
-                 resource_owner,
+                 %{resource_owner|extra_claims: %{"resource_owner_extra_claim" => "claim"}},
                  ApplicationMock
                )
 
@@ -376,7 +376,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                "iat" => _iat,
                "exp" => _exp,
                "sub" => ^resource_owner_id,
-               "nonce" => ^nonce
+               "nonce" => ^nonce,
+               "resource_owner_extra_claim" => "claim"
              } = claims
     end
 
@@ -444,7 +445,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                      "nonce" => nonce
                    }
                  },
-                 resource_owner,
+                 %{resource_owner|extra_claims: %{"resource_owner_extra_claim" => "claim"}},
                  ApplicationMock
                )
 
@@ -464,7 +465,8 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                "exp" => _exp,
                "at_hash" => _at_hash,
                "sub" => ^resource_owner_id,
-               "nonce" => ^nonce
+               "nonce" => ^nonce,
+               "resource_owner_extra_claim" => "claim"
              } = claims
     end
 
