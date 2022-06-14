@@ -15,6 +15,10 @@ defmodule Boruta.Oauth.IdToken do
 
   alias Boruta.Oauth
 
+  @type claims :: %{
+          String.t() => String.t() | claims()
+        }
+
   @signature_algorithms [
     RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
     RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
