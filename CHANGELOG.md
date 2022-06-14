@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - id tokens include `kid` header with the corresponding client id
+- `Boruta.Oauth.ResourceOwner` `extra_claims` attribute that defines claims to be included in id tokens
 
 ### Security
 
