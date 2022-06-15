@@ -6,16 +6,16 @@
 
 Boruta is the core of an OAuth 2.0 and OpenID Connect provider implementing according business rules. This library also provides a generator to create phoenix controllers, views and templates to have a basic provider up and running.
 
-It is intended to follow RFCs:
+As it, a provider implemented using Boruta aim to follow RFCs:
 - [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)
 - [RFC 7662 - OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 - [RFC 7009 - OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
 - [RFC 7636 - Proof Key for Code Exchange by OAuth Public Clients](https://tools.ietf.org/html/rfc7636)
 
-And specification from OpenID Connect:
+And specification from OpenID Foundation:
 - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
-This package is meant to help to provide authorization into Elixir applications. With it, you can perform part or all of authorization code, implicit, hybrid, client credentials, or resource owner password credentials grants flows. It also helps introspecting and revoking tokens.
+This package is meant to help to bring authorization into Elixir applications. With it, you can perform part or all of authorization code, implicit, hybrid, client credentials, or resource owner password credentials grants flows. It also helps introspecting and revoking tokens.
 
 ## Documentation
 
