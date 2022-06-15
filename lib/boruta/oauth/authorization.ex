@@ -336,7 +336,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                      redirect_uri: redirect_uri,
                      sub: sub,
                      scope: scope,
-                     state: state
+                     state: state,
+                     resource_owner: resource_owner
                    },
                    refresh_token: false
                  ) do
@@ -395,7 +396,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              state: state,
              nonce: nonce,
              code_challenge: code_challenge,
-             code_challenge_method: code_challenge_method
+             code_challenge_method: code_challenge_method,
+             resource_owner: resource_owner
            }}
 
         {:error, :invalid_code_challenge} ->
@@ -413,6 +415,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
     with {:ok,
           %AuthorizationSuccess{
             client: client,
+            resource_owner: resource_owner,
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
@@ -425,6 +428,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
       with {:ok, code} <-
              CodesAdapter.create(%{
                client: client,
+               resource_owner: resource_owner,
                redirect_uri: redirect_uri,
                sub: sub,
                scope: scope,
@@ -479,6 +483,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
           %AuthorizationSuccess{
             response_types: response_types,
             client: client,
+            resource_owner: resource_owner,
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
@@ -495,6 +500,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
           with {:ok, code} <-
                  CodesAdapter.create(%{
                    client: client,
+                   resource_owner: resource_owner,
                    redirect_uri: redirect_uri,
                    sub: sub,
                    scope: scope,
@@ -522,6 +528,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                  AccessTokensAdapter.create(
                    %{
                      client: client,
+                     resource_owner: resource_owner,
                      redirect_uri: redirect_uri,
                      sub: sub,
                      scope: scope,

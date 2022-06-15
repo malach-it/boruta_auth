@@ -56,6 +56,7 @@ defmodule Boruta.Ecto.AccessTokens do
     state = params[:state]
     redirect_uri = params[:redirect_uri]
     previous_token = params[:previous_token]
+    resource_owner = params[:resource_owner]
 
     token_attributes = %{
       client_id: client_id,
@@ -71,7 +72,7 @@ defmodule Boruta.Ecto.AccessTokens do
       apply(
         Token,
         changeset_method(options),
-        [%Token{}, token_attributes]
+        [%Token{resource_owner: resource_owner}, token_attributes]
       )
 
     with {:ok, token} <- repo().insert(changeset),

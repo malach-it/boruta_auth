@@ -15,6 +15,10 @@ defmodule Boruta.Oauth.IdToken do
 
   alias Boruta.Oauth
 
+  @type claims :: %{
+          String.t() => String.t() | claims()
+        }
+
   @signature_algorithms [
     RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
     RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
@@ -105,6 +109,7 @@ defmodule Boruta.Oauth.IdToken do
       end
 
     resource_owners().claims(resource_owner, scope)
+    |> Map.merge(resource_owner.extra_claims)
     |> Map.put("sub", sub)
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)
