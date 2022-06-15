@@ -10,6 +10,6 @@ defmodule Boruta.Oauth.ResourceOwner do
     sub: String.t(),
     username: String.t() | nil,
     last_login_at: DateTime.t() | nil,
-    extra_claims: Boruta.Oauth.IdToken.claims() | nil
+    extra_claims: Boruta.Oauth.IdToken.claims()
   }
 end
