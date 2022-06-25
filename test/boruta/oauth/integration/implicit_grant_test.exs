@@ -19,6 +19,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
+      confidential_client = insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
       wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -31,6 +32,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       {:ok,
        client: client,
+       confidential_client: confidential_client,
        wildcard_redirect_uri_client: wildcard_redirect_uri_client,
        client_with_scope: client_with_scope,
        client_without_grant_type: client_without_grant_type,
@@ -176,6 +178,36 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_success,
+       %AuthorizeResponse{
+         type: type,
+         access_token: value,
+         expires_in: expires_in,
+         redirect_uri: ^redirect_uri
+       }} =
+        Oauth.authorize(
+          %Plug.Conn{
+            query_params: %{
+              "response_type" => "token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
+
+      assert type == :token
+      assert value
+      assert expires_in
+    end
+
+    test "returns a token with a confidential client", %{confidential_client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
 

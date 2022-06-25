@@ -61,6 +61,10 @@ defmodule Boruta.Oauth.Client do
   def grant_types, do: @grant_types
 
   @spec grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
+  def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "code") do
+    Enum.member?(supported_grant_types, "authorization_code")
+  end
+
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, grant_type) do
     Enum.member?(supported_grant_types, grant_type)
   end
@@ -87,6 +91,10 @@ defmodule Boruta.Oauth.Client do
   end
 
   @spec should_check_secret?(client :: t(), grant_type :: String.t()) :: boolean()
+  def should_check_secret?(_client, grant_type)
+      when grant_type in ["implicit", "code"],
+      do: false
+
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
   def should_check_secret?(client, grant_type) when grant_type in ["refresh_token", "revoke"] do

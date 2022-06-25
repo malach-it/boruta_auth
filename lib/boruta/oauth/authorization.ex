@@ -368,7 +368,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
           state: state,
           nonce: nonce,
           scope: scope,
-          grant_type: grant_type,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method
         } = request
@@ -378,7 +377,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              id: client_id,
              secret: nil,
              redirect_uri: redirect_uri,
-             grant_type: grant_type
+             grant_type: "code" # in order to differentiate code from authorization_code requests
            ),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: resource_owner),
