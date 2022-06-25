@@ -79,6 +79,7 @@ defmodule Boruta.MixProject do
         "guides/create_client.md",
         "guides/authorize_requests.md",
         "guides/pkce.md",
+        "guides/confidential_clients.md",
         "guides/migration.md",
         "CHANGELOG.md"
       ],
