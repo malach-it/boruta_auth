@@ -95,11 +95,11 @@ defmodule Boruta.Oauth.Client do
       when grant_type in ["implicit", "code"],
       do: false
 
-  def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
-
   def should_check_secret?(client, grant_type) when grant_type in ["refresh_token", "revoke"] do
     not apply(__MODULE__, :"public_#{grant_type}?", [client])
   end
+
+  def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
   def should_check_secret?(_client, grant_type)
       when grant_type in ["client_credentials", "introspect"],

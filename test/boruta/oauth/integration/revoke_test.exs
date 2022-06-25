@@ -17,7 +17,7 @@ defmodule Boruta.OauthTest.RevokeTest do
   describe "revoke request" do
     setup do
       client = insert(:client)
-      public_revoke_client = insert(:client, public_revoke: true)
+      public_revoke_client = insert(:client, public_revoke: true, confidential: true)
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       token = insert(:token,

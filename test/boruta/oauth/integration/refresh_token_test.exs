@@ -18,7 +18,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       client = insert(:client)
       expired_refresh_token_client = insert(:client, refresh_token_ttl: -1)
       client_without_grant_type = insert(:client, supported_grant_types: [])
-      public_refresh_token_client = insert(:client, public_refresh_token: true)
+      public_refresh_token_client = insert(:client, public_refresh_token: true, confidential: true)
 
       expired_access_token =
         insert(
