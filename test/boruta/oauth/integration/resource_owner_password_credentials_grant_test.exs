@@ -35,7 +35,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       assert Oauth.token(
         %Plug.Conn{
           req_headers: [{"authorization", "Basic boom"}],
-          body_params: %{}
+          body_params: %{"grant_type" => "password", "username" => "username", "password" => "password"}
         },
         ApplicationMock
       ) == {:token_error, %Boruta.Oauth.Error{
