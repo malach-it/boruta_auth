@@ -141,15 +141,18 @@ defmodule Boruta.Oauth.Authorization.Client do
   end
 
   defp maybe_check_client_secret(client, secret, grant_type) do
-    case {Client.should_check_secret?(client, grant_type), Client.check_secret(client, secret)} do
-      {false, _} ->
+    case Client.should_check_secret?(client, grant_type) do
+      false ->
         {:ok, client}
 
-      {true, :ok} ->
-        {:ok, client}
+      true ->
+        case Client.check_secret(client, secret) do
+          :ok ->
+            {:ok, client}
 
-      {true, _} ->
-        {:error, "Invalid client_secret."}
+          _ ->
+            {:error, "Invalid client_secret."}
+        end
     end
   end
 

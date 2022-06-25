@@ -188,12 +188,8 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
       |> expect(:check_password, fn _resource_owner, _password -> :ok end)
 
-      %{req_headers: [{"authorization", authorization_header}]} =
-        using_basic_auth(client.id, client.secret)
-
       case Oauth.token(
              %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
                body_params: %{
                  "grant_type" => "password",
                  "client_id" => client.id,
