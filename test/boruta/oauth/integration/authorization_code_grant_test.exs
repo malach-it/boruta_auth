@@ -18,6 +18,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
+  setup :verify_on_exit!
+
   describe "authorization code grant - authorize" do
     setup do
       user = %User{}
@@ -132,9 +134,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
       resource_owner = %{resource_owner | sub: 1}
 
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert {
@@ -162,9 +161,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_success,
@@ -194,9 +190,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       wildcard_redirect_uri_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       redirect_uri = "https://wildcard-redirect-uri.uri"
 
       assert {:authorize_success,
@@ -223,9 +216,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
 
@@ -279,7 +269,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
-    test "returns a code with public scope (from cache)", %{client: client, resource_owner: resource_owner} do
+    test "returns a code with public scope (from cache)", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
@@ -479,9 +472,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with state", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
 
@@ -518,9 +508,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       given_state = "state"
       redirect_uri = List.first(client.redirect_uris)
 
@@ -552,9 +539,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       given_state = "state"
       given_code_challenge = "code challenge"
       given_code_challenge_method = "S256"
@@ -609,9 +593,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       given_state = "state"
       given_code_challenge = "code challenge"
       redirect_uri = List.first(client.redirect_uris)
@@ -651,9 +632,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       given_state = "state"
       given_code_challenge = :crypto.hash(:sha256, "challenge me") |> Base.url_encode64()
       given_code_challenge_method = "S256"
@@ -696,6 +674,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
+      confidential_client = insert(:client, confidential: true)
       pkce_client = insert(:client, pkce: true)
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -704,6 +683,15 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           :token,
           type: "code",
           client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris)
+        )
+
+      confidential_code =
+        insert(
+          :token,
+          type: "code",
+          client: confidential_client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris)
         )
@@ -814,10 +802,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       {:ok,
        client: client,
+       confidential_client: confidential_client,
        pkce_client: pkce_client,
        client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
        code: code,
+       confidential_code: confidential_code,
        expired_code: expired_code,
        revoked_code: revoked_code,
        openid_code: openid_code,
@@ -840,7 +830,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. Required properties code, redirect_uri are missing at #.",
+                    "Request body validation failed. Required properties code, client_id, redirect_uri are missing at #.",
                   status: :bad_request
                 }}
     end
@@ -878,9 +868,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_client,
-                  error_description: "Invalid client.",
-                  status: :unauthorized
+                  error: :invalid_request,
+                  error_description:
+                    "Request body validation failed. Required property client_id is missing at #.",
+                  status: :bad_request
                 }}
     end
 
@@ -956,9 +947,13 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
-    test "returns an error when code is expired", %{client: client, expired_code: code, resource_owner: resource_owner} do
+    test "returns an error when code is expired", %{
+      client: client,
+      expired_code: code,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -981,9 +976,13 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
-    test "returns an error when code is revoked", %{client: client, revoked_code: code, resource_owner: resource_owner} do
+    test "returns an error when code is revoked", %{
+      client: client,
+      revoked_code: code,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1006,30 +1005,60 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
-    test "returns an error if code was issued to an other client", %{code: code, resource_owner: resource_owner} do
+    test "returns an error if code was issued to an other client", %{
+      code: code,
+      resource_owner: resource_owner
+    } do
       client = insert(:client)
+
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.token(
-             %Plug.Conn{
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => client.id,
-                 "code" => code.value,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             ApplicationMock
-           ) ==
-             {:token_error,
-              %Error{
-                error: :invalid_grant,
-                error_description: "Given authorization code is invalid, revoked, or expired.",
-                status: :bad_request
-              }}
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when client secret is invalid and client confidential", %{
+      confidential_client: client,
+      confidential_code: code
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "client_secret" => "bad_secret",
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_client,
+                  error_description: "Invalid client_id or redirect_uri.",
+                  status: :unauthorized
+                }}
     end
 
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
@@ -1043,6 +1072,41 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a token with a confidential client", %{confidential_client: client, confidential_code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "client_secret" => client.secret,
                  "code" => code.value,
                  "redirect_uri" => redirect_uri
                }
@@ -1304,7 +1368,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       assert Oauth.token(
                %Plug.Conn{
@@ -1334,7 +1398,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       assert Oauth.token(
                %Plug.Conn{
@@ -1401,10 +1465,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       pkce_code_s256: code,
       resource_owner: resource_owner
     } do
-      redirect_uri = List.first(client.redirect_uris)
-
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
 
       case Oauth.token(
              %Plug.Conn{

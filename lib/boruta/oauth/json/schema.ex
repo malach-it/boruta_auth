@@ -45,11 +45,12 @@ defmodule Boruta.Oauth.Json.Schema do
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
+        "client_secret" => %{"type" => "string"},
         "code" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "code_verifier" => %{"type" => "string"}
       },
-      "required" => ["grant_type", "code", "redirect_uri"]
+      "required" => ["grant_type", "code", "client_id", "redirect_uri"]
     } |> Schema.resolve
   end
 
