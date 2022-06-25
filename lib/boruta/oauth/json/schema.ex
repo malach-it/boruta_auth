@@ -32,7 +32,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "password" => %{"type" => "string"},
         "scope" => %{"type" => "string"},
       },
-      "required" => ["grant_type", "client_id", "client_secret", "username", "password"]
+      "required" => ["grant_type", "client_id", "username", "password"]
     } |> Schema.resolve
   end
 
