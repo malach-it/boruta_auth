@@ -13,6 +13,8 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
+  setup :verify_on_exit!
+
   describe "resource owner password credentials grant" do
     setup do
       user = %User{}
@@ -159,10 +161,6 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       confidential_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
-      |> expect(:check_password, fn _resource_owner, _password -> :ok end)
-
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, "bad_secret")
 

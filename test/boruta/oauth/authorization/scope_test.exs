@@ -11,6 +11,8 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
 
+  setup :verify_on_exit!
+
   describe "with empty scope" do
     test "returns an empty string if nil given" do
       case Scope.authorize(scope: nil, against: %{}) do
@@ -254,7 +256,6 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
 
   describe "with a token" do
     setup do
-      expect(ResourceOwners, :get_by, fn (_params) -> {:error, "No resource owner."} end)
       token = insert(:token)
       public_scope = insert(:scope, public: true)
       private_scope = insert(:scope, public: false)
