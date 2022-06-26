@@ -13,6 +13,8 @@ defmodule Boruta.OauthTest.IntrospectTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
+  setup :verify_on_exit!
+
   describe "introspect request" do
     setup do
       client = insert(:client)

@@ -44,6 +44,7 @@ defmodule Boruta.Ecto.Client do
   schema "oauth_clients" do
     field(:name, :string)
     field(:secret, :string)
+    field(:confidential, :boolean, default: false)
     field(:authorize_scope, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
 
@@ -76,6 +77,7 @@ defmodule Boruta.Ecto.Client do
       :id,
       :name,
       :secret,
+      :confidential,
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,
@@ -108,6 +110,7 @@ defmodule Boruta.Ecto.Client do
     |> cast(attrs, [
       :name,
       :secret,
+      :confidential,
       :access_token_ttl,
       :authorization_code_ttl,
       :refresh_token_ttl,

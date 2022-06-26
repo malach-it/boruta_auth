@@ -42,6 +42,7 @@ defmodule Boruta.Oauth.Request.Base do
   def build_request(%{"grant_type" => "authorization_code"} = params) do
     {:ok, %AuthorizationCodeRequest{
       client_id: params["client_id"],
+      client_secret: params["client_secret"],
       code: params["code"],
       redirect_uri: params["redirect_uri"],
       code_verifier: params["code_verifier"]

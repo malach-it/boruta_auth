@@ -14,11 +14,14 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
+  setup :verify_on_exit!
+
   describe "implicit grant" do
     setup do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
+      confidential_client = insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
       wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -31,6 +34,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
       {:ok,
        client: client,
+       confidential_client: confidential_client,
        wildcard_redirect_uri_client: wildcard_redirect_uri_client,
        client_with_scope: client_with_scope,
        client_without_grant_type: client_without_grant_type,
@@ -148,9 +152,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
       resource_owner = %{resource_owner | sub: 1}
 
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_error,
@@ -176,9 +177,33 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      redirect_uri = List.first(client.redirect_uris)
 
+      assert {:authorize_success,
+       %AuthorizeResponse{
+         type: type,
+         access_token: value,
+         expires_in: expires_in,
+         redirect_uri: ^redirect_uri
+       }} =
+        Oauth.authorize(
+          %Plug.Conn{
+            query_params: %{
+              "response_type" => "token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
+
+      assert type == :token
+      assert value
+      assert expires_in
+    end
+
+    test "returns a token with a confidential client", %{confidential_client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_success,
@@ -206,9 +231,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
     end
 
     test "returns a token with a wildcard client redirect uri", %{wildcard_redirect_uri_client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-
       redirect_uri = "https://wildcard-redirect-uri.uri"
 
       assert {:authorize_success,
@@ -239,9 +261,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_error,
@@ -271,9 +290,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-      |> expect(:claims, fn _sub, _scope -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -303,7 +320,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns an error as fragment without a nonce and `id_token token` response types", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       redirect_uri = List.first(client.redirect_uris)
@@ -332,7 +348,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
 
     test "returns an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
       |> expect(:claims, fn _sub, _scope -> %{} end)
 
@@ -385,9 +400,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       {:authorize_success,
@@ -420,7 +432,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
       |> expect(:claims, fn _sub, _scope -> %{} end)
 
@@ -475,7 +486,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
@@ -514,7 +524,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> resource_owner end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "bad_scope"
@@ -546,10 +555,6 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       client_without_grant_type: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> resource_owner end)
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.authorize(

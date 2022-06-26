@@ -40,6 +40,7 @@ Here are some guides helping the integration of OAuth/OpenID Connect in your sys
 - [Basic OAuth/OpenID Connect provider integration](guides/provider_integration.md)
 - [How to create an OAuth client](guides/create_client.md)
 - [Client request authorization](guides/authorize_requests.md)
+- [Notes about confidential clients](guides/confidential_clients.md)
 - [Notes about pkce](guides/pkce.md)
 
 ## Feedback

@@ -110,6 +110,16 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{secret: ^secret}} = Admin.create_client(%{secret: secret})
     end
 
+    test "creates a client with a default confidentiality to false" do
+      assert {:ok, %Client{confidential: false}} = Admin.create_client(%{})
+    end
+
+    test "creates a client with a given confidentiality" do
+      confidential = true
+
+      assert {:ok, %Client{confidential: ^confidential}} = Admin.create_client(%{confidential: confidential})
+    end
+
     test "creates a client with default token ttls" do
       {:ok,
        %Client{

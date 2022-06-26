@@ -7,6 +7,7 @@ defmodule Boruta.Oauth.Client do
   defstruct id: nil,
             name: nil,
             secret: nil,
+            confidential: nil,
             authorize_scope: nil,
             authorized_scopes: [],
             redirect_uris: [],
@@ -25,6 +26,7 @@ defmodule Boruta.Oauth.Client do
   @type t :: %__MODULE__{
           id: any(),
           secret: String.t(),
+          confidential: boolean(),
           name: String.t(),
           authorize_scope: boolean(),
           authorized_scopes: list(Boruta.Oauth.Scope.t()),
@@ -59,6 +61,10 @@ defmodule Boruta.Oauth.Client do
   def grant_types, do: @grant_types
 
   @spec grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
+  def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "code") do
+    Enum.member?(supported_grant_types, "authorization_code")
+  end
+
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, grant_type) do
     Enum.member?(supported_grant_types, grant_type)
   end
@@ -83,6 +89,23 @@ defmodule Boruta.Oauth.Client do
       false -> {:error, "Client redirect_uri do not match."}
     end
   end
+
+  @spec should_check_secret?(client :: t(), grant_type :: String.t()) :: boolean()
+  def should_check_secret?(_client, grant_type)
+      when grant_type in ["implicit", "code"],
+      do: false
+
+  def should_check_secret?(client, grant_type) when grant_type in ["refresh_token", "revoke"] do
+    not apply(__MODULE__, :"public_#{grant_type}?", [client])
+  end
+
+  def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
+
+  def should_check_secret?(_client, grant_type)
+      when grant_type in ["client_credentials", "introspect"],
+      do: true
+
+  def should_check_secret?(%__MODULE__{confidential: false}, _grant_type), do: false
 
   @spec public_refresh_token?(client :: t()) :: boolean()
   def public_refresh_token?(%__MODULE__{public_refresh_token: public_refresh_token}) do

@@ -165,15 +165,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
 
   def preauthorize(%AuthorizationCodeRequest{
         client_id: client_id,
+        client_secret: client_secret,
         code: code,
         redirect_uri: redirect_uri,
         grant_type: grant_type,
         code_verifier: code_verifier
       }) do
-    # TODO check client secret for confidential clients
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
+             secret: client_secret,
              redirect_uri: redirect_uri,
              grant_type: grant_type,
              code_verifier: code_verifier
@@ -257,6 +258,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
+             secret: nil,
              redirect_uri: redirect_uri,
              grant_type: grant_type
            ),
@@ -366,7 +368,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
           state: state,
           nonce: nonce,
           scope: scope,
-          grant_type: grant_type,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method
         } = request
@@ -374,8 +375,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
+             secret: nil,
              redirect_uri: redirect_uri,
-             grant_type: grant_type
+             grant_type: "code" # in order to differentiate code from authorization_code requests
            ),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: resource_owner),
@@ -566,7 +568,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
         scope: scope,
         grant_type: grant_type
       }) do
-    # TODO set client secret check optional for confidential clients
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,

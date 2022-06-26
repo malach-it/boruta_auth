@@ -11,50 +11,47 @@ defmodule Boruta.Oauth.Request.Token do
   alias Boruta.Oauth.Validator
 
   @spec request(conn :: Plug.Conn.t() | map()) ::
-    {:error,
-     %Error{
-       :error => :invalid_request,
-       :error_description => String.t(),
-       :format => nil,
-       :redirect_uri => nil,
-       :status => :bad_request
-     }}
-    | {:ok, oauth_request :: AuthorizationCodeRequest.t()
-      | ClientCredentialsRequest.t()
-      | PasswordRequest.t()}
-  def request(%{
-    req_headers: req_headers,
-    body_params: %{} = body_params
-  }) when is_list(req_headers) and length(req_headers) > 1 do
-    case authorization_header(req_headers) do
-      {:ok, authorization_header} ->
-        request(%{
-          req_headers: [{"authorization", authorization_header}],
-          body_params: body_params
-        })
-      {:error, _reason} ->
-        request(%{body_params: body_params})
+          {:error,
+           %Error{
+             :error => :invalid_request,
+             :error_description => String.t(),
+             :format => nil,
+             :redirect_uri => nil,
+             :status => :bad_request
+           }}
+          | {:ok,
+             oauth_request ::
+               AuthorizationCodeRequest.t()
+               | ClientCredentialsRequest.t()
+               | PasswordRequest.t()}
+  def request(request) do
+    with {:ok, request_params} <- fetch_request_params(request),
+         {:ok, params} <- Validator.validate(:token, request_params) do
+      build_request(params)
+    else
+      {:error, error_description} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: error_description
+         }}
     end
   end
 
-  def request(%{req_headers: [{"authorization", "Basic " <> _ = authorization_header}], body_params: %{} = body_params}) do
-    with {:ok, [client_id, client_secret]} <- BasicAuth.decode(authorization_header),
-         {:ok, params} <- Validator.validate(
-           :token,
-           Enum.into(body_params, %{"client_id" => client_id, "client_secret" => client_secret})
-         ) do
-      build_request(params)
+  defp fetch_request_params(%{
+         req_headers: req_headers,
+         body_params: %{} = body_params
+       }) do
+    with {:ok, authorization_header} <- authorization_header(req_headers),
+         {:ok, [client_id, client_secret]} <- BasicAuth.decode(authorization_header) do
+      request_params =
+        Enum.into(body_params, %{"client_id" => client_id, "client_secret" => client_secret})
+
+      {:ok, request_params}
     else
-      {:error, error} ->
-        {:error, %Error{status: :bad_request, error: :invalid_request, error_description: error}}
-    end
-  end
-  def request(%{body_params: %{} = body_params}) do
-    case Validator.validate(:token, body_params) do
-      {:ok, params} ->
-        build_request(params)
-      {:error, error_description} ->
-        {:error, %Error{status: :bad_request, error: :invalid_request, error_description: error_description}}
+      {:error, :no_authorization_header} -> {:ok, body_params}
+      {:error, reason} -> {:error, reason}
     end
   end
 end

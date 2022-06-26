@@ -13,6 +13,8 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
+  setup :verify_on_exit!
+
   describe "preauthorize" do
     setup do
       user = %User{}
@@ -122,9 +124,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       case Oauth.preauthorize(
@@ -157,9 +156,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       wildcard_redirect_uri_client: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-
       redirect_uri = "https://wildcard-redirect-uri.uri"
 
       assert {:preauthorize_success,
@@ -190,7 +186,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       %{name: given_scope} = List.first(client.authorized_scopes)
@@ -228,7 +223,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, fn _params -> resource_owner end)
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
       given_scope = "bad_scope"
@@ -260,10 +254,6 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       client_without_grant_type: client,
       resource_owner: resource_owner
     } do
-      ResourceOwners
-      |> expect(:get_by, fn _params -> resource_owner end)
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       redirect_uri = List.first(client.redirect_uris)
 
       assert Oauth.preauthorize(

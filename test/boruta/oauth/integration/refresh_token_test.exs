@@ -3,7 +3,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
   use Boruta.DataCase
 
   import Boruta.Factory
-  import Mox
 
   alias Boruta.Ecto
   alias Boruta.Ecto.OauthMapper
@@ -13,15 +12,13 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Repo
-  alias Boruta.Support.ResourceOwners
 
   describe "refresh_token" do
     setup do
-      expect(ResourceOwners, :get_by, fn _params -> {:error, "No resource owner."} end)
       client = insert(:client)
       expired_refresh_token_client = insert(:client, refresh_token_ttl: -1)
       client_without_grant_type = insert(:client, supported_grant_types: [])
-      public_refresh_token_client = insert(:client, public_refresh_token: true)
+      public_refresh_token_client = insert(:client, public_refresh_token: true, confidential: true)
 
       expired_access_token =
         insert(
@@ -357,9 +354,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       client: client,
       access_token: token
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
@@ -431,9 +425,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns token", %{client: client, access_token: token} do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
@@ -463,9 +454,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
     end
 
     test "returns token (using cache)", %{client: client, access_token: token} do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
@@ -500,9 +488,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       client: client,
       access_token: token
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
@@ -535,9 +520,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       client: client,
       access_token: token
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
@@ -567,9 +549,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       public_refresh_token_client: client,
       public_refresh_token_access_token: token
     } do
-      ResourceOwners
-      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-
       assert {:token_success,
               %TokenResponse{
                 token_type: "bearer",

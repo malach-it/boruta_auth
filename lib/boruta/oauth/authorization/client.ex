@@ -16,9 +16,15 @@ defmodule Boruta.Oauth.Authorization.Client do
   """
   @spec authorize(
           [id: String.t(), secret: String.t(), grant_type: String.t()]
-          | [id: String.t(), redirect_uri: String.t(), grant_type: String.t()]
           | [
               id: String.t(),
+              secret: String.t() | nil,
+              redirect_uri: String.t(),
+              grant_type: String.t()
+            ]
+          | [
+              id: String.t(),
+              secret: String.t() | nil,
               redirect_uri: String.t(),
               grant_type: String.t(),
               code_verifier: String.t()
@@ -34,49 +40,10 @@ defmodule Boruta.Oauth.Authorization.Client do
                :status => :unauthorized
              }}
   def authorize(id: id, secret: secret, grant_type: grant_type)
-      when not is_nil(id) and grant_type in ["revoke", "refresh_token"] do
+      when not is_nil(id) do
     with %Client{} = client <- ClientsAdapter.get_client(id),
-         true <- Client.grant_type_supported?(client, grant_type) do
-      case {apply(Client, :"public_#{grant_type}?", [client]),
-            Client.check_secret(client, secret)} do
-        {true, _} ->
-          {:ok, client}
-
-        {false, :ok} ->
-          {:ok, client}
-
-        {false, _} ->
-          {:error,
-           %Error{
-             status: :unauthorized,
-             error: :invalid_client,
-             error_description: "Invalid client_id or client_secret."
-           }}
-      end
-    else
-      nil ->
-        {:error,
-         %Error{
-           status: :unauthorized,
-           error: :invalid_client,
-           error_description: "Invalid client_id or client_secret."
-         }}
-
-      false ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :unsupported_grant_type,
-           error_description: "Client do not support given grant type."
-         }}
-    end
-  end
-
-  def authorize(id: id, secret: secret, grant_type: grant_type)
-      when not is_nil(id) and not is_nil(secret) do
-    with %Client{} = client <- ClientsAdapter.get_client(id),
-         :ok <- Client.check_secret(client, secret),
-         true <- Client.grant_type_supported?(client, grant_type) do
+         true <- Client.grant_type_supported?(client, grant_type),
+         {:ok, client} <- maybe_check_client_secret(client, secret, grant_type) do
       {:ok, client}
     else
       false ->
@@ -97,11 +64,12 @@ defmodule Boruta.Oauth.Authorization.Client do
     end
   end
 
-  def authorize(id: id, redirect_uri: redirect_uri, grant_type: grant_type)
+  def authorize(id: id, secret: secret, redirect_uri: redirect_uri, grant_type: grant_type)
       when not is_nil(id) and not is_nil(redirect_uri) do
     with %Client{} = client <- ClientsAdapter.get_client(id),
          :ok <- Client.check_redirect_uri(client, redirect_uri),
-         true <- Client.grant_type_supported?(client, grant_type) do
+         true <- Client.grant_type_supported?(client, grant_type),
+         {:ok, client} <- maybe_check_client_secret(client, secret, grant_type) do
       {:ok, client}
     else
       false ->
@@ -124,6 +92,7 @@ defmodule Boruta.Oauth.Authorization.Client do
 
   def authorize(
         id: id,
+        secret: secret,
         redirect_uri: redirect_uri,
         grant_type: grant_type,
         code_verifier: code_verifier
@@ -132,7 +101,8 @@ defmodule Boruta.Oauth.Authorization.Client do
     with %Client{} = client <- ClientsAdapter.get_client(id),
          :ok <- Client.check_redirect_uri(client, redirect_uri),
          :ok <- validate_pkce(client, code_verifier),
-         true <- Client.grant_type_supported?(client, grant_type) do
+         true <- Client.grant_type_supported?(client, grant_type),
+         {:ok, client} <- maybe_check_client_secret(client, secret, grant_type) do
       {:ok, client}
     else
       false ->
@@ -168,6 +138,22 @@ defmodule Boruta.Oauth.Authorization.Client do
        error: :invalid_client,
        error_description: "Invalid client."
      }}
+  end
+
+  defp maybe_check_client_secret(client, secret, grant_type) do
+    case Client.should_check_secret?(client, grant_type) do
+      false ->
+        {:ok, client}
+
+      true ->
+        case Client.check_secret(client, secret) do
+          :ok ->
+            {:ok, client}
+
+          _ ->
+            {:error, "Invalid client_secret."}
+        end
+    end
   end
 
   defp validate_pkce(%Client{pkce: false}, _code_verifier), do: :ok

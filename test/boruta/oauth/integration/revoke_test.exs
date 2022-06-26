@@ -12,10 +12,12 @@ defmodule Boruta.OauthTest.RevokeTest do
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
+  setup :verify_on_exit!
+
   describe "revoke request" do
     setup do
       client = insert(:client)
-      public_revoke_client = insert(:client, public_revoke: true)
+      public_revoke_client = insert(:client, public_revoke: true, confidential: true)
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       token = insert(:token,
@@ -78,6 +80,7 @@ defmodule Boruta.OauthTest.RevokeTest do
     test "revoke token by value if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
       case Oauth.revoke(%Plug.Conn{
@@ -93,6 +96,7 @@ defmodule Boruta.OauthTest.RevokeTest do
     test "revoke token by refresh token if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
       case Oauth.revoke(%Plug.Conn{
@@ -108,6 +112,7 @@ defmodule Boruta.OauthTest.RevokeTest do
     test "revoke token by value if token is active with token hint", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
       case Oauth.revoke(%Plug.Conn{
@@ -123,6 +128,7 @@ defmodule Boruta.OauthTest.RevokeTest do
     test "revoke token by refresh token if token is active with token hint", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
+
       %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
 
       case Oauth.revoke(%Plug.Conn{
