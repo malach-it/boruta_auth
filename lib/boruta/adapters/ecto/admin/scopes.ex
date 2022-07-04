@@ -74,7 +74,7 @@ defmodule Boruta.Ecto.Admin.Scopes do
   """
   def create_scope(attrs) do
     with {:ok, scope} <- %Scope{} |> Scope.changeset(attrs) |> repo().insert(),
-         :ok <- Scopes.invalidate(:public) do
+         :ok <- Scopes.invalidate(:all) do
       {:ok, scope}
     end
   end
@@ -93,7 +93,7 @@ defmodule Boruta.Ecto.Admin.Scopes do
   """
   def update_scope(%Scope{} = scope, attrs) do
     with {:ok, scope} <- scope |> Scope.changeset(attrs) |> repo().update(),
-         :ok <- Scopes.invalidate(:public) do
+         :ok <- Scopes.invalidate(:all) do
       {:ok, scope}
     end
   end
@@ -111,7 +111,7 @@ defmodule Boruta.Ecto.Admin.Scopes do
 
   """
   def delete_scope(%Scope{} = scope) do
-    with :ok <- Scopes.invalidate(:public) do
+    with :ok <- Scopes.invalidate(:all) do
       repo().delete(scope)
     end
   end

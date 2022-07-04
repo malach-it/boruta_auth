@@ -25,7 +25,22 @@ defmodule Boruta.Ecto.Scopes do
     end
   end
 
+  def all do
+    case ScopeStore.get(:all) do
+      {:ok, scopes} ->
+        scopes
+      {:error, _reason} ->
+        repo().all(Ecto.Scope)
+        |> Enum.map(&to_oauth_schema/1)
+        |> ScopeStore.put_all()
+    end
+  end
+
   def invalidate(:public) do
     ScopeStore.invalidate(:public)
+  end
+
+  def invalidate(:all) do
+    ScopeStore.invalidate(:all)
   end
 end
