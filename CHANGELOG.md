@@ -12,6 +12,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 ### Added
 
 - confidential client management as stated in OAuth 2.0 RFC, documented [here](guides/confidential_clients.md)
+- token as the created `Boruta.Oauth.Token` attribute in `Boruta.Oauth.TokenResponse`
 
 ### Changed
 
