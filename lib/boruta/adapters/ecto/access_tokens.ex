@@ -90,11 +90,25 @@ defmodule Boruta.Ecto.AccessTokens do
   defp changeset_method(_options), do: :changeset
 
   @impl Boruta.Oauth.AccessTokens
-  def revoke(%Oauth.Token{value: value}) do
-    with %Token{} = token <- repo().get_by(Token, value: value),
+  def revoke(%Oauth.Token{client: client, value: value}) do
+    with %Token{} = token <- repo().get_by(Token, client_id: client.id, value: value),
          {:ok, token} <-
            token
            |> Token.revoke_changeset()
+           |> repo().update() do
+      TokenStore.invalidate(to_oauth_schema(token))
+    else
+      nil -> {:error, "Token not found."}
+      error -> error
+    end
+  end
+
+  @impl Boruta.Oauth.AccessTokens
+  def revoke_refresh_token(%Oauth.Token{client: client, value: value}) do
+    with %Token{} = token <- repo().get_by(Token, client_id: client.id, value: value),
+         {:ok, token} <-
+           token
+           |> Token.revoke_refresh_token_changeset()
            |> repo().update() do
       TokenStore.invalidate(to_oauth_schema(token))
     else

@@ -25,7 +25,8 @@ defmodule Boruta.Ecto.Token do
           expires_at: integer(),
           client: Client.t(),
           sub: String.t(),
-          revoked_at: DateTime.t()
+          revoked_at: DateTime.t(),
+          refresh_token_revoked_at: DateTime.t()
         }
 
   @primary_key {:id, Ecto.UUID, autogenerate: true}
@@ -42,6 +43,7 @@ defmodule Boruta.Ecto.Token do
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)
+    field(:refresh_token_revoked_at, :utc_datetime_usec)
     field(:code_challenge, :string, virtual: true)
     field(:code_challenge_hash, :string)
     field(:code_challenge_method, :string, default: "plain")
@@ -123,6 +125,13 @@ defmodule Boruta.Ecto.Token do
     |> put_code_expires_at()
     |> put_code_challenge_method()
     |> encrypt_code_challenge()
+  end
+
+  @doc false
+  def revoke_refresh_token_changeset(token) do
+    now = DateTime.utc_now()
+
+    change(token, refresh_token_revoked_at: now)
   end
 
   @doc false

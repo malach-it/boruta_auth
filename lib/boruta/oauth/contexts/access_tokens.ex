@@ -32,4 +32,11 @@ defmodule Boruta.Oauth.AccessTokens do
   @callback revoke(
     token :: Boruta.Oauth.Token.t()
   ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
+
+  @doc """
+  Revokes only the given `Boruta.Oauth.Token` refresh token.
+  """
+  @callback revoke_refresh_token(
+    token :: Boruta.Oauth.Token.t()
+  ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 end

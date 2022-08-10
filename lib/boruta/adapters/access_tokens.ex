@@ -10,4 +10,5 @@ defmodule Boruta.AccessTokensAdapter do
   def get_by(params), do: access_tokens().get_by(params)
   def create(params, opts), do: access_tokens().create(params, opts)
   def revoke(token), do: access_tokens().revoke(token)
+  def revoke_refresh_token(token), do: access_tokens().revoke_refresh_token(token)
 end

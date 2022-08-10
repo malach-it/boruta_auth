@@ -18,7 +18,9 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       client = insert(:client)
       expired_refresh_token_client = insert(:client, refresh_token_ttl: -1)
       client_without_grant_type = insert(:client, supported_grant_types: [])
-      public_refresh_token_client = insert(:client, public_refresh_token: true, confidential: true)
+
+      public_refresh_token_client =
+        insert(:client, public_refresh_token: true, confidential: true)
 
       expired_access_token =
         insert(
@@ -451,6 +453,50 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       assert access_token
       assert expires_in
       assert refresh_token
+    end
+
+    test "revokes previous refresh token", %{client: client, access_token: token} do
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert {:token_success,
+              %TokenResponse{}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token,
+                     "scope" => "scope"
+                   },
+                   req_headers: [{"authorization", authorization_header}, {"other", "header"}]
+                 },
+                 ApplicationMock
+               )
+
+      assert Repo.reload(token).refresh_token_revoked_at
+
+      assert {
+               :token_error,
+               %Boruta.Oauth.Error{
+                 error: :invalid_grant,
+                 error_description: "Given refresh token is invalid, revoked, or expired.",
+                 format: nil,
+                 redirect_uri: nil,
+                 state: nil,
+                 status: :bad_request
+               }
+             } =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "refresh_token",
+                     "refresh_token" => token.refresh_token,
+                     "scope" => "scope"
+                   },
+                   req_headers: [{"authorization", authorization_header}, {"other", "header"}]
+                 },
+                 ApplicationMock
+               )
     end
 
     test "returns token (using cache)", %{client: client, access_token: token} do
