@@ -480,9 +480,6 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
                %Boruta.Oauth.Error{
                  error: :invalid_grant,
                  error_description: "Given refresh token is invalid, revoked, or expired.",
-                 format: nil,
-                 redirect_uri: nil,
-                 state: nil,
                  status: :bad_request
                }
              } =
