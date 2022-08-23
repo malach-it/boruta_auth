@@ -18,6 +18,10 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 
 - client credentials does not check client secret by default anymore, the client has to be set as confidential to do so
 
+### Security
+
+- Enable refresh token rotation, revoke previous refresh token on successful refresh token requests
+
 ## [2.1.5] - 2022-06-15
 
 ### Added

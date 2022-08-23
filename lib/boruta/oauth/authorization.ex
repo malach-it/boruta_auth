@@ -597,18 +597,19 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
   end
 
   def token(request) do
-    with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, access_token: access_token}} <-
+    with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, access_token: previous_token}} <-
            preauthorize(request) do
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
-                 previous_token: access_token.value,
+                 previous_token: previous_token.value,
                  client: client,
                  sub: sub,
                  scope: scope
                },
                refresh_token: true
-             ) do
+             ),
+             {:ok, _token} <- AccessTokensAdapter.revoke_refresh_token(previous_token) do
         {:ok, %{token: access_token}}
       end
     end

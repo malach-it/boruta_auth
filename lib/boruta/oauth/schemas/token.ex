@@ -24,6 +24,7 @@ defmodule Boruta.Oauth.Token do
             refresh_token: nil,
             inserted_at: nil,
             revoked_at: nil,
+            refresh_token_revoked_at: nil,
             code_challenge: nil,
             code_challenge_hash: nil,
             code_challenge_method: nil
@@ -45,7 +46,8 @@ defmodule Boruta.Oauth.Token do
           code_challenge_hash: String.t() | nil,
           code_challenge_method: String.t() | nil,
           inserted_at: DateTime.t() | nil,
-          revoked_at: DateTime.t() | nil
+          revoked_at: DateTime.t() | nil,
+          refresh_token_revoked_at: DateTime.t() | nil
         }
 
   @doc """
@@ -94,9 +96,15 @@ defmodule Boruta.Oauth.Token do
       iex> revoked?(%Boruta.Oauth.Token{})
       false
   """
-  @spec revoked?(token :: Token.t()) :: boolean()
-  def revoked?(%Token{revoked_at: nil}), do: false
-  def revoked?(%Token{revoked_at: _}), do: true
+  @spec revoked?(token :: Token.t(), type :: :access_token | :refresh_token) :: boolean()
+  def revoked?(
+        %Token{revoked_at: nil, refresh_token_revoked_at: refresh_token_revoked_at},
+        :refresh_token
+      ),
+      do: !is_nil(refresh_token_revoked_at)
+
+  def revoked?(%Token{revoked_at: nil}, :access_token), do: false
+  def revoked?(%Token{revoked_at: _}, _type), do: true
 
   @doc """
   Determines if a token is valid, neither expired nor revoked.
@@ -112,7 +120,7 @@ defmodule Boruta.Oauth.Token do
   @spec ensure_valid(token :: Token.t(), type :: :access_token | :refresh_token) ::
           :ok | {:error, String.t()}
   def ensure_valid(token, type \\ :access_token) do
-    case {revoked?(token), expired?(token, type)} do
+    case {revoked?(token, type), expired?(token, type)} do
       {true, _} -> {:error, "Token revoked."}
       {_, true} -> {:error, "Token expired."}
       _ -> :ok
@@ -145,8 +153,7 @@ defmodule Boruta.Oauth.Token do
      %Error{
        status: :bad_request,
        error: :invalid_access_token,
-       error_description:
-         "Provided access token is invalid."
+       error_description: "Provided access token is invalid."
      }}
   end
 end
