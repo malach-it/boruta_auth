@@ -81,6 +81,9 @@ defmodule Boruta.Oauth.Client do
              client_redirect_uri
              |> Regex.escape()
              |> String.replace("\\*", "([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9])")
+
+           redirect_uri_regex =
+             "^#{redirect_uri_regex}$"
              |> Regex.compile!()
 
            Regex.match?(redirect_uri_regex, redirect_uri)

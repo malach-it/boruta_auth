@@ -21,7 +21,10 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
-      confidential_client = insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
+
+      confidential_client =
+        insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
+
       wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
@@ -155,102 +158,133 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_error,
-       %Boruta.Oauth.Error{
-         error: :unknown_error,
-         error_description: "\"Could not create access token : sub is invalid\"",
-         format: :fragment,
-         redirect_uri: "https://redirect.uri",
-         state: nil,
-         status: :internal_server_error
-       }} =
-        Oauth.authorize(
-          %Plug.Conn{
-            query_params: %{
-              "response_type" => "token",
-              "client_id" => client.id,
-              "redirect_uri" => redirect_uri
-            }
-          },
-          resource_owner,
-          ApplicationMock
-        )
+              %Boruta.Oauth.Error{
+                error: :unknown_error,
+                error_description: "\"Could not create access token : sub is invalid\"",
+                format: :fragment,
+                redirect_uri: "https://redirect.uri",
+                state: nil,
+                status: :internal_server_error
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error when injecting a bad redirect uri", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_error,
+              %Boruta.Oauth.Error{
+                status: :unauthorized,
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri.",
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => "http://evil?#{redirect_uri}"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns a token", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_success,
-       %AuthorizeResponse{
-         type: type,
-         access_token: value,
-         expires_in: expires_in,
-         redirect_uri: ^redirect_uri
-       }} =
-        Oauth.authorize(
-          %Plug.Conn{
-            query_params: %{
-              "response_type" => "token",
-              "client_id" => client.id,
-              "redirect_uri" => redirect_uri
-            }
-          },
-          resource_owner,
-          ApplicationMock
-        )
+              %AuthorizeResponse{
+                type: type,
+                access_token: value,
+                expires_in: expires_in,
+                redirect_uri: ^redirect_uri
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
       assert type == :token
       assert value
       assert expires_in
     end
 
-    test "returns a token with a confidential client", %{confidential_client: client, resource_owner: resource_owner} do
+    test "returns a token with a confidential client", %{
+      confidential_client: client,
+      resource_owner: resource_owner
+    } do
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_success,
-       %AuthorizeResponse{
-         type: type,
-         access_token: value,
-         expires_in: expires_in,
-         redirect_uri: ^redirect_uri
-       }} =
-        Oauth.authorize(
-          %Plug.Conn{
-            query_params: %{
-              "response_type" => "token",
-              "client_id" => client.id,
-              "redirect_uri" => redirect_uri
-            }
-          },
-          resource_owner,
-          ApplicationMock
-        )
+              %AuthorizeResponse{
+                type: type,
+                access_token: value,
+                expires_in: expires_in,
+                redirect_uri: ^redirect_uri
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
       assert type == :token
       assert value
       assert expires_in
     end
 
-    test "returns a token with a wildcard client redirect uri", %{wildcard_redirect_uri_client: client, resource_owner: resource_owner} do
+    test "returns a token with a wildcard client redirect uri", %{
+      wildcard_redirect_uri_client: client,
+      resource_owner: resource_owner
+    } do
       redirect_uri = "https://wildcard-redirect-uri.uri"
 
       assert {:authorize_success,
-       %AuthorizeResponse{
-         type: type,
-         access_token: value,
-         expires_in: expires_in,
-         redirect_uri: ^redirect_uri
-       }} =
-        Oauth.authorize(
-          %Plug.Conn{
-            query_params: %{
-              "response_type" => "token",
-              "client_id" => client.id,
-              "redirect_uri" => redirect_uri
-            }
-          },
-          resource_owner,
-          ApplicationMock
-        )
+              %AuthorizeResponse{
+                type: type,
+                access_token: value,
+                expires_in: expires_in,
+                redirect_uri: ^redirect_uri
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
       assert type == :token
       assert value
@@ -318,7 +352,10 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
     end
 
-    test "returns an error as fragment without a nonce and `id_token token` response types", %{client: client, resource_owner: resource_owner} do
+    test "returns an error as fragment without a nonce and `id_token token` response types", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
 
@@ -335,7 +372,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                },
                resource_owner,
                ApplicationMock
-      ) ==
+             ) ==
                {:authorize_error,
                 %Error{
                   format: :fragment,
@@ -374,7 +411,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                      "state" => state
                    }
                  },
-                 %{resource_owner|extra_claims: %{"resource_owner_extra_claim" => "claim"}},
+                 %{resource_owner | extra_claims: %{"resource_owner_extra_claim" => "claim"}},
                  ApplicationMock
                )
 
@@ -456,7 +493,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                      "nonce" => nonce
                    }
                  },
-                 %{resource_owner|extra_claims: %{"resource_owner_extra_claim" => "claim"}},
+                 %{resource_owner | extra_claims: %{"resource_owner_extra_claim" => "claim"}},
                  ApplicationMock
                )
 
