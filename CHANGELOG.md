@@ -5,13 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
-## [unreleased]
+## [2.2.0] - 2022-09-13
 
 Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 
 ### Added
 
-- confidential client management as stated in OAuth 2.0 RFC, documented [here](guides/confidential_clients.md)
+- confidential client management as stated in OAuth 2.0 RFC, documented [here](guides/confidential_clients.md). It defaults to false (already existing clients will not be confidential)
 - token as the created `Boruta.Oauth.Token` attribute in `Boruta.Oauth.TokenResponse`
 
 ### Changed
