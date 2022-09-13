@@ -21,6 +21,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 ### Security
 
 - Enable refresh token rotation, revoke previous refresh token on successful refresh token requests
+- fix redirect_uri injection in implicit, hybrid and code grants
 
 ## [2.1.5] - 2022-06-15
 
