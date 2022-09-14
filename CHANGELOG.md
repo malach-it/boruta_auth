@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.2.0] - 2022-09-13
 
-Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
+- Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
+- Upgrade to this version need you to invalidate the cache by running `Boruta.Config.cache_backend().delete_all()`
 
 ### Added
 
