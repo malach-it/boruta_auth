@@ -56,6 +56,7 @@ defmodule Boruta.Ecto.AccessTokens do
     state = params[:state]
     redirect_uri = params[:redirect_uri]
     previous_token = params[:previous_token]
+    previous_code = params[:previous_code]
     resource_owner = params[:resource_owner]
 
     token_attributes = %{
@@ -65,7 +66,8 @@ defmodule Boruta.Ecto.AccessTokens do
       state: state,
       scope: scope,
       access_token_ttl: access_token_ttl,
-      previous_token: previous_token
+      previous_token: previous_token,
+      previous_code: previous_code
     }
 
     changeset =

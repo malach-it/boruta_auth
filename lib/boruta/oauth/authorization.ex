@@ -216,6 +216,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              %{
                client: client,
                redirect_uri: redirect_uri,
+               previous_code: code.value,
                sub: sub,
                scope: scope
              },
