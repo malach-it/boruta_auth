@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
+
 ### Added
 
 - allow lower case bearer authotization header
 - prompt=none management for authorization code grant requests
+- store the previous code associated with the delivered access token in authorization code grants
 
 ## [2.2.1] - 2022-10-16
 
@@ -34,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Enable refresh token rotation, revoke previous refresh token on successful refresh token requests
+- enable refresh token rotation, revoke previous refresh token on successful refresh token requests
 - fix redirect_uri injection in implicit, hybrid and code grants
 
 ## [2.1.5] - 2022-06-15
