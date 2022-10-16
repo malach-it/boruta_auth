@@ -26,7 +26,7 @@ defmodule Boruta.Oauth.BearerToken do
 
   def extract_token(%Plug.Conn{} = conn) do
     with [authorization_header] <- Plug.Conn.get_req_header(conn, "authorization"),
-         [_authorization_header, access_token] <- Regex.run(~r/Bearer (.+)/, authorization_header) do
+         [_authorization_header, access_token] <- Regex.run(~r/[B|b]earer (.+)/, authorization_header) do
       {:ok, access_token}
     else
       _ ->
