@@ -67,6 +67,7 @@ defmodule Boruta.Oauth.Request.Base do
        resource_owner: params["resource_owner"],
        state: params["state"],
        nonce: params["nonce"],
+       prompt: params["prompt"],
        code_challenge: params["code_challenge"],
        code_challenge_method: params["code_challenge_method"],
        scope: params["scope"]
