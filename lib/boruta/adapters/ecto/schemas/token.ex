@@ -26,7 +26,9 @@ defmodule Boruta.Ecto.Token do
           client: Client.t(),
           sub: String.t(),
           revoked_at: DateTime.t(),
-          refresh_token_revoked_at: DateTime.t()
+          refresh_token_revoked_at: DateTime.t(),
+          previous_token: String.t() | nil,
+          previous_code: String.t() | nil
         }
 
   @primary_key {:id, Ecto.UUID, autogenerate: true}
@@ -37,6 +39,7 @@ defmodule Boruta.Ecto.Token do
     field(:value, :string)
     field(:refresh_token, :string)
     field(:previous_token, :string)
+    field(:previous_code, :string)
     field(:state, :string)
     field(:nonce, :string)
     field(:scope, :string, default: "")
@@ -60,7 +63,16 @@ defmodule Boruta.Ecto.Token do
 
   def changeset(token, attrs) do
     token
-    |> cast(attrs, [:client_id, :redirect_uri, :sub, :state, :nonce, :scope, :access_token_ttl])
+    |> cast(attrs, [
+      :client_id,
+      :redirect_uri,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :access_token_ttl,
+      :previous_code
+    ])
     |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
     |> foreign_key_constraint(:client_id)
@@ -71,7 +83,17 @@ defmodule Boruta.Ecto.Token do
 
   def changeset_with_refresh_token(token, attrs) do
     token
-    |> cast(attrs, [:access_token_ttl, :client_id, :redirect_uri, :sub, :state, :nonce, :scope, :previous_token])
+    |> cast(attrs, [
+      :access_token_ttl,
+      :client_id,
+      :redirect_uri,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :previous_token,
+      :previous_code
+    ])
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
@@ -170,10 +192,11 @@ defmodule Boruta.Ecto.Token do
   end
 
   defp put_code_challenge_method(changeset) do
-    code_challenge_method = case get_field(changeset, :code_challenge_method) do
-      nil -> "plain"
-      code_challenge_method -> code_challenge_method
-    end
+    code_challenge_method =
+      case get_field(changeset, :code_challenge_method) do
+        nil -> "plain"
+        code_challenge_method -> code_challenge_method
+      end
 
     put_change(changeset, :code_challenge_method, code_challenge_method)
   end

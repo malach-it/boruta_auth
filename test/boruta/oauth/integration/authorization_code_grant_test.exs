@@ -25,7 +25,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
-      confidential_client = insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
+
+      confidential_client =
+        insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
+
       wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
       pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
@@ -213,7 +216,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert expires_in
     end
 
-    test "returns a code with a confidential client", %{confidential_client: client, resource_owner: resource_owner} do
+    test "returns a code with a confidential client", %{
+      confidential_client: client,
+      resource_owner: resource_owner
+    } do
       redirect_uri = List.first(client.redirect_uris)
 
       assert {:authorize_success,
@@ -1148,7 +1154,37 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
-    test "returns a token with a confidential client", %{confidential_client: client, confidential_code: code, resource_owner: resource_owner} do
+    test "stores previous code", %{client: client, code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                access_token: access_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token = Repo.get_by(Ecto.Token, value: access_token)
+      assert token.previous_code == code.value
+    end
+
+    test "returns a token with a confidential client", %{
+      confidential_client: client,
+      confidential_code: code,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 
