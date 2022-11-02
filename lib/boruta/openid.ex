@@ -34,4 +34,13 @@ defmodule Boruta.Openid do
         module.unauthorized(conn, error)
     end
   end
+
+  def register_client(conn, registration_params, module) do
+    case ClientsAdapter.create_client(registration_params) do
+      {:ok, client} ->
+        module.client_registered(conn, client)
+      {:error, changeset} ->
+        module.registration_failure(conn, changeset)
+    end
+  end
 end

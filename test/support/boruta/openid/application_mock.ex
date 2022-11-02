@@ -10,4 +10,10 @@ defmodule Boruta.Openid.ApplicationMock do
 
   @impl Boruta.Openid.Application
   def unauthorized(_conn, error), do: {:unauthorized, error}
+
+  @impl Boruta.Openid.Application
+  def client_registered(_conn, client), do: {:client_registered, client}
+
+  @impl Boruta.Openid.Application
+  def registration_failure(_conn, changeset), do: {:registration_failure, changeset}
 end

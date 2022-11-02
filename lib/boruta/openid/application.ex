@@ -21,4 +21,14 @@ defmodule Boruta.Openid.Application do
   """
   @callback unauthorized(conn :: Plug.Conn.t(), error :: Boruta.Oauth.Error.t()) ::
               any()
+  @doc """
+  This function will be triggered when request is unauthorized invoking `Boruta.Openid.register_client/3`
+  """
+  @callback client_registered(conn :: Plug.Conn.t(), client :: Boruta.Oauth.Client.t()) ::
+              any()
+  @doc """
+  This function will be triggered when request is unauthorized invoking `Boruta.Openid.register_client/3`
+  """
+  @callback registration_failure(conn :: Plug.Conn.t(), changeset :: Ecto.Changeset.t()) ::
+              any()
 end

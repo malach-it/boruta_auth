@@ -90,6 +90,7 @@ defmodule Boruta.Ecto.Client do
       :public_revoke,
       :id_token_signature_alg
     ])
+    |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
