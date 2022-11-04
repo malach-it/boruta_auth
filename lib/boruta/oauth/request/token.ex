@@ -85,7 +85,7 @@ defmodule Boruta.Oauth.Request.Token do
   defp check_audience(%{"aud" => aud}) do
     server_issuer = Boruta.Config.issuer()
 
-    case aud == server_issuer do
+    case aud =~ ~r/^#{server_issuer}/ do
       true ->
         :ok
 
