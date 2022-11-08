@@ -62,6 +62,7 @@ defmodule Boruta.Ecto.Client do
     field(:id_token_signature_alg, :string, default: "RS512")
     field(:public_key, :string)
     field(:private_key, :string)
+    field(:jwk, :map, virtual: true)
 
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
@@ -85,6 +86,7 @@ defmodule Boruta.Ecto.Client do
       :redirect_uris,
       :authorize_scope,
       :supported_grant_types,
+      :jwk,
       :pkce,
       :public_refresh_token,
       :public_revoke,
@@ -100,6 +102,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+    |> translate_private_key()
     |> generate_key_pair()
     |> put_secret()
     |> validate_required(:secret)
@@ -124,7 +127,12 @@ defmodule Boruta.Ecto.Client do
       :public_revoke,
       :id_token_signature_alg
     ])
-    |> validate_required([:authorization_code_ttl, :access_token_ttl, :refresh_token_ttl, :id_token_ttl])
+    |> validate_required([
+      :authorization_code_ttl,
+      :access_token_ttl,
+      :refresh_token_ttl,
+      :id_token_ttl
+    ])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
@@ -193,7 +201,8 @@ defmodule Boruta.Ecto.Client do
   defp validate_supported_grant_types(changeset) do
     server_grant_types = Oauth.Client.grant_types()
 
-    validate_change(changeset, :supported_grant_types, fn :supported_grant_types, current_grant_types ->
+    validate_change(changeset, :supported_grant_types, fn :supported_grant_types,
+                                                          current_grant_types ->
       case Enum.empty?(current_grant_types -- server_grant_types) do
         true -> []
         false -> [supported_grant_types: "must be part of #{Enum.join(server_grant_types, ", ")}"]
@@ -238,6 +247,18 @@ defmodule Boruta.Ecto.Client do
     |> Enum.reject(&is_nil/1)
   end
 
+  defp translate_private_key(%Ecto.Changeset{changes: %{jwk: jwk}} = changeset) do
+    {_key_type, pem} = JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()
+
+    put_change(changeset, :private_key, pem)
+  end
+
+  defp translate_private_key(changeset), do: changeset
+
+  defp generate_key_pair(%Ecto.Changeset{changes: %{private_key: _private_key}} = changeset) do
+    changeset
+  end
+
   defp generate_key_pair(changeset) do
     private_key = JOSE.JWK.generate_key({:rsa, 1024, 65_537})
     public_key = JOSE.JWK.to_public(private_key)
@@ -254,7 +275,10 @@ defmodule Boruta.Ecto.Client do
     case fetch_change(changeset, :secret) do
       {:ok, nil} ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
-      {:ok, _secret} -> changeset
+
+      {:ok, _secret} ->
+        changeset
+
       :error ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
     end
