@@ -8,7 +8,10 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
-          client_secret: String.t() | nil,
+          client_authentication: %{
+            type: String.t(),
+            value: String.t()
+          },
           redirect_uri: String.t(),
           code: String.t(),
           grant_type: String.t(),
@@ -16,7 +19,7 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
         }
   @enforce_keys [:client_id, :redirect_uri, :code]
   defstruct client_id: nil,
-            client_secret: nil,
+            client_authentication: nil,
             redirect_uri: nil,
             code: nil,
             grant_type: "authorization_code",

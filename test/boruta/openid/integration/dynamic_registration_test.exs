@@ -35,10 +35,10 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
       }
 
       assert {:client_registered,
-              %Oauth.Client{redirect_uris: ^redirect_uris, private_key: private_key}} =
+              %Oauth.Client{redirect_uris: ^redirect_uris, jwt_public_key: jwt_public_key}} =
                Openid.register_client(:context, registration_params, ApplicationMock)
 
-      assert JOSE.JWK.from_pem(private_key).kty == JOSE.JWK.from_map(jwk).kty
+      assert JOSE.JWK.from_pem(jwt_public_key).kty == JOSE.JWK.from_map(jwk).kty
     end
   end
 end

@@ -34,9 +34,25 @@ defmodule Boruta.Ecto.Client do
           authorized_scopes: Ecto.Association.NotLoaded.t() | list(Scope.t()),
           id_token_ttl: integer(),
           id_token_signature_alg: String.t(),
+          token_endpoint_auth_methods: list(String.t()),
+          token_endpoint_jwt_auth_alg: String.t(),
           public_key: list(String.t()),
           private_key: list(String.t())
         }
+
+  @token_endpoint_auth_methods [
+    "client_secret_basic",
+    "client_secret_post",
+  ]
+
+  @token_endpoint_jwt_auth_algs [
+    :RS256,
+    :RS384,
+    :RS512,
+    :HS256,
+    :HS384,
+    :HS512
+  ]
 
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
@@ -62,6 +78,10 @@ defmodule Boruta.Ecto.Client do
     field(:id_token_signature_alg, :string, default: "RS512")
     field(:public_key, :string)
     field(:private_key, :string)
+
+    field(:token_endpoint_auth_methods, {:array, :string}, default: ["client_secret_basic", "client_secret_post"])
+    field(:token_endpoint_jwt_auth_alg, :string, default: "HS256")
+    field(:jwt_public_key, :string)
     field(:jwk, :map, virtual: true)
 
     many_to_many :authorized_scopes, Scope,
@@ -86,6 +106,8 @@ defmodule Boruta.Ecto.Client do
       :redirect_uris,
       :authorize_scope,
       :supported_grant_types,
+      :token_endpoint_auth_methods,
+      :token_endpoint_jwt_auth_alg,
       :jwk,
       :pkce,
       :public_refresh_token,
@@ -101,6 +123,11 @@ defmodule Boruta.Ecto.Client do
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
+    |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
+    |> validate_inclusion(
+      :token_endpoint_jwt_auth_alg,
+      Enum.map(@token_endpoint_jwt_auth_algs, &Atom.to_string/1)
+    )
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
     |> translate_private_key()
     |> generate_key_pair()
@@ -250,7 +277,7 @@ defmodule Boruta.Ecto.Client do
   defp translate_private_key(%Ecto.Changeset{changes: %{jwk: jwk}} = changeset) do
     {_key_type, pem} = JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()
 
-    put_change(changeset, :private_key, pem)
+    put_change(changeset, :jwt_public_key, pem)
   end
 
   defp translate_private_key(changeset), do: changeset

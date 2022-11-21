@@ -48,14 +48,14 @@ defmodule Boruta.Oauth.RequestsTest do
   test "Boruta.Oauth.ClientCredentialsRequest" do
     assert %ClientCredentialsRequest{
       client_id: "client_id",
-      client_secret: "client_secret"
+      client_authentication: %{type: "basic", value: "client_secret"},
     }
   end
 
   test "Boruta.Oauth.PasswordRequest" do
     assert %PasswordRequest{
       client_id: "client_id",
-      client_secret: "client_secret",
+      client_authentication: %{type: "basic", value: "client_secret"},
       username: "username",
       password: "password",
     }
@@ -64,7 +64,7 @@ defmodule Boruta.Oauth.RequestsTest do
   test "Boruta.Oauth.RefreshTokenRequest" do
     assert %RefreshTokenRequest{
       client_id: "client_id",
-      client_secret: "client_secret",
+      client_authentication: %{type: "basic", value: "client_secret"},
       refresh_token: "refresh_token"
     }
   end
@@ -72,7 +72,7 @@ defmodule Boruta.Oauth.RequestsTest do
   test "Boruta.Oauth.IntrospectRequest" do
     assert %IntrospectRequest{
       client_id: "client_id",
-      client_secret: "client_secret",
+      client_authentication: %{type: "basic", value: "client_secret"},
       token: "token"
     }
   end
@@ -80,7 +80,7 @@ defmodule Boruta.Oauth.RequestsTest do
   test "Boruta.Oauth.RevokeRequest" do
     assert %RevokeRequest{
       client_id: "client_id",
-      client_secret: "client_secret",
+      client_authentication: %{type: "basic", value: "client_secret"},
       token: "token"
     }
   end

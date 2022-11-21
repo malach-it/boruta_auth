@@ -38,7 +38,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request validation failed. Required properties client_id, client_secret, token are missing at #.",
+                    "Request validation failed. Required properties client_id, token are missing at #.",
                   status: :bad_request
                 }}
     end
@@ -49,7 +49,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request validation failed. Required properties client_id, client_secret, token are missing at #.",
+                    "Request validation failed. Required properties client_id, token are missing at #.",
                   status: :bad_request
                 }}
     end

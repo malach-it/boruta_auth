@@ -236,7 +236,7 @@ defmodule Boruta.Ecto.AdminTest do
       end)
     end
 
-    test "creates a client given a private key" do
+    test "creates a client given a jwt public key" do
       jwk = %{
         "kty" => "RSA",
         "e" => "AQAB",
@@ -246,10 +246,10 @@ defmodule Boruta.Ecto.AdminTest do
           "iN2CZVIKWB--I5yxqQtwLWncQR_N7u7Ge0bE3zqj4tqKVSHgBEE3xobV-nOKisAJzCy1QhJb7Cy9MQYxBZ09HbAXvZVHVFRtrTcFk87ZcB_7H8T_Nh_uydJEjiW--ryP1klNefa9V4t3WCwmNgX1ipP0ZHhNenemOT9BASQyF-_5Gm7KsDxJ8DkZH_OQhl5xdqXwZOh5Y7Cc25ZB1sr9xRse4vah9uiS5YgwTFbGRzS-yIDKuSB8BY1cBT0uwBLICamgI7gV0oZkQ29_ptXPZC1tw3X41eNaPU-G2ocF2vKZwBdGO8weTMfQngjPZ_xKv_y9_Y7P5aF-L3F05eKVjQ"
       }
 
-      assert {:ok, %Client{private_key: private_key}} =
+      assert {:ok, %Client{jwt_public_key: jwt_public_key}} =
                Admin.create_client(Map.put(@client_valid_attrs, :jwk, jwk))
 
-      assert JOSE.JWK.from_pem(private_key).kty == JOSE.JWK.from_map(jwk).kty
+      assert JOSE.JWK.from_pem(jwt_public_key).kty == JOSE.JWK.from_map(jwk).kty
     end
   end
 

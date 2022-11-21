@@ -17,25 +17,21 @@ defmodule Boruta.Oauth.Revoke do
       :ok
   """
   @spec token(
-          request :: %RevokeRequest{
-            client_id: String.t(),
-            client_secret: String.t(),
-            token: String.t()
-          }
+          request :: RevokeRequest.t()
         ) ::
           :ok
           | {:error, error :: Boruta.Oauth.Error.t()}
           | {:error, error :: String.t()}
   def token(%RevokeRequest{
         client_id: client_id,
-        client_secret: client_secret,
+        client_authentication: client_source,
         token: value,
         token_type_hint: token_type_hint
       }) do
     with {:ok, _client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: client_secret,
+             source: client_source,
              grant_type: "revoke"
            ) do
       token =

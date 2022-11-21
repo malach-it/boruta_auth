@@ -8,9 +8,13 @@ defmodule Boruta.Oauth.RevokeRequest do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
+          client_authentication: %{
+            type: String.t(),
+            value: String.t()
+          },
           token: String.t(),
           token_type_hint: String.t()
         }
-  @enforce_keys [:client_id, :client_secret, :token]
-  defstruct client_id: nil, client_secret: nil, token: nil, token_type_hint: nil
+  @enforce_keys [:client_id, :client_authentication, :token]
+  defstruct client_id: nil, client_authentication: nil, token: nil, token_type_hint: nil
 end

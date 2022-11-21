@@ -188,35 +188,32 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
       |> expect(:check_password, fn _resource_owner, _password -> :ok end)
 
-      case Oauth.token(
-             %Plug.Conn{
-               body_params: %{
-                 "grant_type" => "password",
-                 "client_id" => client.id,
-                 "username" => resource_owner.username,
-                 "password" => "password"
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "password",
+                     "client_id" => client.id,
+                     "username" => resource_owner.username,
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
     end
 
-    test "returns a token with a confidential client", %{
+    test "returns a token with a confidential client (client_secret_basic authentication)", %{
       confidential_client: client,
       resource_owner: resource_owner
     } do
@@ -227,32 +224,63 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
-      case Oauth.token(
-             %Plug.Conn{
-               req_headers: [{"authorization", authorization_header}],
-               body_params: %{
-                 "grant_type" => "password",
-                 "username" => resource_owner.username,
-                 "password" => "password"
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   req_headers: [{"authorization", authorization_header}],
+                   body_params: %{
+                     "grant_type" => "password",
+                     "username" => resource_owner.username,
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
+    end
+
+    test "returns a token with a confidential client (client_secret_post authentication)", %{
+      confidential_client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:check_password, fn _resource_owner, _password -> :ok end)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "password",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "username" => resource_owner.username,
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
     end
 
     test "returns a token if scope is authorized", %{
