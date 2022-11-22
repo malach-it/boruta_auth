@@ -36,8 +36,9 @@ defmodule Boruta.Ecto.Client do
           id_token_signature_alg: String.t(),
           token_endpoint_auth_methods: list(String.t()),
           token_endpoint_jwt_auth_alg: String.t(),
-          public_key: list(String.t()),
-          private_key: list(String.t())
+          jwt_public_key: String.t(),
+          public_key: String.t(),
+          private_key: String.t()
         }
 
   @token_endpoint_auth_methods [
