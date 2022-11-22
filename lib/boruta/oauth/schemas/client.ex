@@ -20,6 +20,9 @@ defmodule Boruta.Oauth.Client do
             public_refresh_token: nil,
             public_revoke: nil,
             id_token_signature_alg: nil,
+            token_endpoint_auth_methods: nil,
+            token_endpoint_jwt_auth_alg: nil,
+            jwt_public_key: nil,
             public_key: nil,
             private_key: nil
 
@@ -40,6 +43,9 @@ defmodule Boruta.Oauth.Client do
           public_refresh_token: boolean(),
           public_revoke: boolean(),
           id_token_signature_alg: String.t(),
+          token_endpoint_auth_methods: list(String.t()),
+          token_endpoint_jwt_auth_alg: String.t(),
+          jwt_public_key: String.t(),
           public_key: String.t(),
           private_key: String.t()
         }

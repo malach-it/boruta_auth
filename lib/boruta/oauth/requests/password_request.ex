@@ -8,15 +8,18 @@ defmodule Boruta.Oauth.PasswordRequest do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
-          client_secret: String.t(),
+          client_authentication: %{
+            type: String.t(),
+            value: String.t()
+          },
           username: String.t(),
           password: String.t(),
           scope: String.t(),
           grant_type: String.t()
         }
-  @enforce_keys [:client_id, :client_secret, :username, :password]
+  @enforce_keys [:client_id, :client_authentication, :username, :password]
   defstruct client_id: nil,
-            client_secret: nil,
+            client_authentication: nil,
             username: "",
             password: "",
             scope: "",

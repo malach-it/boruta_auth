@@ -3,7 +3,8 @@ defmodule Boruta.Openid.Clients do
 
   # NOTE params inherited from Dynamic registration specification https://openid.net/specs/openid-connect-registration-1_0.html
   @type registration_params :: %{
-          redirect_uris: list(String.t())
+          redirect_uris: list(String.t()),
+          jwks: %{keys: map()}
           # optional fields
           # response_types: list(String.t()), # TODO add response type configuration to clients
           # grant_types: list(String.t()),
@@ -15,7 +16,6 @@ defmodule Boruta.Openid.Clients do
           # policy_uri: String.t(), # TODO add this field to clients
           # tos_uri: String.t(), # TODO add this field to clients
           # jwks_uri: String.t(), # NOTE this field cannot be configured yet
-          # jwks: %{keys: %JOSE.JWK{}},
           # sector_identifier_uri: String.t(), # TODO add this field to clients
           # subject_type: String.t(), # TODO find out what it is
           # id_token_signed_response_alg: String.t(),

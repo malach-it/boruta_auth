@@ -11,10 +11,17 @@ defmodule Boruta.Oauth.Json.Schema do
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
-        "client_secret" => %{"type" => "string"},
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
         "scope" => %{"type" => "string"},
       },
-      "required" => ["grant_type", "client_id", "client_secret"]
+      "required" => ["grant_type", "client_id", "client_authentication"]
     } |> Schema.resolve
   end
 
@@ -27,7 +34,14 @@ defmodule Boruta.Oauth.Json.Schema do
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
-        "client_secret" => %{"type" => "string"},
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
         "username" => %{"type" => "string"},
         "password" => %{"type" => "string"},
         "scope" => %{"type" => "string"},
@@ -45,7 +59,14 @@ defmodule Boruta.Oauth.Json.Schema do
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
-        "client_secret" => %{"type" => "string"},
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
         "code" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "code_verifier" => %{"type" => "string"}
@@ -135,10 +156,17 @@ defmodule Boruta.Oauth.Json.Schema do
           "type" => "string",
           "pattern" => "[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
         },
-        "client_secret" => %{"type" => "string"},
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
         "token" => %{"type" => "string"},
       },
-      "required" => ["client_id", "client_secret", "token"]
+      "required" => ["client_id", "client_authentication", "token"]
     } |> Schema.resolve
   end
 
@@ -147,7 +175,14 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "client_id" => %{"type" => "string"},
-        "client_secret" => %{"type" => "string"},
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
         "token_type_hint" => %{"type" => "string", "pattern" => "^(access_token|refresh_token)$"},
         "token" => %{"type" => "string"}
       },

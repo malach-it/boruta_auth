@@ -8,9 +8,12 @@ defmodule Boruta.Oauth.IntrospectRequest do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
-          client_secret: String.t(),
+          client_authentication: %{
+            type: String.t(),
+            value: String.t()
+          },
           token: String.t()
         }
-  @enforce_keys [:client_id, :client_secret, :token]
-  defstruct client_id: nil, client_secret: nil, token: nil
+  @enforce_keys [:client_id, :client_authentication, :token]
+  defstruct client_id: nil, client_authentication: nil, token: nil
 end
