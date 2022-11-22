@@ -132,7 +132,7 @@ defmodule Boruta.Ecto.Client do
       Enum.map(@token_endpoint_jwt_auth_algs, &Atom.to_string/1)
     )
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
-    |> translate_private_key()
+    |> translate_jwk()
     |> generate_key_pair()
     |> put_secret()
     |> validate_required(:secret)
@@ -152,6 +152,9 @@ defmodule Boruta.Ecto.Client do
       :redirect_uris,
       :authorize_scope,
       :supported_grant_types,
+      :token_endpoint_auth_methods,
+      :token_endpoint_jwt_auth_alg,
+      :jwk,
       :pkce,
       :public_refresh_token,
       :public_revoke,
@@ -167,10 +170,16 @@ defmodule Boruta.Ecto.Client do
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..id_token_max_ttl())
+    |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
+    |> validate_inclusion(
+      :token_endpoint_jwt_auth_alg,
+      Enum.map(@token_endpoint_jwt_auth_algs, &Atom.to_string/1)
+    )
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+    |> translate_jwk()
   end
 
   def secret_changeset(client, secret) do
@@ -277,13 +286,13 @@ defmodule Boruta.Ecto.Client do
     |> Enum.reject(&is_nil/1)
   end
 
-  defp translate_private_key(%Ecto.Changeset{changes: %{jwk: jwk}} = changeset) do
+  defp translate_jwk(%Ecto.Changeset{changes: %{jwk: jwk}} = changeset) do
     {_key_type, pem} = JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()
 
     put_change(changeset, :jwt_public_key, pem)
   end
 
-  defp translate_private_key(changeset), do: changeset
+  defp translate_jwk(changeset), do: changeset
 
   defp generate_key_pair(%Ecto.Changeset{changes: %{private_key: _private_key}} = changeset) do
     changeset
