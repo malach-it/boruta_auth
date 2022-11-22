@@ -43,6 +43,8 @@ defmodule Boruta.Ecto.Client do
   @token_endpoint_auth_methods [
     "client_secret_basic",
     "client_secret_post",
+    "client_secret_jwt",
+    "private_key_jwt"
   ]
 
   @token_endpoint_jwt_auth_algs [

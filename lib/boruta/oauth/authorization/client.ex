@@ -62,12 +62,20 @@ defmodule Boruta.Oauth.Authorization.Client do
            error_description: "Client do not support given grant type."
          }}
 
-      _ ->
+      nil ->
         {:error,
          %Error{
            status: :unauthorized,
            error: :invalid_client,
            error_description: "Invalid client_id or client_secret."
+         }}
+
+      {:error, reason} ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :invalid_client,
+           error_description: reason
          }}
     end
   end
@@ -154,59 +162,118 @@ defmodule Boruta.Oauth.Authorization.Client do
         {:ok, client}
 
       true ->
-        with {:ok, secret} <- extract_secret(source, client.token_endpoint_auth_methods),
-             :ok <- Client.check_secret(client, secret) do
-          {:ok, client}
+        with {:ok, secret} <- extract_secret(source, client) do
+          case Client.check_secret(client, secret) do
+            :ok ->
+              {:ok, client}
+
+            {:error, _error} ->
+              {:error, "Invalid client_id or client_secret."}
+          end
         end
     end
   end
 
-  defp extract_secret(source, methods), do: do_extract_secret(source, methods, nil)
+  defp extract_secret(source, client), do: do_extract_secret(source, client, nil)
 
-  defp do_extract_secret(_source, [], nil),
+  defp do_extract_secret(_source, %Client{token_endpoint_auth_methods: []}, nil),
     do: {:error, "No client authentication method found for given client."}
 
-  defp do_extract_secret(_source, [], message), do: {:error, message}
+  defp do_extract_secret(_source, %Client{token_endpoint_auth_methods: []}, message),
+    do: {:error, message}
 
-  defp do_extract_secret(source, ["client_secret_basic" | methods], _message) do
+  defp do_extract_secret(
+         source,
+         %Client{token_endpoint_auth_methods: ["client_secret_basic" | methods]} = client,
+         _message
+       ) do
     case source[:type] do
       "basic" ->
         {:ok, source[:value]}
 
       _ ->
         message = "Given client expects the credentials to be provided with BasicAuth."
-        do_extract_secret(source, methods, message)
+        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
     end
   end
 
-  defp do_extract_secret(source, ["client_secret_post" | methods], _message) do
+  defp do_extract_secret(
+         source,
+         %Client{token_endpoint_auth_methods: ["client_secret_post" | methods]} = client,
+         _message
+       ) do
     case source[:type] do
       "post" ->
         {:ok, source[:value]}
 
       _ ->
         message = "Given client expects the credentials to be provided with POST body parameters."
-        do_extract_secret(source, methods, message)
+        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
     end
   end
 
-  # defp extract_secret(source, %Client{
-  #        secret: secret,
-  #        token_endpoint_auth_method: "client_secret_jwt",
-  #        token_endpoint_jwt_auth_alg: alg
-  #      }) do
-  #   signer = Joken.Signer.create(String.to_atom(alg), secret)
+  defp do_extract_secret(
+         source,
+         %Client{
+           secret: secret,
+           token_endpoint_auth_methods: ["client_secret_jwt" | methods],
+           token_endpoint_jwt_auth_alg: alg
+         } = client,
+         _message
+       )
+       when alg in ["HS256", "HS364", "HS512"] and is_binary(secret) do
+    signer = Joken.Signer.create(alg, secret)
 
-  #   case Token.verify(source["value"], signer) do
-  #     {:ok, _claims} ->
-  #       {:ok, secret}
+    case {source[:type], Token.verify(source[:value], signer)} do
+      {"jwt", {:ok, _claims}} ->
+        {:ok, secret}
 
-  #     {:error, _error} ->
-  #       {:error, "The given client secret jwt does not match signature key"}
-  #   end
+      {"jwt", {:error, _error}} ->
+        message = "The given client secret jwt does not match signature key."
 
-  #   {:ok, source["value"]}
-  # end
+        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
+
+      {_, _} ->
+        message = "Given client expects the credentials to be provided with a jwt assertion."
+        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
+    end
+  end
+
+  defp do_extract_secret(
+         source,
+         %Client{
+           jwt_public_key: jwt_public_key,
+           secret: secret,
+           token_endpoint_auth_methods: ["private_key_jwt" | methods],
+           token_endpoint_jwt_auth_alg: alg
+         } = client,
+         _message
+       )
+       when alg in ["RS256", "RS364", "RS512"] and is_binary(jwt_public_key) do
+    signer = Joken.Signer.create(alg, %{"pem" => jwt_public_key})
+
+    case {source[:type], Token.verify(source[:value], signer)} do
+      {"jwt", {:ok, _claims}} ->
+        {:ok, secret}
+
+      {"jwt", {:error, _error}} ->
+        message = "The given client secret jwt does not match signature key."
+
+        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
+
+      {_, _} ->
+        message = "Given client expects the credentials to be provided with a jwt assertion."
+        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
+    end
+  end
+
+  defp do_extract_secret(source, client, _) do
+    do_extract_secret(
+      source,
+      %{client | token_endpoint_auth_methods: []},
+      "Bad client jwt authentication method configuration (jwks and token endpoint jwt auth algorithm do not match)."
+    )
+  end
 
   defp validate_pkce(%Client{pkce: false}, _code_verifier), do: :ok
   defp validate_pkce(%Client{pkce: true}, ""), do: {:error, :invalid_pkce_request}

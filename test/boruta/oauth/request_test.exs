@@ -3,17 +3,17 @@ defmodule Boruta.Oauth.RequestTest do
 
   use Plug.Test
 
-  alias Boruta.Oauth.ClientCredentialsRequest
-  alias Boruta.Oauth.Error
-  alias Boruta.Oauth.IntrospectRequest
-  alias Boruta.Oauth.Request
-  alias Boruta.Oauth.RevokeRequest
-
   defmodule Token do
     @moduledoc false
 
     use Joken.Config, default_signer: :pem_rs512
   end
+
+  alias Boruta.Oauth.ClientCredentialsRequest
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.IntrospectRequest
+  alias Boruta.Oauth.Request
+  alias Boruta.Oauth.RevokeRequest
 
   describe "Basic client authentication (token endpoint)" do
     test "returns an error with bad basic header" do
