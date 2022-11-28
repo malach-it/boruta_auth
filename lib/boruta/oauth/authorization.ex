@@ -69,14 +69,14 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
 
   def preauthorize(%ClientCredentialsRequest{
         client_id: client_id,
-        client_secret: client_secret,
+        client_authentication: client_source,
         scope: scope,
         grant_type: grant_type
       }) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: client_secret,
+             source: client_source,
              grant_type: grant_type
            ),
          {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}) do
@@ -110,7 +110,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
 
   def preauthorize(%PasswordRequest{
         client_id: client_id,
-        client_secret: client_secret,
+        client_authentication: client_source,
         username: username,
         password: password,
         scope: scope,
@@ -119,7 +119,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: client_secret,
+             source: client_source,
              grant_type: grant_type
            ),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
@@ -165,7 +165,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
 
   def preauthorize(%AuthorizationCodeRequest{
         client_id: client_id,
-        client_secret: client_secret,
+        client_authentication: client_source,
         code: code,
         redirect_uri: redirect_uri,
         grant_type: grant_type,
@@ -174,7 +174,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: client_secret,
+             source: client_source,
              redirect_uri: redirect_uri,
              grant_type: grant_type,
              code_verifier: code_verifier
@@ -259,7 +259,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: nil,
+             source: nil,
              redirect_uri: redirect_uri,
              grant_type: grant_type
            ),
@@ -376,7 +376,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: nil,
+             source: nil,
              redirect_uri: redirect_uri,
              grant_type: "code" # in order to differentiate code from authorization_code requests
            ),
@@ -564,7 +564,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
 
   def preauthorize(%RefreshTokenRequest{
         client_id: client_id,
-        client_secret: client_secret,
+        client_authentication: client_source,
         refresh_token: refresh_token,
         scope: scope,
         grant_type: grant_type
@@ -572,7 +572,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
-             secret: client_secret,
+             source: client_source,
              grant_type: grant_type
            ),
          {:ok,

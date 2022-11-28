@@ -8,7 +8,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
 
   describe "token request" do
     test "returns an error without params" do
-      assert Oauth.token(%Plug.Conn{}, ApplicationMock) ==
+      assert Oauth.token(%Plug.Conn{body_params: %{}}, ApplicationMock) ==
                {:token_error,
                 %Error{
                   error: :invalid_request,

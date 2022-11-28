@@ -4,10 +4,12 @@ defmodule Boruta.ClientsAdapter do
   """
 
   @behaviour Boruta.Oauth.Clients
+  @behaviour Boruta.Openid.Clients
 
   import Boruta.Config, only: [clients: 0]
 
   def get_client(id), do: clients().get_client(id)
   def authorized_scopes(params), do: clients().authorized_scopes(params)
   def list_clients_jwk, do: clients().list_clients_jwk()
+  def create_client(registration_params), do: clients().create_client(registration_params)
 end

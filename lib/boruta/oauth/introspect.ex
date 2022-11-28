@@ -21,10 +21,19 @@ defmodule Boruta.Oauth.Introspect do
       {:ok, %Token{...}}
   """
   @spec token(request :: IntrospectRequest.t()) ::
-  {:ok, token :: Token.t()} |
-  {:error , error :: Error.t()}
-  def token(%IntrospectRequest{client_id: client_id, client_secret: client_secret, token: token}) do
-    with {:ok, _client} <- Authorization.Client.authorize(id: client_id, secret: client_secret, grant_type: "introspect"),
+          {:ok, token :: Token.t()}
+          | {:error, error :: Error.t()}
+  def token(%IntrospectRequest{
+        client_id: client_id,
+        client_authentication: client_source,
+        token: token
+      }) do
+    with {:ok, _client} <-
+           Authorization.Client.authorize(
+             id: client_id,
+             source: client_source,
+             grant_type: "introspect"
+           ),
          {:ok, token} <- Authorization.AccessToken.authorize(value: token) do
       {:ok, token}
     else

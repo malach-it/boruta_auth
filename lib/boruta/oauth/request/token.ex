@@ -3,7 +3,6 @@ defmodule Boruta.Oauth.Request.Token do
 
   import Boruta.Oauth.Request.Base
 
-  alias Boruta.BasicAuth
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.Error
@@ -25,7 +24,7 @@ defmodule Boruta.Oauth.Request.Token do
                | ClientCredentialsRequest.t()
                | PasswordRequest.t()}
   def request(request) do
-    with {:ok, request_params} <- fetch_request_params(request),
+    with {:ok, request_params} <- fetch_client_authentication(request),
          {:ok, params} <- Validator.validate(:token, request_params) do
       build_request(params)
     else
@@ -36,22 +35,6 @@ defmodule Boruta.Oauth.Request.Token do
            error: :invalid_request,
            error_description: error_description
          }}
-    end
-  end
-
-  defp fetch_request_params(%{
-         req_headers: req_headers,
-         body_params: %{} = body_params
-       }) do
-    with {:ok, authorization_header} <- authorization_header(req_headers),
-         {:ok, [client_id, client_secret]} <- BasicAuth.decode(authorization_header) do
-      request_params =
-        Enum.into(body_params, %{"client_id" => client_id, "client_secret" => client_secret})
-
-      {:ok, request_params}
-    else
-      {:error, :no_authorization_header} -> {:ok, body_params}
-      {:error, reason} -> {:error, reason}
     end
   end
 end

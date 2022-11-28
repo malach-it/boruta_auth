@@ -40,7 +40,7 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. Required properties client_id, client_secret are missing at #.",
+                    "Request body validation failed. Required property client_id is missing at #.",
                   status: :bad_request
                 }}
     end

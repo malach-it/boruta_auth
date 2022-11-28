@@ -2,6 +2,7 @@ defmodule Boruta.Ecto.Clients do
   @moduledoc false
 
   @behaviour Boruta.Oauth.Clients
+  @behaviour Boruta.Openid.Clients
 
   import Boruta.Config, only: [repo: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
@@ -44,6 +45,16 @@ defmodule Boruta.Ecto.Clients do
     clients = repo().all(Ecto.Client)
 
     Enum.map(clients, &rsa_key/1)
+  end
+
+  @impl Boruta.Openid.Clients
+  def create_client(registration_params) do
+    with {:ok, client} <-
+           %Ecto.Client{}
+           |> Ecto.Client.create_changeset(registration_params)
+           |> repo().insert() do
+      client |> to_oauth_schema() |> ClientStore.put()
+    end
   end
 
   defp authorized_scopes(:from_database, %Oauth.Client{id: id}) do
