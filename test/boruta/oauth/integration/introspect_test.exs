@@ -68,7 +68,7 @@ defmodule Boruta.OauthTest.IntrospectTest do
                {:introspect_error,
                 %Error{
                   error: :invalid_request,
-                  error_description: "Request validation failed. #/client_id do match required pattern /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/.",
+                  error_description: "Request validation failed. #/client_id do match required pattern /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.",
                   status: :bad_request
                 }}
     end
