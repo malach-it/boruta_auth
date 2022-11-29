@@ -17,6 +17,7 @@ defmodule Boruta.Openid do
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Token
+  alias Boruta.Openid.UserinfoResponse
 
   def jwks(conn, module) do
     jwk_keys = ClientsAdapter.list_clients_jwk()
@@ -28,7 +29,7 @@ defmodule Boruta.Openid do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
          {:ok, userinfo} <- Token.userinfo(token) do
-      module.userinfo_fetched(conn, userinfo)
+      module.userinfo_fetched(conn, UserinfoResponse.from_userinfo(userinfo, token.client))
     else
       {:error, error} ->
         module.unauthorized(conn, error)

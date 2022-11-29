@@ -8,7 +8,7 @@ defmodule Boruta.Ecto.AdminTest do
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.Scope
   alias Boruta.Ecto.Token
-  alias Boruta.Oauth.IdToken
+  alias Boruta.Oauth.Client.Crypto
   alias Boruta.Repo
 
   @client_valid_attrs %{
@@ -226,7 +226,7 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "creates a client with id token signature alg" do
-      Enum.map(IdToken.signature_algorithms(), fn alg ->
+      Enum.map(Crypto.signature_algorithms(), fn alg ->
         assert {:ok, client} =
                  Admin.create_client(
                    Map.put(@client_valid_attrs, :id_token_signature_alg, Atom.to_string(alg))
@@ -278,7 +278,7 @@ defmodule Boruta.Ecto.AdminTest do
     test "updates the client with an id token signature alg" do
       client = client_fixture()
 
-      Enum.map(IdToken.signature_algorithms(), fn alg ->
+      Enum.map(Crypto.signature_algorithms(), fn alg ->
         assert {:ok, client} =
                  Admin.update_client(
                    client,

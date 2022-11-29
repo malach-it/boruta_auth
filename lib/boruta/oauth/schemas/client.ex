@@ -3,6 +3,14 @@ defmodule Boruta.Oauth.Client do
   OAuth client schema and utilities
   """
 
+  defmodule Token do
+    @moduledoc false
+
+    use Joken.Config
+
+    def token_config, do: %{}
+  end
+
   @enforce_keys [:id]
   defstruct id: nil,
             name: nil,
@@ -20,6 +28,7 @@ defmodule Boruta.Oauth.Client do
             public_refresh_token: nil,
             public_revoke: nil,
             id_token_signature_alg: nil,
+            userinfo_signed_response_alg: nil,
             token_endpoint_auth_methods: nil,
             token_endpoint_jwt_auth_alg: nil,
             jwt_public_key: nil,
@@ -43,6 +52,7 @@ defmodule Boruta.Oauth.Client do
           public_refresh_token: boolean(),
           public_revoke: boolean(),
           id_token_signature_alg: String.t(),
+          userinfo_signed_response_alg: String.t() | nil,
           token_endpoint_auth_methods: list(String.t()),
           token_endpoint_jwt_auth_alg: String.t(),
           jwt_public_key: String.t(),
@@ -124,5 +134,108 @@ defmodule Boruta.Oauth.Client do
   @spec public_revoke?(client :: t()) :: boolean()
   def public_revoke?(%__MODULE__{public_revoke: public_revoke}) do
     public_revoke
+  end
+
+  defmodule Crypto do
+    @moduledoc false
+
+    alias Boruta.Oauth.Client
+
+    @signature_algorithms [
+      RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
+      RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
+      RS512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
+      HS256: [type: :symmetric, hash_algorithm: :SHA256, binary_size: 16],
+      HS384: [type: :symmetric, hash_algorithm: :SHA384, binary_size: 24],
+      HS512: [type: :symmetric, hash_algorithm: :SHA512, binary_size: 32]
+    ]
+
+    @spec signature_algorithms() :: list(atom())
+    def signature_algorithms, do: Keyword.keys(@signature_algorithms)
+
+    @spec hash_alg(Client.t()) :: hash_alg :: atom()
+    def hash_alg(%Client{id_token_signature_alg: signature_alg}),
+      do: @signature_algorithms[String.to_atom(signature_alg)][:hash_algorithm]
+
+    @spec hash_binary_size(Client.t()) :: binary_size :: integer()
+    def hash_binary_size(%Client{id_token_signature_alg: signature_alg}),
+      do: @signature_algorithms[String.to_atom(signature_alg)][:binary_size]
+
+    @spec hash(string :: String.t(), client :: Client.t()) :: hash :: String.t()
+    def hash(string, client) do
+      hash_alg(client)
+      |> Atom.to_string()
+      |> String.downcase()
+      |> String.to_atom()
+      |> :crypto.hash(string)
+      |> binary_part(0, hash_binary_size(client))
+      |> Base.url_encode64(padding: false)
+    end
+
+    @spec id_token_sign(payload :: map(), client :: Client.t()) ::
+            jwt :: String.t() | {:error, reason :: String.t()}
+    def id_token_sign(
+          payload,
+          %Client{
+            id: client_id,
+            id_token_signature_alg: signature_alg,
+            private_key: private_key,
+            secret: secret
+          } = client
+        ) do
+      signer =
+        case id_token_signature_type(client) do
+          :symmetric ->
+            Joken.Signer.create(signature_alg, secret)
+
+          :asymmetric ->
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => client_id})
+        end
+
+      case Token.encode_and_sign(payload, signer) do
+        {:ok, token, _payload} ->
+          token
+
+        {:error, error} ->
+          {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
+      end
+    end
+
+    @spec userinfo_sign(payload :: map(), client :: Client.t()) ::
+            jwt :: String.t() | {:error, reason :: String.t()}
+    def userinfo_sign(
+          payload,
+          %Client{
+            id: client_id,
+            userinfo_signed_response_alg: signature_alg,
+            private_key: private_key,
+            secret: secret
+          } = client
+        ) do
+      signer =
+        case userinfo_signature_type(client) do
+          :symmetric ->
+            Joken.Signer.create(signature_alg, secret)
+
+          :asymmetric ->
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => client_id})
+        end
+
+      case Token.encode_and_sign(payload, signer) do
+        {:ok, token, _payload} ->
+          token
+
+        {:error, error} ->
+          {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
+      end
+    end
+
+    @spec userinfo_signature_type(Client.t()) :: id_token_signature_type :: atom()
+    def userinfo_signature_type(%Client{userinfo_signed_response_alg: signature_alg}),
+      do: @signature_algorithms[String.to_atom(signature_alg)][:type]
+
+    @spec id_token_signature_type(Client.t()) :: id_token_signature_type :: atom()
+    def id_token_signature_type(%Client{id_token_signature_alg: signature_alg}),
+      do: @signature_algorithms[String.to_atom(signature_alg)][:type]
   end
 end

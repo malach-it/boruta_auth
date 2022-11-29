@@ -9,6 +9,8 @@ defmodule Boruta.OpenidTest.UserinfoTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
+  alias Boruta.Openid.UserinfoResponse
+  alias Boruta.Repo
 
   setup :verify_on_exit!
 
@@ -60,8 +62,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
       assert {:unauthorized,
               %Boruta.Oauth.Error{
                 error: :invalid_access_token,
-                error_description:
-                  "Provided access token is invalid.",
+                error_description: "Provided access token is invalid.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end
@@ -83,8 +84,11 @@ defmodule Boruta.OpenidTest.UserinfoTest do
         claims
       end)
 
-      assert {:userinfo_fetched, %{:sub => ^sub, "claim" => true}} =
-               Openid.userinfo(conn, ApplicationMock)
+      assert {:userinfo_fetched,
+              %UserinfoResponse{
+                userinfo: %{:sub => ^sub, "claim" => true},
+                format: :json
+              }} = Openid.userinfo(conn, ApplicationMock)
     end
   end
 
@@ -119,8 +123,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
       assert {:unauthorized,
               %Boruta.Oauth.Error{
                 error: :invalid_access_token,
-                error_description:
-                  "Provided access token is invalid.",
+                error_description: "Provided access token is invalid.",
                 status: :bad_request
               }} = Openid.userinfo(conn, ApplicationMock)
     end
@@ -140,8 +143,38 @@ defmodule Boruta.OpenidTest.UserinfoTest do
         claims
       end)
 
-      assert {:userinfo_fetched, %{:sub => ^sub, "claim" => true}} =
-               Openid.userinfo(conn, ApplicationMock)
+      assert {:userinfo_fetched,
+              %UserinfoResponse{
+                userinfo: %{:sub => ^sub, "claim" => true},
+                format: :json
+              }} = Openid.userinfo(conn, ApplicationMock)
+    end
+
+    test "returns userinfo as jwt when userinfo_signed_response_alg is defined" do
+      sub = SecureRandom.uuid()
+      claims = %{"claim" => true}
+      %Token{client: client, value: access_token} = insert(:token, sub: sub)
+      {:ok, _client} = Ecto.Changeset.change(client, %{userinfo_signed_response_alg: "HS512"}) |> Repo.update()
+
+      conn = %Plug.Conn{body_params: %{"access_token" => access_token}}
+
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+        {:ok, %ResourceOwner{sub: sub}}
+      end)
+
+      expect(Boruta.Support.ResourceOwners, :claims, fn %ResourceOwner{sub: ^sub}, _scope ->
+        claims
+      end)
+
+      assert {:userinfo_fetched,
+              %UserinfoResponse{
+                userinfo: %{:sub => ^sub, "claim" => true},
+                jwt: jwt,
+                format: :jwt
+              }} = Openid.userinfo(conn, ApplicationMock)
+
+      # TODO check jwt signature and payload
+      assert jwt
     end
   end
 end
