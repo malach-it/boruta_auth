@@ -176,9 +176,6 @@ defmodule Boruta.Oauth.Authorization.Client do
 
   defp extract_secret(source, client), do: do_extract_secret(source, client, nil)
 
-  defp do_extract_secret(_source, %Client{token_endpoint_auth_methods: []}, nil),
-    do: {:error, "No client authentication method found for given client."}
-
   defp do_extract_secret(_source, %Client{token_endpoint_auth_methods: []}, message),
     do: {:error, message}
 

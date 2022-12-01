@@ -1,14 +1,6 @@
 defmodule Boruta.Openid.UserinfoResponse do
   @moduledoc false
 
-  defmodule Token do
-    @moduledoc false
-
-    use Joken.Config
-
-    def token_config, do: %{}
-  end
-
   @enforce_keys [:userinfo, :format]
   defstruct userinfo: nil, jwt: nil, format: nil
 
