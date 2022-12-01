@@ -198,11 +198,17 @@ defmodule Boruta.Ecto.Client do
     |> translate_jwk()
   end
 
-  def secret_changeset(client, secret) do
+  def secret_changeset(client, secret \\ nil) do
     client
     |> cast(%{secret: secret}, [:secret])
     |> put_secret()
     |> validate_required(:secret)
+  end
+
+  def key_pair_changeset(client, attrs \\ %{}) do
+    client
+    |> cast(attrs, [:public_key, :private_key])
+    |> generate_key_pair()
   end
 
   defp change_access_token_ttl(changeset) do

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - configuration and support for client authentication methods (`client_secret_post`, `client_secret_basic`, `client_secret_jwt`, `private_key_jwt`) [RFC 7521](https://www.rfc-editor.org/rfc/rfc7521), [RFC 7523](https://www.rfc-editor.org/rfc/rfc7523)
 - dynamic client registration support [OpenID Connect Dynamic Client Registration 1.0 incorporating errata set 1](https://openid.net/specs/openid-connect-registration-1_0.html)
 - handle userinfo signed responses
+- client key pair regeneration admin function `Admin.regenerate_client_key_pair/1,3`
 
 ## [2.2.2] - 2022-10-25
 

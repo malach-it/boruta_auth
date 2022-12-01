@@ -305,27 +305,6 @@ defmodule Boruta.Ecto.AdminTest do
     end
   end
 
-  describe "regenerate_client_secret/1" do
-    test "regenerates client secret" do
-      client = client_fixture()
-      secret = client.secret
-
-      assert {:ok, %Client{secret: new_secret}} = Admin.regenerate_client_secret(client)
-      refute new_secret == secret
-    end
-
-    test "regenerates client secret given a secret" do
-      client = client_fixture()
-      secret = client.secret
-      new_secret = "new_secret"
-
-      assert {:ok, %Client{secret: ^new_secret}} =
-               Admin.regenerate_client_secret(client, new_secret)
-
-      refute new_secret == secret
-    end
-  end
-
   describe "regenerate_client_secret/1,2" do
     test "regenerates a client secret" do
       %Client{secret: secret} = client = client_fixture()
@@ -346,6 +325,39 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{secret: ^secret}} = Admin.regenerate_client_secret(client, secret)
 
       assert %Client{secret: ^secret} = Repo.reload(client)
+    end
+  end
+
+  describe "regenerate_client_key_pair/1,2,3" do
+    test "regenerates a client key pair" do
+      %Client{public_key: public_key, private_key: private_key} = client = client_fixture()
+
+      assert {:ok, %Client{public_key: new_public_key, private_key: new_private_key}} =
+               Admin.regenerate_client_key_pair(client)
+
+      assert public_key != new_public_key
+      assert private_key != new_private_key
+
+      assert %Client{public_key: new_public_key, private_key: new_private_key} =
+               Repo.reload(client)
+
+      assert public_key != new_public_key
+      assert private_key != new_private_key
+    end
+
+    test "updates a client secret" do
+      private_key = JOSE.JWK.generate_key({:rsa, 1024, 65_537})
+      public_key = JOSE.JWK.to_public(private_key)
+      {_type, public_key} = JOSE.JWK.to_pem(public_key)
+      {_type, private_key} = JOSE.JWK.to_pem(private_key)
+
+      client = client_fixture()
+
+      assert {:ok, %Client{public_key: ^public_key, private_key: ^private_key}} =
+               Admin.regenerate_client_key_pair(client, public_key, private_key)
+
+      assert %Client{public_key: ^public_key, private_key: ^private_key} =
+               Repo.reload(client)
     end
   end
 

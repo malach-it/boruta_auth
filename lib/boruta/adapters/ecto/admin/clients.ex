@@ -64,7 +64,7 @@ defmodule Boruta.Ecto.Admin.Clients do
   end
 
   @doc """
-  Regenerates client secret. If a secret is provided as parameter updates it.
+  Regenerates client secret. If a secret is provided as parameter, updates it.
 
   ## Examples
 
@@ -74,7 +74,35 @@ defmodule Boruta.Ecto.Admin.Clients do
   """
   def regenerate_client_secret(%Client{} = client, secret \\ nil) do
     with {:ok, client} <- client |> Client.secret_changeset(secret) |> repo().update(),
-         :ok <- Clients.invalidate(%Oauth.Client{id: client.id})do
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
+      {:ok, client}
+    end
+  end
+
+  @doc """
+  Regenerates client key pair. If a couple public/private key is provided as parameter, updates it.
+
+  ## Examples
+
+      iex> regenerate_client_key_pair(client)
+      {:ok, %Client{}}
+
+  """
+  def regenerate_client_key_pair(%Client{} = client, public_key \\ nil, private_key \\ nil) do
+    params =
+      case {public_key, private_key} do
+        {public_key, private_key} when is_nil(private_key) or is_nil(public_key) ->
+          %{}
+
+        _ ->
+          %{public_key: public_key, private_key: private_key}
+      end
+
+    with {:ok, client} <-
+           client
+           |> Client.key_pair_changeset(params)
+           |> repo().update(),
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
       {:ok, client}
     end
   end
@@ -93,7 +121,7 @@ defmodule Boruta.Ecto.Admin.Clients do
   """
   def update_client(%Client{} = client, attrs) do
     with {:ok, client} <- client |> Client.update_changeset(attrs) |> repo().update(),
-         :ok <- Clients.invalidate(%Oauth.Client{id: client.id})do
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
       {:ok, client}
     end
   end
@@ -111,7 +139,7 @@ defmodule Boruta.Ecto.Admin.Clients do
 
   """
   def delete_client(%Client{} = client) do
-    with :ok <- Clients.invalidate(%Oauth.Client{id: client.id})do
+    with :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
       repo().delete(client)
     end
   end
