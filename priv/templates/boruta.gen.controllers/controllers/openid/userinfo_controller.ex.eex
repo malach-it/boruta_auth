@@ -3,6 +3,8 @@ defmodule <%= @web_module %>.Openid.UserinfoController do
 
   use <%= @web_module %>, :controller
 
+  alias Boruta.Openid.UserinfoResponse
+
   alias <%= @web_module %>.OpenidView
 
   def openid_module, do: Application.get_env(:<%= @otp_app %>, :openid_module, Boruta.Openid)
@@ -12,10 +14,11 @@ defmodule <%= @web_module %>.Openid.UserinfoController do
   end
 
   @impl Boruta.Openid.UserinfoApplication
-  def userinfo_fetched(conn, userinfo) do
+  def userinfo_fetched(conn, userinfo_response) do
     conn
     |> put_view(OpenidView)
-    |> render("userinfo.json", userinfo: userinfo)
+    |> put_resp_header("content-type", UserinfoResponse.content_type(userinfo_response))
+    |> render("userinfo.json", response: userinfo_response)
   end
 
   @impl Boruta.Openid.UserinfoApplication

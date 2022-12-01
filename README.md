@@ -16,6 +16,7 @@ As it, a provider implemented using Boruta aim to follow RFCs:
 
 And specification from OpenID Foundation:
 - [OpenID Connect core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
+- [OpenID Connect Dynamic Client Registration 1.0 incorporating errata set 1](https://openid.net/specs/openid-connect-registration-1_0.html)
 
 This package is meant to help to bring authorization into Elixir applications. With it, you can perform part or all of authorization code, implicit, hybrid, client credentials, or resource owner password credentials grants flows. It also helps introspecting and revoking tokens.
 

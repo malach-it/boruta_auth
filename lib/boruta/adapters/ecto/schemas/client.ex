@@ -19,6 +19,7 @@ defmodule Boruta.Ecto.Client do
 
   alias Boruta.Ecto.Scope
   alias Boruta.Oauth
+  alias Boruta.Oauth.Client
 
   @type t :: %__MODULE__{
           secret: String.t(),
@@ -36,6 +37,7 @@ defmodule Boruta.Ecto.Client do
           id_token_signature_alg: String.t(),
           token_endpoint_auth_methods: list(String.t()),
           token_endpoint_jwt_auth_alg: String.t(),
+          userinfo_signed_response_alg: String.t() | nil,
           jwt_public_key: String.t(),
           public_key: String.t(),
           private_key: String.t()
@@ -87,6 +89,8 @@ defmodule Boruta.Ecto.Client do
     field(:jwt_public_key, :string)
     field(:jwk, :map, virtual: true)
 
+    field(:userinfo_signed_response_alg, :string)
+
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
       on_replace: :delete
@@ -116,7 +120,8 @@ defmodule Boruta.Ecto.Client do
       :pkce,
       :public_refresh_token,
       :public_revoke,
-      :id_token_signature_alg
+      :id_token_signature_alg,
+      :userinfo_signed_response_alg
     ])
     |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
@@ -131,6 +136,10 @@ defmodule Boruta.Ecto.Client do
     |> validate_inclusion(
       :token_endpoint_jwt_auth_alg,
       Enum.map(@token_endpoint_jwt_auth_algs, &Atom.to_string/1)
+    )
+    |> validate_inclusion(
+      :userinfo_signed_response_alg,
+      Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
     )
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
     |> translate_jwk()
@@ -160,7 +169,8 @@ defmodule Boruta.Ecto.Client do
       :pkce,
       :public_refresh_token,
       :public_revoke,
-      :id_token_signature_alg
+      :id_token_signature_alg,
+      :userinfo_signed_response_alg
     ])
     |> validate_required([
       :authorization_code_ttl,
@@ -176,6 +186,10 @@ defmodule Boruta.Ecto.Client do
     |> validate_inclusion(
       :token_endpoint_jwt_auth_alg,
       Enum.map(@token_endpoint_jwt_auth_algs, &Atom.to_string/1)
+    )
+    |> validate_inclusion(
+      :userinfo_signed_response_alg,
+      Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
     )
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
@@ -265,7 +279,7 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp validate_id_token_signature_alg(changeset) do
-    signature_algorithms = Enum.map(Oauth.IdToken.signature_algorithms(), &Atom.to_string/1)
+    signature_algorithms = Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
     validate_inclusion(changeset, :id_token_signature_alg, signature_algorithms)
   end
 

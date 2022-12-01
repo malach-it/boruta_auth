@@ -5,6 +5,7 @@ defmodule <%= @web_module %>.Controllers.Openid.UserinfoControllerTest do
   import Mox
 
   alias Boruta.Oauth.Error
+  alias Boruta.Openid.UserinfoResponse
 
   alias <%= @web_module %>.Openid.UserinfoController
 
@@ -37,7 +38,7 @@ defmodule <%= @web_module %>.Controllers.Openid.UserinfoControllerTest do
 
       Boruta.OpenidMock
       |> expect(:userinfo, fn conn, module ->
-        module.userinfo_fetched(conn, resource_owner_claims)
+        module.userinfo_fetched(conn, %UserinfoResponse{userinfo: resource_owner_claims, format: :json})
       end)
 
       conn = UserinfoController.userinfo(conn, %{})
