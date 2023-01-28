@@ -1,5 +1,3 @@
-[![pipeline status](https://gitlab.com/patatoid/boruta_auth/badges/master/pipeline.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
-[![coverage report](https://gitlab.com/patatoid/boruta_auth/badges/master/coverage.svg)](https://gitlab.com/patatoid/boruta_auth/-/commits/master)
 [![downloads](https://img.shields.io/hexpm/dt/boruta)](https://hex.pm/packages/boruta)
 
 # Boruta OAuth/OpenID Connect provider core
@@ -34,7 +32,7 @@ An example of integration can be found [here](https://gitlab.com/patatoid/boruta
 
 This package has succesfully passed basic, implicit and hybrid OpenID Profiles certifications as of May 7th, 2022 for its version [2.1.2](https://hex.pm/packages/boruta/2.1.2). This certification was performed with the above sample server.
 
-![OpenID Certification watermark](https://gitlab.com/patatoid/boruta_auth/-/raw/master/images/oid-certification-mark.png)
+![OpenID Certification watermark](https://github.com/malach-it/boruta_auth/raw/master/images/oid-certification-mark.png)
 
 ## Guides
 
