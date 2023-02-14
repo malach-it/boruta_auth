@@ -4,7 +4,7 @@ Once your authorization server setup done, you can deliver tokens that help __li
 
 ## In a monolithic application
 
-In a monolith, you have access to __Boruta API__ (documented [here](https://hexdocs.pm/boruta/api-reference.html)) and can directly use it in order to restrict access to endpoints. Creating a __Plug__ and add it to the __request pipeline__ would be the prefered way to perform authorization. Here is an example of basic plugs.
+In a monolith, you have access to __Boruta API__ (documented [here](https://hexdocs.pm/boruta/api-reference.html)) and can directly use it in order to restrict access to endpoints. Creating a __Plug__ and add it to the __request pipeline__ would be the preferred way to perform authorization. Here is an example of basic plugs.
 
 ```elixir
 def MyAppWeb.Plugs.Authorization do

@@ -547,7 +547,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
            %Error{
              status: :internal_server_error,
              error: :unknown_error,
-             error_description: "An error occured during token creation: #{inspect(error)}."
+             error_description: "An error occurred during token creation: #{inspect(error)}."
            }}
       end)
     end

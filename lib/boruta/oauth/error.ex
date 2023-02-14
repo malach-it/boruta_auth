@@ -2,7 +2,7 @@ defmodule Boruta.Oauth.Error do
   @moduledoc """
   Boruta OAuth errors
 
-  > __Note__: Intended to follow [OAuth 2.0 errors](https://tools.ietf.org/html/rfc6749#section-5.2). Additionnal errors are provided as purpose.
+  > __Note__: Intended to follow [OAuth 2.0 errors](https://tools.ietf.org/html/rfc6749#section-5.2). Additional errors are provided as purpose.
   """
 
   alias Boruta.Oauth.CodeRequest

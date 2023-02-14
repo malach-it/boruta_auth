@@ -30,7 +30,7 @@ An example of integration can be found [here](https://gitlab.com/patatoid/boruta
 
 ## OpenID Certification
 
-This package has succesfully passed basic, implicit and hybrid OpenID Profiles certifications as of May 7th, 2022 for its version [2.1.2](https://hex.pm/packages/boruta/2.1.2). This certification was performed with the above sample server.
+This package has successfully passed basic, implicit and hybrid OpenID Profiles certifications as of May 7th, 2022 for its version [2.1.2](https://hex.pm/packages/boruta/2.1.2). This certification was performed with the above sample server.
 
 ![OpenID Certification watermark](https://github.com/malach-it/boruta_auth/raw/master/images/oid-certification-mark.png)
 

@@ -29,7 +29,7 @@ defmodule Boruta.Openid.Clients do
           # token_endpoint_auth_method: String.(), # TODO add token endpoint auth method configuration to clients
           # token_endpoint_auth_signing_alg: String.(), # TODO implement jwt token endpoint auth methods
           # default_max_age: integer(), # TODO add max age configuration to clients
-          # require_auth_time: bolean(), # TODO add auth_time configuration to clients
+          # require_auth_time: boolean(), # TODO add auth_time configuration to clients
           # default_acr_values: list(String.t()), # TODO implement acr values
           # inititiate_login_uri: String.t(), # NOTE cannot be configured yet
           # request_uris: list(String.t()) # TODO add caching abilities
