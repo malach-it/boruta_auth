@@ -3,7 +3,7 @@ defmodule Boruta.Oauth.Application do
   Implement this behaviour in the application layer of your OAuth / OpenID Connect provider.
   This behaviour gives all callbacks triggered invoking `Boruta.Oauth` module functions.
 
-  > __Note__: This behaviour is splitted into `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication`, and `Boruta.Oauth.RevokeApplication` providing utilities to implement the different OAuth / OpenID Connect endpoints independently.
+  > __Note__: This behaviour is split into `Boruta.Oauth.AuthorizeApplication`, `Boruta.Oauth.TokenApplication`, `Boruta.Oauth.IntrospectApplication`, and `Boruta.Oauth.RevokeApplication` providing utilities to implement the different OAuth / OpenID Connect endpoints independently.
   """
 
   @doc """

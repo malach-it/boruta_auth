@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- remove symetric keys from openid jwks
+- remove symmetric keys from openid jwks
 
 ## [2.2.0] - 2022-09-13
 
@@ -142,7 +142,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 - `Boruta.Ecto.Client.grant_types/0`
 - ability to insert/update clients with given id/secret
 - inserting/updating a client inserts non existing authorized_scopes
-- `oauth_module` injection in `boruta.gen.controllers` generated controllers defalut to `Boruta.Oauth`
+- `oauth_module` injection in `boruta.gen.controllers` generated controllers default to `Boruta.Oauth`
 
 ### Changed
 
@@ -235,7 +235,7 @@ becomes
 
 ### Added
 
-- `AuthorizeApplication`, `IntrospectApplication`, `RevokeApplication`, and `TokenApplication` behaviours allowing to implement separatly different OAuth use cases.
+- `AuthorizeApplication`, `IntrospectApplication`, `RevokeApplication`, and `TokenApplication` behaviours allowing to implement separately different OAuth use cases.
 - `list_active_tokens` Ecto admin function
 - `Boruta.AccessTokensAdapter`, `Boruta.CodesAdapter`, `Boruta.ClientsAdapter`, and `Boruta.ScopesAdapter` encapsulating adapters that are set in configuration.
 - `Boruta.Oauth.AuthorizeResponse.redirect_to_url/1` function
@@ -261,7 +261,7 @@ becomes
 
 ### Added
 
-- Differents OAuth flows integration guides
+- Different OAuth flows integration guides
 
 ## [1.0.1] - 2021-03-10
 

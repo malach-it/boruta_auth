@@ -321,7 +321,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_error,
        %Boruta.Oauth.Error{
          error: :unknown_error,
-         error_description: "An error occured during token creation: \"Could not create code : sub is invalid\".",
+         error_description: "An error occurred during token creation: \"Could not create code : sub is invalid\".",
          format: :fragment,
          redirect_uri: "https://redirect.uri",
          state: nil,

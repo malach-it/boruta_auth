@@ -92,7 +92,7 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
-    test "creates a client with supproted_grant_types" do
+    test "creates a client with supported_grant_types" do
       assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
                Admin.create_client(
                  Map.merge(@client_valid_attrs, %{supported_grant_types: ["client_credentials"]})
@@ -265,7 +265,7 @@ defmodule Boruta.Ecto.AdminTest do
       assert client == Admin.get_client!(client.id)
     end
 
-    test "retuns an error with a bad id token signature alg" do
+    test "returns an error with a bad id token signature alg" do
       client = client_fixture()
 
       assert {:error, %Ecto.Changeset{}} =

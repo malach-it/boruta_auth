@@ -29,7 +29,7 @@ defmodule Boruta.Oauth.Token do
             code_challenge_hash: nil,
             code_challenge_method: nil
 
-  # TODO manage nil atribute values and watch for aftereffects of them
+  # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t() | nil,

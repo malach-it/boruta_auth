@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   mix boruta.gen.controllers
   ```
 
-  ## Post instalation steps
+  ## Post installation steps
 
   * You can add OAuth routes in web application router as follow to expose controller actions
 
