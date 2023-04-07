@@ -14,7 +14,7 @@ defmodule Boruta.MixProject do
       docs: docs(),
       package: package(),
       description: description(),
-      source_url: "https://gitlab.com/patatoid/boruta_auth",
+      source_url: "https://github.com/malach-it/boruta_auth",
       test_coverage: [
         ignore_modules: [
           Boruta.Repo,
@@ -71,7 +71,7 @@ defmodule Boruta.MixProject do
   defp docs do
     [
       main: "readme",
-      source_url: "https://gitlab.com/patatoid/boruta-core",
+      source_url: "https://github.com/malach-it/boruta_auth",
       source_ref: "master",
       extras: [
         "README.md",
@@ -178,7 +178,7 @@ defmodule Boruta.MixProject do
       name: "boruta",
       licenses: ["MIT"],
       links: %{
-        "Gitlab" => "https://gitlab.com/patatoid/boruta_auth"
+        "GitHub" => "https://github.com/malach-it/boruta_auth"
       }
     }
   end

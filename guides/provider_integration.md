@@ -38,7 +38,7 @@ After that, you'll be able to generate controllers in order to expose Oauth and 
 ~> mix do deps.get, boruta.gen.migration, ecto.migrate, boruta.gen.controllers
 ```
 
-It will print the remaining steps to have the provider up and running as described in the [documentation](https://patatoid.gitlab.io/boruta_auth/Mix.Tasks.Boruta.Gen.Controllers.html). From there we will skip the testing part which uses Mox in order to mock Boruta and focus tests on the application layer.
+It will print the remaining steps to have the provider up and running as described in the [documentation](https://hexdocs.pm/boruta/Mix.Tasks.Boruta.Gen.Controllers.html). From there we will skip the testing part which uses Mox in order to mock Boruta and focus tests on the application layer.
 
 ## 3. Configure Boruta
 
@@ -80,7 +80,7 @@ Here client credentials flow should be up. For user flows you need further confi
 
 ## 4. User flows
 
-In order to have user flows operational, you need to implement `Boruta.Oauth.ResourceOwners` context as described in [Boruta README](https://patatoid.gitlab.io/boruta_auth/readme.html). Here it would look like
+In order to have user flows operational, you need to implement `Boruta.Oauth.ResourceOwners` context as described in [Boruta README](https://github.com/malach-it/boruta_auth/blob/master/README.md). Here it would look like
 ```elixir
 # lib/boruta_example/resource_owners.ex
 

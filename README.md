@@ -20,13 +20,13 @@ This package is meant to help to bring authorization into Elixir applications. W
 
 ## Documentation
 
-Master branch documentation can be found [here](https://patatoid.gitlab.io/boruta_auth/readme.html)
+Master branch documentation can be found [here](https://github.com/malach-it/boruta_auth/blob/master/README.md)
 
 Stable documentation is hosted on [hexdocs.pm](https://hexdocs.pm/boruta/api-reference.html)
 
 ## Integration example
 
-An example of integration can be found [here](https://gitlab.com/patatoid/boruta_example), it followed the integration steps described in below guides section.
+An example of integration can be found [here](https://github.com/patatoid/boruta_example), it followed the integration steps described in below guides section.
 
 ## OpenID Certification
 
