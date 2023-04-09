@@ -85,11 +85,14 @@ defmodule Boruta.MixProject do
       ],
       groups_for_modules: [
         Applications: [
+          Boruta.Oauth.Application,
           Boruta.Oauth.AuthorizeApplication,
           Boruta.Oauth.TokenApplication,
           Boruta.Oauth.IntrospectApplication,
           Boruta.Oauth.RevokeApplication,
           Boruta.Openid.JwksApplication,
+          Boruta.Openid.Application,
+          Boruta.Openid.DynamicRegistrationApplication,
           Boruta.Openid.UserinfoApplication
         ],
         Responses: [
