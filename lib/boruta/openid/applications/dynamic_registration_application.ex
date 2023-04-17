@@ -1,7 +1,7 @@
 defmodule Boruta.Openid.DynamicRegistrationApplication do
   @moduledoc """
   Implement this behaviour in the application layer of your OpenID Connect provider.
-  This behaviour gives all callbacks triggered invoking `Boruta.Openid.register_client/2` function.
+  This behaviour gives all callbacks triggered invoking `Boruta.Openid.register_client/3` function.
   """
 
   @doc """

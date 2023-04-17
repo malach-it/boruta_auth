@@ -1,5 +1,7 @@
 [![downloads](https://img.shields.io/hexpm/dt/boruta)](https://hex.pm/packages/boruta)
 
+![logo-yellow](images/logo-yellow.png)
+
 # Boruta OAuth/OpenID Connect provider core
 
 Boruta is the core of an OAuth 2.0 and OpenID Connect provider implementing according business rules. This library also provides a generator to create phoenix controllers, views and templates to have a basic provider up and running.

@@ -21,10 +21,11 @@ defmodule Boruta.Oauth.Json.Schema do
           },
           "required" => ["type", "value"]
         },
-        "scope" => %{"type" => "string"},
+        "scope" => %{"type" => "string"}
       },
       "required" => ["grant_type", "client_id", "client_authentication"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def password do
@@ -46,10 +47,11 @@ defmodule Boruta.Oauth.Json.Schema do
         },
         "username" => %{"type" => "string"},
         "password" => %{"type" => "string"},
-        "scope" => %{"type" => "string"},
+        "scope" => %{"type" => "string"}
       },
       "required" => ["grant_type", "client_id", "username", "password"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def authorization_code do
@@ -74,7 +76,8 @@ defmodule Boruta.Oauth.Json.Schema do
         "code_verifier" => %{"type" => "string"}
       },
       "required" => ["grant_type", "code", "client_id", "redirect_uri"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def token do
@@ -93,7 +96,8 @@ defmodule Boruta.Oauth.Json.Schema do
         "prompt" => %{"type" => "string"}
       },
       "required" => ["response_type", "client_id", "redirect_uri"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def id_token do
@@ -111,7 +115,8 @@ defmodule Boruta.Oauth.Json.Schema do
         "redirect_uri" => %{"type" => "string"}
       },
       "required" => ["response_type", "client_id", "redirect_uri"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def refresh_token do
@@ -123,7 +128,8 @@ defmodule Boruta.Oauth.Json.Schema do
         "scope" => %{"type" => "string"}
       },
       "required" => ["grant_type", "refresh_token"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def code do
@@ -147,7 +153,8 @@ defmodule Boruta.Oauth.Json.Schema do
         }
       },
       "required" => ["response_type", "client_id", "redirect_uri"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def introspect do
@@ -166,10 +173,11 @@ defmodule Boruta.Oauth.Json.Schema do
           },
           "required" => ["type", "value"]
         },
-        "token" => %{"type" => "string"},
+        "token" => %{"type" => "string"}
       },
       "required" => ["client_id", "client_authentication", "token"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def revoke do
@@ -189,16 +197,21 @@ defmodule Boruta.Oauth.Json.Schema do
         "token" => %{"type" => "string"}
       },
       "required" => ["client_id", "token"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 
   def grant_type do
     %{
       "type" => "object",
       "properties" => %{
-        "grant_type" => %{"type" => "string", "pattern" => "^(client_credentials|password|authorization_code|refresh_token)$"},
+        "grant_type" => %{
+          "type" => "string",
+          "pattern" => "^(client_credentials|password|authorization_code|refresh_token)$"
+        }
       },
       "required" => ["grant_type"]
-    } |> Schema.resolve
+    }
+    |> Schema.resolve()
   end
 end
