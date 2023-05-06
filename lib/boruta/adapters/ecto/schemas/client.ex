@@ -275,8 +275,8 @@ defmodule Boruta.Ecto.Client do
 
   defp validate_uri("" <> uri) do
     case URI.parse(uri) do
-      %URI{scheme: scheme, host: host}
-      when not is_nil(scheme) and not is_nil(host) ->
+      %URI{scheme: scheme, host: host, fragment: fragment}
+      when not is_nil(scheme) and not is_nil(host) and is_nil(fragment) ->
         nil
 
       _ ->

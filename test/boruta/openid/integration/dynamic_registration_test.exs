@@ -17,6 +17,17 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
                Openid.register_client(:context, registration_params, ApplicationMock)
     end
 
+    test "returns an error with a fragment in redirect uri" do
+      redirect_uris = ["http://redirect.uri#test"]
+
+      registration_params = %{
+        redirect_uris: redirect_uris
+      }
+
+      assert {:registration_failure, %Ecto.Changeset{}} =
+               Openid.register_client(:context, registration_params, ApplicationMock)
+    end
+
     test "registers a client" do
       jwk = %{
         "kty" => "RSA",
