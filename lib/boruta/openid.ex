@@ -37,16 +37,9 @@ defmodule Boruta.Openid do
   end
 
   def register_client(conn, registration_params, module) do
-    registration_params =
-      case registration_params do
-        %{jwks: %{keys: [jwk]}} = registration_params ->
-          Map.put(registration_params, :jwk, jwk)
-
-        registration_params ->
-          registration_params
-      end
-
-    case ClientsAdapter.create_client(registration_params) do
+    case registration_params
+         |> parse_registration_params(registration_params)
+         |> ClientsAdapter.create_client() do
       {:ok, client} ->
         module.client_registered(conn, client)
 
@@ -54,4 +47,20 @@ defmodule Boruta.Openid do
         module.registration_failure(conn, changeset)
     end
   end
+
+  defp parse_registration_params(params, %{jwks: %{keys: [jwk]}} = acc) do
+    parse_registration_params(
+      Map.put(params, :jwk, jwk),
+      Map.delete(acc, :jwks)
+    )
+  end
+
+  defp parse_registration_params(params, %{client_name: name} = acc) do
+    parse_registration_params(
+      Map.put(params, :name, name),
+      Map.delete(acc, :client_name)
+    )
+  end
+
+  defp parse_registration_params(params, _), do: params
 end

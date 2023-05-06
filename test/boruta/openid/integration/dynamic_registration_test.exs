@@ -28,6 +28,17 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
                Openid.register_client(:context, registration_params, ApplicationMock)
     end
 
+    test "registers a client with name" do
+      name = "client name"
+
+      registration_params = %{
+        client_name: name
+      }
+
+      assert {:client_registered, %Oauth.Client{name: ^name}} =
+               Openid.register_client(:context, registration_params, ApplicationMock)
+    end
+
     test "registers a client" do
       jwk = %{
         "kty" => "RSA",
