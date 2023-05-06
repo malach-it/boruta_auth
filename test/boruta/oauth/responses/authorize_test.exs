@@ -106,5 +106,17 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
       assert AuthorizeResponse.redirect_to_url(response) ==
                "http://redirect.uri?code=value&state=state"
     end
+
+    test "returns an url with a query in redirect_uri" do
+      response = %AuthorizeResponse{
+        type: :code,
+        code: "value",
+        state: "state",
+        redirect_uri: "http://redirect.uri?foo=bar"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri?code=value&state=state&foo=bar"
+    end
   end
 end
