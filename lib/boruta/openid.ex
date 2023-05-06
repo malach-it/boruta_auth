@@ -62,5 +62,12 @@ defmodule Boruta.Openid do
     )
   end
 
+  defp parse_registration_params(params, %{token_endpoint_auth_method: method} = acc) do
+    parse_registration_params(
+      Map.put(params, :token_endpoint_auth_methods, [method]),
+      Map.delete(acc, :token_endpoint_auth_method)
+    )
+  end
+
   defp parse_registration_params(params, _), do: params
 end
