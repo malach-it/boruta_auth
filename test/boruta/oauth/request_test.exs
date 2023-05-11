@@ -13,7 +13,9 @@ defmodule Boruta.Oauth.RequestTest do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.IntrospectRequest
   alias Boruta.Oauth.Request
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.RevokeRequest
+  alias Boruta.Oauth.TokenRequest
 
   describe "Basic client authentication (token endpoint)" do
     test "returns an error with bad basic header" do
@@ -657,6 +659,250 @@ defmodule Boruta.Oauth.RequestTest do
               %RevokeRequest{
                 client_authentication: %{type: "jwt", value: ^client_assertion}
               }} = Request.revoke_request(conn)
+    end
+  end
+
+  describe "unsigned requests" do
+    test "returns an error with bad jwt (token endpoint)" do
+      conn =
+        conn(:post, "/", %{
+          "request" => "bad_jwt"
+        })
+
+      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+               Request.token_request(conn)
+    end
+
+    test "parse unsigned request (token endpoint)" do
+      signer = Joken.Signer.create("HS512", "my secret")
+
+      client_id = SecureRandom.uuid()
+
+      {:ok, request, _claims} =
+        Token.encode_and_sign(
+          %{
+            "client_id" => client_id,
+            "grant_type" => "client_credentials"
+          },
+          signer
+        )
+
+      conn =
+        conn(:post, "/", %{
+          "request" => request
+        })
+
+      assert {:ok, %ClientCredentialsRequest{client_id: ^client_id}} = Request.token_request(conn)
+    end
+
+    test "returns an error with bad jwt (authorize endpoint)" do
+      conn =
+        conn(:get, "/", %{
+          "request" => "bad_jwt"
+        })
+
+      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+               Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+
+    test "parse unsigned request (authorize endpoint)" do
+      signer = Joken.Signer.create("HS512", "my secret")
+
+      client_id = SecureRandom.uuid()
+      redirect_uri = "http://redirect.uri"
+
+      {:ok, request, _claims} =
+        Token.encode_and_sign(
+          %{
+            "client_id" => client_id,
+            "response_type" => "token",
+            "redirect_uri" => redirect_uri
+          },
+          signer
+        )
+
+      conn =
+        conn(:get, "/", %{
+          "request" => request
+        })
+
+      assert {:ok,
+              %TokenRequest{
+                client_id: ^client_id,
+                redirect_uri: ^redirect_uri
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+  end
+
+  describe "unsigned requests from uri" do
+    setup do
+      bypass = Bypass.open()
+
+      {:ok, bypass: bypass}
+    end
+
+    test "returns an error with malformed uri (token endpoint)" do
+      conn =
+        conn(:post, "/", %{
+          "request_uri" => "bad_uri"
+        })
+
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Could not fetch unsigned request parameter from given URI."
+              }} = Request.token_request(conn)
+    end
+
+    test "returns an error if cannot fetch (token endpoint)", %{bypass: bypass} do
+      request_uri = "http://localhost:#{bypass.port}/request"
+
+      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
+        Plug.Conn.resp(conn, 400, "")
+      end)
+
+      conn =
+        conn(:post, "/", %{
+          "request_uri" => request_uri
+        })
+
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Could not fetch unsigned request parameter from given URI."
+              }} = Request.token_request(conn)
+    end
+
+    test "returns an error with bad jwt (token endpoint)", %{bypass: bypass} do
+      request_uri = "http://localhost:#{bypass.port}/request"
+
+      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
+        Plug.Conn.resp(conn, 200, "bad_jwt")
+      end)
+
+      conn =
+        conn(:post, "/", %{
+          "request_uri" => request_uri
+        })
+
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Could not fetch unsigned request parameter from given URI."
+              }} = Request.token_request(conn)
+    end
+
+    test "parse unsigned request (token endpoint)", %{bypass: bypass} do
+      signer = Joken.Signer.create("HS512", "my secret")
+
+      client_id = SecureRandom.uuid()
+
+      {:ok, request, _claims} =
+        Token.encode_and_sign(
+          %{
+            "client_id" => client_id,
+            "grant_type" => "client_credentials"
+          },
+          signer
+        )
+
+      request_uri = "http://localhost:#{bypass.port}/request"
+
+      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
+        Plug.Conn.resp(conn, 200, request)
+      end)
+
+      conn =
+        conn(:post, "/", %{
+          "request_uri" => request_uri
+        })
+
+      assert {:ok, %ClientCredentialsRequest{client_id: ^client_id}} = Request.token_request(conn)
+    end
+
+    test "returns an error with malformed uri (authorize endpoint)" do
+      conn =
+        conn(:post, "/", %{
+          "request_uri" => "bad_uri"
+        })
+
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Could not fetch unsigned request parameter from given URI."
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+
+    test "returns an error if cannot fetch (authorize endpoint)", %{bypass: bypass} do
+      request_uri = "http://localhost:#{bypass.port}/request"
+
+      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
+        Plug.Conn.resp(conn, 400, "")
+      end)
+
+      conn =
+        conn(:get, "/", %{
+          "request_uri" => request_uri
+        })
+
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Could not fetch unsigned request parameter from given URI."
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+
+    test "returns an error with bad jwt (authorize endpoint)", %{bypass: bypass} do
+      request_uri = "http://localhost:#{bypass.port}/request"
+
+      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
+        Plug.Conn.resp(conn, 200, "bad_jwt")
+      end)
+
+      conn =
+        conn(:get, "/", %{
+          "request_uri" => request_uri
+        })
+
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Could not fetch unsigned request parameter from given URI."
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+
+    test "parse unsigned request (authorize endpoint)", %{bypass: bypass} do
+      signer = Joken.Signer.create("HS512", "my secret")
+
+      client_id = SecureRandom.uuid()
+      redirect_uri = "http://redirect.uri"
+
+      {:ok, request, _claims} =
+        Token.encode_and_sign(
+          %{
+            "client_id" => client_id,
+            "response_type" => "token",
+            "redirect_uri" => redirect_uri
+          },
+          signer
+        )
+
+      request_uri = "http://localhost:#{bypass.port}/request"
+
+      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
+        Plug.Conn.resp(conn, 200, request)
+      end)
+
+      conn =
+        conn(:get, "/", %{
+          "request_uri" => request_uri
+        })
+
+      assert {:ok,
+              %TokenRequest{
+                client_id: ^client_id,
+                redirect_uri: ^redirect_uri
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
   end
 

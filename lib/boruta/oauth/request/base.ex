@@ -134,29 +134,57 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def fetch_unsigned_request(%{query_params: %{"request" => request}}) do
-    unsigned_request_params =
+    case Joken.peek_claims(request) do
+      {:ok, params} ->
+        {:ok, params}
+
+      _ ->
+        {:error, "Unsigned request jwt param is malformed."}
+    end
+  end
+
+  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}) do
+    with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
+         {:ok, %Finch.Response{body: request, status: 200}} <-
+           Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient) do
       case Joken.peek_claims(request) do
         {:ok, params} ->
-          params
+          {:ok, params}
 
         _ ->
-          %{}
+          {:error, "Could not fetch unsigned request parameter from given URI."}
       end
-
-    {:ok, unsigned_request_params}
+    else
+      _ ->
+        {:error, "Could not fetch unsigned request parameter from given URI."}
+    end
   end
 
   def fetch_unsigned_request(%{body_params: %{"request" => request}}) do
-    unsigned_request_params =
+    case Joken.peek_claims(request) do
+      {:ok, params} ->
+        {:ok, params}
+
+      _ ->
+        {:error, "Unsigned request jwt param is malformed."}
+    end
+  end
+
+  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri}}) do
+    with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
+         {:ok, %Finch.Response{body: request, status: 200}} <-
+           Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient) do
       case Joken.peek_claims(request) do
         {:ok, params} ->
-          params
+          {:ok, params}
 
         _ ->
-          %{}
+          {:error, "Could not fetch unsigned request parameter from given URI."}
       end
-
-    {:ok, unsigned_request_params}
+    else
+      _ ->
+        {:error, "Could not fetch unsigned request parameter from given URI."}
+    end
   end
 
   def fetch_unsigned_request(_request) do
