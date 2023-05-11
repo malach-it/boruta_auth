@@ -133,25 +133,77 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
+  def fetch_unsigned_request(%{query_params: %{"request" => request}}) do
+    unsigned_request_params =
+      case Joken.peek_claims(request) do
+        {:ok, params} ->
+          params
+
+        _ ->
+          %{}
+      end
+
+    {:ok, unsigned_request_params}
+  end
+
+  def fetch_unsigned_request(%{body_params: %{"request" => request}}) do
+    unsigned_request_params =
+      case Joken.peek_claims(request) do
+        {:ok, params} ->
+          params
+
+        _ ->
+          %{}
+      end
+
+    {:ok, unsigned_request_params}
+  end
+
+  def fetch_unsigned_request(_request) do
+    {:ok, %{}}
+  end
+
   def fetch_client_authentication(%{
-        body_params:
-          %{
-            "client_assertion_type" => "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-            "client_assertion" => client_assertion
-          } = body_params
+        query_params: %{
+          "client_assertion_type" => "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+          "client_assertion" => client_assertion
+        }
       }) do
     case Joken.peek_claims(client_assertion) do
       {:ok, claims} ->
         with :ok <- check_issuer(claims),
              :ok <- check_audience(claims),
              :ok <- check_expiration(claims) do
-          request_params =
-            Enum.into(body_params, %{
-              "client_id" => claims["sub"],
-              "client_authentication" => %{"type" => "jwt", "value" => client_assertion}
-            })
+          client_authentication_params = %{
+            "client_id" => claims["sub"],
+            "client_authentication" => %{"type" => "jwt", "value" => client_assertion}
+          }
 
-          {:ok, request_params}
+          {:ok, client_authentication_params}
+        end
+
+      {:error, _error} ->
+        {:error, "Could not decode client assertion JWT."}
+    end
+  end
+
+  def fetch_client_authentication(%{
+        body_params: %{
+          "client_assertion_type" => "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+          "client_assertion" => client_assertion
+        }
+      }) do
+    case Joken.peek_claims(client_assertion) do
+      {:ok, claims} ->
+        with :ok <- check_issuer(claims),
+             :ok <- check_audience(claims),
+             :ok <- check_expiration(claims) do
+          client_authentication_params = %{
+            "client_id" => claims["sub"],
+            "client_authentication" => %{"type" => "jwt", "value" => client_assertion}
+          }
+
+          {:ok, client_authentication_params}
         end
 
       {:error, _error} ->
@@ -165,19 +217,26 @@ defmodule Boruta.Oauth.Request.Base do
       }) do
     with {:ok, authorization_header} <- authorization_header(req_headers),
          {:ok, [client_id, client_secret]} <- BasicAuth.decode(authorization_header) do
-      request_params =
-        Enum.into(body_params, %{
-          "client_id" => client_id,
-          "client_authentication" => %{"type" => "basic", "value" => client_secret}
-        })
+      client_authentication_params = %{
+        "client_id" => client_id,
+        "client_authentication" => %{"type" => "basic", "value" => client_secret}
+      }
 
-      {:ok, request_params}
+      {:ok, client_authentication_params}
     else
       {:error, :no_authorization_header} ->
-        {:ok,
-         Enum.into(body_params, %{
-           "client_authentication" => %{"type" => "post", "value" => body_params["client_secret"]}
-         })}
+        try do
+          {:ok,
+           %{
+             "client_authentication" => %{
+               "type" => "post",
+               "value" => body_params["client_secret"]
+             }
+           }}
+        rescue
+          _e in ArgumentError ->
+            {:error, "No client authentication method found in request."}
+        end
 
       {:error, reason} ->
         {:error, reason}

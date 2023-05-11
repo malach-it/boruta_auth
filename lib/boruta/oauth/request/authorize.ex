@@ -23,11 +23,16 @@ defmodule Boruta.Oauth.Request.Authorize do
                CodeRequest.t()
                | TokenRequest.t()
                | HybridRequest.t()}
-  def request(%{query_params: query_params}, resource_owner) do
-    case Validator.validate(:authorize, query_params) do
-      {:ok, params} ->
-        build_request(Enum.into(params, %{"resource_owner" => resource_owner}))
-
+  def request(%{query_params: query_params} = request, resource_owner) do
+    with {:ok, unsigned_params} <- fetch_unsigned_request(request),
+         {:ok, params} <-
+           Validator.validate(
+             :authorize,
+             query_params
+             |> Enum.into(unsigned_params)
+           ) do
+      build_request(Enum.into(params, %{"resource_owner" => resource_owner}))
+    else
       {:error, error_description} ->
         {:error,
          %Error{

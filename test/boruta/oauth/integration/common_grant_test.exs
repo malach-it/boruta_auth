@@ -54,7 +54,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
 
   describe "authorize request" do
     test "returns an error without params" do
-      assert Oauth.authorize(%Plug.Conn{}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
+      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,

@@ -11,10 +11,7 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
   def oauth_module, do: Application.get_env(:<%= @otp_app %>, :oauth_module, Boruta.Oauth)
 
   def authorize(%Plug.Conn{} = conn, _params) do
-    conn =
-      conn
-      |> store_user_return_to()
-      |> put_unsigned_request()
+    conn = store_user_return_to(conn)
 
     resource_owner = get_resource_owner(conn)
 
@@ -66,20 +63,6 @@ defmodule <%= @web_module %>.Openid.AuthorizeController do
     |> put_status(status)
     |> put_view(OauthView)
     |> render("error.html", error: error, error_description: error_description)
-  end
-
-  defp put_unsigned_request(%Plug.Conn{query_params: query_params} = conn) do
-    unsigned_request_params =
-      with request <- Map.get(query_params, "request", ""),
-           {:ok, params} <- Joken.peek_claims(request) do
-        params
-      else
-        _ -> %{}
-      end
-
-    query_params = Map.merge(query_params, unsigned_request_params)
-
-    %{conn | query_params: query_params}
   end
 
   defp store_user_return_to(conn) do
