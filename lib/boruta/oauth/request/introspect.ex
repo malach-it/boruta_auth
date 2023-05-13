@@ -17,12 +17,14 @@ defmodule Boruta.Oauth.Request.Introspect do
              :status => :bad_request
            }}
           | {:ok, request :: IntrospectRequest.t()}
-  def request(request) do
-    with {:ok, request_params} <- fetch_client_authentication(request),
+  def request(%{body_params: body_params} = request) do
+    with {:ok, client_authentication_params} <- fetch_client_authentication(request),
          {:ok, params} <-
            Validator.validate(
              :introspect,
-             Enum.into(request_params, %{"response_type" => "introspect"})
+             body_params
+             |> Enum.into(client_authentication_params)
+             |> Enum.into(%{"response_type" => "introspect"})
            ) do
       build_request(params)
     else
