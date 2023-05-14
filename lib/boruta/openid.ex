@@ -68,6 +68,7 @@ defmodule Boruta.Openid do
       params =
         params
         |> Map.put(:jwk, jwk)
+        |> Map.put(:jwks_uri, jwks_uri)
         |> Map.put(:token_endpoint_jwt_auth_alg, jwk["alg"])
 
       parse_registration_params(

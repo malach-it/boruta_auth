@@ -240,28 +240,16 @@ defmodule Boruta.Oauth.Authorization.Client do
          source,
          %Client{
            jwt_public_key: jwt_public_key,
-           secret: secret,
-           token_endpoint_auth_methods: ["private_key_jwt" | methods],
+           token_endpoint_auth_methods: ["private_key_jwt" | _methods],
            token_endpoint_jwt_auth_alg: alg
          } = client,
          _message
        )
        when alg in ["RS256", "RS364", "RS512"] and is_binary(jwt_public_key) do
     signer = Joken.Signer.create(alg, %{"pem" => jwt_public_key})
+    verify = Token.verify(source[:value] || "", signer)
 
-    case {source[:type], Token.verify(source[:value] || "", signer)} do
-      {"jwt", {:ok, _claims}} ->
-        {:ok, secret}
-
-      {"jwt", {:error, _error}} ->
-        message = "The given client secret jwt does not match signature key."
-
-        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
-
-      {_, _} ->
-        message = "Given client expects the credentials to be provided with a jwt assertion."
-        do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
-    end
+    verify_secret_result(client, source, verify, false)
   end
 
   defp do_extract_secret(source, client, _) do
@@ -270,6 +258,52 @@ defmodule Boruta.Oauth.Authorization.Client do
       %{client | token_endpoint_auth_methods: []},
       "Bad client jwt authentication method configuration (jwks and token endpoint jwt auth algorithm do not match)."
     )
+  end
+
+  defp verify_secret_result(%Client{secret: secret}, %{type: "jwt"}, {:ok, _claims}, _refreshed?) do
+    {:ok, secret}
+  end
+
+  defp verify_secret_result(
+         %Client{
+           id: client_id,
+           secret: secret,
+           token_endpoint_jwt_auth_alg: alg
+         } = client,
+         %{type: "jwt"} = source,
+         {:error, _reason} = error,
+         false
+       ) do
+    with {:ok, jwt_public_key} <- ClientsAdapter.refresh_jwk_from_jwks_uri(client_id),
+         signer <- Joken.Signer.create(alg, %{"pem" => jwt_public_key}),
+         {"jwt", {:ok, _claims}} <-
+           {source[:type], Token.verify(source[:value] || "", signer)} do
+      {:ok, secret}
+    else
+      _ ->
+        verify_secret_result(client, source, error, true)
+    end
+  end
+
+  defp verify_secret_result(
+         %Client{
+           token_endpoint_auth_methods: ["private_key_jwt" | methods]
+         } = client,
+         %{type: "jwt"} = source,
+         {:error, _error},
+         true
+       ) do
+    message = "The given client secret jwt does not match signature key."
+
+    do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
+  end
+
+  defp verify_secret_result(
+         %Client{
+           token_endpoint_auth_methods: ["private_key_jwt" | methods]
+         } = client, source, _error, _refreshed) do
+    message = "Given client expects the credentials to be provided with a jwt assertion."
+    do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
   end
 
   defp validate_pkce(%Client{pkce: false}, _code_verifier), do: :ok

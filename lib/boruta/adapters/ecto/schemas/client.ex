@@ -89,6 +89,7 @@ defmodule Boruta.Ecto.Client do
     field(:token_endpoint_jwt_auth_alg, :string, default: "HS256")
     field(:jwt_public_key, :string)
     field(:jwk, :map, virtual: true)
+    field(:jwks_uri, :string)
 
     field(:userinfo_signed_response_alg, :string)
 
@@ -117,6 +118,7 @@ defmodule Boruta.Ecto.Client do
       :token_endpoint_auth_methods,
       :token_endpoint_jwt_auth_alg,
       :jwk,
+      :jwks_uri,
       :jwt_public_key,
       :pkce,
       :public_refresh_token,
@@ -166,6 +168,7 @@ defmodule Boruta.Ecto.Client do
       :token_endpoint_auth_methods,
       :token_endpoint_jwt_auth_alg,
       :jwk,
+      :jwks_uri,
       :jwt_public_key,
       :pkce,
       :public_refresh_token,

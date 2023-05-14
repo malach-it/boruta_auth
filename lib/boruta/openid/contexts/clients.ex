@@ -37,4 +37,6 @@ defmodule Boruta.Openid.Clients do
 
   @callback create_client(params :: registration_params()) ::
               {:ok, client :: Boruta.Oauth.Client.t()} | {:error, Ecto.Changeset.t()}
+  @callback refresh_jwk_from_jwks_uri(client_id :: String.t()) ::
+              {:ok, public_key_jwt :: String.t()} | {:error, reason :: String.t()}
 end

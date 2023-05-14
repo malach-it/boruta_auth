@@ -57,6 +57,27 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
+  @impl Boruta.Openid.Clients
+  def refresh_jwk_from_jwks_uri(client_id) do
+    with %Ecto.Client{jwks_uri: "" <> jwks_uri} = client <-
+           repo().get_by(Ecto.Client, id: client_id),
+         %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
+         {:ok, %Finch.Response{body: jwks, status: 200}} <-
+           Finch.build(:get, jwks_uri) |> Finch.request(OpenIDHttpClient),
+         {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings),
+         {:ok, %Ecto.Client{jwt_public_key: jwt_public_key}} <-
+           Ecto.Client.update_changeset(client, %{
+             jwk: jwk,
+             token_endpoint_jwt_auth_alg: jwk["alg"]
+           })
+           |> repo().update() do
+      {:ok, jwt_public_key}
+    else
+      _ ->
+        {:error, "Could not refresh client jwk with jwks_uri."}
+    end
+  end
+
   defp authorized_scopes(:from_database, %Oauth.Client{id: id}) do
     case repo().get_by(Ecto.Client, id: id) do
       %Ecto.Client{} = client ->

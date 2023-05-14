@@ -32,6 +32,7 @@ defmodule Boruta.Oauth.Client do
             token_endpoint_auth_methods: nil,
             token_endpoint_jwt_auth_alg: nil,
             jwt_public_key: nil,
+            jwks_uri: nil,
             public_key: nil,
             private_key: nil
 
@@ -56,6 +57,7 @@ defmodule Boruta.Oauth.Client do
           token_endpoint_auth_methods: list(String.t()),
           token_endpoint_jwt_auth_alg: String.t(),
           jwt_public_key: String.t(),
+          jwks_uri: String.t() | nil,
           public_key: String.t(),
           private_key: String.t()
         }
