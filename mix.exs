@@ -21,7 +21,8 @@ defmodule Boruta.MixProject do
           Boruta.Cache,
           Boruta.Factory,
           Mix.Tasks.Boruta.Gen.Controllers,
-          Mix.Tasks.Boruta.Gen.Migration
+          Mix.Tasks.Boruta.Gen.Migration,
+          Boruta.Support.WebModule
         ]
       ],
       dialyzer: [
@@ -57,6 +58,7 @@ defmodule Boruta.MixProject do
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
       {:finch, "~> 0.16"},
+      {:jason, "~> 1.4"},
       {:joken, "~> 2.0"},
       {:jose, "~> 1.11"},
       {:mox, "~> 0.5", only: :test},

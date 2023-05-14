@@ -81,6 +81,7 @@ defmodule Boruta.Ecto.Client do
     field(:refresh_token_ttl, :integer)
 
     field(:id_token_signature_alg, :string, default: "RS512")
+
     field(:public_key, :string)
     field(:private_key, :string)
 
