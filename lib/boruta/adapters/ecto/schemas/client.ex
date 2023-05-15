@@ -81,6 +81,7 @@ defmodule Boruta.Ecto.Client do
     field(:refresh_token_ttl, :integer)
 
     field(:id_token_signature_alg, :string, default: "RS512")
+    field(:id_token_kid, :string)
 
     field(:public_key, :string)
     field(:private_key, :string)
@@ -124,6 +125,7 @@ defmodule Boruta.Ecto.Client do
       :public_refresh_token,
       :public_revoke,
       :id_token_signature_alg,
+      :id_token_kid,
       :userinfo_signed_response_alg
     ])
     |> validate_required([:redirect_uris])
@@ -174,6 +176,7 @@ defmodule Boruta.Ecto.Client do
       :public_refresh_token,
       :public_revoke,
       :id_token_signature_alg,
+      :id_token_kid,
       :userinfo_signed_response_alg
     ])
     |> validate_required([

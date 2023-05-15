@@ -28,6 +28,7 @@ defmodule Boruta.Oauth.Client do
             public_refresh_token: nil,
             public_revoke: nil,
             id_token_signature_alg: nil,
+            id_token_kid: nil,
             userinfo_signed_response_alg: nil,
             token_endpoint_auth_methods: nil,
             token_endpoint_jwt_auth_alg: nil,
@@ -53,6 +54,7 @@ defmodule Boruta.Oauth.Client do
           public_refresh_token: boolean(),
           public_revoke: boolean(),
           id_token_signature_alg: String.t(),
+          id_token_kid: String.t() | nil,
           userinfo_signed_response_alg: String.t() | nil,
           token_endpoint_auth_methods: list(String.t()),
           token_endpoint_jwt_auth_alg: String.t(),
@@ -182,6 +184,7 @@ defmodule Boruta.Oauth.Client do
             id: client_id,
             id_token_signature_alg: signature_alg,
             private_key: private_key,
+            id_token_kid: id_token_kid,
             secret: secret
           } = client
         ) do
@@ -191,7 +194,11 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(signature_alg, secret)
 
           :asymmetric ->
-            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => client_id})
+            Joken.Signer.create(
+              signature_alg,
+              %{"pem" => private_key},
+              %{"kid" => id_token_kid || client_id}
+            )
         end
 
       case Token.encode_and_sign(payload, signer) do
@@ -211,6 +218,7 @@ defmodule Boruta.Oauth.Client do
             id: client_id,
             userinfo_signed_response_alg: signature_alg,
             private_key: private_key,
+            id_token_kid: id_token_kid,
             secret: secret
           } = client
         ) do
@@ -220,7 +228,7 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(signature_alg, secret)
 
           :asymmetric ->
-            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => client_id})
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => id_token_kid || client_id})
         end
 
       case Token.encode_and_sign(payload, signer) do
