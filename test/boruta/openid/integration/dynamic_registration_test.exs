@@ -94,7 +94,7 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
 
       registration_params = %{
         redirect_uris: redirect_uris,
-        jwks: %{keys: [jwk]}
+        jwks: %{"keys" => [jwk]}
       }
 
       assert {:client_registered,

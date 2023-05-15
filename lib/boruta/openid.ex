@@ -48,7 +48,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp parse_registration_params(params, %{jwks: %{keys: [jwk]}} = acc) do
+  defp parse_registration_params(params, %{jwks: %{"keys" => [jwk]}} = acc) do
     params =
       params
       |> Map.put(:jwk, jwk)
