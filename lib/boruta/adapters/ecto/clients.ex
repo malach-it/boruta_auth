@@ -45,6 +45,7 @@ defmodule Boruta.Ecto.Clients do
     clients = repo().all(Ecto.Client)
 
     Enum.map(clients, &rsa_key/1)
+    |> Enum.uniq_by(fn %{"kid" => kid} -> kid end)
   end
 
   @impl Boruta.Openid.Clients
@@ -89,9 +90,9 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
-  defp rsa_key(%Ecto.Client{id: client_id, public_key: public_key}) do
+  defp rsa_key(%Ecto.Client{public_key: public_key, private_key: private_key}) do
     {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
 
-    Map.put(jwk, "kid", client_id)
+    Map.put(jwk, "kid", Oauth.Client.Crypto.kid_from_private_key(private_key))
   end
 end

@@ -51,10 +51,10 @@ defmodule Boruta.Oauth.IdTokenTest do
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
     assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
-    client_id = client.id
-    assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
+    assert {:ok, %{"kid" => "Ac9ufCpgwReXGJ6LI"}} = Joken.peek_header(value)
     auth_time = DateTime.to_unix(last_login_at)
 
+    client_id = client.id
     assert %{
              "aud" => ^client_id,
              "iat" => _iat,
@@ -99,10 +99,10 @@ defmodule Boruta.Oauth.IdTokenTest do
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
     assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
-    client_id = client.id
-    assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
+    assert {:ok, %{"kid" => "Ac9ufCpgwReXGJ6LI"}} = Joken.peek_header(value)
     auth_time = DateTime.to_unix(last_login_at)
 
+    client_id = client.id
     assert %{
              "aud" => ^client_id,
              "iat" => _iat,
@@ -158,7 +158,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
     client_id = client.id
-    assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
+    assert {:ok, %{"kid" => "Ac9ufCpgwReXGJ6LI"}} = Joken.peek_header(value)
     auth_time = DateTime.to_unix(last_login_at)
 
     assert %{
@@ -252,7 +252,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
     client_id = client.id
-    assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
+    assert {:ok, %{"kid" => "Ac9ufCpgwReXGJ6LI"}} = Joken.peek_header(value)
 
     assert %{
              "aud" => ^client_id,
@@ -308,7 +308,7 @@ defmodule Boruta.Oauth.IdTokenTest do
 
       assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
       client_id = client.id
-      assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
+      assert {:ok, %{"kid" => "Ac9ufCpgwReXGJ6LI"}} = Joken.peek_header(value)
       auth_time = DateTime.to_unix(last_login_at)
 
       assert %{
@@ -369,10 +369,10 @@ defmodule Boruta.Oauth.IdTokenTest do
       signer = Joken.Signer.create("RS384", %{"pem" => client.private_key, "aud" => client.id})
 
       assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
-      client_id = client.id
-      assert {:ok, %{"kid" => ^client_id}} = Joken.peek_header(value)
+      assert {:ok, %{"kid" => "Ac9ufCpgwReXGJ6LI"}} = Joken.peek_header(value)
       auth_time = DateTime.to_unix(last_login_at)
 
+      client_id = client.id
       assert %{
                "aud" => ^client_id,
                "iat" => _iat,

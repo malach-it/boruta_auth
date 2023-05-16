@@ -181,7 +181,6 @@ defmodule Boruta.Oauth.Client do
     def id_token_sign(
           payload,
           %Client{
-            id: client_id,
             id_token_signature_alg: signature_alg,
             private_key: private_key,
             id_token_kid: id_token_kid,
@@ -197,7 +196,7 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(
               signature_alg,
               %{"pem" => private_key},
-              %{"kid" => id_token_kid || client_id}
+              %{"kid" => id_token_kid || kid_from_private_key(private_key)}
             )
         end
 
@@ -215,7 +214,6 @@ defmodule Boruta.Oauth.Client do
     def userinfo_sign(
           payload,
           %Client{
-            id: client_id,
             userinfo_signed_response_alg: signature_alg,
             private_key: private_key,
             id_token_kid: id_token_kid,
@@ -228,7 +226,7 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(signature_alg, secret)
 
           :asymmetric ->
-            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => id_token_kid || client_id})
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => id_token_kid || kid_from_private_key(private_key)})
         end
 
       case Token.encode_and_sign(payload, signer) do
@@ -238,6 +236,11 @@ defmodule Boruta.Oauth.Client do
         {:error, error} ->
           {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
       end
+    end
+
+    @spec kid_from_private_key(private_pem :: String.t()) :: kid :: String.t()
+    def kid_from_private_key(private_pem) do
+      :crypto.hash(:md5, private_pem) |> Base.encode64() |> String.slice(0..16)
     end
 
     @spec userinfo_signature_type(Client.t()) :: id_token_signature_type :: atom()
