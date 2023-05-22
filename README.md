@@ -49,3 +49,11 @@ Here are some guides helping the integration of OAuth/OpenID Connect in your sys
 ## Feedback
 
 It is a work in progress, all feedbacks / feature requests / improvements are welcome
+
+## Code of Conduct
+
+This product community follows the code of conduct available [here](https://io.malach.it/code-of-conduct.html)
+
+## License
+
+This code is released under the [MIT](LICENSE.md) license.
