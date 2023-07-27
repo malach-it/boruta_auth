@@ -94,6 +94,9 @@ defmodule Boruta.Ecto.Client do
 
     field(:userinfo_signed_response_alg, :string)
 
+    field(:logo_uri, :string)
+    field(:metadata, :map, default: %{})
+
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
       on_replace: :delete
@@ -126,7 +129,9 @@ defmodule Boruta.Ecto.Client do
       :public_revoke,
       :id_token_signature_alg,
       :id_token_kid,
-      :userinfo_signed_response_alg
+      :userinfo_signed_response_alg,
+      :logo_uri,
+      :metadata
     ])
     |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
@@ -177,7 +182,9 @@ defmodule Boruta.Ecto.Client do
       :public_revoke,
       :id_token_signature_alg,
       :id_token_kid,
-      :userinfo_signed_response_alg
+      :userinfo_signed_response_alg,
+      :logo_uri,
+      :metadata
     ])
     |> validate_required([
       :authorization_code_ttl,

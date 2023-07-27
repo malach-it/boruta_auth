@@ -159,6 +159,20 @@ defmodule Boruta.Ecto.AdminTest do
       assert id_token_ttl == 1
     end
 
+    test "creates a client with metadata" do
+      metadata = %{"metadata" => true}
+
+      assert {:ok,
+              %Client{
+                metadata: ^metadata
+              }} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   metadata: metadata
+                 })
+               )
+    end
+
     test "creates a client with authorized scopes by id" do
       scope = insert(:scope)
 
@@ -356,8 +370,7 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{public_key: ^public_key, private_key: ^private_key}} =
                Admin.regenerate_client_key_pair(client, public_key, private_key)
 
-      assert %Client{public_key: ^public_key, private_key: ^private_key} =
-               Repo.reload(client)
+      assert %Client{public_key: ^public_key, private_key: ^private_key} = Repo.reload(client)
     end
   end
 

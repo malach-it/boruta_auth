@@ -35,7 +35,9 @@ defmodule Boruta.Oauth.Client do
             jwt_public_key: nil,
             jwks_uri: nil,
             public_key: nil,
-            private_key: nil
+            private_key: nil,
+            logo_uri: nil,
+            metadata: %{}
 
   @type t :: %__MODULE__{
           id: any(),
@@ -61,7 +63,9 @@ defmodule Boruta.Oauth.Client do
           jwt_public_key: String.t(),
           jwks_uri: String.t() | nil,
           public_key: String.t(),
-          private_key: String.t()
+          private_key: String.t(),
+          logo_uri: String.t() | nil,
+          metadata: map()
         }
 
   @grant_types [

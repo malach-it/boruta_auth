@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
+## [unreleased]
+
+- Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
+
+### Added
+
+- clients have a `metadata` attribute where one can store json objects
+- according to OpenID Connect core 1.0, clients have a `logo_uri` attribute
+
 ## [2.3.1] - 2023-04-24
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
