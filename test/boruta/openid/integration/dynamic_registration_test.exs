@@ -67,15 +67,20 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
       }
 
       redirect_uris = ["http://redirect.uri"]
+      logo_uri = "https://logo.uri"
 
       registration_params = %{
         redirect_uris: redirect_uris,
-        jwk: jwk
+        jwk: jwk,
+        logo_uri: logo_uri
       }
 
       assert {:client_registered,
-              %Oauth.Client{redirect_uris: ^redirect_uris, jwt_public_key: jwt_public_key}} =
-               Openid.register_client(:context, registration_params, ApplicationMock)
+              %Oauth.Client{
+                redirect_uris: ^redirect_uris,
+                jwt_public_key: jwt_public_key,
+                logo_uri: ^logo_uri
+              }} = Openid.register_client(:context, registration_params, ApplicationMock)
 
       assert JOSE.JWK.from_pem(jwt_public_key).kty == JOSE.JWK.from_map(jwk).kty
     end
