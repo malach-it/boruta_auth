@@ -223,7 +223,7 @@ end
    end
 ```
 
-Here we are! You have a basic OpenID Connect provider. You can now create a client as described [here](https://patatoid.gitlab.io/boruta_auth/create_client.html) and start using it.
+Here we are! You have a basic OpenID Connect provider. You can now create a client as described [here](https://hexdocs.pm/boruta/create_client.html) and start using it.
 Departing from there, you can use any OAuth/OpenID Connect client of your choice.
 
 Hope you enjoyed the way so far. The process can definitely be improved at some points, all contributions of any kind will be very welcome.
