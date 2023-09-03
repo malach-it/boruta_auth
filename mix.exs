@@ -15,16 +15,7 @@ defmodule Boruta.MixProject do
       package: package(),
       description: description(),
       source_url: "https://github.com/malach-it/boruta_auth",
-      test_coverage: [
-        ignore_modules: [
-          Boruta.Repo,
-          Boruta.Cache,
-          Boruta.Factory,
-          Mix.Tasks.Boruta.Gen.Controllers,
-          Mix.Tasks.Boruta.Gen.Migration,
-          Boruta.Support.WebModule
-        ]
-      ],
+      test_coverage: [tool: ExCoveralls],
       dialyzer: [
         plt_add_apps: [:mix]
       ]
@@ -57,6 +48,7 @@ defmodule Boruta.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.6"},
       {:ex_machina, "~> 2.4", only: :test},
+      {:excoveralls, "~> 0.10", only: :test},
       {:finch, "~> 0.16"},
       {:jason, "~> 1.4"},
       {:joken, "~> 2.0"},

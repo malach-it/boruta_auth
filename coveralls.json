@@ -1,0 +1,6 @@
+{
+  "skip_files": [
+    "priv/boruta",
+    "lib/mix"
+  ]
+}
