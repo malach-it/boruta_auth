@@ -24,7 +24,7 @@ defmodule Boruta.Oauth.TokenResponse do
         }
 
   @spec from_token(%{
-          (type :: :token | :id_token) => token :: Boruta.Oauth.Token.t() | String.t()
+          (type :: :token | :id_token | :preauthorized_token) => token :: Boruta.Oauth.Token.t() | String.t()
         }) :: t()
   def from_token(
         %{

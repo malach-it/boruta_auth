@@ -71,9 +71,23 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
+  def validate(:authorize, %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params) do
+    case ExJsonSchema.Validator.validate(
+           Schema.preauthorized_code(),
+           params,
+           error_formatter: BorutaFormatter
+         ) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Query params validation failed. " <> Enum.join(errors, " ")}
+    end
+  end
+
   def validate(:authorize, %{"response_type" => _}) do
     {:error,
-     "Invalid response_type param, may be on of `code` for Authorization Code request, `code id_token`, `code token`, `code id_token token` for Hybrid requests, or `token`, `id_token token` for Implicit requests."}
+     "Invalid response_type param, may be one of `code` for Authorization Code request, `code id_token`, `code token`, `code id_token token` for Hybrid requests, or `token`, `id_token token` for Implicit requests."}
   end
 
   def validate(:introspect, params) do

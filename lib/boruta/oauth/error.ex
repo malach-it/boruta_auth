@@ -8,6 +8,7 @@ defmodule Boruta.Oauth.Error do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
+  alias Boruta.Oauth.PreauthorizedCodeRequest
   alias Boruta.Oauth.TokenRequest
 
   @type t :: %__MODULE__{
@@ -40,7 +41,7 @@ defmodule Boruta.Oauth.Error do
   """
   @spec with_format(
           error :: Error.t(),
-          request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
+          request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t() | PreauthorizedCodeRequest.t()
         ) :: Error.t()
   def with_format(%Error{error: :invalid_client} = error, _) do
     %{error | format: nil, redirect_uri: nil}
@@ -100,6 +101,10 @@ defmodule Boruta.Oauth.Error do
   end
 
   def with_format(%Error{} = error, %TokenRequest{redirect_uri: redirect_uri, state: state}) do
+    %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
+  end
+
+  def with_format(%Error{} = error, %PreauthorizedCodeRequest{redirect_uri: redirect_uri, state: state}) do
     %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
   end
 

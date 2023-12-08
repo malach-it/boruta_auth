@@ -8,6 +8,7 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.IntrospectRequest
   alias Boruta.Oauth.PasswordRequest
+  alias Boruta.Oauth.PreauthorizedCodeRequest
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.RevokeRequest
   alias Boruta.Oauth.TokenRequest
@@ -50,6 +51,20 @@ defmodule Boruta.Oauth.Request.Base do
        code: params["code"],
        redirect_uri: params["redirect_uri"],
        code_verifier: params["code_verifier"]
+     }}
+  end
+
+  def build_request(%{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params) do
+    {:ok,
+     %PreauthorizedCodeRequest{
+       client_id: params["client_id"],
+       redirect_uri: params["redirect_uri"],
+       resource_owner: params["resource_owner"],
+       state: params["state"],
+       prompt: params["prompt"],
+       code_challenge: params["code_challenge"],
+       code_challenge_method: params["code_challenge_method"],
+       scope: params["scope"]
      }}
   end
 
