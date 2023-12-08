@@ -132,6 +132,30 @@ defmodule Boruta.Oauth.Json.Schema do
     |> Schema.resolve()
   end
 
+  def preauthorized_code do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "response_type" => %{"type" => "string", "pattern" => "urn:ietf:params:oauth:response-type:pre-authorized_code"},
+        "client_id" => %{
+          "type" => "string",
+          "pattern" => @uuid_pattern
+        },
+        "state" => %{"type" => "string"},
+        "nonce" => %{"type" => "string"},
+        "redirect_uri" => %{"type" => "string"},
+        "prompt" => %{"type" => "string"},
+        "code_challenge" => %{"type" => "string"},
+        "code_challenge_method" => %{
+          "type" => "string",
+          "pattern" => "plain|S256"
+        }
+      },
+      "required" => ["response_type", "client_id", "redirect_uri"]
+    }
+    |> Schema.resolve()
+  end
+
   def code do
     %{
       "type" => "object",

@@ -61,6 +61,7 @@ defmodule Boruta.Ecto.Token do
     timestamps()
   end
 
+  @doc false
   def changeset(token, attrs) do
     token
     |> cast(attrs, [
@@ -81,6 +82,7 @@ defmodule Boruta.Ecto.Token do
     |> put_expires_at()
   end
 
+  @doc false
   def changeset_with_refresh_token(token, attrs) do
     token
     |> cast(attrs, [
@@ -102,6 +104,55 @@ defmodule Boruta.Ecto.Token do
     |> put_expires_at()
   end
 
+  @doc false
+  def preauthorized_code_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :redirect_uri,
+      :state,
+      :nonce,
+      :scope
+    ])
+    |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "preauthorized_code")
+    |> put_value()
+    |> put_code_expires_at()
+  end
+
+  @doc false
+  def pkce_preauthorized_code_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :redirect_uri,
+      :state,
+      :nonce,
+      :scope,
+      :code_challenge,
+      :code_challenge_method
+    ])
+    |> validate_required([
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :redirect_uri,
+      :code_challenge
+    ])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "preauthorized_code")
+    |> put_value()
+    |> put_code_expires_at()
+    |> put_code_challenge_method()
+    |> encrypt_code_challenge()
+  end
+
+  @doc false
   def code_changeset(token, attrs) do
     token
     |> cast(attrs, [

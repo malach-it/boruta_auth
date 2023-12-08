@@ -38,9 +38,9 @@ defmodule Boruta.Ecto.TokenStore do
   end
 
   def put(
-        %Token{type: "code", client: %Client{authorization_code_ttl: authorization_code_ttl}} =
+        %Token{type: type, client: %Client{authorization_code_ttl: authorization_code_ttl}} =
           token
-      ) do
+      ) when type in ["code", "preauthorized_code"] do
     with :ok <-
            cache_backend().put({Token, :value, token.value}, token,
              ttl: authorization_code_ttl * 1000

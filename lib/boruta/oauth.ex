@@ -30,6 +30,7 @@ defmodule Boruta.Oauth do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Revoke
   alias Boruta.Oauth.TokenResponse
+  alias Boruta.Openid.CredentialOfferResponse
 
   @doc """
   Process an token request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
@@ -96,12 +97,23 @@ defmodule Boruta.Oauth do
   @impl true
   def authorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module) when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
-         {:ok, tokens} <- Authorization.token(request),
-         %AuthorizeResponse{} = response <- AuthorizeResponse.from_tokens(tokens, request) do
-      module.authorize_success(
-        conn,
-        response
-      )
+         {:ok, tokens} <- Authorization.token(request) do
+      case AuthorizeResponse.from_tokens(tokens, request) do
+        %AuthorizeResponse{} = response ->
+          module.authorize_success(
+            conn,
+            response
+          )
+
+        %CredentialOfferResponse{} = response ->
+          module.authorize_success(
+            conn,
+            response
+          )
+
+        {:error, error} ->
+          formatted_authorize_error(conn, resource_owner, module, error)
+      end
     else
       {:error, %Error{} = error} ->
         formatted_authorize_error(conn, resource_owner, module, error)

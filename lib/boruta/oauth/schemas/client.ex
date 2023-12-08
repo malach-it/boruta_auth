@@ -72,6 +72,7 @@ defmodule Boruta.Oauth.Client do
     "client_credentials",
     "password",
     "authorization_code",
+    "preauthorized_code",
     "refresh_token",
     "implicit",
     "revoke",
@@ -119,7 +120,7 @@ defmodule Boruta.Oauth.Client do
 
   @spec should_check_secret?(client :: t(), grant_type :: String.t()) :: boolean()
   def should_check_secret?(_client, grant_type)
-      when grant_type in ["implicit", "code"],
+      when grant_type in ["implicit", "code", "preauthorized_code"],
       do: false
 
   def should_check_secret?(client, grant_type) when grant_type in ["refresh_token", "revoke"] do

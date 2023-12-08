@@ -48,6 +48,9 @@ defmodule Boruta.Openid do
     end
   end
 
+  def credential, do: :not_implemented
+  def credential_offer, do: :not_implemented
+
   defp parse_registration_params(params, %{jwks: %{"keys" => [jwk]}} = acc) do
     params =
       params

@@ -351,6 +351,116 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
   end
 end
 
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest do
+  alias Boruta.PreauthorizedCodesAdapter
+  alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Client
+  alias Boruta.Oauth.CodeRequest
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.PreauthorizedCodeRequest
+  alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Token
+
+  def preauthorize(
+        %PreauthorizedCodeRequest{
+          client_id: client_id,
+          redirect_uri: redirect_uri,
+          resource_owner: resource_owner,
+          state: state,
+          scope: scope,
+          code_challenge: code_challenge,
+          code_challenge_method: code_challenge_method
+        }
+      ) do
+    with {:ok, client} <-
+           Authorization.Client.authorize(
+             id: client_id,
+             source: nil,
+             redirect_uri: redirect_uri,
+             grant_type: "preauthorized_code"
+           ),
+         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
+           Authorization.ResourceOwner.authorize(resource_owner: resource_owner),
+         {:ok, scope} <-
+           Authorization.Scope.authorize(
+             scope: scope,
+             against: %{client: client, resource_owner: resource_owner}
+           ),
+         :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         redirect_uri: redirect_uri,
+         sub: sub,
+         scope: scope,
+         state: state,
+         code_challenge: code_challenge,
+         code_challenge_method: code_challenge_method,
+         resource_owner: resource_owner
+       }}
+    else
+      {:error, :invalid_code_challenge} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "Code challenge is invalid."
+         }}
+      error ->
+        error
+    end
+  end
+
+  def token(request) do
+    with {:ok,
+          %AuthorizationSuccess{
+            client: client,
+            resource_owner: resource_owner,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            state: state,
+            nonce: nonce,
+            code_challenge: code_challenge,
+            code_challenge_method: code_challenge_method
+          }} <-
+           preauthorize(request) do
+      # TODO create a preauthorized code
+      with {:ok, preauthorized_code} <-
+             PreauthorizedCodesAdapter.create(%{
+               client: client,
+               resource_owner: resource_owner,
+               redirect_uri: redirect_uri,
+               sub: sub,
+               scope: scope,
+               state: state,
+               nonce: nonce,
+               code_challenge: code_challenge,
+               code_challenge_method: code_challenge_method
+             }) do
+        {:ok, %{preauthorized_code: preauthorized_code}}
+      end
+    end
+  end
+
+  @spec check_code_challenge(
+          client :: Client.t(),
+          code_challenge :: String.t(),
+          code_challenge_method :: String.t()
+        ) :: :ok | {:error, :invalid_code_challenge}
+  defp check_code_challenge(%Client{pkce: false}, _code_challenge, _code_challenge_method),
+    do: :ok
+
+  defp check_code_challenge(%Client{pkce: true}, "", _code_challenge_method),
+    do: {:error, :invalid_code_challenge}
+
+  defp check_code_challenge(%Client{pkce: true}, nil, _code_challenge_method),
+    do: {:error, :invalid_code_challenge}
+
+  defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
+end
+
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
@@ -387,30 +497,30 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
            ),
-         :ok <- Authorization.Nonce.authorize(request) do
-      case check_code_challenge(client, code_challenge, code_challenge_method) do
-        :ok ->
-          {:ok,
-           %AuthorizationSuccess{
-             client: client,
-             redirect_uri: redirect_uri,
-             sub: sub,
-             scope: scope,
-             state: state,
-             nonce: nonce,
-             code_challenge: code_challenge,
-             code_challenge_method: code_challenge_method,
-             resource_owner: resource_owner
-           }}
-
-        {:error, :invalid_code_challenge} ->
-          {:error,
-           %Error{
-             status: :bad_request,
-             error: :invalid_request,
-             error_description: "Code challenge is invalid."
-           }}
-      end
+         :ok <- Authorization.Nonce.authorize(request),
+         :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         redirect_uri: redirect_uri,
+         sub: sub,
+         scope: scope,
+         state: state,
+         nonce: nonce,
+         code_challenge: code_challenge,
+         code_challenge_method: code_challenge_method,
+         resource_owner: resource_owner
+       }}
+    else
+      {:error, :invalid_code_challenge} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "Code challenge is invalid."
+         }}
+      error ->
+        error
     end
   end
 
