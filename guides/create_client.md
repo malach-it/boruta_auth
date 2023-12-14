@@ -32,7 +32,7 @@ Boruta.Ecto.Admin.create_client(%{
   ],
   pkce: false, # PKCE enabled
   public_refresh_token: false, # do not require client_secret for refreshing tokens
-  public_revoke: false # do not require client_secret for revoking tokens
+  public_revoke: false, # do not require client_secret for revoking tokens
   confidential: true, # see OAuth 2.0 confidentiality (requires client secret for some flows)
   token_endpont_auth_methods: [ # activable client authentication methods
     "client_secret_basic",
@@ -40,7 +40,7 @@ Boruta.Ecto.Admin.create_client(%{
     "client_secret_jwt",
     "private_key_jwt"
   ],
-  token_endpoint_jwt_auth_alg: nil # associated to authentication methods, the algorithm to use along
+  token_endpoint_jwt_auth_alg: nil, # associated to authentication methods, the algorithm to use along
   jwt_public_key: nil # pem public key to be used with `private_key_jwt` authentication method
 }) |> IO.inspect
 ```
