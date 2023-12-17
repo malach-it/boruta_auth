@@ -41,6 +41,20 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
+  def validate(:token, %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params) do
+    case ExJsonSchema.Validator.validate(
+           Schema.preauthorization_code(),
+           params,
+           error_formatter: BorutaFormatter
+         ) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Request body validation failed. " <> Enum.join(errors, " ")}
+    end
+  end
+
   def validate(:token, %{"grant_type" => _} = params) do
     case ExJsonSchema.Validator.validate(
            Schema.grant_type(),

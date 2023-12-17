@@ -24,9 +24,13 @@ defmodule Boruta.Openid.CredentialOfferResponse do
   }, %PreauthorizedCodeRequest{
     resource_owner: resource_owner
   }) do
+    credentials = Enum.flat_map(resource_owner.authorization_details, fn detail ->
+      detail["credential_definition"]["type"]
+    end)
+    |> Enum.uniq()
     %__MODULE__{
       credential_issuer: Config.issuer(),
-      credentials: resource_owner.available_credentials,
+      credentials: credentials,
       grants: %{
         "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
           "pre-authorized_code" => preauthorized_code.value

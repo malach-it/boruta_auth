@@ -90,6 +90,10 @@ defmodule Boruta.Oauth.Client do
     Enum.member?(supported_grant_types, "authorization_code")
   end
 
+  def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "preauthorization_code") do
+    Enum.member?(supported_grant_types, "preauthorized_code")
+  end
+
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, grant_type) do
     Enum.member?(supported_grant_types, grant_type)
   end

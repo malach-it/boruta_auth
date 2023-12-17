@@ -41,7 +41,8 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           scope: scope,
           authorization_code_ttl: authorization_code_ttl,
           code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          code_challenge_method: code_challenge_method,
+          authorization_details: resource_owner.authorization_details
         }
       ])
 
