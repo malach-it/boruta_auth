@@ -12,7 +12,8 @@ defmodule Boruta.Oauth.TokenResponse do
             expires_in: nil,
             refresh_token: nil,
             id_token: nil,
-            token: nil
+            token: nil,
+            authorization_details: nil
 
   @type t :: %__MODULE__{
           token_type: String.t(),
@@ -20,7 +21,8 @@ defmodule Boruta.Oauth.TokenResponse do
           id_token: String.t() | nil,
           expires_in: integer() | nil,
           refresh_token: String.t() | nil,
-          token: Token.t()
+          token: Token.t(),
+          authorization_details: map() | nil
         }
 
   @spec from_token(%{
@@ -46,6 +48,30 @@ defmodule Boruta.Oauth.TokenResponse do
       expires_in: expires_in,
       refresh_token: refresh_token,
       id_token: params[:id_token] && params[:id_token].value
+    }
+  end
+
+  def from_token(
+        %{
+          preauthorized_token:
+            %Token{
+              value: value,
+              expires_at: expires_at,
+              refresh_token: refresh_token
+            } = token
+        } = params
+      ) do
+    {:ok, expires_at} = DateTime.from_unix(expires_at)
+    expires_in = DateTime.diff(expires_at, DateTime.utc_now())
+
+    %TokenResponse{
+      token: token,
+      access_token: value,
+      token_type: "bearer",
+      expires_in: expires_in,
+      refresh_token: refresh_token,
+      id_token: params[:id_token] && params[:id_token].value,
+      authorization_details: token.authorization_details
     }
   end
 end

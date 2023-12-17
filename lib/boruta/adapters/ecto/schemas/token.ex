@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Token do
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t(),
+          authorization_details: list(),
           state: String.t(),
           nonce: String.t(),
           scope: String.t(),
@@ -37,6 +38,7 @@ defmodule Boruta.Ecto.Token do
   schema "oauth_tokens" do
     field(:type, :string)
     field(:value, :string)
+    field(:authorization_details, {:array, :map}, default: [])
     field(:refresh_token, :string)
     field(:previous_token, :string)
     field(:previous_code, :string)
@@ -72,7 +74,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :access_token_ttl,
-      :previous_code
+      :previous_code,
+      :authorization_details
     ])
     |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
@@ -94,7 +97,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :previous_token,
-      :previous_code
+      :previous_code,
+      :authorization_details
     ])
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
@@ -114,7 +118,8 @@ defmodule Boruta.Ecto.Token do
       :redirect_uri,
       :state,
       :nonce,
-      :scope
+      :scope,
+      :authorization_details
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -135,7 +140,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :code_challenge,
-      :code_challenge_method
+      :code_challenge_method,
+      :authorization_details
     ])
     |> validate_required([
       :authorization_code_ttl,

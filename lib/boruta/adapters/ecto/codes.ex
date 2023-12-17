@@ -3,6 +3,7 @@ defmodule Boruta.Ecto.Codes do
   @behaviour Boruta.Oauth.Codes
 
   import Boruta.Config, only: [repo: 0]
+  import Ecto.Query
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto.Errors
@@ -18,7 +19,12 @@ defmodule Boruta.Ecto.Codes do
     else
       {:error, "Not cached."} ->
         with %Token{} = token <-
-               repo().get_by(Token, type: "code", value: value, redirect_uri: redirect_uri),
+               repo().one(
+                 from t in Token,
+                   where:
+                     t.type in ["code", "preauthorized_code"] and t.value == ^value and
+                       t.redirect_uri == ^redirect_uri
+               ),
              {:ok, token} <-
                token
                |> to_oauth_schema()
