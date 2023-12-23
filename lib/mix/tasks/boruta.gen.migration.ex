@@ -107,10 +107,12 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
 
     IO.puts("====================")
     IO.puts("Please provide information about boruta package usage for statistical purposes")
+    IO.puts("")
+    IO.puts("The owners would be thankful if you could provide those information")
     IO.puts("====================")
-    company_name = Owl.IO.input(label: "Your company name:", required: true)
-    company_size = Owl.IO.input(label: "Company size:", cast: :integer)
-    purpose = Owl.IO.input(label: "Purpose of the installation:", required: true)
+    company_name = Owl.IO.input(label: "Your company name:", optional: true)
+    company_size = Owl.IO.input(label: "Company size:", cast: :integer, optional: true)
+    purpose = Owl.IO.input(label: "Purpose of the installation:", optional: true)
 
     Finch.build(
       :post,
