@@ -100,6 +100,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     end
   end
 
+  @dialyzer {:no_return, register_application_repl: 0}
   defp register_application_repl do
     Finch.start_link(name: RegistrationHttp)
     Application.ensure_started(:telemetry)

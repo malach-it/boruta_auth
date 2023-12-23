@@ -61,7 +61,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
 
     type =
-      case is_hybrid?(params) do
+      case hybrid?(params) do
         true -> :hybrid
         false -> :code
       end
@@ -141,10 +141,10 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   end
 
   defp has_token_type?(params) do
-    is_hybrid?(params) && has_access_token?(params)
+    hybrid?(params) && has_access_token?(params)
   end
 
-  defp is_hybrid?(params) do
+  defp hybrid?(params) do
     !is_nil(params[:id_token] || params[:token])
   end
 
