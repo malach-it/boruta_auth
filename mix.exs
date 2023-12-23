@@ -50,6 +50,7 @@ defmodule Boruta.MixProject do
       {:ex_machina, "~> 2.4", only: :test},
       {:excoveralls, "~> 0.10", only: :test},
       {:finch, "~> 0.16"},
+      {:owl, "~> 0.8.0"},
       {:jason, "~> 1.4"},
       {:joken, "~> 2.0"},
       {:jose, "~> 1.11"},

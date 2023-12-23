@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - clients have a `metadata` attribute where one can store json objects
 - according to OpenID Connect core 1.0, clients have a `logo_uri` attribute
+- `boruta.gen.migration` triggers a form to get statistics about boruta usage
 
 ## [2.3.1] - 2023-04-24
 
