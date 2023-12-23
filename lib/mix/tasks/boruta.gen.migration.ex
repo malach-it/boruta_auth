@@ -7,12 +7,8 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
   > __Note__: This task will create migration files to keep your integration up to date by checking migration file and module names to create missing ones.
   > Thus it is not recommended to change naming since it will recreate the migration in further runs.
 
-  ## Provided migrations
-  - `create_boruta` creates base tables needed to provide OAuth 2.0
-  - `openid_connect` Boruta 2.0 refactoring, provide OpenID Connect
-  - `clients_refresh_tokens` client configurations for refresh tokens
-  - `clients_public_revoke` client configuration to revoke tokens without providing client secret
-  - `store_previous_token` store previous token while refreshing access tokens
+  ## Usage statistics gathering
+  This task will trigger a REPL to gather statistical info from your usage of the library. The owners are thankful to you for providing those informations since it helps better maintain the product.
 
   ## Examples
   ```
