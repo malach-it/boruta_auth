@@ -2,6 +2,16 @@ defmodule Boruta.OpenidModule do
   @moduledoc false
   @callback jwks(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @callback userinfo(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
+  @callback register_client(
+              conn :: Plug.Conn.t() | map(),
+              registration_params :: map(),
+              module :: atom()
+            ) :: any()
+  @callback credential(
+              conn :: Plug.Conn.t() | map(),
+              credential_params :: map(),
+              module :: atom()
+            ) :: any()
 end
 
 defmodule Boruta.Openid do
@@ -16,7 +26,9 @@ defmodule Boruta.Openid do
   alias Boruta.ClientsAdapter
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
+  alias Boruta.Openid.CredentialResponse
   alias Boruta.Openid.UserinfoResponse
 
   def jwks(conn, module) do
@@ -48,8 +60,69 @@ defmodule Boruta.Openid do
     end
   end
 
-  def credential, do: :not_implemented
-  def credential_offer, do: :not_implemented
+  def credential(conn, credential_params, module) do
+    with {:ok, access_token} <- BearerToken.extract_token(conn),
+         {:ok, token} <- AccessToken.authorize(value: access_token),
+         {:ok, credential_params} <- validate_credential_params(credential_params),
+         :ok <- validate_credential_identifier(token, credential_params) do
+
+      response = CredentialResponse.from_tokens(%{access_token: token}, credential_params)
+      module.credential_created(conn, response)
+    else
+      {:error, %Error{} = error} ->
+        module.credential_failure(conn, error)
+
+      {:error, reason} ->
+        error = %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: reason
+        }
+
+        module.credential_failure(conn, error)
+    end
+
+    # TODO validate JWT proof
+    # TODO verify the proof https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-verifying-key-proof
+    # TODO credential response
+  end
+
+  alias Boruta.Openid.Json.Schema
+  alias ExJsonSchema.Validator.Error.BorutaFormatter
+
+  defp validate_credential_params(params) do
+    case ExJsonSchema.Validator.validate(
+           Schema.credential(),
+           params,
+           error_formatter: BorutaFormatter
+         ) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Request body validation failed. " <> Enum.join(errors, " ")}
+    end
+  end
+
+  defp validate_credential_identifier(
+         %Token{authorization_details: authorization_details},
+         %{"credential_identifier" => credential_identifier}
+       ) do
+    case authorization_details
+         |> Enum.flat_map(fn %{"credential_identifiers" => credential_identifiers} ->
+           credential_identifiers
+         end)
+         |> Enum.member?(credential_identifier) do
+      true ->
+        :ok
+
+      false ->
+        {:error, "Invalid credential identifier."}
+    end
+  end
+
+  defp validate_credential_identifier(_token, _credential_identifier),
+    do: {:error, "Invalid credential identifier."}
 
   defp parse_registration_params(params, %{jwks: %{"keys" => [jwk]}} = acc) do
     params =

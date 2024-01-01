@@ -16,4 +16,10 @@ defmodule Boruta.Openid.ApplicationMock do
 
   @impl Boruta.Openid.Application
   def registration_failure(_conn, changeset), do: {:registration_failure, changeset}
+
+  @impl Boruta.Openid.Application
+  def credential_created(_conn, credential), do: {:credential_created, credential}
+
+  @impl Boruta.Openid.Application
+  def credential_failure(_conn, error), do: {:credential_failure, error}
 end
