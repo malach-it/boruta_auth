@@ -17,7 +17,11 @@ defmodule Boruta.Oauth.Authorization.Code do
   """
   @spec authorize(%{
           value: String.t(),
+          client: Client.t(),
+          code_verifier: String.t(),
           redirect_uri: String.t(),
+        } | %{
+          value: String.t(),
           client: Client.t(),
           code_verifier: String.t()
         }) ::
@@ -70,6 +74,54 @@ defmodule Boruta.Oauth.Authorization.Code do
       }) do
     with %Token{client: %Client{id: ^client_id}} = token <-
            CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
+         :ok <- check_code_challenge(token, code_verifier),
+         :ok <- Token.ensure_valid(token) do
+      {:ok, token}
+    else
+      {:error, :invalid_code_verifier} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "Code verifier is invalid."
+         }}
+
+      _ ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_grant,
+           error_description: "Given authorization code is invalid, revoked, or expired."
+         }}
+    end
+  end
+
+  def authorize(%{
+        value: value,
+        client: %Client{id: client_id, pkce: false}
+      }) do
+    with %Token{client: %Client{id: ^client_id}} = token <-
+           CodesAdapter.get_by(value: value),
+         :ok <- Token.ensure_valid(token) do
+      {:ok, token}
+    else
+      _ ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_grant,
+           error_description: "Given authorization code is invalid, revoked, or expired."
+         }}
+    end
+  end
+
+  def authorize(%{
+        value: value,
+        client: %Client{id: client_id, pkce: true},
+        code_verifier: code_verifier
+      }) do
+    with %Token{client: %Client{id: ^client_id}} = token <-
+           CodesAdapter.get_by(value: value),
          :ok <- check_code_challenge(token, code_verifier),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}

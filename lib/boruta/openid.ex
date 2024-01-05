@@ -82,7 +82,6 @@ defmodule Boruta.Openid do
         module.credential_failure(conn, error)
     end
 
-    # TODO validate JWT proof
     # TODO verify the proof https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-verifying-key-proof
     # TODO credential response
   end

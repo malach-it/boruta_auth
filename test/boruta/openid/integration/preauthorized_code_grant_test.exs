@@ -865,7 +865,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                   error: :invalid_request,
                   error_description:
                     "Request body validation failed. " <>
-                      "Required properties pre-authorized_code, client_id, redirect_uri are missing at #.",
+                      "Required properties pre-authorized_code, client_id are missing at #.",
                   status: :bad_request
                 }}
     end
@@ -877,7 +877,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
                    "pre-authorized_code" => "bad_code",
-                   "redirect_uri" => "http://redirect.uri"
+                   "client_secret" => "bad secret"
                  }
                },
                ApplicationMock
@@ -885,7 +885,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                {:token_error,
                 %Error{
                   error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
+                  error_description: "Invalid client.",
                   status: :unauthorized
                 }}
     end
@@ -895,8 +895,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "pre-authorized_code" => "bad_code",
-                   "redirect_uri" => "http://redirect.uri"
+                   "pre-authorized_code" => "bad_code"
                  }
                },
                ApplicationMock
@@ -911,40 +910,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     end
 
     test "returns an error if `code` is invalid", %{client: client} do
-      redirect_uri = List.first(client.redirect_uris)
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => client.id,
-                   "pre-authorized_code" => "bad_code",
-                   "redirect_uri" => redirect_uri
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_grant,
-                  error_description: "Given authorization code is invalid, revoked, or expired.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error if `code` and request redirect_uri do not match", %{
-      client: client,
-      bad_redirect_uri_code: bad_redirect_uri_code
-    } do
-      redirect_uri = List.first(client.redirect_uris)
-
-      assert Oauth.token(
-               %Plug.Conn{
-                 body_params: %{
-                   "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "pre-authorized_code" => bad_redirect_uri_code.value,
-                   "redirect_uri" => redirect_uri
+                   "client_secret" => client.secret,
+                   "pre-authorized_code" => "bad_code"
                  }
                },
                ApplicationMock
@@ -961,15 +933,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       client_without_grant_type: client,
       code: code
     } do
-      redirect_uri = List.first(client.redirect_uris)
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => client.id,
                    "pre-authorized_code" => code.value,
-                   "redirect_uri" => redirect_uri
+                   "client_secret" => client.secret
                  }
                },
                ApplicationMock
@@ -990,15 +960,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       ResourceOwners
       |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
-      redirect_uri = List.first(client.redirect_uris)
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => client.id,
                    "pre-authorized_code" => code.value,
-                   "redirect_uri" => redirect_uri
+                   "client_secret" => client.secret
                  }
                },
                ApplicationMock
@@ -1019,15 +987,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       ResourceOwners
       |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
-      redirect_uri = List.first(client.redirect_uris)
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => client.id,
                    "pre-authorized_code" => code.value,
-                   "redirect_uri" => redirect_uri
+                   "client_secret" => client.secret
                  }
                },
                ApplicationMock
@@ -1049,15 +1015,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       ResourceOwners
       |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
-      redirect_uri = List.first(client.redirect_uris)
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => client.id,
                    "pre-authorized_code" => code.value,
-                   "redirect_uri" => redirect_uri
+                   "client_secret" => client.secret
                  }
                },
                ApplicationMock
@@ -1074,16 +1038,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       confidential_client: client,
       confidential_code: code
     } do
-      redirect_uri = List.first(client.redirect_uris)
-
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                    "client_id" => client.id,
                    "client_secret" => "bad_secret",
-                   "pre-authorized_code" => code.value,
-                   "redirect_uri" => redirect_uri
+                   "pre-authorized_code" => code.value
                  }
                },
                ApplicationMock
@@ -1091,7 +1052,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                {:token_error,
                 %Error{
                   error: :invalid_client,
-                  error_description: "Invalid client_id or redirect_uri.",
+                  error_description: "Invalid client.",
                   status: :unauthorized
                 }}
     end
@@ -1099,8 +1060,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
-
-      redirect_uri = List.first(client.redirect_uris)
 
       assert {:token_success,
               %TokenResponse{
@@ -1116,7 +1075,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                      "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                      "client_id" => client.id,
                      "pre-authorized_code" => code.value,
-                     "redirect_uri" => redirect_uri
+                     "client_secret" => client.secret
                    }
                  },
                  ApplicationMock

@@ -98,10 +98,9 @@ defmodule Boruta.Oauth.Json.Schema do
           "required" => ["type", "value"]
         },
         "pre-authorized_code" => %{"type" => "string"},
-        "redirect_uri" => %{"type" => "string"},
         "code_verifier" => %{"type" => "string"}
       },
-      "required" => ["grant_type", "pre-authorized_code", "client_id", "redirect_uri"]
+      "required" => ["grant_type", "pre-authorized_code", "client_id", "client_authentication"]
     }
     |> Schema.resolve()
   end

@@ -37,6 +37,26 @@ defmodule Boruta.Ecto.Codes do
     end
   end
 
+  def get_by(value: value) do
+    case TokenStore.get(value: value) do
+      {:ok, token} ->
+        token
+
+      {:error, "Not cached."} ->
+        with %Token{} = token <-
+               repo().one(
+                 from t in Token,
+                   where: t.type in ["code", "preauthorized_code"] and t.value == ^value
+               ),
+             {:ok, token} <-
+               token
+               |> to_oauth_schema()
+               |> TokenStore.put() do
+          token
+        end
+    end
+  end
+
   @impl Boruta.Oauth.Codes
   def create(
         %{

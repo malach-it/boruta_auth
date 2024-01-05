@@ -61,7 +61,6 @@ defmodule Boruta.Oauth.Request.Base do
        client_id: params["client_id"],
        client_authentication: client_authentication_from_params(params),
        preauthorized_code: params["pre-authorized_code"],
-       redirect_uri: params["redirect_uri"],
        code_verifier: params["code_verifier"]
      }}
   end
