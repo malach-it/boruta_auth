@@ -17,7 +17,7 @@ defmodule Boruta.Openid.Json.Schema do
         },
         "credential_identifier" => %{"type" => "string"},
       },
-      "required" => ["credential_identifier"]
+      "required" => []
     }
     |> Schema.resolve()
   end
