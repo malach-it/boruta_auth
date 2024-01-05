@@ -115,13 +115,12 @@ defmodule Boruta.Ecto.Token do
       :authorization_code_ttl,
       :client_id,
       :sub,
-      :redirect_uri,
       :state,
       :nonce,
       :scope,
       :authorization_details
     ])
-    |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
+    |> validate_required([:authorization_code_ttl, :client_id, :sub])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
     |> put_value()
@@ -135,7 +134,6 @@ defmodule Boruta.Ecto.Token do
       :authorization_code_ttl,
       :client_id,
       :sub,
-      :redirect_uri,
       :state,
       :nonce,
       :scope,
@@ -147,7 +145,6 @@ defmodule Boruta.Ecto.Token do
       :authorization_code_ttl,
       :client_id,
       :sub,
-      :redirect_uri,
       :code_challenge
     ])
     |> foreign_key_constraint(:client_id)

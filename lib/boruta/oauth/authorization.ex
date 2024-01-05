@@ -253,21 +253,18 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
         client_id: client_id,
         client_authentication: client_source,
         preauthorized_code: preauthorized_code,
-        redirect_uri: redirect_uri,
         code_verifier: code_verifier
       }) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
              source: client_source,
-             redirect_uri: redirect_uri,
              grant_type: "preauthorization_code",
              code_verifier: code_verifier
            ),
          {:ok, code} <-
            Authorization.Code.authorize(%{
              value: preauthorized_code,
-             redirect_uri: redirect_uri,
              client: client,
              code_verifier: code_verifier
            }),
@@ -277,7 +274,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
        %AuthorizationSuccess{
          client: client,
          code: code,
-         redirect_uri: redirect_uri,
          sub: sub,
          scope: code.scope,
          nonce: code.nonce,
@@ -291,7 +287,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
           %AuthorizationSuccess{
             client: client,
             code: code,
-            redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
             nonce: nonce,
@@ -302,7 +297,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
            AccessTokensAdapter.create(
              %{
                client: client,
-               redirect_uri: redirect_uri,
                previous_code: code.value,
                sub: sub,
                scope: scope,

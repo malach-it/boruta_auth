@@ -14,15 +14,13 @@ defmodule Boruta.Oauth.PreauthorizationCodeRequest do
             type: String.t(),
             value: String.t()
           },
-          redirect_uri: String.t(),
           preauthorized_code: String.t(),
           grant_type: String.t(),
           code_verifier: String.t()
         }
-  @enforce_keys [:client_id, :redirect_uri, :preauthorized_code]
+  @enforce_keys [:client_id, :client_authentication, :preauthorized_code]
   defstruct client_id: nil,
             client_authentication: nil,
-            redirect_uri: nil,
             preauthorized_code: nil,
             grant_type: "authorization_code",
             code_verifier: ""

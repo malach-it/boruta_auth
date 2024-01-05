@@ -41,6 +41,7 @@ defmodule Boruta.Oauth.Request do
                %Boruta.Oauth.AuthorizationCodeRequest{}
                | %Boruta.Oauth.ClientCredentialsRequest{}
                | %Boruta.Oauth.AuthorizationCodeRequest{}
+               | %Boruta.Oauth.PreauthorizedCodeRequest{}
                | %Boruta.Oauth.TokenRequest{}
                | %Boruta.Oauth.PasswordRequest{}}
   defdelegate token_request(conn), to: Request.Token, as: :request
