@@ -27,18 +27,19 @@ defmodule Boruta.VerifiableCredentials do
 
   @spec issue_verifiable_credential(
           resource_owner :: ResourceOwner.t(),
-          credential_params :: map()
+          credential_params :: map(),
+          client :: Boruta.Oauth.Client.t()
         ) :: {:ok, map()} | {:error, String.t()}
   def issue_verifiable_credential(
         resource_owner,
-        credential_params
+        credential_params,
+        client
       ) do
     proof = credential_params["proof"]
 
     with {_credential_identifier, credential_configuration} <-
            Enum.find(resource_owner.credential_configuration, fn {_identifier, configuration} ->
-             # Enum.empty?(configuration[:types] -- credential_params["types"])
-             true
+             Enum.empty?(configuration[:types] -- credential_params["types"])
            end),
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
@@ -54,12 +55,14 @@ defmodule Boruta.VerifiableCredentials do
              claims,
              credential_configuration,
              proof["jwt"],
+             client,
              @credential_format
            ) do
       credential = %{
         format: @credential_format,
         credential: credential
       }
+
       {:ok, credential}
     else
       nil -> {:error, "Credential not found."}
@@ -85,7 +88,7 @@ defmodule Boruta.VerifiableCredentials do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg, "typ" => typ} = headers} ->
         alg_check =
-          case alg =~ ~r/^RS/ do
+          case alg =~ ~r/^(RS|ES)/ do
             true ->
               :ok
 
@@ -165,9 +168,7 @@ defmodule Boruta.VerifiableCredentials do
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
-      Enum.flat_map(credential_configuration[:claims] || [], fn {_identifier, attributes} ->
-        attributes
-      end)
+      credential_configuration[:claims]
       |> Enum.map(fn attribute ->
         {attribute, resource_owner.extra_claims[attribute]}
       end)
@@ -176,7 +177,7 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, claims}
   end
 
-  defp generate_credential(claims, credential_configuration, proof, "jwt_vc_json") do
+  defp generate_credential(claims, credential_configuration, proof, client, "jwt_vc_json") do
     # _sd = claims
     #       |> Enum.map(fn {name, value} ->
     #   [SecureRandom.hex(), name, value]
@@ -189,15 +190,22 @@ defmodule Boruta.VerifiableCredentials do
     # end)
     # |> dbg
     signer =
-      Joken.Signer.create("RS256", %{"pem" => credential_configuration[:signature_private_key]}, %{
-        "typ" => "JWT"
-      })
-    sub = case Joken.peek_header(proof) do
-      {:ok, headers} ->
-        case(extract_key(headers)) do
-          {_type, key} -> key
-        end
-    end
+      Joken.Signer.create(
+        "RS256",
+        %{"pem" => client.private_key},
+        %{
+          "typ" => "JWT"
+        }
+      )
+
+    sub =
+      case Joken.peek_header(proof) do
+        {:ok, headers} ->
+          case(extract_key(headers)) do
+            {_type, key} -> key
+          end
+      end
+
     claims = %{
       "sub" => sub,
       # TODO store credential
