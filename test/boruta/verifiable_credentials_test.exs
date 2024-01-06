@@ -8,82 +8,88 @@ defmodule Boruta.VerifiableCredentialsTest do
   describe "issue_verifiable_credential/3" do
     setup do
       {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
+
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
           "jwk" => public_jwk,
           "typ" => "openid4vci-proof+jwt"
         })
 
-      {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{
-        "aud" => Config.issuer(),
-        "iat" => :os.system_time(:seconds)
-      }, signer)
+      {:ok, token, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
 
       proof = %{
-        "type" => "jwt",
-        "proof" => token
+        "proof_type" => "jwt",
+        "jwt" => token
       }
 
-      resource_owner = %ResourceOwner{sub: SecureRandom.uuid(), extra_claims: %{
-        "firstname" => "firstname"
-      }}
-
-      credential_identifier = "credential_identifier"
-
-      credential_configuration = %{
-        claims: %{
-          "credential_identifier" => ["firstname"]
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => "firstname"
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            types: ["VerifiableCredential"],
+            claims: %{
+              "credential_identifier" => ["firstname"]
+            }
+          }
         }
+      }
+
+      credential_params = %{
+        "types" => ["VerifiableCredential"],
+        "proof" => proof
       }
 
       {:ok,
        proof: proof,
        resource_owner: resource_owner,
-       credential_identifier: credential_identifier,
-       credential_configuration: credential_configuration,
+       credential_params: credential_params,
        signer: signer}
     end
 
     # test "verifies proof - prints the proof", %{proof: proof} do
     #   dbg(proof)
-    #   dbg(Joken.peek_header(proof["proof"]))
-    #   dbg(Joken.peek_claims(proof["proof"]))
+    #   dbg(Joken.peek_header(proof["jwt"]))
+    #   dbg(Joken.peek_claims(proof["jwt"]))
     # end
 
     test "verifies proof - proof format", %{
       resource_owner: resource_owner,
-      credential_identifier: credential_identifier,
-      credential_configuration: credential_configuration
+      credential_params: credential_params
     } do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
-               credential_identifier,
-               credential_configuration,
-               %{}
+               Map.put(credential_params, "proof", %{})
              ) ==
                {:error,
-                "Proof validation failed. Required properties type, proof are missing at #."}
+                "Proof validation failed. Required properties proof_type, jwt are missing at #."}
     end
 
     test "verifies proof - header claims", %{
       resource_owner: resource_owner,
-      credential_identifier: credential_identifier,
-      credential_configuration: credential_configuration
+      credential_params: credential_params
     } do
       signer = Joken.Signer.create("HS256", "secret", %{})
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
       proof = %{
-        "type" => "jwt",
-        "proof" => token
+        "proof_type" => "jwt",
+        "jwt" => token
       }
 
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
-               credential_identifier,
-               credential_configuration,
-               proof
+               Map.put(credential_params, "proof", proof)
              ) ==
                {:error,
                 "Proof JWT must be asymetrically signed, Proof JWT must have `openid4vci-proof+jwt` typ header, No proof key material found in JWT headers."}
@@ -91,8 +97,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
     test "verifies proof - the algorithm is asymetric", %{
       resource_owner: resource_owner,
-      credential_identifier: credential_identifier,
-      credential_configuration: credential_configuration
+      credential_params: credential_params
     } do
       signer =
         Joken.Signer.create("HS256", "secret", %{"kid" => "kid", "typ" => "openid4vci-proof+jwt"})
@@ -100,44 +105,38 @@ defmodule Boruta.VerifiableCredentialsTest do
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
       proof = %{
-        "type" => "jwt",
-        "proof" => token
+        "proof_type" => "jwt",
+        "jwt" => token
       }
 
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
-               credential_identifier,
-               credential_configuration,
-               proof
+               Map.put(credential_params, "proof", proof)
              ) == {:error, "Proof JWT must be asymetrically signed."}
     end
 
     test "verifies proof - typ header", %{
       resource_owner: resource_owner,
-      credential_identifier: credential_identifier,
-      credential_configuration: credential_configuration
+      credential_params: credential_params
     } do
       signer = Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{"kid" => "kid"})
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
       proof = %{
-        "type" => "jwt",
-        "proof" => token
+        "proof_type" => "jwt",
+        "jwt" => token
       }
 
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
-               credential_identifier,
-               credential_configuration,
-               proof
+               Map.put(credential_params, "proof", proof)
              ) == {:error, "Proof JWT must have `openid4vci-proof+jwt` typ header."}
     end
 
     test "verifies proof - must have proof material", %{
       resource_owner: resource_owner,
-      credential_identifier: credential_identifier,
-      credential_configuration: credential_configuration
+      credential_params: credential_params
     } do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
@@ -147,22 +146,19 @@ defmodule Boruta.VerifiableCredentialsTest do
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
       proof = %{
-        "type" => "jwt",
-        "proof" => token
+        "proof_type" => "jwt",
+        "jwt" => token
       }
 
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
-               credential_identifier,
-               credential_configuration,
-               proof
+               Map.put(credential_params, "proof", proof)
              ) == {:error, "No proof key material found in JWT headers."}
     end
 
     test "verifies proof - must have required claims", %{
       resource_owner: resource_owner,
-      credential_identifier: credential_identifier,
-      credential_configuration: credential_configuration
+      credential_params: credential_params
     } do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
@@ -173,34 +169,31 @@ defmodule Boruta.VerifiableCredentialsTest do
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
       proof = %{
-        "type" => "jwt",
-        "proof" => token
+        "proof_type" => "jwt",
+        "jwt" => token
       }
 
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
-               credential_identifier,
-               credential_configuration,
-               proof
+               Map.put(credential_params, "proof", proof)
              ) ==
                {:error,
                 "Proof does not contain valid JWT claims, `aud` and `iat` claims are required."}
     end
 
-    # test "issues credential", %{
-    #   proof: proof,
-    #   resource_owner: resource_owner,
-    #   credential_identifier: credential_identifier,
-    #   credential_configuration: credential_configuration
-    # } do
-    #   assert VerifiableCredentials.issue_verifiable_credential(
-    #            resource_owner,
-    #            credential_identifier,
-    #            credential_configuration,
-    #            proof
-    #          ) == proof
-    #   # TODO issue credential
-    # end
+    test "issues credential", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      assert VerifiableCredentials.issue_verifiable_credential(
+               resource_owner,
+               credential_params
+             ) == {:ok, %{
+               credential:
+                 "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDpleGFtcGxlOmFiZmUxM2Y3MTIxMjA0MzFjMjc2ZTEyZWNhYiNrZXlzLTEifQ.eyJzdWIiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEiLCJqdGkiOiJodHRwOi8vZXhhbXBsZS5lZHUvY3JlZGVudGlhbHMvMzczMiIsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20va2V5cy9mb28uandrIiwibmJmIjoxNTQxNDkzNzI0LCJpYXQiOjE1NDE0OTM3MjQsImV4cCI6MTU3MzAyOTcyMywibm9uY2UiOiI2NjAhNjM0NUZTZXIiLCJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL2V4YW1wbGVzL3YxIl0sInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJVbml2ZXJzaXR5RGVncmVlQ3JlZGVudGlhbCJdLCJjcmVkZW50aWFsU3ViamVjdCI6eyJkZWdyZWUiOnsidHlwZSI6IkJhY2hlbG9yRGVncmVlIiwibmFtZSI6IjxzcGFuIGxhbmc9J2ZyLUNBJz5CYWNjYWxhdXLDqWF0IGVuIG11c2lxdWVzIG51bcOpcmlxdWVzPC9zcGFuPiJ9fX19.KLJo5GAyBND3LDTn9H7FQokEsUEi8jKwXhGvoN3JtRa51xrNDgXDb0cq1UTYB-rK4Ft9YVmR1NI_ZOF8oGc_7wAp8PHbF2HaWodQIoOBxxT-4WNqAxft7ET6lkH-4S6Ux3rSGAmczMohEEf8eCeN-jC8WekdPl6zKZQj0YPB1rx6X0-xlFBs7cl6Wt8rfBP_tZ9YgVWrQmUWypSioc0MUyiphmyEbLZagTyPlUyflGlEdqrZAv6eSe6RtxJy6M1-lD7a5HTzanYTWBPAUHDZGyGKXdJw-W_x0IWChBzI8t3kpG253fg6V3tPgHeKXE94fz_QpYfg--7kLsyBAfQGbg",
+               format: "jwt_vc_json"
+             }}
+    end
   end
 
   def public_key_fixture do
