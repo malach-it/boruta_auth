@@ -37,7 +37,8 @@ defmodule Boruta.VerifiableCredentials do
 
     with {_credential_identifier, credential_configuration} <-
            Enum.find(resource_owner.credential_configuration, fn {_identifier, configuration} ->
-             Enum.empty?(configuration[:types] -- credential_params["types"])
+             # Enum.empty?(configuration[:types] -- credential_params["types"])
+             true
            end),
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
