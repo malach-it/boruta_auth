@@ -24,7 +24,6 @@ defmodule Boruta.Openid do
   """
 
   alias Boruta.ClientsAdapter
-  alias Boruta.Config
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Error
