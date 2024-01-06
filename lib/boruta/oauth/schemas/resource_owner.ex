@@ -4,13 +4,27 @@ defmodule Boruta.Oauth.ResourceOwner do
   """
 
   @enforce_keys [:sub]
-  defstruct sub: nil, username: nil, last_login_at: nil, extra_claims: %{}, authorization_details: []
+  defstruct sub: nil,
+            username: nil,
+            last_login_at: nil,
+            extra_claims: %{},
+            authorization_details: [],
+            credential_configuration: %{}
 
   @type t :: %__MODULE__{
-    sub: String.t(),
-    username: String.t() | nil,
-    last_login_at: DateTime.t() | nil,
-    extra_claims: Boruta.Oauth.IdToken.claims(),
-    authorization_details: list(map())
-  }
+          sub: String.t(),
+          username: String.t() | nil,
+          last_login_at: DateTime.t() | nil,
+          extra_claims: Boruta.Oauth.IdToken.claims(),
+          authorization_details: list(map()),
+          credential_configuration: %{
+            String.t() => %{
+              claims: %{
+                String.t() => list(String.t())
+              },
+              types: list(String.t()),
+              signature_private_key_pem: String.t()
+            }
+          }
+        }
 end

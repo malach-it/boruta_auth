@@ -240,9 +240,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
         resource_owner
         | authorization_details: [
             %{
-              "credential_definition" => %{
-                "type" => ["credential"]
-              }
+              "credential_identifiers" => ["credential"]
             }
           ]
       }

@@ -24,12 +24,14 @@ defmodule Boruta.Openid do
   """
 
   alias Boruta.ClientsAdapter
+  alias Boruta.Config
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
   alias Boruta.Openid.CredentialResponse
   alias Boruta.Openid.UserinfoResponse
+  alias Boruta.VerifiableCredentials
 
   def jwks(conn, module) do
     jwk_keys = ClientsAdapter.list_clients_jwk()
@@ -62,11 +64,14 @@ defmodule Boruta.Openid do
 
   def credential(conn, credential_params, module) do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
-         {:ok, token} <- AccessToken.authorize(value: access_token) do
-    #      {:ok, credential_params} <- validate_credential_params(credential_params),
-    #      :ok <- validate_credential_identifier(token, credential_params) do
-
-      response = CredentialResponse.from_tokens(%{access_token: token}, credential_params)
+         {:ok, token} <- AccessToken.authorize(value: access_token),
+         {:ok, credential_params} <- validate_credential_params(credential_params),
+         {:ok, credential} <-
+           VerifiableCredentials.issue_verifiable_credential(
+             token.resource_owner,
+             credential_params
+           ) do
+      response = CredentialResponse.from_credential(credential)
       module.credential_created(conn, response)
     else
       {:error, %Error{} = error} ->
@@ -102,26 +107,6 @@ defmodule Boruta.Openid do
         {:error, "Request body validation failed. " <> Enum.join(errors, " ")}
     end
   end
-
-  defp validate_credential_identifier(
-         %Token{authorization_details: authorization_details},
-         %{"credential_identifier" => credential_identifier}
-       ) do
-    case authorization_details
-         |> Enum.flat_map(fn %{"credential_identifiers" => credential_identifiers} ->
-           credential_identifiers
-         end)
-         |> Enum.member?(credential_identifier) do
-      true ->
-        :ok
-
-      false ->
-        {:error, "Invalid credential identifier."}
-    end
-  end
-
-  defp validate_credential_identifier(_token, _credential_identifier),
-    do: {:error, "Invalid credential identifier."}
 
   defp parse_registration_params(params, %{jwks: %{"keys" => [jwk]}} = acc) do
     params =
