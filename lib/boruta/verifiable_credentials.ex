@@ -1,6 +1,7 @@
 defmodule Boruta.VerifiableCredentials do
   @moduledoc false
 
+  alias Boruta.Config
   alias Boruta.Oauth.ResourceOwner
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
@@ -51,7 +52,7 @@ defmodule Boruta.VerifiableCredentials do
            generate_credential(
              claims,
              credential_configuration,
-             proof["proof"],
+             proof["jwt"],
              @credential_format
            ) do
       credential = %{
@@ -134,7 +135,7 @@ defmodule Boruta.VerifiableCredentials do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->
         case(extract_key(headers)) do
-          {:did, did} ->
+          {:did, _did} ->
             # TODO verify signature from did
             :ok
 
@@ -163,7 +164,10 @@ defmodule Boruta.VerifiableCredentials do
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
-      Enum.map(credential_configuration[:claims] || [], fn attribute ->
+      Enum.flat_map(credential_configuration[:claims] || [], fn {_identifier, attributes} ->
+        attributes
+      end)
+      |> Enum.map(fn attribute ->
         {attribute, resource_owner.extra_claims[attribute]}
       end)
       |> Enum.into(%{})
@@ -171,7 +175,7 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, claims}
   end
 
-  defp generate_credential(_claims, _credential_configuration, _proof, "jwt_vc_json") do
+  defp generate_credential(claims, credential_configuration, proof, "jwt_vc_json") do
     # _sd = claims
     #       |> Enum.map(fn {name, value} ->
     #   [SecureRandom.hex(), name, value]
@@ -183,13 +187,39 @@ defmodule Boruta.VerifiableCredentials do
     #   :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
     # end)
     # |> dbg
-    # signer =
-    #   Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-    #     "jwk" => public_jwk,
-    #     "typ" => "openid4vci-proof+jwt"
-    #   })
-    {:ok,
-     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDpleGFtcGxlOmFiZmUxM2Y3MTIxMjA0MzFjMjc2ZTEyZWNhYiNrZXlzLTEifQ.eyJzdWIiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEiLCJqdGkiOiJodHRwOi8vZXhhbXBsZS5lZHUvY3JlZGVudGlhbHMvMzczMiIsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20va2V5cy9mb28uandrIiwibmJmIjoxNTQxNDkzNzI0LCJpYXQiOjE1NDE0OTM3MjQsImV4cCI6MTU3MzAyOTcyMywibm9uY2UiOiI2NjAhNjM0NUZTZXIiLCJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL2V4YW1wbGVzL3YxIl0sInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJVbml2ZXJzaXR5RGVncmVlQ3JlZGVudGlhbCJdLCJjcmVkZW50aWFsU3ViamVjdCI6eyJkZWdyZWUiOnsidHlwZSI6IkJhY2hlbG9yRGVncmVlIiwibmFtZSI6IjxzcGFuIGxhbmc9J2ZyLUNBJz5CYWNjYWxhdXLDqWF0IGVuIG11c2lxdWVzIG51bcOpcmlxdWVzPC9zcGFuPiJ9fX19.KLJo5GAyBND3LDTn9H7FQokEsUEi8jKwXhGvoN3JtRa51xrNDgXDb0cq1UTYB-rK4Ft9YVmR1NI_ZOF8oGc_7wAp8PHbF2HaWodQIoOBxxT-4WNqAxft7ET6lkH-4S6Ux3rSGAmczMohEEf8eCeN-jC8WekdPl6zKZQj0YPB1rx6X0-xlFBs7cl6Wt8rfBP_tZ9YgVWrQmUWypSioc0MUyiphmyEbLZagTyPlUyflGlEdqrZAv6eSe6RtxJy6M1-lD7a5HTzanYTWBPAUHDZGyGKXdJw-W_x0IWChBzI8t3kpG253fg6V3tPgHeKXE94fz_QpYfg--7kLsyBAfQGbg"}
+    signer =
+      Joken.Signer.create("RS256", %{"pem" => credential_configuration[:signature_private_key]}, %{
+        "typ" => "JWT"
+      })
+    sub = case Joken.peek_header(proof) do
+      {:ok, headers} ->
+        case(extract_key(headers)) do
+          {_type, key} -> key
+        end
+    end
+    claims = %{
+      "sub" => sub,
+      # TODO store credential
+      "jti" => Config.issuer() <> "/credentials/#{SecureRandom.uuid()}",
+      "iss" => Config.issuer(),
+      "iat" => :os.system_time(:seconds),
+      # TODO get exp from configuration
+      "exp" => :os.system_time(:seconds) + 3600 * 24 * 365 * 3,
+      # TODO implement c_nonce
+      "nonce" => "boruta",
+      "vc" => %{
+        # TODO get context from configuration
+        "@context" => [
+          "https://www.w3.org/2018/credentials/v1"
+        ],
+        "type" => credential_configuration[:types],
+        "credentialSubject" => claims
+      }
+    }
+
+    credential = Token.generate_and_sign!(claims, signer)
+
+    {:ok, credential}
   end
 
   defp extract_key(%{"kid" => did}), do: {:did, did}
