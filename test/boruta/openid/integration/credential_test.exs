@@ -132,8 +132,11 @@ defmodule Boruta.OpenidTest.CredentialTest do
            credential_configuration: %{
              "UniversityDegree" => %{
                types: ["VerifiableCredential"],
-               signature_private_key: private_key_fixture()
+               claims: ["family_name"]
              }
+           },
+           extra_claims: %{
+             "family_name" => "family_name"
            }
          }}
       end)

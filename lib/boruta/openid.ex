@@ -69,7 +69,8 @@ defmodule Boruta.Openid do
          {:ok, credential} <-
            VerifiableCredentials.issue_verifiable_credential(
              token.resource_owner,
-             credential_params
+             credential_params,
+             token.client
            ) do
       response = CredentialResponse.from_credential(credential)
       module.credential_created(conn, response)

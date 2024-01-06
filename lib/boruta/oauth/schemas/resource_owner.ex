@@ -19,11 +19,8 @@ defmodule Boruta.Oauth.ResourceOwner do
           authorization_details: list(map()),
           credential_configuration: %{
             String.t() => %{
-              claims: %{
-                String.t() => list(String.t())
-              },
+              claims: list(String.t()),
               types: list(String.t()),
-              signature_private_key_pem: String.t()
             }
           }
         }
