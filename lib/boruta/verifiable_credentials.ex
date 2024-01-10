@@ -170,7 +170,7 @@ defmodule Boruta.VerifiableCredentials do
     claims =
       credential_configuration[:claims]
       |> Enum.map(fn attribute ->
-        {attribute, resource_owner.extra_claims[attribute]}
+        {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
       end)
       |> Enum.into(%{})
 
