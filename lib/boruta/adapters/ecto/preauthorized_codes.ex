@@ -20,9 +20,7 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
             } = client,
           resource_owner: resource_owner,
           scope: scope,
-          state: state,
-          code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          state: state
         } = params
       ) do
     sub = params[:sub]
@@ -38,8 +36,6 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           nonce: params[:nonce],
           scope: scope,
           authorization_code_ttl: authorization_code_ttl,
-          code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method,
           authorization_details: resource_owner.authorization_details
         }
       ])

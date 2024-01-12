@@ -9,18 +9,12 @@ defmodule Boruta.Oauth.PreauthorizationCodeRequest do
 
   """
   @type t :: %__MODULE__{
-          client_id: String.t(),
-          client_authentication: %{
-            type: String.t(),
-            value: String.t()
-          },
           preauthorized_code: String.t(),
           grant_type: String.t(),
           code_verifier: String.t()
         }
-  @enforce_keys [:client_id, :client_authentication, :preauthorized_code]
-  defstruct client_id: nil,
-            client_authentication: nil,
+  @enforce_keys [:preauthorized_code]
+  defstruct client_authentication: nil,
             preauthorized_code: nil,
             grant_type: "authorization_code",
             code_verifier: ""

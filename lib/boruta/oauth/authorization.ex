@@ -250,29 +250,17 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
   alias Boruta.Oauth.Token
 
   def preauthorize(%PreauthorizationCodeRequest{
-        client_id: client_id,
-        client_authentication: client_source,
-        preauthorized_code: preauthorized_code,
-        code_verifier: code_verifier
+        preauthorized_code: preauthorized_code
       }) do
-    with {:ok, client} <-
-           Authorization.Client.authorize(
-             id: client_id,
-             source: client_source,
-             grant_type: "preauthorization_code",
-             code_verifier: code_verifier
-           ),
-         {:ok, code} <-
+    with {:ok, code} <-
            Authorization.Code.authorize(%{
-             value: preauthorized_code,
-             client: client,
-             code_verifier: code_verifier
+             value: preauthorized_code
            }),
          {:ok, %ResourceOwner{sub: sub}} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       {:ok,
        %AuthorizationSuccess{
-         client: client,
+         client: code.client,
          code: code,
          sub: sub,
          scope: code.scope,
@@ -452,15 +440,14 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
         resource_owner: resource_owner,
         state: state,
         scope: scope,
-        code_challenge: code_challenge,
-        code_challenge_method: code_challenge_method
+        grant_type: grant_type
       }) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
              source: nil,
              redirect_uri: redirect_uri,
-             grant_type: "preauthorized_code"
+             grant_type: grant_type
            ),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: resource_owner),
@@ -468,8 +455,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
-           ),
-         :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
+           ) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
@@ -477,8 +463,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
          sub: sub,
          scope: scope,
          state: state,
-         code_challenge: code_challenge,
-         code_challenge_method: code_challenge_method,
          resource_owner: resource_owner
        }}
     else
@@ -504,9 +488,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
             sub: sub,
             scope: scope,
             state: state,
-            nonce: nonce,
-            code_challenge: code_challenge,
-            code_challenge_method: code_challenge_method
+            nonce: nonce
           }} <-
            preauthorize(request) do
       # TODO create a preauthorized code
@@ -518,30 +500,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                sub: sub,
                scope: scope,
                state: state,
-               nonce: nonce,
-               code_challenge: code_challenge,
-               code_challenge_method: code_challenge_method
+               nonce: nonce
              }) do
         {:ok, %{preauthorized_code: preauthorized_code}}
       end
     end
   end
-
-  @spec check_code_challenge(
-          client :: Client.t(),
-          code_challenge :: String.t(),
-          code_challenge_method :: String.t()
-        ) :: :ok | {:error, :invalid_code_challenge}
-  defp check_code_challenge(%Client{pkce: false}, _code_challenge, _code_challenge_method),
-    do: :ok
-
-  defp check_code_challenge(%Client{pkce: true}, "", _code_challenge_method),
-    do: {:error, :invalid_code_challenge}
-
-  defp check_code_challenge(%Client{pkce: true}, nil, _code_challenge_method),
-    do: {:error, :invalid_code_challenge}
-
-  defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do

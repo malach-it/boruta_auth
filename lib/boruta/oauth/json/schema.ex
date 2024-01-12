@@ -85,10 +85,6 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "grant_type" => %{"type" => "string", "pattern" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"},
-        "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
-        },
         "client_authentication" => %{
           "type" => "object",
           "properties" => %{
@@ -100,7 +96,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "pre-authorized_code" => %{"type" => "string"},
         "code_verifier" => %{"type" => "string"}
       },
-      "required" => ["grant_type", "pre-authorized_code", "client_id", "client_authentication"]
+      "required" => ["grant_type", "pre-authorized_code", "client_authentication"]
     }
     |> Schema.resolve()
   end

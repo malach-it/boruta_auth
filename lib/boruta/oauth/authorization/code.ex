@@ -15,16 +15,15 @@ defmodule Boruta.Oauth.Authorization.Code do
       iex> authorize(value: "value", redirect_uri: "redirect_uri")
       {:ok, %Boruta.Oauth.Token{...}}
   """
-  @spec authorize(%{
-          value: String.t(),
-          client: Client.t(),
-          code_verifier: String.t(),
-          redirect_uri: String.t(),
-        } | %{
-          value: String.t(),
-          client: Client.t(),
-          code_verifier: String.t()
-        }) ::
+  @spec authorize(
+          %{
+            value: String.t(),
+            client: Client.t(),
+            code_verifier: String.t(),
+            redirect_uri: String.t()
+          }
+          | %{value: String.t()}
+        ) ::
           {:error,
            %Error{
              :error => :invalid_code,
@@ -96,33 +95,9 @@ defmodule Boruta.Oauth.Authorization.Code do
     end
   end
 
-  def authorize(%{
-        value: value,
-        client: %Client{id: client_id, pkce: false}
-      }) do
-    with %Token{client: %Client{id: ^client_id}} = token <-
+  def authorize(%{value: value}) do
+    with %Token{} = token <-
            CodesAdapter.get_by(value: value),
-         :ok <- Token.ensure_valid(token) do
-      {:ok, token}
-    else
-      _ ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_grant,
-           error_description: "Given authorization code is invalid, revoked, or expired."
-         }}
-    end
-  end
-
-  def authorize(%{
-        value: value,
-        client: %Client{id: client_id, pkce: true},
-        code_verifier: code_verifier
-      }) do
-    with %Token{client: %Client{id: ^client_id}} = token <-
-           CodesAdapter.get_by(value: value),
-         :ok <- check_code_challenge(token, code_verifier),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
