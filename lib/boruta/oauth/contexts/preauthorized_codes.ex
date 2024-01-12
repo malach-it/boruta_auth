@@ -9,8 +9,6 @@ defmodule Boruta.Openid.PreauthorizedCodes do
     :redirect_uri => String.t(),
     :scope => String.t(),
     :state => String.t(),
-    :code_challenge => String.t(),
-    :code_challenge_method => String.t(),
     :resource_owner => Boruta.Oauth.ResourceOwner.t()
   }) :: preauthorized_code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
 end

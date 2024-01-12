@@ -1,6 +1,6 @@
 defmodule Boruta.Oauth.PreauthorizedCodeRequest do
   @moduledoc """
-  Code request
+  Preauthorized code request
   """
 
   @typedoc """
@@ -15,10 +15,8 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
           prompt: String.t(),
           scope: String.t(),
           resource_owner: struct(),
+          response_type: String.t(),
           grant_type: String.t(),
-          code_challenge: String.t(),
-          code_challenge_method: String.t(),
-          grant_type: String.t()
         }
 
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
@@ -28,8 +26,6 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
             prompt: "",
             scope: "",
             resource_owner: nil,
-            response_type: "code",
-            code_challenge: "",
-            code_challenge_method: "plain",
-            grant_type: "urn:ietf:params:oauth:grant-type:pre-authorized_code"
+            response_type: "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+            grant_type: "preauthorized_code"
 end

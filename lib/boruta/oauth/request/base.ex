@@ -58,8 +58,6 @@ defmodule Boruta.Oauth.Request.Base do
   def build_request(%{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params) do
     {:ok,
      %PreauthorizationCodeRequest{
-       client_id: params["client_id"],
-       client_authentication: client_authentication_from_params(params),
        preauthorized_code: params["pre-authorized_code"],
        code_verifier: params["code_verifier"]
      }}
@@ -73,8 +71,6 @@ defmodule Boruta.Oauth.Request.Base do
        resource_owner: params["resource_owner"],
        state: params["state"],
        prompt: params["prompt"],
-       code_challenge: params["code_challenge"],
-       code_challenge_method: params["code_challenge_method"],
        scope: params["scope"]
      }}
   end

@@ -25,7 +25,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
         insert(:client, redirect_uris: ["https://redirect.uri"], confidential: true)
 
       wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
-      pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
       client_without_grant_type = insert(:client, supported_grant_types: [])
 
       client_with_scope =
@@ -44,8 +43,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
        wildcard_redirect_uri_client: wildcard_redirect_uri_client,
        client_with_scope: client_with_scope,
        client_without_grant_type: client_without_grant_type,
-       resource_owner: resource_owner,
-       pkce_client: pkce_client}
+       resource_owner: resource_owner}
     end
 
     test "returns an error if `response_type` is preauthorized and schema is invalid" do
@@ -200,37 +198,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                   redirect_uri: redirect_uri,
                   status: :bad_request
                 }}
-    end
-
-    test "returns an error with pkce client without code_challenge", %{
-      pkce_client: client,
-      resource_owner: resource_owner
-    } do
-      given_state = "state"
-      redirect_uri = List.first(client.redirect_uris)
-
-      assert Oauth.authorize(
-               %Plug.Conn{
-                 query_params: %{
-                   "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "redirect_uri" => redirect_uri,
-                   "state" => given_state
-                 }
-               },
-               resource_owner,
-               ApplicationMock
-             ) == {
-               :authorize_error,
-               %Boruta.Oauth.Error{
-                 error: :invalid_request,
-                 error_description: "Code challenge is invalid.",
-                 format: :fragment,
-                 redirect_uri: "https://redirect.uri",
-                 status: :bad_request,
-                 state: given_state
-               }
-             }
     end
 
     test "returns a credential offer response", %{client: client, resource_owner: resource_owner} do
@@ -556,140 +523,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     #           assert false
     #       end
     #     end
-    #
-    #
-    #     test "returns a code with pkce client and code_challenge", %{
-    #       pkce_client: client,
-    #       resource_owner: resource_owner
-    #     } do
-    #       given_state = "state"
-    #       given_code_challenge = "code challenge"
-    #       given_code_challenge_method = "S256"
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       case Oauth.authorize(
-    #              %Plug.Conn{
-    #                query_params: %{
-    #                  "response_type" => "code",
-    #                  "client_id" => client.id,
-    #                  "redirect_uri" => redirect_uri,
-    #                  "state" => given_state,
-    #                  "code_challenge" => given_code_challenge,
-    #                  "code_challenge_method" => given_code_challenge_method
-    #                }
-    #              },
-    #              resource_owner,
-    #              ApplicationMock
-    #            ) do
-    #         {:authorize_success,
-    #          %AuthorizeResponse{
-    #            type: type,
-    #            code: value,
-    #            expires_in: expires_in,
-    #            state: state,
-    #            code_challenge: code_challenge,
-    #            code_challenge_method: code_challenge_method
-    #          }} ->
-    #           %Ecto.Token{
-    #             code_challenge: repo_code_challenge,
-    #             code_challenge_method: repo_code_challenge_method,
-    #             code_challenge_hash: repo_code_challenge_hash
-    #           } = Repo.get_by(Ecto.Token, value: value)
-    #
-    #           assert repo_code_challenge == nil
-    #           assert repo_code_challenge_method == "S256"
-    #           assert String.length(repo_code_challenge_hash) == 128
-    #
-    #           assert type == :code
-    #           assert value
-    #           assert expires_in
-    #           assert state == given_state
-    #           assert code_challenge == given_code_challenge
-    #           assert code_challenge_method == given_code_challenge_method
-    #
-    #         _ ->
-    #           assert false
-    #       end
-    #     end
-    #
-    #     test "code_challenge_method defaults to `plain`", %{
-    #       pkce_client: client,
-    #       resource_owner: resource_owner
-    #     } do
-    #       given_state = "state"
-    #       given_code_challenge = "code challenge"
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       case Oauth.authorize(
-    #              %Plug.Conn{
-    #                query_params: %{
-    #                  "response_type" => "code",
-    #                  "client_id" => client.id,
-    #                  "redirect_uri" => redirect_uri,
-    #                  "state" => given_state,
-    #                  "code_challenge" => given_code_challenge
-    #                }
-    #              },
-    #              resource_owner,
-    #              ApplicationMock
-    #            ) do
-    #         {:authorize_success,
-    #          %AuthorizeResponse{
-    #            code: value
-    #          }} ->
-    #           %Ecto.Token{
-    #             code_challenge_method: repo_code_challenge_method,
-    #             code_challenge_hash: repo_code_challenge_hash
-    #           } = Repo.get_by(Ecto.Token, value: value)
-    #
-    #           assert repo_code_challenge_method == "plain"
-    #           assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
-    #
-    #         _ ->
-    #           assert false
-    #       end
-    #     end
-    #
-    #     @tag :pkce_256
-    #     test "code_challenge_method defaults to `S256`", %{
-    #       pkce_client: client,
-    #       resource_owner: resource_owner
-    #     } do
-    #       given_state = "state"
-    #       given_code_challenge = :crypto.hash(:sha256, "challenge me") |> Base.url_encode64()
-    #       given_code_challenge_method = "S256"
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       case Oauth.authorize(
-    #              %Plug.Conn{
-    #                query_params: %{
-    #                  "response_type" => "code",
-    #                  "client_id" => client.id,
-    #                  "redirect_uri" => redirect_uri,
-    #                  "state" => given_state,
-    #                  "code_challenge" => given_code_challenge,
-    #                  "code_challenge_method" => given_code_challenge_method
-    #                }
-    #              },
-    #              resource_owner,
-    #              ApplicationMock
-    #            ) do
-    #         {:authorize_success,
-    #          %AuthorizeResponse{
-    #            code: value
-    #          }} ->
-    #           %Ecto.Token{
-    #             code_challenge_method: repo_code_challenge_method,
-    #             code_challenge_hash: repo_code_challenge_hash
-    #           } = Repo.get_by(Ecto.Token, value: value)
-    #
-    #           assert repo_code_challenge_method == "S256"
-    #           assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
-    #
-    #         _ ->
-    #           assert false
-    #       end
-    #     end
   end
 
   describe "preauthorization code grant - token" do
@@ -697,9 +530,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
-      confidential_client = insert(:client, confidential: true)
-      pkce_client = insert(:client, pkce: true)
-      client_without_grant_type = insert(:client, supported_grant_types: [])
 
       code =
         insert(
@@ -717,15 +547,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
           ]
         )
 
-      confidential_code =
-        insert(
-          :token,
-          type: "preauthorized_code",
-          client: confidential_client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(client.redirect_uris)
-        )
-
       openid_code =
         insert(
           :token,
@@ -735,60 +556,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
           redirect_uri: List.first(client.redirect_uris),
           scope: "openid",
           nonce: "nonce"
-        )
-
-      pkce_code =
-        insert(
-          :token,
-          type: "preauthorized_code",
-          client: pkce_client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(pkce_client.redirect_uris),
-          code_challenge: "code challenge",
-          code_challenge_hash: Oauth.Token.hash("code challenge"),
-          code_challenge_method: "plain"
-        )
-
-      expired_pkce_code =
-        insert(
-          :token,
-          type: "preauthorized_code",
-          client: pkce_client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(pkce_client.redirect_uris),
-          code_challenge: "code challenge",
-          code_challenge_hash: Oauth.Token.hash("code challenge"),
-          code_challenge_method: "plain",
-          expires_at: :os.system_time(:seconds) - 10
-        )
-
-      revoked_pkce_code =
-        insert(
-          :token,
-          type: "preauthorized_code",
-          client: pkce_client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(pkce_client.redirect_uris),
-          code_challenge: "code challenge",
-          code_challenge_hash: Oauth.Token.hash("code challenge"),
-          code_challenge_method: "plain",
-          revoked_at: DateTime.utc_now()
-        )
-
-      given_code_challenge =
-        :crypto.hash(:sha256, "strong random challenge me from client")
-        |> Base.url_encode64(padding: false)
-
-      pkce_code_s256 =
-        insert(
-          :token,
-          type: "preauthorized_code",
-          client: pkce_client,
-          sub: resource_owner.sub,
-          redirect_uri: List.first(pkce_client.redirect_uris),
-          code_challenge: given_code_challenge,
-          code_challenge_hash: Oauth.Token.hash(given_code_challenge),
-          code_challenge_method: "S256"
         )
 
       expired_code =
@@ -831,20 +598,11 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
         )
 
       {:ok,
-       client: client,
-       confidential_client: confidential_client,
-       pkce_client: pkce_client,
-       client_without_grant_type: client_without_grant_type,
        resource_owner: resource_owner,
        code: code,
-       confidential_code: confidential_code,
        expired_code: expired_code,
        revoked_code: revoked_code,
        openid_code: openid_code,
-       pkce_code: pkce_code,
-       expired_pkce_code: expired_pkce_code,
-       revoked_pkce_code: revoked_pkce_code,
-       pkce_code_s256: pkce_code_s256,
        bad_redirect_uri_code: bad_redirect_uri_code,
        code_with_scope: code_with_scope}
     end
@@ -863,57 +621,16 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                   error: :invalid_request,
                   error_description:
                     "Request body validation failed. " <>
-                      "Required properties pre-authorized_code, client_id are missing at #.",
+                      "Required property pre-authorized_code is missing at #.",
                   status: :bad_request
                 }}
     end
 
-    test "returns an error if `client_id` is invalid" do
+    test "returns an error if `code` is invalid" do
       assert Oauth.token(
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-                   "pre-authorized_code" => "bad_code",
-                   "client_secret" => "bad secret"
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_client,
-                  error_description: "Invalid client.",
-                  status: :unauthorized
-                }}
-    end
-
-    test "returns an error if `client_id` is absent" do
-      assert Oauth.token(
-               %Plug.Conn{
-                 body_params: %{
-                   "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "pre-authorized_code" => "bad_code"
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description:
-                    "Request body validation failed. Required property client_id is missing at #.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error if `code` is invalid", %{client: client} do
-      assert Oauth.token(
-               %Plug.Conn{
-                 body_params: %{
-                   "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "client_secret" => client.secret,
                    "pre-authorized_code" => "bad_code"
                  }
                },
@@ -927,31 +644,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 }}
     end
 
-    test "returns an error if grant type is not allowed by client", %{
-      client_without_grant_type: client,
-      code: code
-    } do
-      assert Oauth.token(
-               %Plug.Conn{
-                 body_params: %{
-                   "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "pre-authorized_code" => code.value,
-                   "client_secret" => client.secret
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :unsupported_grant_type,
-                  error_description: "Client do not support given grant type.",
-                  status: :bad_request
-                }}
-    end
-
     test "returns an error when code is expired", %{
-      client: client,
       expired_code: code,
       resource_owner: resource_owner
     } do
@@ -962,9 +655,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "pre-authorized_code" => code.value,
-                   "client_secret" => client.secret
+                   "pre-authorized_code" => code.value
                  }
                },
                ApplicationMock
@@ -978,7 +669,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     end
 
     test "returns an error when code is revoked", %{
-      client: client,
       revoked_code: code,
       resource_owner: resource_owner
     } do
@@ -989,59 +679,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                %Plug.Conn{
                  body_params: %{
                    "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "pre-authorized_code" => code.value,
-                   "client_secret" => client.secret
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_grant,
-                  error_description: "Given authorization code is invalid, revoked, or expired.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error if code was issued to an other client", %{
-      code: code,
-      resource_owner: resource_owner
-    } do
-      client = insert(:client)
-
-      ResourceOwners
-      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
-
-      assert Oauth.token(
-               %Plug.Conn{
-                 body_params: %{
-                   "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "pre-authorized_code" => code.value,
-                   "client_secret" => client.secret
-                 }
-               },
-               ApplicationMock
-             ) ==
-               {:token_error,
-                %Error{
-                  error: :invalid_grant,
-                  error_description: "Given authorization code is invalid, revoked, or expired.",
-                  status: :bad_request
-                }}
-    end
-
-    test "returns an error when client secret is invalid and client confidential", %{
-      confidential_client: client,
-      confidential_code: code
-    } do
-      assert Oauth.token(
-               %Plug.Conn{
-                 body_params: %{
-                   "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "client_secret" => "bad_secret",
                    "pre-authorized_code" => code.value
                  }
                },
@@ -1049,13 +686,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_client,
-                  error_description: "Invalid client.",
-                  status: :unauthorized
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
                 }}
     end
 
-    test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
+    test "returns a token", %{code: code, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 
@@ -1071,9 +708,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                  %Plug.Conn{
                    body_params: %{
                      "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
-                     "client_id" => client.id,
-                     "pre-authorized_code" => code.value,
-                     "client_secret" => client.secret
+                     "pre-authorized_code" => code.value
                    }
                  },
                  ApplicationMock
@@ -1306,200 +941,6 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     #                  "client_id" => client.id,
     #                  "code" => code.value,
     #                  "redirect_uri" => redirect_uri
-    #                }
-    #              },
-    #              ApplicationMock
-    #            ) do
-    #         {:token_success,
-    #          %TokenResponse{
-    #            token_type: token_type,
-    #            access_token: access_token,
-    #            expires_in: expires_in,
-    #            refresh_token: refresh_token
-    #          }} ->
-    #           assert token_type == "bearer"
-    #           assert access_token
-    #           assert expires_in
-    #           assert refresh_token
-    #
-    #         _ ->
-    #           assert false
-    #       end
-    #     end
-    #
-    #     test "returns an error with pkce without code_verifier", %{
-    #       pkce_client: client,
-    #       pkce_code: code
-    #     } do
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       assert Oauth.token(
-    #                %Plug.Conn{
-    #                  body_params: %{
-    #                    "grant_type" => "authorization_code",
-    #                    "client_id" => client.id,
-    #                    "code" => code.value,
-    #                    "redirect_uri" => redirect_uri
-    #                  }
-    #                },
-    #                ApplicationMock
-    #              ) ==
-    #                {:token_error,
-    #                 %Error{
-    #                   error: :invalid_request,
-    #                   error_description: "PKCE request invalid.",
-    #                   status: :bad_request
-    #                 }}
-    #     end
-    #
-    #     test "returns an error with pkce and bad code_verifier", %{
-    #       pkce_client: client,
-    #       pkce_code: code,
-    #       resource_owner: resource_owner
-    #     } do
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       ResourceOwners
-    #       |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
-    #
-    #       assert Oauth.token(
-    #                %Plug.Conn{
-    #                  body_params: %{
-    #                    "grant_type" => "authorization_code",
-    #                    "client_id" => client.id,
-    #                    "code" => code.value,
-    #                    "redirect_uri" => redirect_uri,
-    #                    "code_verifier" => "bad code challenge"
-    #                  }
-    #                },
-    #                ApplicationMock
-    #              ) ==
-    #                {:token_error,
-    #                 %Error{
-    #                   error: :invalid_request,
-    #                   error_description: "Code verifier is invalid.",
-    #                   status: :bad_request
-    #                 }}
-    #     end
-    #
-    #     test "returns an error when code is expired with pkce", %{
-    #       pkce_client: client,
-    #       expired_pkce_code: code,
-    #       resource_owner: resource_owner
-    #     } do
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       ResourceOwners
-    #       |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
-    #
-    #       assert Oauth.token(
-    #                %Plug.Conn{
-    #                  body_params: %{
-    #                    "grant_type" => "authorization_code",
-    #                    "client_id" => client.id,
-    #                    "code" => code.value,
-    #                    "redirect_uri" => redirect_uri,
-    #                    "code_verifier" => code.code_challenge
-    #                  }
-    #                },
-    #                ApplicationMock
-    #              ) ==
-    #                {:token_error,
-    #                 %Error{
-    #                   error: :invalid_grant,
-    #                   error_description: "Given authorization code is invalid, revoked, or expired.",
-    #                   status: :bad_request
-    #                 }}
-    #     end
-    #
-    #     test "returns an error when code is revoked with pkce", %{
-    #       pkce_client: client,
-    #       revoked_pkce_code: code,
-    #       resource_owner: resource_owner
-    #     } do
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       ResourceOwners
-    #       |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
-    #
-    #       assert Oauth.token(
-    #                %Plug.Conn{
-    #                  body_params: %{
-    #                    "grant_type" => "authorization_code",
-    #                    "client_id" => client.id,
-    #                    "code" => code.value,
-    #                    "redirect_uri" => redirect_uri,
-    #                    "code_verifier" => code.code_challenge
-    #                  }
-    #                },
-    #                ApplicationMock
-    #              ) ==
-    #                {:token_error,
-    #                 %Error{
-    #                   error: :invalid_grant,
-    #                   error_description: "Given authorization code is invalid, revoked, or expired.",
-    #                   status: :bad_request
-    #                 }}
-    #     end
-    #
-    #     test "returns a token with pkce", %{
-    #       pkce_client: client,
-    #       pkce_code: code,
-    #       resource_owner: resource_owner
-    #     } do
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       ResourceOwners
-    #       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
-    #
-    #       case Oauth.token(
-    #              %Plug.Conn{
-    #                body_params: %{
-    #                  "grant_type" => "authorization_code",
-    #                  "client_id" => client.id,
-    #                  "code" => code.value,
-    #                  "redirect_uri" => redirect_uri,
-    #                  "code_verifier" => code.code_challenge
-    #                }
-    #              },
-    #              ApplicationMock
-    #            ) do
-    #         {:token_success,
-    #          %TokenResponse{
-    #            token_type: token_type,
-    #            access_token: access_token,
-    #            expires_in: expires_in,
-    #            refresh_token: refresh_token
-    #          }} ->
-    #           assert token_type == "bearer"
-    #           assert access_token
-    #           assert expires_in
-    #           assert refresh_token
-    #
-    #         _ ->
-    #           assert false
-    #       end
-    #     end
-    #
-    #     @tag :pkce_256
-    #     test "returns a token with pkce `S256`", %{
-    #       pkce_client: client,
-    #       pkce_code_s256: code,
-    #       resource_owner: resource_owner
-    #     } do
-    #       ResourceOwners
-    #       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
-    #
-    #       redirect_uri = List.first(client.redirect_uris)
-    #
-    #       case Oauth.token(
-    #              %Plug.Conn{
-    #                body_params: %{
-    #                  "grant_type" => "authorization_code",
-    #                  "client_id" => client.id,
-    #                  "code" => code.value,
-    #                  "redirect_uri" => redirect_uri,
-    #                  "code_verifier" => "strong random challenge me from client"
     #                }
     #              },
     #              ApplicationMock
