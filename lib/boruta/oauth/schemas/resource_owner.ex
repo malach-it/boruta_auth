@@ -20,7 +20,9 @@ defmodule Boruta.Oauth.ResourceOwner do
           credential_configuration: %{
             String.t() => %{
               claims: list(String.t()),
-              types: list(String.t()),
+              types: list(String.t() | %{
+                String.t() => String.t()
+              })
             }
           }
         }

@@ -169,8 +169,11 @@ defmodule Boruta.VerifiableCredentials do
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
       credential_configuration[:claims]
-      |> Enum.map(fn attribute ->
-        {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
+      |> Enum.map(fn
+        %{"name" => name, "pointer" => pointer} ->
+          {name, get_in(resource_owner.extra_claims, String.split(pointer, "."))}
+        attribute when is_binary(attribute) ->
+          {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
       end)
       |> Enum.into(%{})
 
