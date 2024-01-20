@@ -2,6 +2,7 @@ defmodule Boruta.VerifiableCredentials do
   @moduledoc false
 
   alias Boruta.Config
+  alias Boruta.Oauth
   alias Boruta.Oauth.ResourceOwner
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
@@ -197,7 +198,8 @@ defmodule Boruta.VerifiableCredentials do
         "RS256",
         %{"pem" => client.private_key},
         %{
-          "typ" => "JWT"
+          "typ" => "JWT",
+          "kid" => Oauth.Client.Crypto.kid_from_private_key(client.private_key)
         }
       )
 
