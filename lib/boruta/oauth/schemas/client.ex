@@ -249,7 +249,7 @@ defmodule Boruta.Oauth.Client do
 
     @spec kid_from_private_key(private_pem :: String.t()) :: kid :: String.t()
     def kid_from_private_key(private_pem) do
-      :crypto.hash(:md5, private_pem) |> Base.encode64() |> String.slice(0..16)
+      :crypto.hash(:md5, private_pem) |> Base.url_encode64() |> String.slice(0..16)
     end
 
     @spec userinfo_signature_type(Client.t()) :: id_token_signature_type :: atom()
