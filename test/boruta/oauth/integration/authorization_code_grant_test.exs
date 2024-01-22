@@ -189,6 +189,39 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
+    test "returns an error when authorization details are invalid", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+      authorization_details = %{}
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :unknown_error,
+                 error_description:
+                   "\"authorization_details validation failed. The type at # `object` do not match the required types [\\\"array\\\"].\"",
+                 format: :query,
+                 redirect_uri: "https://redirect.uri",
+                 state: nil,
+                 status: :internal_server_error
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "authorization_details" => Jason.encode!(authorization_details)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
     test "returns a code", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 
@@ -725,6 +758,45 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert false
       end
     end
+
+    test "returns a code and stores authorization details", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      authorization_details = [
+        %{
+          "type" => "openid_credential",
+          "format" => "jwt_vc_json"
+        }
+      ]
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "authorization_details" => Jason.encode!(authorization_details)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :code
+      assert value
+      assert expires_in
+
+      assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
+    end
   end
 
   describe "authorization code grant - token" do
@@ -743,6 +815,16 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris)
+        )
+
+      authorization_details_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          authorization_details: [%{"type" => "openid_credential", "format" => "jwt_vc_json"}]
         )
 
       confidential_code =
@@ -873,6 +955,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        expired_pkce_code: expired_pkce_code,
        revoked_pkce_code: revoked_pkce_code,
        pkce_code_s256: pkce_code_s256,
+       authorization_details_code: authorization_details_code,
        bad_redirect_uri_code: bad_redirect_uri_code,
        code_with_scope: code_with_scope}
     end
@@ -1586,6 +1669,44 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         _ ->
           assert false
       end
+    end
+
+    test "returns a token with authorization details", %{
+      client: client,
+      authorization_details_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
+
+      assert Repo.get_by(Ecto.Token, value: access_token).authorization_details ==
+               code.authorization_details
     end
   end
 end

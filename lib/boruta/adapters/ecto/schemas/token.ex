@@ -165,7 +165,8 @@ defmodule Boruta.Ecto.Token do
       :redirect_uri,
       :state,
       :nonce,
-      :scope
+      :scope,
+      :authorization_details
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -186,7 +187,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :code_challenge,
-      :code_challenge_method
+      :code_challenge_method,
+      :authorization_details
     ])
     |> validate_required([
       :authorization_code_ttl,
