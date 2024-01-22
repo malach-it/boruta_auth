@@ -19,7 +19,8 @@ defmodule Boruta.Oauth.HybridRequest do
           response_mode: String.t(),
           response_types: list(String.t()),
           scope: String.t(),
-          state: String.t()
+          state: String.t(),
+          authorization_details: String.t()
         }
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct client_id: nil,
@@ -33,5 +34,6 @@ defmodule Boruta.Oauth.HybridRequest do
             response_mode: "fragment",
             response_types: [],
             scope: "",
-            state: ""
+            state: "",
+            authorization_details: "[]"
 end

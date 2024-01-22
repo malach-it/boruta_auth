@@ -7,6 +7,27 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
+  @authorization_details_schema %{
+    "type" => "array",
+    "items" => %{
+      "type" => "object",
+      "properties" => %{
+        "type" => %{"type" => "string", "pattern" => "^openid_credential$"},
+        "format" => %{"type" => "string"},
+        "credential_definition" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{
+              "type" => "array",
+              "items" => %{"type" => "string"}
+            }
+          }
+        }
+      },
+      "required" => ["type", "format"]
+    }
+  }
+
   @proof_schema %{
                   "type" => "object",
                   "properties" => %{
@@ -68,6 +89,26 @@ defmodule Boruta.VerifiableCredentials do
     else
       nil -> {:error, "Credential not found."}
       error -> error
+    end
+  end
+
+  @spec validate_authorization_details(authorization_details :: String.t()) ::
+          :ok | {:error, reason :: String.t()}
+  def validate_authorization_details(authorization_details) do
+    with {:ok, authorization_details} <- Jason.decode(authorization_details),
+         :ok <-
+           ExJsonSchema.Validator.validate(
+             @authorization_details_schema,
+             authorization_details,
+             error_formatter: BorutaFormatter
+           ) do
+      :ok
+    else
+      {:error, errors} when is_list(errors) ->
+        {:error, "authorization_details validation failed. " <> Enum.join(errors, " ")}
+
+      {:error, error} ->
+        {:error, "authorization_details validation failed. #{inspect(error)}"}
     end
   end
 
@@ -173,6 +214,7 @@ defmodule Boruta.VerifiableCredentials do
       |> Enum.map(fn
         %{"name" => name, "pointer" => pointer} ->
           {name, get_in(resource_owner.extra_claims, String.split(pointer, "."))}
+
         attribute when is_binary(attribute) ->
           {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
       end)

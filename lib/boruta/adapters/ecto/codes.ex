@@ -70,7 +70,8 @@ defmodule Boruta.Ecto.Codes do
           scope: scope,
           state: state,
           code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          code_challenge_method: code_challenge_method,
+          authorization_details: authorization_details
         } = params
       ) do
     sub = params[:sub]
@@ -87,7 +88,8 @@ defmodule Boruta.Ecto.Codes do
           scope: scope,
           authorization_code_ttl: authorization_code_ttl,
           code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          code_challenge_method: code_challenge_method,
+          authorization_details: authorization_details
         }
       ])
 

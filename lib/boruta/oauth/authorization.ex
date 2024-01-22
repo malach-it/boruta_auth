@@ -197,7 +197,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
          redirect_uri: redirect_uri,
          sub: sub,
          scope: code.scope,
-         nonce: code.nonce
+         nonce: code.nonce,
+         authorization_details: code.authorization_details
        }}
     end
   end
@@ -210,7 +211,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
-            nonce: nonce
+            nonce: nonce,
+            authorization_details: authorization_details
           }} <-
            preauthorize(request),
          {:ok, access_token} <-
@@ -220,7 +222,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
                redirect_uri: redirect_uri,
                previous_code: code.value,
                sub: sub,
-               scope: scope
+               scope: scope,
+               authorization_details: authorization_details
              },
              refresh_token: true
            ),
@@ -517,6 +520,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
+  alias Boruta.VerifiableCredentials
 
   def preauthorize(
         %CodeRequest{
@@ -527,7 +531,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
           nonce: nonce,
           scope: scope,
           code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          code_challenge_method: code_challenge_method,
+          authorization_details: authorization_details
         } = request
       ) do
     with {:ok, client} <-
@@ -546,6 +551,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
              against: %{client: client, resource_owner: resource_owner}
            ),
          :ok <- Authorization.Nonce.authorize(request),
+         :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
          :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
       {:ok,
        %AuthorizationSuccess{
@@ -557,7 +563,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
          nonce: nonce,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
-         resource_owner: resource_owner
+         resource_owner: resource_owner,
+         authorization_details: Jason.decode!(authorization_details)
        }}
     else
       {:error, :invalid_code_challenge} ->
@@ -584,7 +591,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             state: state,
             nonce: nonce,
             code_challenge: code_challenge,
-            code_challenge_method: code_challenge_method
+            code_challenge_method: code_challenge_method,
+            authorization_details: authorization_details
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
@@ -597,7 +605,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
                state: state,
                nonce: nonce,
                code_challenge: code_challenge,
-               code_challenge_method: code_challenge_method
+               code_challenge_method: code_challenge_method,
+               authorization_details: authorization_details
              }) do
         {:ok, %{code: code}}
       end
@@ -652,7 +661,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
             state: state,
             nonce: nonce,
             code_challenge: code_challenge,
-            code_challenge_method: code_challenge_method
+            code_challenge_method: code_challenge_method,
+            authorization_details: authorization_details
           }} <-
            preauthorize(request) do
       response_types
@@ -669,7 +679,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                    state: state,
                    nonce: nonce,
                    code_challenge: code_challenge,
-                   code_challenge_method: code_challenge_method
+                   code_challenge_method: code_challenge_method,
+                   authorization_details: authorization_details
                  }) do
             {:ok, Map.put(tokens, :code, code)}
           end

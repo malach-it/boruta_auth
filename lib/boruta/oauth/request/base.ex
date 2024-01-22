@@ -55,7 +55,9 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def build_request(%{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params) do
+  def build_request(
+        %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params
+      ) do
     {:ok,
      %PreauthorizationCodeRequest{
        preauthorized_code: params["pre-authorized_code"],
@@ -63,7 +65,9 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def build_request(%{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params) do
+  def build_request(
+        %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params
+      ) do
     {:ok,
      %PreauthorizedCodeRequest{
        client_id: params["client_id"],
@@ -86,18 +90,25 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def build_request(%{"response_type" => "code"} = params) do
-    {:ok,
-     %CodeRequest{
-       client_id: params["client_id"],
-       redirect_uri: params["redirect_uri"],
-       resource_owner: params["resource_owner"],
-       state: params["state"],
-       nonce: params["nonce"],
-       prompt: params["prompt"],
-       code_challenge: params["code_challenge"],
-       code_challenge_method: params["code_challenge_method"],
-       scope: params["scope"]
-     }}
+    request = %CodeRequest{
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      resource_owner: params["resource_owner"],
+      state: params["state"],
+      nonce: params["nonce"],
+      prompt: params["prompt"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      scope: params["scope"]
+    }
+
+    request =
+      case params["authorization_details"] do
+        nil -> request
+        authorization_details -> %{request | authorization_details: authorization_details}
+      end
+
+    {:ok, request}
   end
 
   def build_request(%{"response_type" => "introspect"} = params) do
@@ -114,20 +125,27 @@ defmodule Boruta.Oauth.Request.Base do
 
     case Enum.member?(response_types, "code") do
       true ->
-        {:ok,
-         %HybridRequest{
-           client_id: params["client_id"],
-           code_challenge: params["code_challenge"],
-           code_challenge_method: params["code_challenge_method"],
-           nonce: params["nonce"],
-           prompt: params["prompt"],
-           redirect_uri: params["redirect_uri"],
-           resource_owner: params["resource_owner"],
-           response_mode: params["response_mode"],
-           response_types: response_types,
-           scope: params["scope"],
-           state: params["state"]
-         }}
+        request = %HybridRequest{
+          client_id: params["client_id"],
+          code_challenge: params["code_challenge"],
+          code_challenge_method: params["code_challenge_method"],
+          nonce: params["nonce"],
+          prompt: params["prompt"],
+          redirect_uri: params["redirect_uri"],
+          resource_owner: params["resource_owner"],
+          response_mode: params["response_mode"],
+          response_types: response_types,
+          scope: params["scope"],
+          state: params["state"]
+        }
+
+        request =
+          case params["authorization_details"] do
+            nil -> request
+            authorization_details -> %{request | authorization_details: authorization_details}
+          end
+
+        {:ok, request}
 
       false ->
         {:ok,
