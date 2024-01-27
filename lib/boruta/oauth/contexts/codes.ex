@@ -7,6 +7,9 @@ defmodule Boruta.Oauth.Codes do
   Returns a `Boruta.Oauth.Token` by `value` and `redirect_uri`.
   """
   @callback get_by(
+    params :: [id: String.t()]
+  ) :: token :: Boruta.Oauth.Token | nil
+  @callback get_by(
     params :: [value: String.t()]
   ) :: token :: Boruta.Oauth.Token | nil
   @callback get_by(
