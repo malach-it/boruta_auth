@@ -31,6 +31,7 @@ defmodule Boruta.Oauth do
   alias Boruta.Oauth.Revoke
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Openid.CredentialOfferResponse
+  alias Boruta.Openid.SiopV2Response
 
   @doc """
   Process an token request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
@@ -100,6 +101,12 @@ defmodule Boruta.Oauth do
          {:ok, tokens} <- Authorization.token(request) do
       case AuthorizeResponse.from_tokens(tokens, request) do
         %AuthorizeResponse{} = response ->
+          module.authorize_success(
+            conn,
+            response
+          )
+
+        %SiopV2Response{} = response ->
           module.authorize_success(
             conn,
             response

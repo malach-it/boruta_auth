@@ -13,6 +13,7 @@ defmodule Boruta.Oauth.Client do
 
   @enforce_keys [:id]
   defstruct id: nil,
+            public_client_id: nil,
             name: nil,
             secret: nil,
             confidential: nil,
@@ -41,6 +42,7 @@ defmodule Boruta.Oauth.Client do
 
   @type t :: %__MODULE__{
           id: any(),
+          public_client_id: String.t() | nil,
           secret: String.t(),
           confidential: boolean(),
           name: String.t(),

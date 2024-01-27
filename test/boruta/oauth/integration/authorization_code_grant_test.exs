@@ -13,6 +13,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenResponse
+  alias Boruta.Openid.SiopV2Response
   alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
@@ -796,6 +797,65 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert expires_in
 
       assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
+    end
+
+    test "returns a code with siopv2" do
+      redirect_uri = "openid:"
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                client: client,
+                client_id: "did:key:test",
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid",
+                issuer: issuer,
+                response_mode: "direct_post",
+                nonce: "nonce"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce"
+                   }
+                 },
+                 %ResourceOwner{sub: "sub"},
+                 ApplicationMock
+               )
+      assert issuer == Boruta.Config.issuer()
+      assert client.public_client_id == Boruta.Config.issuer()
+    end
+
+    test "returns an error without nonce with siopv2", %{client: client} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "OpenID requests require a nonce.",
+                 format: :query,
+                 redirect_uri: "https://redirect.uri",
+                 state: nil,
+                 status: :bad_request
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}"
+                   }
+                 },
+                 %ResourceOwner{sub: "sub"},
+                 ApplicationMock
+               )
     end
   end
 

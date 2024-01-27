@@ -184,8 +184,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "response_type" => %{"type" => "string", "pattern" => "code"},
         "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
         "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
+          "type" => "string"
         },
         "state" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},

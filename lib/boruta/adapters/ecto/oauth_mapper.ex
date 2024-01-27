@@ -14,16 +14,22 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
   alias Boruta.Ecto.OauthMapper
 
   def to_oauth_schema(%Ecto.Token{} = token) do
-    client = case Clients.get_client(token.client_id) do
-      %Oauth.Client{} = client -> client
-      _ -> nil
-    end
-    resource_owner = token.resource_owner || with "" <> sub <- token.sub, # token is linked to a resource_owner
-      {:ok, resource_owner} <- resource_owners().get_by(sub: sub) do
-      resource_owner
-    else
-      _ -> nil
-    end
+    client =
+      case Clients.get_client(token.client_id) do
+        %Oauth.Client{} = client -> client
+        _ -> nil
+      end
+
+    # token is linked to a resource_owner
+    resource_owner =
+      token.resource_owner ||
+        with "" <> sub <- token.sub,
+             false <- Regex.match?(~r/did:/, sub),
+             {:ok, resource_owner} <- resource_owners().get_by(sub: sub) do
+          resource_owner
+        else
+          _ -> nil
+        end
 
     struct(
       Oauth.Token,

@@ -37,6 +37,7 @@ defmodule Boruta.VerifiableCredentials do
                   "required" => ["proof_type", "jwt"]
                 }
                 |> Schema.resolve()
+
   @credential_format "jwt_vc_json"
 
   defmodule Token do
