@@ -12,6 +12,7 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.PreauthorizedCodeRequest
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.RevokeRequest
+  alias Boruta.Oauth.SiopV2Request
   alias Boruta.Oauth.TokenRequest
 
   @spec authorization_header(req_headers :: list()) ::
@@ -87,6 +88,28 @@ defmodule Boruta.Oauth.Request.Base do
        refresh_token: params["refresh_token"],
        scope: params["scope"]
      }}
+  end
+
+  def build_request(%{"response_type" => "code", "client_metadata" => client_metadata} = params) do
+    request = %SiopV2Request{
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      state: params["state"],
+      nonce: params["nonce"],
+      prompt: params["prompt"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      scope: params["scope"],
+      client_metadata: client_metadata
+    }
+
+    request =
+      case params["authorization_details"] do
+        nil -> request
+        authorization_details -> %{request | authorization_details: authorization_details}
+      end
+
+    {:ok, request}
   end
 
   def build_request(%{"response_type" => "code"} = params) do

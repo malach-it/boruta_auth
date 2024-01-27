@@ -65,7 +65,6 @@ defmodule Boruta.Ecto.Codes do
               id: client_id,
               authorization_code_ttl: authorization_code_ttl
             } = client,
-          resource_owner: resource_owner,
           redirect_uri: redirect_uri,
           scope: scope,
           state: state,
@@ -78,7 +77,7 @@ defmodule Boruta.Ecto.Codes do
 
     changeset =
       apply(Token, changeset_method(client), [
-        %Token{resource_owner: resource_owner},
+        %Token{resource_owner: params[:resource_owner]},
         %{
           client_id: client_id,
           sub: sub,

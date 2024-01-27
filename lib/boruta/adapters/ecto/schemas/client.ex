@@ -63,6 +63,7 @@ defmodule Boruta.Ecto.Client do
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
   schema "oauth_clients" do
+    field(:public_client_id, :string)
     field(:name, :string)
     field(:secret, :string)
     field(:confidential, :boolean, default: false)

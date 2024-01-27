@@ -29,8 +29,6 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     no_umbrella!("boruta.gen.migration")
     repos = parse_repo(args)
 
-    register_application(repos)
-
     Enum.map(repos, fn repo ->
       ensure_repo(repo, args)
 
@@ -44,6 +42,8 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
       |> Enum.with_index()
       |> Enum.map(&create_migration_file(repo, &1))
     end)
+
+    register_application(repos)
   end
 
   defp create_migration_file(repo, {original_path, index}) do

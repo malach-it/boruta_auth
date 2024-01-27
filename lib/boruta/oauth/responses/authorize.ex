@@ -38,10 +38,12 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   alias Boruta.Oauth.Token
   alias Boruta.Oauth.TokenRequest
   alias Boruta.Openid.CredentialOfferResponse
+  alias Boruta.Openid.SiopV2Response
 
   @spec from_tokens(
           %{
-            (type :: :code | :token | :id_token) => token :: Boruta.Oauth.Token.t() | String.t()
+            (type :: :siopv2_code | :preauthorized_code | :code | :token | :id_token) =>
+              token :: Boruta.Oauth.Token.t() | String.t()
           },
           request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
         ) :: t() | CredentialOfferResponse.t() | {:error, Boruta.Oauth.Error.t()}
@@ -131,10 +133,22 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     }
   end
 
-  def from_tokens(%{
-    preauthorized_code: _preauthorized_code
-  } = tokens, request) do
+  def from_tokens(
+        %{
+          preauthorized_code: _preauthorized_code
+        } = tokens,
+        request
+      ) do
     CredentialOfferResponse.from_tokens(tokens, request)
+  end
+
+  def from_tokens(
+        %{
+          siopv2_code: _siopv2_code
+        } = tokens,
+        request
+      ) do
+    SiopV2Response.from_tokens(tokens, request)
   end
 
   def from_tokens(_params, _request) do
