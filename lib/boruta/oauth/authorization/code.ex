@@ -36,10 +36,16 @@ defmodule Boruta.Oauth.Authorization.Code do
   def authorize(%{
         value: value,
         redirect_uri: redirect_uri,
-        client: %Client{id: client_id, pkce: false}
+        client: %Client{id: client_id, pkce: false} = client
       }) do
+    query =
+      case Client.public?(client) do
+        true -> [value: value]
+        false -> [value: value, redirect_uri: redirect_uri]
+      end
+
     with %Token{client: %Client{id: ^client_id}} = token <-
-           CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
+           CodesAdapter.get_by(query),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
@@ -56,11 +62,17 @@ defmodule Boruta.Oauth.Authorization.Code do
   def authorize(%{
         value: value,
         redirect_uri: redirect_uri,
-        client: %Client{id: client_id, pkce: true},
+        client: %Client{id: client_id, pkce: true} = client,
         code_verifier: code_verifier
       }) do
+    query =
+      case Client.public?(client) do
+        true -> [value: value]
+        false -> [value: value, redirect_uri: redirect_uri]
+      end
+
     with %Token{client: %Client{id: ^client_id}} = token <-
-           CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
+           CodesAdapter.get_by(query),
          :ok <- check_code_challenge(token, code_verifier),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}

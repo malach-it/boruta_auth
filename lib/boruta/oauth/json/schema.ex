@@ -60,8 +60,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "properties" => %{
         "grant_type" => %{"type" => "string", "pattern" => "authorization_code"},
         "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
+          "type" => "string"
         },
         "client_authentication" => %{
           "type" => "object",
@@ -75,7 +74,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "redirect_uri" => %{"type" => "string"},
         "code_verifier" => %{"type" => "string"}
       },
-      "required" => ["grant_type", "code", "client_id", "redirect_uri"]
+      "required" => ["grant_type", "code", "client_id"]
     }
     |> Schema.resolve()
   end

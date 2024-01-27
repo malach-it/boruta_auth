@@ -15,5 +15,4 @@ defmodule Boruta.Openid.CredentialResponse do
   def from_credential(credential) do
     struct(__MODULE__, credential)
   end
-M
 end

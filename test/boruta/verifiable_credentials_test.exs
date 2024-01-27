@@ -7,7 +7,7 @@ defmodule Boruta.VerifiableCredentialsTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.VerifiableCredentials
 
-  describe "issue_verifiable_credential/3" do
+  describe "issue_verifiable_credential/4" do
     setup do
       {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
 
@@ -69,7 +69,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", %{}),
-               insert(:client)
+               insert(:client),
+               %{}
              ) ==
                {:error,
                 "Proof validation failed. Required properties proof_type, jwt are missing at #."}
@@ -91,7 +92,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:client)
+               insert(:client),
+               %{}
              ) ==
                {:error,
                 "Proof JWT must be asymetrically signed, Proof JWT must have `openid4vci-proof+jwt` typ header, No proof key material found in JWT headers."}
@@ -114,7 +116,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:client)
+               insert(:client),
+               %{}
              ) == {:error, "Proof JWT must be asymetrically signed."}
     end
 
@@ -134,7 +137,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:client)
+               insert(:client),
+               %{}
              ) == {:error, "Proof JWT must have `openid4vci-proof+jwt` typ header."}
     end
 
@@ -157,7 +161,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:client)
+               insert(:client),
+               %{}
              ) == {:error, "No proof key material found in JWT headers."}
     end
 
@@ -181,7 +186,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:client)
+               insert(:client),
+               %{}
              ) ==
                {:error,
                 "Proof does not contain valid JWT claims, `aud` and `iat` claims are required."}
@@ -194,12 +200,13 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert {:ok,
               %{
                 credential: credential,
-                format: "jwt_vc_json"
+                format: "jwt_vc"
               }} =
                VerifiableCredentials.issue_verifiable_credential(
                  resource_owner,
                  credential_params,
-                 insert(:client)
+                 insert(:client),
+                 %{}
                )
 
       # TODO validate credential body

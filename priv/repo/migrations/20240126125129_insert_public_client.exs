@@ -5,7 +5,7 @@ defmodule Boruta.Repo.Migrations.InsertPublicClient do
     only: [token_generator: 0, issuer: 0]
 
   def up do
-    private_key = JOSE.JWK.generate_key({:rsa, 1024, 65_537})
+    private_key = JOSE.JWK.generate_key({:ec, "P-256"})
     public_key = JOSE.JWK.to_public(private_key)
 
     {_type, public_pem} = JOSE.JWK.to_pem(public_key)
@@ -47,7 +47,7 @@ defmodule Boruta.Repo.Migrations.InsertPublicClient do
       '{}',
       false,
       '{"client_credentials", "password", "authorization_code", "preauthorized_code", "refresh_token", "implicit", "revoke", "introspect"}',
-      '{"RS256", "RS384", "RS512", "HS256", "HS384", "HS512"}',
+      'ES256',
       '#{public_pem}',
       '#{private_pem}',
       current_timestamp,
