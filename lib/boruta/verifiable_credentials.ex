@@ -38,7 +38,7 @@ defmodule Boruta.VerifiableCredentials do
                 }
                 |> Schema.resolve()
 
-  @credential_format "jwt_vc_json"
+  @credential_format "jwt_vc"
 
   defmodule Token do
     @moduledoc false
@@ -51,17 +51,25 @@ defmodule Boruta.VerifiableCredentials do
   @spec issue_verifiable_credential(
           resource_owner :: ResourceOwner.t(),
           credential_params :: map(),
-          client :: Boruta.Oauth.Client.t()
+          client :: Boruta.Oauth.Client.t(),
+          default_credential_configuration :: map()
         ) :: {:ok, map()} | {:error, String.t()}
   def issue_verifiable_credential(
         resource_owner,
         credential_params,
-        client
+        client,
+        default_credential_configuration
       ) do
     proof = credential_params["proof"]
 
+    credential_configuration =
+      case resource_owner.sub do
+        "did:" <> _key -> default_credential_configuration
+        _ -> resource_owner.credential_configuration
+      end
+
     with {_credential_identifier, credential_configuration} <-
-           Enum.find(resource_owner.credential_configuration, fn {_identifier, configuration} ->
+           Enum.find(credential_configuration, fn {_identifier, configuration} ->
              Enum.empty?(configuration[:types] -- credential_params["types"])
            end),
          {:ok, proof} <- validate_proof_format(proof),
@@ -224,7 +232,7 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, claims}
   end
 
-  defp generate_credential(claims, credential_configuration, proof, client, "jwt_vc_json") do
+  defp generate_credential(claims, credential_configuration, proof, client, "jwt_vc") do
     # _sd = claims
     #       |> Enum.map(fn {name, value} ->
     #   [SecureRandom.hex(), name, value]
@@ -238,7 +246,7 @@ defmodule Boruta.VerifiableCredentials do
     # |> dbg
     signer =
       Joken.Signer.create(
-        "RS256",
+        client.id_token_signature_alg,
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",

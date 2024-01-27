@@ -113,6 +113,37 @@ defmodule Boruta.Oauth.Authorization.Client do
   end
 
   def authorize(
+        id: "did:" <> _key,
+        source: source,
+        redirect_uri: _redirect_uri,
+        grant_type: grant_type,
+        code_verifier: code_verifier
+      ) do
+    with %Client{} = client <- ClientsAdapter.public!(),
+         :ok <- validate_pkce(client, code_verifier),
+         true <- Client.grant_type_supported?(client, grant_type),
+         {:ok, client} <- maybe_check_client_secret(client, source, grant_type) do
+      {:ok, client}
+    else
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
+         }}
+
+      {:error, :invalid_pkce_request} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "PKCE request invalid."
+         }}
+    end
+  end
+
+  def authorize(
         id: id,
         source: source,
         redirect_uri: redirect_uri,
@@ -346,7 +377,11 @@ defmodule Boruta.Oauth.Authorization.Client do
   defp verify_secret_result(
          %Client{
            token_endpoint_auth_methods: ["private_key_jwt" | methods]
-         } = client, source, _error, _refreshed) do
+         } = client,
+         source,
+         _error,
+         _refreshed
+       ) do
     message = "Given client expects the credentials to be provided with a jwt assertion."
     do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
   end

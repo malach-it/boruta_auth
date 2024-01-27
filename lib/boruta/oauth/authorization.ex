@@ -162,6 +162,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
@@ -175,6 +176,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
         grant_type: grant_type,
         code_verifier: code_verifier
       }) do
+    # TODO check client did against request from code phase in case of siopv2 requests
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -230,13 +232,17 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              refresh_token: true
            ),
          {:ok, _code} <- CodesAdapter.revoke(code) do
-      case String.match?(scope, ~r/#{Scope.openid().name}/) do
-        true ->
+      # TODO check if from an hybrid request
+      case {Client.public?(client), String.match?(scope, ~r/#{Scope.openid().name}/)} do
+        {true, _} ->
+          {:ok, %{token: access_token}}
+
+        {_, true} ->
           id_token = IdToken.generate(%{token: access_token}, nonce)
 
           {:ok, %{token: access_token, id_token: id_token}}
 
-        false ->
+        {_, false} ->
           {:ok, %{token: access_token}}
       end
     end

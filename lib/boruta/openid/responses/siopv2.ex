@@ -78,13 +78,15 @@ defmodule Boruta.Openid.SiopV2Response do
         %{
           client_id: response.client_id,
           response_type: response.response_type,
+          response_mode: response.response_mode,
           scope: response.scope,
           redirect_uri: redirect_uri,
           request: request
         }
         |> URI.encode_query()
 
-      uri = %{URI.parse(response.redirect_uri) | host: "", query: query}
+      uri = URI.parse(response.redirect_uri)
+      uri = %{uri | host: uri.host || "", query: query}
 
       URI.to_string(uri)
     end

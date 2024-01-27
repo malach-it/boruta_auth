@@ -61,7 +61,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  def credential(conn, credential_params, module) do
+  def credential(conn, credential_params, default_credential_configuration, module) do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
          {:ok, credential_params} <- validate_credential_params(credential_params),
@@ -69,7 +69,8 @@ defmodule Boruta.Openid do
            VerifiableCredentials.issue_verifiable_credential(
              token.resource_owner,
              credential_params,
-             token.client
+             token.client,
+             default_credential_configuration
            ) do
       response = CredentialResponse.from_credential(credential)
       module.credential_created(conn, response)

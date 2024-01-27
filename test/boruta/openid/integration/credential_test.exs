@@ -25,7 +25,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                 error: :invalid_request,
                 error_description: "Invalid bearer from Authorization header.",
                 status: :bad_request
-              }} = Openid.credential(conn, %{}, ApplicationMock)
+              }} = Openid.credential(conn, %{}, %{}, ApplicationMock)
     end
 
     test "returns credential_failure with a bad authorization header" do
@@ -38,7 +38,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                 error: :invalid_request,
                 error_description: "Invalid bearer from Authorization header.",
                 status: :bad_request
-              }} = Openid.credential(conn, %{}, ApplicationMock)
+              }} = Openid.credential(conn, %{}, %{}, ApplicationMock)
     end
 
     test "returns credential_failure with a bad access token" do
@@ -51,7 +51,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                 error: :invalid_access_token,
                 error_description: "Given access token is invalid, revoked, or expired.",
                 status: :bad_request
-              }} = Openid.credential(conn, %{}, ApplicationMock)
+              }} = Openid.credential(conn, %{}, %{}, ApplicationMock)
     end
 
     test "returns an error with a valid bearer" do
@@ -62,7 +62,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
         %Plug.Conn{}
         |> put_req_header("authorization", "Bearer #{access_token}")
 
-      assert Openid.credential(conn, credential_params, ApplicationMock) ==
+      assert Openid.credential(conn, credential_params, %{}, ApplicationMock) ==
                {:credential_failure,
                 %Error{
                   status: :bad_request,
@@ -90,7 +90,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
         %Plug.Conn{}
         |> put_req_header("authorization", "Bearer #{access_token}")
 
-      assert Openid.credential(conn, credential_params, ApplicationMock) ==
+      assert Openid.credential(conn, credential_params, %{}, ApplicationMock) ==
                {:credential_failure,
                 %Error{
                   status: :bad_request,
@@ -153,9 +153,9 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       assert {:credential_created,
                 %CredentialResponse{
-                  format: "jwt_vc_json",
+                  format: "jwt_vc",
                   credential: credential
-                }} = Openid.credential(conn, credential_params, ApplicationMock)
+                }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
 
       # TODO validate credential body
       assert credential

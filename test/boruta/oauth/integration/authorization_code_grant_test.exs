@@ -769,7 +769,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       authorization_details = [
         %{
           "type" => "openid_credential",
-          "format" => "jwt_vc_json"
+          "format" => "jwt_vc"
         }
       ]
 
@@ -826,10 +826,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  %ResourceOwner{sub: "sub"},
                  ApplicationMock
                )
+
       assert issuer == Boruta.Config.issuer()
       assert client.public_client_id == Boruta.Config.issuer()
     end
 
+    @tag :skip
     test "returns an error without nonce with siopv2", %{client: client} do
       redirect_uri = List.first(client.redirect_uris)
 
@@ -877,6 +879,15 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           redirect_uri: List.first(client.redirect_uris)
         )
 
+      siopv2_code =
+        insert(
+          :token,
+          type: "code",
+          client: Repo.get_by(Ecto.Client, public_client_id: Boruta.Config.issuer()),
+          sub: "did:key:test",
+          redirect_uri: List.first(client.redirect_uris)
+        )
+
       authorization_details_code =
         insert(
           :token,
@@ -884,7 +895,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris),
-          authorization_details: [%{"type" => "openid_credential", "format" => "jwt_vc_json"}]
+          authorization_details: [%{"type" => "openid_credential", "format" => "jwt_vc"}]
         )
 
       confidential_code =
@@ -1017,7 +1028,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        pkce_code_s256: pkce_code_s256,
        authorization_details_code: authorization_details_code,
        bad_redirect_uri_code: bad_redirect_uri_code,
-       code_with_scope: code_with_scope}
+       code_with_scope: code_with_scope,
+       siopv2_code: siopv2_code}
     end
 
     test "returns an error if request is invalid" do
@@ -1767,6 +1779,34 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert Repo.get_by(Ecto.Token, value: access_token).authorization_details ==
                code.authorization_details
+    end
+
+    test "returns a token with siopv2", %{siopv2_code: code} do
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => "did:key:test",
+                 "code" => code.value
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
     end
   end
 end

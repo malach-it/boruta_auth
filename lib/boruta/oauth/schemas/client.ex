@@ -133,6 +133,8 @@ defmodule Boruta.Oauth.Client do
     not apply(__MODULE__, :"public_#{grant_type}?", [client])
   end
 
+  def should_check_secret?(%__MODULE__{public_client_id: "" <> _client_id}, _grant_type), do: false
+
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
   def should_check_secret?(_client, grant_type)
@@ -151,12 +153,19 @@ defmodule Boruta.Oauth.Client do
     public_revoke
   end
 
+  @spec public?(client :: t()) :: boolean()
+  def public?(%__MODULE__{public_client_id: public_client_id}) when is_binary(public_client_id), do: true
+  def public?(%__MODULE__{public_client_id: _public_client_id}), do: false
+
   defmodule Crypto do
     @moduledoc false
 
     alias Boruta.Oauth.Client
 
     @signature_algorithms [
+      ES256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
+      ES384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
+      ES512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
       RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
       RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
       RS512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
@@ -254,7 +263,7 @@ defmodule Boruta.Oauth.Client do
       :crypto.hash(:md5, private_pem) |> Base.url_encode64() |> String.slice(0..16)
     end
 
-    @spec userinfo_signature_type(Client.t()) :: id_token_signature_type :: atom()
+    @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
     def userinfo_signature_type(%Client{userinfo_signed_response_alg: signature_alg}),
       do: @signature_algorithms[String.to_atom(signature_alg)][:type]
 

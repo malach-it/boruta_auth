@@ -9,6 +9,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
   import Boruta.Config, only: [repo: 0, resource_owners: 0]
 
   alias Boruta.Oauth
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Ecto
   alias Boruta.Ecto.Clients
   alias Boruta.Ecto.OauthMapper
@@ -20,14 +21,15 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
         _ -> nil
       end
 
-    # token is linked to a resource_owner
     resource_owner =
       token.resource_owner ||
         with "" <> sub <- token.sub,
-             false <- Regex.match?(~r/did:/, sub),
+             false <- Regex.match?(~r/^did\:/, sub),
              {:ok, resource_owner} <- resource_owners().get_by(sub: sub) do
           resource_owner
         else
+          # NOTE resource owner is public (sub is a did)
+          true -> %ResourceOwner{sub: token.sub}
           _ -> nil
         end
 
