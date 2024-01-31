@@ -39,6 +39,7 @@ defmodule Boruta.VerifiableCredentialsTest do
         credential_configuration: %{
           "credential_identifier" => %{
             types: ["VerifiableCredential"],
+            format: "jwt_vc",
             claims: ["firstname"]
           }
         }
