@@ -38,8 +38,6 @@ defmodule Boruta.VerifiableCredentials do
                 }
                 |> Schema.resolve()
 
-  @credential_format "jwt_vc"
-
   defmodule Token do
     @moduledoc false
 
@@ -87,10 +85,10 @@ defmodule Boruta.VerifiableCredentials do
              credential_configuration,
              proof["jwt"],
              client,
-             @credential_format
+             credential_configuration[:format]
            ) do
       credential = %{
-        format: @credential_format,
+        format: credential_configuration[:format],
         credential: credential
       }
 
@@ -232,7 +230,8 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, claims}
   end
 
-  defp generate_credential(claims, credential_configuration, proof, client, "jwt_vc") do
+  defp generate_credential(claims, credential_configuration, proof, client, format)
+       when format in ["jwt_vc", "jwt_vc_json"] do
     # _sd = claims
     #       |> Enum.map(fn {name, value} ->
     #   [SecureRandom.hex(), name, value]

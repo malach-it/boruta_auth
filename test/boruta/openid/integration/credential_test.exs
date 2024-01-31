@@ -132,6 +132,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
            credential_configuration: %{
              "UniversityDegree" => %{
                types: ["VerifiableCredential"],
+               format: "jwt_vc",
                claims: ["family_name"]
              }
            },
