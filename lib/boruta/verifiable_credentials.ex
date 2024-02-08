@@ -232,17 +232,6 @@ defmodule Boruta.VerifiableCredentials do
 
   defp generate_credential(claims, credential_configuration, proof, client, format)
        when format in ["jwt_vc", "jwt_vc_json"] do
-    # _sd = claims
-    #       |> Enum.map(fn {name, value} ->
-    #   [SecureRandom.hex(), name, value]
-    # end)
-    # # NOTE no space in disclosure array
-    # |> Enum.map(&Jason.encode!/1)
-    # |> Enum.map(&Base.url_encode64(&1, padding: false))
-    # |> Enum.map(fn disclosure ->
-    #   :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
-    # end)
-    # |> dbg
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -279,6 +268,64 @@ defmodule Boruta.VerifiableCredentials do
         "type" => credential_configuration[:types],
         "credentialSubject" => claims
       }
+    }
+
+    credential = Token.generate_and_sign!(claims, signer)
+
+    {:ok, credential}
+  end
+
+  defp generate_credential(claims, _credential_configuration, proof, client, format)
+       when format in ["vc+sd-jwt"] do
+    signer =
+      Joken.Signer.create(
+        client.id_token_signature_alg,
+        %{"pem" => client.private_key},
+        %{
+          "typ" => "JWT",
+          "kid" => Oauth.Client.Crypto.kid_from_private_key(client.private_key)
+        }
+      )
+
+    sub =
+      case Joken.peek_header(proof) do
+        {:ok, headers} ->
+          case(extract_key(headers)) do
+            {_type, key} -> key
+          end
+      end
+
+    claims_with_salt = Enum.map(claims, fn claim ->
+      {claim, SecureRandom.hex()}
+    end)
+
+    sd = claims_with_salt
+          |> Enum.map(fn {{name, value}, salt} ->
+            [salt, name, value]
+    end)
+    # NOTE no space in disclosure array
+    |> Enum.map(fn disclosure -> Jason.encode!(disclosure) end)
+    |> Enum.map(fn disclosure -> Base.url_encode64(disclosure, padding: false) end)
+    |> Enum.map(fn disclosure ->
+      :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
+    end)
+
+    salts = Enum.map(claims_with_salt, fn {{key, _claim}, salt} ->
+      %{key => salt}
+    end)
+
+    claims = %{
+      "sub" => sub,
+      # TODO store credential
+      "jti" => Config.issuer() <> "/credentials/#{SecureRandom.uuid()}",
+      "iss" => Config.issuer(),
+      "iat" => :os.system_time(:seconds),
+      # TODO get exp from configuration
+      "exp" => :os.system_time(:seconds) + 3600 * 24 * 365 * 3,
+      # TODO implement c_nonce
+      "nonce" => "boruta",
+      "_sd" => sd,
+      "nationalities" => salts
     }
 
     credential = Token.generate_and_sign!(claims, signer)
