@@ -194,7 +194,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                 "Proof does not contain valid JWT claims, `aud` and `iat` claims are required."}
     end
 
-    test "issues credential", %{
+    test "issues jwt_vc credential", %{
       resource_owner: resource_owner,
       credential_params: credential_params
     } do
@@ -202,6 +202,72 @@ defmodule Boruta.VerifiableCredentialsTest do
               %{
                 credential: credential,
                 format: "jwt_vc"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:client),
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+    end
+
+    test "issues jwt_vc_json credential", %{
+      credential_params: credential_params
+    } do
+
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => "firstname"
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            types: ["VerifiableCredential"],
+            format: "jwt_vc_json",
+            claims: ["firstname"]
+          }
+        }
+      }
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "jwt_vc_json"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:client),
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+    end
+
+    test "issues vc+sd-jwt credential", %{
+      credential_params: credential_params
+    } do
+
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => "firstname"
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            types: ["VerifiableCredential"],
+            format: "vc+sd-jwt",
+            claims: ["firstname"]
+          }
+        }
+      }
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "vc+sd-jwt"
               }} =
                VerifiableCredentials.issue_verifiable_credential(
                  resource_owner,
