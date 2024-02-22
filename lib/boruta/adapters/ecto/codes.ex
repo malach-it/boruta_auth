@@ -38,10 +38,11 @@ defmodule Boruta.Ecto.Codes do
   end
 
   def get_by(id: id) do
-    case TokenStore.get(id: id) do
-      {:ok, token} ->
+    with {:ok, id} <- Ecto.UUID.cast(id),
+     {:ok, token} <- TokenStore.get(id: id) do
         token
-
+    else
+      :error -> nil
       {:error, "Not cached."} ->
         with %Token{} = token <-
                repo().one(

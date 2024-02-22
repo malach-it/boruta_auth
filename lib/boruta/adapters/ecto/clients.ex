@@ -61,8 +61,8 @@ defmodule Boruta.Ecto.Clients do
   def list_clients_jwk do
     clients = repo().all(Ecto.Client)
 
-    Enum.map(clients, &rsa_key/1)
-    |> Enum.uniq_by(fn %{"kid" => kid} -> kid end)
+    Enum.map(clients, fn client -> {client |> to_oauth_schema(), rsa_key(client)} end)
+    |> Enum.uniq_by(fn {_client, %{"kid" => kid}} -> kid end)
   end
 
   @impl Boruta.Openid.Clients

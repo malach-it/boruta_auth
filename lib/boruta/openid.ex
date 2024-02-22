@@ -1,5 +1,6 @@
 defmodule Boruta.OpenidModule do
   @moduledoc false
+
   @callback jwks(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @callback userinfo(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @callback register_client(
@@ -24,8 +25,10 @@ defmodule Boruta.Openid do
   """
 
   alias Boruta.ClientsAdapter
+  alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
   alias Boruta.Openid.CredentialResponse
@@ -35,7 +38,7 @@ defmodule Boruta.Openid do
   def jwks(conn, module) do
     jwk_keys = ClientsAdapter.list_clients_jwk()
 
-    module.jwk_list(conn, jwk_keys)
+    module.jwk_list(conn, Enum.map(jwk_keys, &elem(&1, 1)))
   end
 
   def userinfo(conn, module) do
@@ -90,6 +93,78 @@ defmodule Boruta.Openid do
 
     # TODO verify the proof https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-verifying-key-proof
     # TODO credential response
+  end
+
+  @type direct_post_params :: %{
+          code_id: String.t(),
+          id_token: nil | String.t()
+        }
+  @spec direct_post(
+          conn :: Plug.Conn.t(),
+          direct_post_params :: direct_post_params(),
+          module :: atom()
+        ) :: any()
+  def direct_post(conn, direct_post_params, module) do
+    with {:ok, _client} <- check_id_token_client(direct_post_params[:id_token]),
+         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+      query =
+        %{
+          code: code.value,
+          state: code.state
+        }
+        |> URI.encode_query()
+
+      response = URI.parse(code.redirect_uri)
+
+      response =
+        %{response | host: response.host || "", query: query}
+        |> URI.to_string()
+
+      module.direct_post_success(conn, response)
+    else
+      {:error, error} ->
+        module.authentication_failure(conn, error)
+
+      nil ->
+        module.code_not_found(conn)
+    end
+  end
+
+  defp check_id_token_client(nil),
+    do:
+      {:error,
+       %Error{
+         status: :unauthorized,
+         error: :unauthorized,
+         error_description: "id_token param missing."
+       }}
+
+  defp check_id_token_client(id_token) do
+    case Enum.reduce_while(ClientsAdapter.list_clients_jwk(), nil, fn {client, jwk}, _acc ->
+           case Client.Crypto.verify_id_token_signature(id_token, jwk) do
+             :ok -> {:halt, client}
+             error -> {:cont, error}
+           end
+         end) do
+      %Client{} = client ->
+        {:ok, client}
+
+      {:error, error} ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :unauthorized,
+           error_description: error
+         }}
+
+      _error ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :unauthorized,
+           error_description: "Provided id_token client not found."
+         }}
+    end
   end
 
   alias Boruta.Openid.Json.Schema
