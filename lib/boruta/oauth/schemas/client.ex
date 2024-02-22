@@ -92,7 +92,10 @@ defmodule Boruta.Oauth.Client do
     Enum.member?(supported_grant_types, "authorization_code")
   end
 
-  def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "preauthorization_code") do
+  def grant_type_supported?(
+        %__MODULE__{supported_grant_types: supported_grant_types},
+        "preauthorization_code"
+      ) do
     Enum.member?(supported_grant_types, "preauthorized_code")
   end
 
@@ -133,7 +136,8 @@ defmodule Boruta.Oauth.Client do
     not apply(__MODULE__, :"public_#{grant_type}?", [client])
   end
 
-  def should_check_secret?(%__MODULE__{public_client_id: "" <> _client_id}, _grant_type), do: false
+  def should_check_secret?(%__MODULE__{public_client_id: "" <> _client_id}, _grant_type),
+    do: false
 
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
@@ -154,7 +158,9 @@ defmodule Boruta.Oauth.Client do
   end
 
   @spec public?(client :: t()) :: boolean()
-  def public?(%__MODULE__{public_client_id: public_client_id}) when is_binary(public_client_id), do: true
+  def public?(%__MODULE__{public_client_id: public_client_id}) when is_binary(public_client_id),
+    do: true
+
   def public?(%__MODULE__{public_client_id: _public_client_id}), do: false
 
   defmodule Crypto do
@@ -229,6 +235,23 @@ defmodule Boruta.Oauth.Client do
       end
     end
 
+    @spec verify_id_token_signature(id_token :: String.t(), jwk :: JOSE.JWK.t()) ::
+            :ok | {:error, reason :: String.t()}
+    def verify_id_token_signature(id_token, jwk) do
+      case Joken.peek_header(id_token) do
+        {:ok, %{"alg" => alg}} ->
+          signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+
+          case Token.verify(id_token, signer) do
+            {:ok, _claims} -> :ok
+            {:error, reason} -> {:error, inspect(reason)}
+          end
+
+        {:error, reason} ->
+          {:error, inspect(reason)}
+      end
+    end
+
     @spec userinfo_sign(payload :: map(), client :: Client.t()) ::
             jwt :: String.t() | {:error, reason :: String.t()}
     def userinfo_sign(
@@ -246,7 +269,9 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(signature_alg, secret)
 
           :asymmetric ->
-            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => id_token_kid || kid_from_private_key(private_key)})
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{
+              "kid" => id_token_kid || kid_from_private_key(private_key)
+            })
         end
 
       case Token.encode_and_sign(payload, signer) do
