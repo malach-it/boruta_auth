@@ -820,7 +820,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "client_id" => "did:key:test",
                      "redirect_uri" => redirect_uri,
                      "client_metadata" => "{}",
-                     "nonce" => "nonce"
+                     "nonce" => "nonce",
+                     "scope" => "openid"
                    }
                  },
                  %ResourceOwner{sub: "sub"},
@@ -1043,7 +1044,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. Required properties code, client_id, redirect_uri are missing at #.",
+                    "Request body validation failed. Required properties code, client_id are missing at #.",
                   status: :bad_request
                 }}
     end
