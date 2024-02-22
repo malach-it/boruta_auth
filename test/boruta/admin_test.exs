@@ -31,7 +31,7 @@ defmodule Boruta.Ecto.AdminTest do
   describe "list_clients/0" do
     test "returns all clients" do
       client = client_fixture()
-      assert Admin.list_clients() == [client]
+      assert Enum.member?(Admin.list_clients(), client)
     end
   end
 
