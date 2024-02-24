@@ -1,8 +1,11 @@
 defmodule Boruta.VerifiableCredentials do
   @moduledoc false
 
+  import Boruta.Config, only: [universalresolver_base_url: 0]
+
   alias Boruta.Config
   alias Boruta.Oauth
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.ResourceOwner
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
@@ -188,9 +191,23 @@ defmodule Boruta.VerifiableCredentials do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->
         case(extract_key(headers)) do
-          {:did, _did} ->
-            # TODO verify signature from did
-            :ok
+          {:did, did} ->
+            resolver_url = "#{universalresolver_base_url()}/1.0/identifiers/#{did}"
+
+            case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
+              {:ok, %Finch.Response{body: body, status: 200}} ->
+                %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
+                  Jason.decode!(body)
+                signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+                case Client.Token.verify(jwt, signer) do
+                  {:ok, _claims} -> :ok
+                  {:error, error} -> {:error, inspect(error)}
+                end
+              {:ok, %Finch.Response{body: body}} ->
+                {:error, body}
+              _ ->
+                {:error, "Could not resolve did."}
+            end
 
           {:jwk, jwk} ->
             signer =
@@ -206,11 +223,11 @@ defmodule Boruta.VerifiableCredentials do
         end
 
       _ ->
-        {:error, "Proof has not been signed with provided material."}
+        {:error, "Proof has not been signed with provided cryptographic material."}
     end
   rescue
     _ ->
-      {:error, "Proof has not been signed with provided material."}
+      {:error, "Proof has not been signed with provided cryptographic material."}
   end
 
   defp validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
@@ -295,24 +312,27 @@ defmodule Boruta.VerifiableCredentials do
           end
       end
 
-    claims_with_salt = Enum.map(claims, fn claim ->
-      {claim, SecureRandom.hex()}
-    end)
+    claims_with_salt =
+      Enum.map(claims, fn claim ->
+        {claim, SecureRandom.hex()}
+      end)
 
-    sd = claims_with_salt
-          |> Enum.map(fn {{name, value}, salt} ->
-            [salt, name, value]
-    end)
-    # NOTE no space in disclosure array
-    |> Enum.map(fn disclosure -> Jason.encode!(disclosure) end)
-    |> Enum.map(fn disclosure -> Base.url_encode64(disclosure, padding: false) end)
-    |> Enum.map(fn disclosure ->
-      :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
-    end)
+    sd =
+      claims_with_salt
+      |> Enum.map(fn {{name, value}, salt} ->
+        [salt, name, value]
+      end)
+      # NOTE no space in disclosure array
+      |> Enum.map(fn disclosure -> Jason.encode!(disclosure) end)
+      |> Enum.map(fn disclosure -> Base.url_encode64(disclosure, padding: false) end)
+      |> Enum.map(fn disclosure ->
+        :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
+      end)
 
-    salts = Enum.map(claims_with_salt, fn {{key, _claim}, salt} ->
-      %{key => salt}
-    end)
+    salts =
+      Enum.map(claims_with_salt, fn {{key, _claim}, salt} ->
+        %{key => salt}
+      end)
 
     claims = %{
       "sub" => sub,

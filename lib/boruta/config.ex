@@ -21,6 +21,7 @@ defmodule Boruta.Config do
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
+    universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr",
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
@@ -41,6 +42,7 @@ defmodule Boruta.Config do
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
+            universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr",
             token_generator: Boruta.TokenGenerator,
             issuer: "boruta"
 
@@ -135,6 +137,12 @@ defmodule Boruta.Config do
       module ->
         module
     end
+  end
+
+  @spec universalresolver_base_url() :: String.t()
+  @doc false
+  def universalresolver_base_url do
+    Keyword.fetch!(oauth_config(), :universalresolver_base_url)
   end
 
   @spec issuer() :: String.t()
