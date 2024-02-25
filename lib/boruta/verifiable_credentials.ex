@@ -274,7 +274,7 @@ defmodule Boruta.VerifiableCredentials do
       "iss" => Config.issuer(),
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
-      "exp" => :os.system_time(:seconds) + 3600 * 24 * 365 * 3,
+      "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
       # TODO implement c_nonce
       "nonce" => "boruta",
       "vc" => %{
