@@ -21,6 +21,7 @@ defmodule Boruta.Oauth.ResourceOwner do
             String.t() => %{
               claims: list(String.t()),
               format: list(String.t()),
+              time_to_live: integer(),
               types: list(String.t() | %{
                 String.t() => String.t()
               })

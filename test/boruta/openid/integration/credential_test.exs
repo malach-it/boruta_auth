@@ -133,6 +133,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
              "UniversityDegree" => %{
                types: ["VerifiableCredential"],
                format: "jwt_vc",
+               time_to_live: 3600,
                claims: ["family_name"]
              }
            },
