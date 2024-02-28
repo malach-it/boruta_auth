@@ -3,24 +3,38 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
   import Boruta.Factory
 
-  alias Boruta.Ecto.OauthMapper
-  alias Boruta.Oauth.Client
+  alias Boruta.ClientsAdapter
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
+  alias Boruta.VerifiableCredentials
 
   describe "authenticates with direct post response" do
     setup do
-      client = insert(:client, id_token_signature_alg: "RS512")
+      client = ClientsAdapter.public!()
 
       code =
         insert(:token,
           type: "code",
           redirect_uri: "http://redirect.uri",
           state: "state",
-          sub: "did:key:test"
+          sub: "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
         )
 
-      {:ok, client: client, code: code}
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "kid" => "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, id_token, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "client_id" => "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
+          },
+          signer
+        )
+
+      {:ok, client: client, code: code, id_token: id_token}
     end
 
     test "returns authentication failure without id_token" do
@@ -50,7 +64,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
               %Boruta.Oauth.Error{
                 status: :unauthorized,
                 error: :unauthorized,
-                error_description: ":token_malformed"
+                error_description: "Token has not been signed with provided cryptographic material."
               }} =
                Openid.direct_post(
                  conn,
@@ -62,8 +76,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "returns not found with a bad code", %{client: client} do
-      payload = %{}
+    test "returns not found with a bad code", %{id_token: id_token} do
       conn = %Plug.Conn{}
 
       assert {:code_not_found} =
@@ -71,15 +84,19 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  conn,
                  %{
                    code_id: "bad_code_id",
-                   id_token:
-                     Client.Crypto.id_token_sign(payload, OauthMapper.to_oauth_schema(client))
+                   id_token: id_token
                  },
                  ApplicationMock
                )
     end
 
-    test "retruns an error when code subject does not match", %{client: client, code: code} do
-      payload = %{client_id: "did:key:other"}
+    test "retruns an error when code subject does not match", %{id_token: id_token} do
+      code = insert(:token,
+        type: "code",
+        redirect_uri: "http://redirect.uri",
+        state: "state",
+        sub: "did:jwk:other"
+      )
       conn = %Plug.Conn{}
 
       assert {:authentication_failure, "Code subject do not match with provided id_token"} =
@@ -87,15 +104,13 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  conn,
                  %{
                    code_id: code.id,
-                   id_token:
-                     Client.Crypto.id_token_sign(payload, OauthMapper.to_oauth_schema(client))
+                   id_token: id_token
                  },
                  ApplicationMock
                )
     end
 
-    test "authenticates", %{client: client, code: code} do
-      payload = %{client_id: code.sub}
+    test "authenticates", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
       assert {:direct_post_success, callback_uri} =
@@ -103,8 +118,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  conn,
                  %{
                    code_id: code.id,
-                   id_token:
-                     Client.Crypto.id_token_sign(payload, OauthMapper.to_oauth_schema(client))
+                   id_token: id_token
                  },
                  ApplicationMock
                )

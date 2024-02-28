@@ -28,7 +28,6 @@ defmodule Boruta.Openid do
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
-  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
   alias Boruta.Openid.CredentialResponse
@@ -90,9 +89,6 @@ defmodule Boruta.Openid do
 
         module.credential_failure(conn, error)
     end
-
-    # TODO verify the proof https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-verifying-key-proof
-    # TODO credential response
   end
 
   @type direct_post_params :: %{
@@ -105,9 +101,9 @@ defmodule Boruta.Openid do
           module :: atom()
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
-    with {:ok, client} <- check_id_token_client(direct_post_params[:id_token]),
+    with {:ok, claims} <- check_id_token_client(direct_post_params[:id_token]),
          %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
-         :ok <- check_subject(direct_post_params[:id_token], code, client) do
+         :ok <- check_subject(claims, code) do
       query =
         %{
           code: code.value,
@@ -141,14 +137,9 @@ defmodule Boruta.Openid do
        }}
 
   defp check_id_token_client(id_token) do
-    case Enum.reduce_while(ClientsAdapter.list_clients_jwk(), nil, fn {client, jwk}, _acc ->
-           case Client.Crypto.verify_id_token_signature(id_token, jwk) do
-             {:ok, _claims} -> {:halt, client}
-             error -> {:cont, error}
-           end
-         end) do
-      %Client{} = client ->
-        {:ok, client}
+    case VerifiableCredentials.validate_signature(id_token) do
+      {:ok, claims} ->
+        {:ok, claims}
 
       {:error, error} ->
         {:error,
@@ -168,12 +159,10 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_subject(id_token, code, client) do
-    with {:ok, claims} <- Client.Crypto.verify_id_token_signature(id_token, client.public_key |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()),
-         true <- claims["client_id"] == code.sub do
-      :ok
-    else
-      _ -> {:error, "Code subject do not match with provided id_token"}
+  defp check_subject(claims, code) do
+    case claims["client_id"] == code.sub do
+      true -> :ok
+      false -> {:error, "Code subject do not match with provided id_token"}
     end
   end
 

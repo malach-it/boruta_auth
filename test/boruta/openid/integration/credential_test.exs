@@ -99,7 +99,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                 }}
     end
 
-    test "returns a credential with a valid credential type" do
+    test "returns a credential" do
       {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
 
       signer =
