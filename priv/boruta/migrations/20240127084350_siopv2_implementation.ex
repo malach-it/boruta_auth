@@ -54,11 +54,20 @@ defmodule Boruta.Migrations.Siopv2Implementation do
           current_timestamp
         )
         """)
+
+        # 20240228103215_change_oauth_token_sub.exs
+        alter table(:oauth_tokens) do
+          modify :sub, :text
+        end
       end
 
       def down do
         alter table(:oauth_clients) do
           remove(:public_client_id, :string)
+        end
+
+        alter table(:oauth_tokens) do
+          modify :sub, :string
         end
       end
     end

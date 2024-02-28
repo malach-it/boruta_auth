@@ -76,12 +76,7 @@ defmodule Boruta.VerifiableCredentials do
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
          :ok <- validate_claims(proof["jwt"]),
-         :ok <- validate_signature(proof["jwt"]),
-         {:ok, claims} <-
-           extract_credential_claims(
-             resource_owner,
-             credential_configuration
-           ),
+         {:ok, claims} <- validate_signature(proof["jwt"]),
          {:ok, credential} <-
            generate_credential(
              claims,
@@ -121,6 +116,52 @@ defmodule Boruta.VerifiableCredentials do
         {:error, "authorization_details validation failed. #{inspect(error)}"}
     end
   end
+
+  @spec validate_signature(jwt :: String.t()) :: {:ok, claims :: map()} | {:error, reason :: String.t()}
+  def validate_signature(jwt) when is_binary(jwt) do
+    case Joken.peek_header(jwt) do
+      {:ok, %{"alg" => alg} = headers} ->
+        case(extract_key(headers)) do
+          {:did, did} ->
+            resolver_url = "#{universalresolver_base_url()}/1.0/identifiers/#{did}"
+
+            case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
+              {:ok, %Finch.Response{body: body, status: 200}} ->
+                %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
+                  Jason.decode!(body)
+                signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+                case Client.Token.verify(jwt, signer) do
+                  {:ok, claims} -> {:ok, claims}
+                  {:error, error} -> {:error, inspect(error)}
+                end
+              {:ok, %Finch.Response{body: body}} ->
+                {:error, body}
+              _ ->
+                {:error, "Could not resolve did."}
+            end
+
+          {:jwk, jwk} ->
+            signer =
+              Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
+
+            case Token.verify(jwt, signer) do
+              {:ok, claims} ->
+                {:ok, claims}
+
+              _ ->
+                {:error, "Bad proof signature"}
+            end
+        end
+
+      _ ->
+        {:error, "Token has not been signed with provided cryptographic material."}
+    end
+  rescue
+    _ ->
+      {:error, "Token has not been signed with provided cryptographic material."}
+  end
+
+  def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp validate_proof_format(proof) do
     case ExJsonSchema.Validator.validate(
@@ -186,66 +227,6 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   defp validate_claims(_jwt), do: {:error, "Proof does not contain a valid JWT."}
-
-  defp validate_signature(jwt) when is_binary(jwt) do
-    case Joken.peek_header(jwt) do
-      {:ok, %{"alg" => alg} = headers} ->
-        case(extract_key(headers)) do
-          {:did, did} ->
-            resolver_url = "#{universalresolver_base_url()}/1.0/identifiers/#{did}"
-
-            case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
-              {:ok, %Finch.Response{body: body, status: 200}} ->
-                %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
-                  Jason.decode!(body)
-                signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
-                case Client.Token.verify(jwt, signer) do
-                  {:ok, _claims} -> :ok
-                  {:error, error} -> {:error, inspect(error)}
-                end
-              {:ok, %Finch.Response{body: body}} ->
-                {:error, body}
-              _ ->
-                {:error, "Could not resolve did."}
-            end
-
-          {:jwk, jwk} ->
-            signer =
-              Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
-
-            case Token.verify(jwt, signer) do
-              {:ok, _claims} ->
-                :ok
-
-              _ ->
-                {:error, "Bad proof signature"}
-            end
-        end
-
-      _ ->
-        {:error, "Proof has not been signed with provided cryptographic material."}
-    end
-  rescue
-    _ ->
-      {:error, "Proof has not been signed with provided cryptographic material."}
-  end
-
-  defp validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
-
-  defp extract_credential_claims(resource_owner, credential_configuration) do
-    claims =
-      credential_configuration[:claims]
-      |> Enum.map(fn
-        %{"name" => name, "pointer" => pointer} ->
-          {name, get_in(resource_owner.extra_claims, String.split(pointer, "."))}
-
-        attribute when is_binary(attribute) ->
-          {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
-      end)
-      |> Enum.into(%{})
-
-    {:ok, claims}
-  end
 
   defp generate_credential(claims, credential_configuration, proof, client, format)
        when format in ["jwt_vc", "jwt_vc_json"] do
