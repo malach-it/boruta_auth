@@ -105,8 +105,9 @@ defmodule Boruta.Openid do
           module :: atom()
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
-    with {:ok, _client} <- check_id_token_client(direct_post_params[:id_token]),
-         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+    with {:ok, client} <- check_id_token_client(direct_post_params[:id_token]),
+         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
+         :ok <- check_subject(direct_post_params[:id_token], code, client) do
       query =
         %{
           code: code.value,
@@ -142,7 +143,7 @@ defmodule Boruta.Openid do
   defp check_id_token_client(id_token) do
     case Enum.reduce_while(ClientsAdapter.list_clients_jwk(), nil, fn {client, jwk}, _acc ->
            case Client.Crypto.verify_id_token_signature(id_token, jwk) do
-             :ok -> {:halt, client}
+             {:ok, _claims} -> {:halt, client}
              error -> {:cont, error}
            end
          end) do
@@ -164,6 +165,15 @@ defmodule Boruta.Openid do
            error: :unauthorized,
            error_description: "Provided id_token client not found."
          }}
+    end
+  end
+
+  defp check_subject(id_token, code, client) do
+    with {:ok, claims} <- Client.Crypto.verify_id_token_signature(id_token, client.public_key |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()),
+         true <- claims["client_id"] == code.sub do
+      :ok
+    else
+      _ -> {:error, "Code subject do not match with provided id_token"}
     end
   end
 

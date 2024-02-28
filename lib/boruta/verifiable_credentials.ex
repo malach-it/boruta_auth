@@ -273,7 +273,6 @@ defmodule Boruta.VerifiableCredentials do
       "jti" => Config.issuer() <> "/credentials/#{SecureRandom.uuid()}",
       "iss" => Config.issuer(),
       "iat" => :os.system_time(:seconds),
-      # TODO get exp from configuration
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
       # TODO implement c_nonce
       "nonce" => "boruta",
