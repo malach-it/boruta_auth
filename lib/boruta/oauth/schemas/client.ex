@@ -243,7 +243,7 @@ defmodule Boruta.Oauth.Client do
           signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
           case Token.verify(id_token, signer) do
-            {:ok, _claims} -> :ok
+            {:ok, claims} -> {:ok, claims}
             {:error, reason} -> {:error, inspect(reason)}
           end
 

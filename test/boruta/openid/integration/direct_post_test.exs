@@ -11,7 +11,14 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   describe "authenticates with direct post response" do
     setup do
       client = insert(:client, id_token_signature_alg: "RS512")
-      code = insert(:token, type: "code", redirect_uri: "http://redirect.uri", state: "state")
+
+      code =
+        insert(:token,
+          type: "code",
+          redirect_uri: "http://redirect.uri",
+          state: "state",
+          sub: "did:key:test"
+        )
 
       {:ok, client: client, code: code}
     end
@@ -71,8 +78,24 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    test "retruns an error when code subject does not match", %{client: client, code: code} do
+      payload = %{client_id: "did:key:other"}
+      conn = %Plug.Conn{}
+
+      assert {:authentication_failure, "Code subject do not match with provided id_token"} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token:
+                     Client.Crypto.id_token_sign(payload, OauthMapper.to_oauth_schema(client))
+                 },
+                 ApplicationMock
+               )
+    end
+
     test "authenticates", %{client: client, code: code} do
-      payload = %{}
+      payload = %{client_id: code.sub}
       conn = %Plug.Conn{}
 
       assert {:direct_post_success, callback_uri} =
@@ -85,6 +108,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  },
                  ApplicationMock
                )
+
       assert callback_uri =~ ~r/#{code.redirect_uri}/
       assert callback_uri =~ ~r/code=#{code.value}/
       assert callback_uri =~ ~r/state=#{code.state}/
