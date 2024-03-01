@@ -46,7 +46,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
               token :: Boruta.Oauth.Token.t() | String.t()
           },
           request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
-        ) :: t() | CredentialOfferResponse.t() | {:error, Boruta.Oauth.Error.t()}
+        ) :: t() | CredentialOfferResponse.t() | SiopV2Response.t() | {:error, Boruta.Oauth.Error.t()}
   def from_tokens(
         %{
           code: %Token{

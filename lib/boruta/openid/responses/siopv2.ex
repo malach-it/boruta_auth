@@ -55,6 +55,8 @@ defmodule Boruta.Openid.SiopV2Response do
     }
   end
 
+  @dialyzer {:no_fail_call, redirect_to_deeplink: 2}
+  @dialyzer {:no_return, redirect_to_deeplink: 2}
   @spec redirect_to_deeplink(
           response :: t(),
           redirect_uri_url_fn :: (code :: String.t() -> url :: String.t())
