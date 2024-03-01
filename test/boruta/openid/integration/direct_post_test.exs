@@ -99,7 +99,12 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       )
       conn = %Plug.Conn{}
 
-      assert {:authentication_failure, "Code subject do not match with provided id_token"} =
+      assert {:authentication_failure,
+         %Boruta.Oauth.Error{
+           error: :bad_request,
+           status: :bad_request,
+           error_description: "Code subject do not match with provided id_token"
+         }} =
                Openid.direct_post(
                  conn,
                  %{

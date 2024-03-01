@@ -161,8 +161,16 @@ defmodule Boruta.Openid do
 
   defp check_subject(claims, code) do
     case claims["client_id"] == code.sub do
-      true -> :ok
-      false -> {:error, "Code subject do not match with provided id_token"}
+      true ->
+        :ok
+
+      false ->
+        {:error,
+         %Error{
+           error: :bad_request,
+           status: :bad_request,
+           error_description: "Code subject do not match with provided id_token"
+         }}
     end
   end
 
