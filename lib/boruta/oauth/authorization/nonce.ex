@@ -10,7 +10,12 @@ defprotocol Boruta.Oauth.Authorization.Nonce do
       iex> authorize(%CodeRequest{...})
       :ok
   """
-  @spec authorize(request :: Boruta.Oauth.CodeRequest.t() | Boruta.Oauth.TokenRequest.t()) ::
+  @spec authorize(
+          request ::
+            Boruta.Oauth.CodeRequest.t()
+            | Boruta.Oauth.TokenRequest.t()
+            | Boruta.Oauth.SiopV2Request.t()
+        ) ::
           :ok | {:error, Boruta.Oauth.Error.t()}
   def authorize(request)
 end
@@ -27,6 +32,7 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.SiopV2Request do
            error: :invalid_request,
            error_description: "OpenID requests require a nonce."
          }}
+
         # NOTE bypass in order to pass the EBSI test cases https://hub.ebsi.eu/wallet-conformance/issue-to-holder/flow
         :ok
 

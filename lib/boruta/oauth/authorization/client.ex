@@ -45,14 +45,7 @@ defmodule Boruta.Oauth.Authorization.Client do
             ]
         ) ::
           {:ok, Client.t()}
-          | {:error,
-             %Error{
-               :error => :invalid_client,
-               :error_description => String.t(),
-               :format => nil,
-               :redirect_uri => nil,
-               :status => :unauthorized
-             }}
+          | {:error, Error.t()}
   def authorize(id: id, source: source, grant_type: grant_type)
       when not is_nil(id) do
     with %Client{} = client <- ClientsAdapter.get_client(id),
@@ -133,12 +126,12 @@ defmodule Boruta.Oauth.Authorization.Client do
            error_description: "Client do not support given grant type."
          }}
 
-      {:error, :invalid_pkce_request} ->
+      {:error, reason} ->
         {:error,
          %Error{
            status: :bad_request,
            error: :invalid_request,
-           error_description: "PKCE request invalid."
+           error_description: to_string(reason)
          }}
     end
   end

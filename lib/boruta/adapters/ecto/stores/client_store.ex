@@ -18,7 +18,7 @@ defmodule Boruta.Ecto.ClientStore do
     cache_backend().get({Client, id})
   end
 
-  @spec get_public() :: client :: Boruta.Oauth.Client.t()
+  @spec get_public() :: {:ok, client :: Boruta.Oauth.Client.t()} | {:error, reason :: String.t()}
   def get_public do
     case cache_backend().get({Client, :public}) do
       nil -> {:error, "No public client stored."}

@@ -4,7 +4,6 @@ defmodule Boruta.VerifiableCredentials do
   import Boruta.Config, only: [universalresolver_base_url: 0]
 
   alias Boruta.Config
-  alias Boruta.Oauth
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.ResourceOwner
   alias ExJsonSchema.Schema
@@ -117,41 +116,12 @@ defmodule Boruta.VerifiableCredentials do
     end
   end
 
-  @spec validate_signature(jwt :: String.t()) :: {:ok, claims :: map()} | {:error, reason :: String.t()}
+  @spec validate_signature(jwt :: String.t()) ::
+          {:ok, claims :: map()} | {:error, reason :: String.t()}
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->
-        case(extract_key(headers)) do
-          {:did, did} ->
-            resolver_url = "#{universalresolver_base_url()}/1.0/identifiers/#{did}"
-
-            case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
-              {:ok, %Finch.Response{body: body, status: 200}} ->
-                %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
-                  Jason.decode!(body)
-                signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
-                case Client.Token.verify(jwt, signer) do
-                  {:ok, claims} -> {:ok, claims}
-                  {:error, error} -> {:error, inspect(error)}
-                end
-              {:ok, %Finch.Response{body: body}} ->
-                {:error, body}
-              _ ->
-                {:error, "Could not resolve did."}
-            end
-
-          {:jwk, jwk} ->
-            signer =
-              Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
-
-            case Token.verify(jwt, signer) do
-              {:ok, claims} ->
-                {:ok, claims}
-
-              _ ->
-                {:error, "Bad proof signature"}
-            end
-        end
+        verify_jwt(extract_key(headers), alg, jwt)
 
       _ ->
         {:error, "Token has not been signed with provided cryptographic material."}
@@ -162,6 +132,41 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
+
+  defp verify_jwt({:did, did}, alg, jwt) do
+    resolver_url = "#{universalresolver_base_url()}/1.0/identifiers/#{did}"
+
+    case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
+      {:ok, %Finch.Response{body: body, status: 200}} ->
+        %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
+          Jason.decode!(body)
+
+        signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+
+        case Client.Token.verify(jwt, signer) do
+          {:ok, claims} -> {:ok, claims}
+          {:error, error} -> {:error, inspect(error)}
+        end
+
+      {:ok, %Finch.Response{body: body}} ->
+        {:error, body}
+
+      _ ->
+        {:error, "Could not resolve did."}
+    end
+  end
+
+  defp verify_jwt({:jwk, jwk}, alg, jwt) do
+    signer = Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
+
+    case Token.verify(jwt, signer) do
+      {:ok, claims} ->
+        {:ok, claims}
+
+      _ ->
+        {:error, "Bad proof signature"}
+    end
+  end
 
   defp validate_proof_format(proof) do
     case ExJsonSchema.Validator.validate(
@@ -236,7 +241,7 @@ defmodule Boruta.VerifiableCredentials do
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",
-          "kid" => Oauth.Client.Crypto.kid_from_private_key(client.private_key)
+          "kid" => Client.Crypto.kid_from_private_key(client.private_key)
         }
       )
 
@@ -280,7 +285,7 @@ defmodule Boruta.VerifiableCredentials do
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",
-          "kid" => Oauth.Client.Crypto.kid_from_private_key(client.private_key)
+          "kid" => Client.Crypto.kid_from_private_key(client.private_key)
         }
       )
 

@@ -29,7 +29,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     no_umbrella!("boruta.gen.migration")
     repos = parse_repo(args)
 
-    Enum.map(repos, fn repo ->
+    Enum.each(repos, fn repo ->
       ensure_repo(repo, args)
 
       {:ok, migration_paths} =

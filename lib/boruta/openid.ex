@@ -148,14 +148,6 @@ defmodule Boruta.Openid do
            error: :unauthorized,
            error_description: error
          }}
-
-      _error ->
-        {:error,
-         %Error{
-           status: :unauthorized,
-           error: :unauthorized,
-           error_description: "Provided id_token client not found."
-         }}
     end
   end
 
