@@ -75,7 +75,12 @@ defmodule Boruta.VerifiableCredentials do
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
          :ok <- validate_claims(proof["jwt"]),
-         {:ok, claims} <- validate_signature(proof["jwt"]),
+         {:ok, claims} <-
+           extract_credential_claims(
+             resource_owner,
+             credential_configuration
+           ),
+         {:ok, _claims} <- validate_signature(proof["jwt"]),
          {:ok, credential} <-
            generate_credential(
              claims,
@@ -336,6 +341,21 @@ defmodule Boruta.VerifiableCredentials do
     credential = Token.generate_and_sign!(claims, signer)
 
     {:ok, credential}
+  end
+
+  defp extract_credential_claims(resource_owner, credential_configuration) do
+    claims =
+      credential_configuration[:claims]
+      |> Enum.map(fn
+        %{"name" => name, "pointer" => pointer} ->
+          {name, get_in(resource_owner.extra_claims, String.split(pointer, "."))}
+
+        attribute when is_binary(attribute) ->
+          {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
+      end)
+      |> Enum.into(%{})
+
+    {:ok, claims}
   end
 
   defp extract_key(%{"kid" => did}), do: {:did, did}
