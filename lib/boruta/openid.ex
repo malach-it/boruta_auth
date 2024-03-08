@@ -103,7 +103,7 @@ defmodule Boruta.Openid do
   def direct_post(conn, direct_post_params, module) do
     with {:ok, claims} <- check_id_token_client(direct_post_params[:id_token]),
          %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
-         :ok <- check_subject(claims, code) do
+         :ok <- check_issuer(claims, code) do
       query =
         %{
           code: code.value,
@@ -151,8 +151,8 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_subject(claims, code) do
-    case claims["client_id"] == code.sub do
+  defp check_issuer(claims, code) do
+    case claims["iss"] == code.sub do
       true ->
         :ok
 
