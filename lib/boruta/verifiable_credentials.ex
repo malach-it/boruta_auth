@@ -128,12 +128,12 @@ defmodule Boruta.VerifiableCredentials do
       {:ok, %{"alg" => alg} = headers} ->
         verify_jwt(extract_key(headers), alg, jwt)
 
-      _ ->
-        {:error, "Token has not been signed with provided cryptographic material."}
+      error ->
+        {:error, inspect(error)}
     end
   rescue
-    _ ->
-      {:error, "Token has not been signed with provided cryptographic material."}
+    error ->
+      {:error, inspect(error)}
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
