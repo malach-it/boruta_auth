@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Authorization.Code do
   Check against given params and return the corresponding code
   """
 
+  alias Boruta.AccessTokensAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error

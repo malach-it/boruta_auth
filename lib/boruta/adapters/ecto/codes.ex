@@ -81,7 +81,11 @@ defmodule Boruta.Ecto.Codes do
 
   @impl Boruta.Oauth.Codes
   def revoke(%Oauth.Token{value: value} = code) do
-    with %Token{} = token <- repo().get_by(Token, value: value),
+    with %Token{} = previous_token <- repo().get_by(Token, previous_code: value),
+         %Token{} = token <- repo().get_by(Token, value: value),
+         {:ok, _token} <-
+           Token.revoke_changeset(previous_token)
+           |> repo().update(),
          {:ok, token} <-
            Token.revoke_changeset(token)
            |> repo().update(),
