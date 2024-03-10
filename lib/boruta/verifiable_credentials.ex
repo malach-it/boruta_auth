@@ -343,6 +343,8 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, credential}
   end
 
+  defp generate_credential(_claims, _credential_configuration, _proof, _client, _format), do: {:error, "Unkown format."}
+
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
       credential_configuration[:claims]
