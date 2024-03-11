@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
+## [Unreleased]
+
+### Security
+
+- revoke previous issued tokens in case of code replay
+
 ## [2.3.2] - 2023-12-23
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
