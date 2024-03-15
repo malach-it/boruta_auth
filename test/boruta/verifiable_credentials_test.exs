@@ -260,7 +260,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "credential_identifier" => %{
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: ["firstname"]
+            claims: ["firstname"],
+            time_to_live: 60
           }
         }
       }
