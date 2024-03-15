@@ -282,7 +282,7 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, credential}
   end
 
-  defp generate_credential(claims, _credential_configuration, proof, client, format)
+  defp generate_credential(claims, credential_configuration, proof, client, format)
        when format in ["vc+sd-jwt"] do
     signer =
       Joken.Signer.create(
@@ -307,11 +307,14 @@ defmodule Boruta.VerifiableCredentials do
         {claim, SecureRandom.hex()}
       end)
 
-    sd =
+    disclosures =
       claims_with_salt
       |> Enum.map(fn {{name, value}, salt} ->
         [salt, name, value]
       end)
+
+    sd =
+      disclosures
       # NOTE no space in disclosure array
       |> Enum.map(fn disclosure -> Jason.encode!(disclosure) end)
       |> Enum.map(fn disclosure -> Base.url_encode64(disclosure, padding: false) end)
@@ -319,28 +322,21 @@ defmodule Boruta.VerifiableCredentials do
         :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
       end)
 
-    salts =
-      Enum.map(claims_with_salt, fn {{key, _claim}, salt} ->
-        %{key => salt}
-      end)
-
     claims = %{
       "sub" => sub,
-      # TODO store credential
-      "jti" => Config.issuer() <> "/credentials/#{SecureRandom.uuid()}",
       "iss" => Config.issuer(),
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
-      "exp" => :os.system_time(:seconds) + 3600 * 24 * 365 * 3,
+      "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
       # TODO implement c_nonce
       "nonce" => "boruta",
-      "_sd" => sd,
-      "nationalities" => salts
+      "_sd" => sd
     }
 
     credential = Token.generate_and_sign!(claims, signer)
+    tokens = [credential] ++ (disclosures |> Enum.map(&Jason.encode!/1) |> Enum.map(&Base.url_encode64(&1, padding: false)))
 
-    {:ok, credential}
+    {:ok, Enum.join(tokens, "~")}
   end
 
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format), do: {:error, "Unkown format."}
