@@ -32,6 +32,20 @@ defmodule Boruta.Ecto.Token do
           previous_code: String.t() | nil
         }
 
+  @authorization_details_schema %{
+    "type" => "array",
+    "items" => %{
+      "type" => "object",
+      "properties" => %{
+        "type" => %{"type" => "string", "pattern" => "^openid_credential$"},
+        "format" => %{"type" => "string"},
+        "credential_configuration_id" => %{"type" => "string"},
+        "credential_identifiers" => %{"type" => "array", "items" => %{"type" => "string"}}
+      },
+      "required" => ["type", "format"]
+    }
+  }
+
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime_usec
@@ -81,6 +95,7 @@ defmodule Boruta.Ecto.Token do
     |> validate_required([:client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
+    |> validate_authorization_details()
     |> put_value()
     |> put_expires_at()
   end
@@ -263,5 +278,28 @@ defmodule Boruta.Ecto.Token do
       :code_challenge_hash,
       changeset |> get_field(:code_challenge, "") |> Oauth.Token.hash()
     )
+  end
+
+  defp validate_authorization_details(changeset) do
+    with [_h|_t] = authorization_details <- get_field(changeset, :authorization_details),
+         :ok <-
+           ExJsonSchema.Validator.validate(
+             @authorization_details_schema,
+             authorization_details,
+             error_formatter: BorutaFormatter
+           ) do
+      :ok
+    else
+      {:error, errors} when is_list(errors) ->
+        error = "authorization_details validation failed. " <> Enum.join(errors, " ")
+        add_error(changeset, :authorization_details, error)
+
+      {:error, error} ->
+        error = "authorization_details validation failed. #{inspect(error)}"
+        add_error(changeset, :authorization_details, error)
+
+      _ ->
+        changeset
+    end
   end
 end

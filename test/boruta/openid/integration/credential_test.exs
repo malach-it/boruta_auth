@@ -68,13 +68,14 @@ defmodule Boruta.OpenidTest.CredentialTest do
                   status: :bad_request,
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. Required properties types, proof are missing at #."
+                  "Request body validation failed. Required properties format, proof, credential_identifier are missing at #."
                 }}
     end
 
     test "returns an error with an invalid types" do
       credential_params = %{
-        "types" => ["bad type"],
+        "credential_identifier" => "bad type",
+        "format" => "jwt_vc",
         "proof" => %{"proof_type" => "jwt", "jwt" => ""}
       }
 
@@ -122,7 +123,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
         "jwt" => token
       }
 
-      credential_params = %{"types" => ["VerifiableCredential"], "proof" => proof}
+      credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
       sub = SecureRandom.uuid()
 
       expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
@@ -146,7 +147,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
       %Token{value: access_token} =
         insert(:token,
           sub: sub,
-          authorization_details: [%{"credential_identifiers" => ["identifier"]}]
+          authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}]
         )
 
       conn =

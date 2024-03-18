@@ -8,6 +8,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
@@ -18,7 +19,13 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
   describe "preauthorize" do
     setup do
       user = %User{}
-      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+
+      resource_owner = %ResourceOwner{
+        sub: user.id,
+        username: user.email,
+        authorization_details: []
+      }
+
       client = insert(:client)
 
       wildcard_redirect_uri_client = insert(:client, redirect_uris: ["https://*.uri"])
@@ -123,7 +130,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
                 }}
     end
 
-    test "returns a token", %{client: client, resource_owner: resource_owner} do
+    test "preauthorizes", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 
       case Oauth.preauthorize(
@@ -152,7 +159,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       end
     end
 
-    test "returns a token with a wildcard client redirect uri", %{
+    test "preauthorizes with a wildcard client redirect uri", %{
       wildcard_redirect_uri_client: client,
       resource_owner: resource_owner
     } do
@@ -181,7 +188,7 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       assert authorized_sub == resource_owner.sub
     end
 
-    test "returns a token if scope is authorized", %{
+    test "preauthorizes if scope is authorized", %{
       client_with_scope: client,
       resource_owner: resource_owner
     } do
@@ -191,31 +198,50 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
       %{name: given_scope} = List.first(client.authorized_scopes)
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.preauthorize(
-             %Plug.Conn{
-               query_params: %{
-                 "response_type" => "token",
-                 "client_id" => client.id,
-                 "redirect_uri" => redirect_uri,
-                 "scope" => given_scope
-               }
-             },
-             resource_owner,
-             ApplicationMock
-           ) do
-        {:preauthorize_success,
-         %AuthorizationSuccess{
-           client: authorized_client,
-           redirect_uri: authorized_redirect_uri,
-           sub: authorized_sub
-         }} ->
-          assert authorized_client.id == client.id
-          assert authorized_redirect_uri == redirect_uri
-          assert authorized_sub == resource_owner.sub
+      assert {:preauthorize_success,
+              %AuthorizationSuccess{
+                client: authorized_client,
+                redirect_uri: authorized_redirect_uri,
+                sub: authorized_sub
+              }} =
+               Oauth.preauthorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert authorized_client.id == client.id
+      assert authorized_redirect_uri == redirect_uri
+      assert authorized_sub == resource_owner.sub
+    end
+
+    test "returns a token", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      {:authorize_success,
+       %AuthorizeResponse{
+         access_token: access_token
+       }} =
+        Oauth.authorize(
+          %Plug.Conn{
+            query_params: %{
+              "response_type" => "token",
+              "client_id" => client.id,
+              "redirect_uri" => redirect_uri
+            }
+          },
+          resource_owner,
+          ApplicationMock
+        )
+
+      assert access_token
     end
 
     test "returns an error if scope is unknown or unauthorized", %{

@@ -5,7 +5,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
   @enforce_keys [:credential_issuer]
   defstruct credential_issuer: nil,
-    credentials: [],
+    credential_configuration_ids: [],
     grants: %{}
 
   alias Boruta.Config
@@ -13,7 +13,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
   @type t :: %__MODULE__{
     credential_issuer: String.t(),
-    credentials: list(String.t()),
+    credential_configuration_ids: list(String.t()),
     grants: %{
       optional(String.t()) => map()
     }
@@ -24,13 +24,13 @@ defmodule Boruta.Openid.CredentialOfferResponse do
   }, %PreauthorizedCodeRequest{
     resource_owner: resource_owner
   }) do
-    credentials = Enum.flat_map(resource_owner.authorization_details, fn detail ->
-      detail["credential_identifiers"]
+    credentials = Enum.map(resource_owner.authorization_details, fn detail ->
+      detail["credential_configuration_id"]
     end)
     |> Enum.uniq()
     %__MODULE__{
       credential_issuer: Config.issuer(),
-      credentials: credentials,
+      credential_configuration_ids: credentials,
       grants: %{
         "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
           "pre-authorized_code" => preauthorized_code.value

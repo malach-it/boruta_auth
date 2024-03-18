@@ -7,10 +7,7 @@ defmodule Boruta.Openid.Json.Schema do
       "type" => "object",
       "properties" => %{
         "format" => %{"type" => "string"},
-        "types" => %{
-          "type" => "array",
-          "items" => %{"type" => "string"}
-        },
+        "doctype" => %{"type" => "string"},
         "proof" => %{
           "type" => "object",
           "properties" => %{
@@ -21,7 +18,7 @@ defmodule Boruta.Openid.Json.Schema do
         },
         "credential_identifier" => %{"type" => "string"},
       },
-      "required" => ["types", "proof"]
+      "required" => ["format", "proof", "credential_identifier"]
     }
     |> Schema.resolve()
   end

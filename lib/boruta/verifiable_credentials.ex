@@ -68,9 +68,10 @@ defmodule Boruta.VerifiableCredentials do
         _ -> resource_owner.credential_configuration
       end
 
+    # TODO filter from resource owner authorization details
     with {_credential_identifier, credential_configuration} <-
            Enum.find(credential_configuration, fn {_identifier, configuration} ->
-             Enum.empty?(configuration[:types] -- credential_params["types"])
+             Enum.member?(configuration[:types], credential_params["credential_identifier"])
            end),
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
