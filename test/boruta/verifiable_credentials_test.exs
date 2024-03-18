@@ -45,7 +45,8 @@ defmodule Boruta.VerifiableCredentialsTest do
       }
 
       credential_params = %{
-        "types" => ["VerifiableCredential"],
+        "credential_identifier" => "VerifiableCredential",
+        "format" => "jwt_vc",
         "proof" => proof
       }
 

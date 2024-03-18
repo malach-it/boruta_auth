@@ -207,7 +207,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
         resource_owner
         | authorization_details: [
             %{
-              "credential_identifiers" => ["credential"]
+              "credential_configuration_id" => "credential"
             }
           ]
       }
@@ -215,7 +215,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert {:authorize_success,
               %CredentialOfferResponse{
                 credential_issuer: "boruta",
-                credentials: ["credential"],
+                credential_configuration_ids: ["credential"],
                 grants: %{
                   "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
                     "pre-authorized_code" => preauthorized_code

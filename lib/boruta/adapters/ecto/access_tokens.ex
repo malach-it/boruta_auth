@@ -58,7 +58,9 @@ defmodule Boruta.Ecto.AccessTokens do
     previous_token = params[:previous_token]
     previous_code = params[:previous_code]
     resource_owner = params[:resource_owner]
-    authorization_details = params[:authorization_details]
+
+    authorization_details =
+      params[:authorization_details] || (resource_owner && resource_owner.authorization_details)
 
     token_attributes = %{
       client_id: client_id,
