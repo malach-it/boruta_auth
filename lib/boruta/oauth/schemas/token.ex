@@ -11,8 +11,10 @@ defmodule Boruta.Oauth.Token do
   alias Boruta.Oauth.Token
 
   @enforce_keys [:type]
-  defstruct type: nil,
+  defstruct id: nil,
+            type: nil,
             value: nil,
+            authorization_details: nil,
             state: nil,
             nonce: nil,
             scope: nil,
@@ -31,8 +33,10 @@ defmodule Boruta.Oauth.Token do
 
   # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
+          id: String.t(),
           type: String.t(),
           value: String.t() | nil,
+          authorization_details: list() | nil,
           state: String.t() | nil,
           nonce: String.t() | nil,
           scope: String.t(),

@@ -3,6 +3,7 @@ defmodule Boruta.Ecto.Codes do
   @behaviour Boruta.Oauth.Codes
 
   import Boruta.Config, only: [repo: 0]
+  import Ecto.Query
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto.Errors
@@ -18,7 +19,12 @@ defmodule Boruta.Ecto.Codes do
     else
       {:error, "Not cached."} ->
         with %Token{} = token <-
-               repo().get_by(Token, type: "code", value: value, redirect_uri: redirect_uri),
+               repo().one(
+                 from t in Token,
+                   where:
+                     t.type in ["code", "preauthorized_code"] and t.value == ^value and
+                       t.redirect_uri == ^redirect_uri
+               ),
              {:ok, token} <-
                token
                |> to_oauth_schema()
@@ -31,6 +37,47 @@ defmodule Boruta.Ecto.Codes do
     end
   end
 
+  def get_by(id: id) do
+    with {:ok, id} <- Ecto.UUID.cast(id),
+     {:ok, token} <- TokenStore.get(id: id) do
+        token
+    else
+      :error -> nil
+      {:error, "Not cached."} ->
+        with %Token{} = token <-
+               repo().one(
+                 from t in Token,
+                   where: t.type in ["code", "preauthorized_code"] and t.id == ^id
+               ),
+             {:ok, token} <-
+               token
+               |> to_oauth_schema()
+               |> TokenStore.put() do
+          token
+        end
+    end
+  end
+
+  def get_by(value: value) do
+    case TokenStore.get(value: value) do
+      {:ok, token} ->
+        token
+
+      {:error, "Not cached."} ->
+        with %Token{} = token <-
+               repo().one(
+                 from t in Token,
+                   where: t.type in ["code", "preauthorized_code"] and t.value == ^value
+               ),
+             {:ok, token} <-
+               token
+               |> to_oauth_schema()
+               |> TokenStore.put() do
+          token
+        end
+    end
+  end
+
   @impl Boruta.Oauth.Codes
   def create(
         %{
@@ -39,19 +86,19 @@ defmodule Boruta.Ecto.Codes do
               id: client_id,
               authorization_code_ttl: authorization_code_ttl
             } = client,
-          resource_owner: resource_owner,
           redirect_uri: redirect_uri,
           scope: scope,
           state: state,
           code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          code_challenge_method: code_challenge_method,
+          authorization_details: authorization_details
         } = params
       ) do
     sub = params[:sub]
 
     changeset =
       apply(Token, changeset_method(client), [
-        %Token{resource_owner: resource_owner},
+        %Token{resource_owner: params[:resource_owner]},
         %{
           client_id: client_id,
           sub: sub,
@@ -61,7 +108,8 @@ defmodule Boruta.Ecto.Codes do
           scope: scope,
           authorization_code_ttl: authorization_code_ttl,
           code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
+          code_challenge_method: code_challenge_method,
+          authorization_details: authorization_details
         }
       ])
 

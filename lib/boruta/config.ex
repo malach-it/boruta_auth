@@ -11,6 +11,7 @@ defmodule Boruta.Config do
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
       codes: Boruta.Ecto.Codes,
+      preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
       resource_owners: MyApp.ResourceOwners, # mandatory for user flows
       scopes: Boruta.Ecto.Scopes
     ],
@@ -20,6 +21,7 @@ defmodule Boruta.Config do
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
+    universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr",
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
@@ -30,6 +32,7 @@ defmodule Boruta.Config do
               access_tokens: Boruta.Ecto.AccessTokens,
               clients: Boruta.Ecto.Clients,
               codes: Boruta.Ecto.Codes,
+              preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
               resource_owners: nil,
               scopes: Boruta.Ecto.Scopes
             ],
@@ -39,6 +42,7 @@ defmodule Boruta.Config do
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
+            universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr",
             token_generator: Boruta.TokenGenerator,
             issuer: "boruta"
 
@@ -102,6 +106,12 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :contexts)[:codes]
   end
 
+  @spec preauthorized_codes() :: module()
+  @doc false
+  def preauthorized_codes do
+    Keyword.fetch!(oauth_config(), :contexts)[:preauthorized_codes]
+  end
+
   @spec scopes() :: module()
   @doc false
   def scopes do
@@ -127,6 +137,12 @@ defmodule Boruta.Config do
       module ->
         module
     end
+  end
+
+  @spec universalresolver_base_url() :: String.t()
+  @doc false
+  def universalresolver_base_url do
+    Keyword.fetch!(oauth_config(), :universalresolver_base_url)
   end
 
   @spec issuer() :: String.t()

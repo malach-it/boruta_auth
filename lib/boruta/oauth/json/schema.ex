@@ -60,8 +60,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "properties" => %{
         "grant_type" => %{"type" => "string", "pattern" => "authorization_code"},
         "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
+          "type" => "string"
         },
         "client_authentication" => %{
           "type" => "object",
@@ -75,7 +74,28 @@ defmodule Boruta.Oauth.Json.Schema do
         "redirect_uri" => %{"type" => "string"},
         "code_verifier" => %{"type" => "string"}
       },
-      "required" => ["grant_type", "code", "client_id", "redirect_uri"]
+      "required" => ["grant_type", "code", "client_id"]
+    }
+    |> Schema.resolve()
+  end
+
+  def preauthorization_code do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "grant_type" => %{"type" => "string", "pattern" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"},
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
+        "pre-authorized_code" => %{"type" => "string"},
+        "code_verifier" => %{"type" => "string"}
+      },
+      "required" => ["grant_type", "pre-authorized_code", "client_authentication"]
     }
     |> Schema.resolve()
   end
@@ -132,6 +152,30 @@ defmodule Boruta.Oauth.Json.Schema do
     |> Schema.resolve()
   end
 
+  def preauthorized_code do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "response_type" => %{"type" => "string", "pattern" => "urn:ietf:params:oauth:response-type:pre-authorized_code"},
+        "client_id" => %{
+          "type" => "string",
+          "pattern" => @uuid_pattern
+        },
+        "state" => %{"type" => "string"},
+        "nonce" => %{"type" => "string"},
+        "redirect_uri" => %{"type" => "string"},
+        "prompt" => %{"type" => "string"},
+        "code_challenge" => %{"type" => "string"},
+        "code_challenge_method" => %{
+          "type" => "string",
+          "pattern" => "plain|S256"
+        }
+      },
+      "required" => ["response_type", "client_id", "redirect_uri"]
+    }
+    |> Schema.resolve()
+  end
+
   def code do
     %{
       "type" => "object",
@@ -139,8 +183,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "response_type" => %{"type" => "string", "pattern" => "code"},
         "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
         "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
+          "type" => "string"
         },
         "state" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},

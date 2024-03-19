@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Token do
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t(),
+          authorization_details: list(),
           state: String.t(),
           nonce: String.t(),
           scope: String.t(),
@@ -31,12 +32,27 @@ defmodule Boruta.Ecto.Token do
           previous_code: String.t() | nil
         }
 
+  @authorization_details_schema %{
+    "type" => "array",
+    "items" => %{
+      "type" => "object",
+      "properties" => %{
+        "type" => %{"type" => "string", "pattern" => "^openid_credential$"},
+        "format" => %{"type" => "string"},
+        "credential_configuration_id" => %{"type" => "string"},
+        "credential_identifiers" => %{"type" => "array", "items" => %{"type" => "string"}}
+      },
+      "required" => ["type", "format"]
+    }
+  }
+
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime_usec
   schema "oauth_tokens" do
     field(:type, :string)
     field(:value, :string)
+    field(:authorization_details, {:array, :map}, default: [])
     field(:refresh_token, :string)
     field(:previous_token, :string)
     field(:previous_code, :string)
@@ -61,6 +77,7 @@ defmodule Boruta.Ecto.Token do
     timestamps()
   end
 
+  @doc false
   def changeset(token, attrs) do
     token
     |> cast(attrs, [
@@ -71,16 +88,19 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :access_token_ttl,
-      :previous_code
+      :previous_code,
+      :authorization_details
     ])
     |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
+    |> validate_authorization_details()
     |> put_value()
     |> put_expires_at()
   end
 
+  @doc false
   def changeset_with_refresh_token(token, attrs) do
     token
     |> cast(attrs, [
@@ -92,7 +112,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :previous_token,
-      :previous_code
+      :previous_code,
+      :authorization_details
     ])
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
@@ -102,6 +123,54 @@ defmodule Boruta.Ecto.Token do
     |> put_expires_at()
   end
 
+  @doc false
+  def preauthorized_code_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :authorization_details
+    ])
+    |> validate_required([:authorization_code_ttl, :client_id, :sub])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "preauthorized_code")
+    |> put_value()
+    |> put_code_expires_at()
+  end
+
+  @doc false
+  def pkce_preauthorized_code_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :code_challenge,
+      :code_challenge_method,
+      :authorization_details
+    ])
+    |> validate_required([
+      :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :code_challenge
+    ])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "preauthorized_code")
+    |> put_value()
+    |> put_code_expires_at()
+    |> put_code_challenge_method()
+    |> encrypt_code_challenge()
+  end
+
+  @doc false
   def code_changeset(token, attrs) do
     token
     |> cast(attrs, [
@@ -111,7 +180,8 @@ defmodule Boruta.Ecto.Token do
       :redirect_uri,
       :state,
       :nonce,
-      :scope
+      :scope,
+      :authorization_details
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -132,7 +202,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :code_challenge,
-      :code_challenge_method
+      :code_challenge_method,
+      :authorization_details
     ])
     |> validate_required([
       :authorization_code_ttl,
@@ -207,5 +278,28 @@ defmodule Boruta.Ecto.Token do
       :code_challenge_hash,
       changeset |> get_field(:code_challenge, "") |> Oauth.Token.hash()
     )
+  end
+
+  defp validate_authorization_details(changeset) do
+    with [_h|_t] = authorization_details <- get_field(changeset, :authorization_details),
+         :ok <-
+           ExJsonSchema.Validator.validate(
+             @authorization_details_schema,
+             authorization_details,
+             error_formatter: BorutaFormatter
+           ) do
+      :ok
+    else
+      {:error, errors} when is_list(errors) ->
+        error = "authorization_details validation failed. " <> Enum.join(errors, " ")
+        add_error(changeset, :authorization_details, error)
+
+      {:error, error} ->
+        error = "authorization_details validation failed. #{inspect(error)}"
+        add_error(changeset, :authorization_details, error)
+
+      _ ->
+        changeset
+    end
   end
 end

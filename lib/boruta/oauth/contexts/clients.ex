@@ -9,6 +9,11 @@ defmodule Boruta.Oauth.Clients do
   @callback get_client(id :: any()) :: client :: Boruta.Oauth.Client.t() | nil
 
   @doc """
+  Returns the public `Boruta.Oauth.Client`.
+  """
+  @callback public!() :: client :: Boruta.Oauth.Client.t() | nil
+
+  @doc """
   Returns client authorized scopes. The scopes will be granted for every requests to the given client.
   """
   @callback authorized_scopes(client :: Boruta.Oauth.Client.t()) :: list(Boruta.Oauth.Scope.t())
