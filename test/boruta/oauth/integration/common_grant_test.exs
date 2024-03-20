@@ -50,11 +50,34 @@ defmodule Boruta.OauthTest.CommonGrantTest do
                   status: :bad_request
                 }}
     end
+
+    test "returns an error with more than one dpop header" do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "client_credentials",
+                   "client_id" => SecureRandom.uuid()
+                 },
+                 req_headers: [{"dpop", "dpop"}, {"dpop", "dpop"}]
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "More than one DPoP header present in the request.",
+                  status: :bad_request
+                }}
+    end
   end
 
   describe "authorize request" do
     test "returns an error without params" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
+      assert Oauth.authorize(
+               %Plug.Conn{query_params: %{}},
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -65,7 +88,11 @@ defmodule Boruta.OauthTest.CommonGrantTest do
     end
 
     test "returns an error with empty params" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
+      assert Oauth.authorize(
+               %Plug.Conn{query_params: %{}},
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,

@@ -66,6 +66,7 @@ end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest do
   alias Boruta.AccessTokensAdapter
+  alias Boruta.Dpop
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.ClientCredentialsRequest
@@ -75,7 +76,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
         client_id: client_id,
         client_authentication: client_source,
         scope: scope,
-        grant_type: grant_type
+        grant_type: grant_type,
+        dpop: dpop
       }) do
     with {:ok, client} <-
            Authorization.Client.authorize(
@@ -83,6 +85,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
              source: client_source,
              grant_type: grant_type
            ),
+         :ok <- Dpop.validate(dpop, client),
          {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}) do
       {:ok, %AuthorizationSuccess{client: client, scope: scope}}
     end
