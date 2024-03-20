@@ -13,8 +13,13 @@ defmodule Boruta.Oauth.ClientCredentialsRequest do
             value: String.t()
           },
           scope: String.t(),
-          grant_type: String.t()
+          grant_type: String.t(),
+          dpop: Boruta.Dpop.t() | nil
         }
   @enforce_keys [:client_id, :client_authentication]
-  defstruct client_id: nil, client_authentication: nil, scope: "", grant_type: "client_credentials"
+  defstruct client_id: nil,
+            client_authentication: nil,
+            scope: "",
+            grant_type: "client_credentials",
+            dpop: nil
 end

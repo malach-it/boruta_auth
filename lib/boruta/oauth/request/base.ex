@@ -31,7 +31,8 @@ defmodule Boruta.Oauth.Request.Base do
      %ClientCredentialsRequest{
        client_id: params["client_id"],
        client_authentication: client_authentication_from_params(params),
-       scope: params["scope"]
+       scope: params["scope"],
+       dpop: params["dpop"]
      }}
   end
 
