@@ -14,6 +14,7 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.RevokeRequest
   alias Boruta.Oauth.SiopV2Request
   alias Boruta.Oauth.TokenRequest
+  alias Boruta.VerifiableCredentials
 
   @spec authorization_header(req_headers :: list()) ::
           {:ok, header :: String.t()}
@@ -290,6 +291,43 @@ defmodule Boruta.Oauth.Request.Base do
       {:error, _error} ->
         {:error, "Could not decode client assertion JWT."}
     end
+  end
+
+  def fetch_client_authentication(%{
+        body_params: %{
+          "client_assertion_type" =>
+            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+          "client_assertion" => client_assertion
+        }
+      }) do
+    with {:ok, %{"alg" => alg}} <- Joken.peek_header(client_assertion),
+         {:ok, %{"cnf" => %{"jwk" => jwk}, "iss" => iss}} <- Joken.peek_claims(client_assertion) do
+      signer =
+        Joken.Signer.create(alg, %{
+          "pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()
+        })
+
+      case VerifiableCredentials.Token.verify(client_assertion, signer) do
+        {:ok, _claims} ->
+          client_authentication_params = %{
+            "client_id" => iss,
+            "client_authentication" => %{"type" => "jwt", "value" => client_assertion}
+          }
+
+          {:ok, client_authentication_params}
+
+        {:error, error} ->
+          {:error, "Invalid client assertion signature: #{inspect(error)}"}
+      end
+    else
+      {:ok, _payload} ->
+        {:error, "Either alg header missing or cnf claim missing in client assertion."}
+      {:error, _error} ->
+        {:error, "Could not decode client assertion JWT."}
+    end
+  rescue
+    _ ->
+      {:error, "Could not verify client assertion."}
   end
 
   def fetch_client_authentication(%{
