@@ -29,8 +29,6 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     no_umbrella!("boruta.gen.migration")
     repos = parse_repo(args)
 
-    register_application(repos)
-
     Enum.map(repos, fn repo ->
       ensure_repo(repo, args)
 
@@ -82,47 +80,4 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
     use Boruta.Migrations.<%= @migration_name %>
   end
   """)
-
-  defp register_application(repos) do
-    initialized? =
-      Enum.any?(repos, fn repo ->
-        try do
-          Ecto.Adapters.SQL.query!(repo, "SELECT count(*) FROM oauth_clients")
-          true
-        rescue
-          _ ->
-            false
-        end
-      end)
-
-    unless initialized? do
-      register_application_repl()
-    end
-  end
-
-  @dialyzer {:no_return, register_application_repl: 0}
-  defp register_application_repl do
-    Finch.start_link(name: RegistrationHttp)
-    Application.ensure_started(:telemetry)
-
-    IO.puts("====================")
-    IO.puts("Please provide information about boruta package usage for statistical purposes")
-    IO.puts("")
-    IO.puts("The owners would be thankful if you could provide those information")
-    IO.puts("====================")
-    company_name = Owl.IO.input(label: "Your company name:", optional: true)
-    company_size = Owl.IO.input(label: "Company size:", cast: :integer, optional: true)
-    purpose = Owl.IO.input(label: "Purpose of the installation:", optional: true)
-
-    Finch.build(
-      :post,
-      "https://getform.io/f/f3907bc0-8ae5-46d6-b1ec-9e4253e2e4f1",
-      [{"Content-Type", "application/json"}],
-      %{
-        company_name: company_name,
-        company_size: company_size,
-        purpose: purpose
-      } |> Jason.encode!()
-    ) |> Finch.request(RegistrationHttp)
-  end
 end
