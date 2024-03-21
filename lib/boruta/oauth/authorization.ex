@@ -162,6 +162,7 @@ end
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest do
   alias Boruta.AccessTokensAdapter
   alias Boruta.CodesAdapter
+  alias Boruta.Dpop
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationSuccess
@@ -177,7 +178,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
         code: code,
         redirect_uri: redirect_uri,
         grant_type: grant_type,
-        code_verifier: code_verifier
+        code_verifier: code_verifier,
+        dpop: dpop
       }) do
     # TODO check client did against request from code phase in case of siopv2 requests
     with {:ok, client} <-
@@ -188,6 +190,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              grant_type: grant_type,
              code_verifier: code_verifier
            ),
+         :ok <- Dpop.validate(dpop, client),
          {:ok, code} <-
            Authorization.Code.authorize(%{
              value: code,
