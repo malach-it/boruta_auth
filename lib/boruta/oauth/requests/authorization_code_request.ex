@@ -15,7 +15,8 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
           redirect_uri: String.t(),
           code: String.t(),
           grant_type: String.t(),
-          code_verifier: String.t()
+          code_verifier: String.t(),
+          dpop: Boruta.Dpop.t()
         }
   @enforce_keys [:client_id, :redirect_uri, :code]
   defstruct client_id: nil,
@@ -23,5 +24,6 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
             redirect_uri: nil,
             code: nil,
             grant_type: "authorization_code",
-            code_verifier: ""
+            code_verifier: "",
+            dpop: nil
 end

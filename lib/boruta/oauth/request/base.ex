@@ -54,7 +54,8 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        code: params["code"],
        redirect_uri: params["redirect_uri"],
-       code_verifier: params["code_verifier"]
+       code_verifier: params["code_verifier"],
+       dpop: params["dpop"]
      }}
   end
 
