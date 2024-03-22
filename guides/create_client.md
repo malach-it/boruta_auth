@@ -7,8 +7,13 @@ Boruta goes with some __administration utilities__. The best way to have an OAut
 
 id = SecureRandom.uuid()
 secret = SecureRandom.hex(64)
+private_key = JOSE.JWK.generate_key({:rsa, 2048, 65_537})
+public_key = JOSE.JWK.to_public(private_key)
+{_type, public_pem} = JOSE.JWK.to_pem(public_key)
+{_type, private_pem} = JOSE.JWK.to_pem(private_key)
 
-Boruta.Ecto.Admin.create_client(%{
+%Boruta.Ecto.Client{}
+|> Boruta.Ecto.Client.create_changeset(%{
   id: id, # OAuth client_id
   secret: secret, # OAuth client_secret
   name: "A client", # Display name
@@ -42,7 +47,13 @@ Boruta.Ecto.Admin.create_client(%{
   ],
   token_endpoint_jwt_auth_alg: nil, # associated to authentication methods, the algorithm to use along
   jwt_public_key: nil # pem public key to be used with `private_key_jwt` authentication method
-}) |> IO.inspect
+})
+|> Boruta.Ecto.Client.key_pair_changeset(%{
+  public_key: public_pem,
+  private_key: private_pem
+})
+|> Boruta.Config.repo().insert!()
+|> IO.inspect()
 ```
 
 Or so, you can use all administration utilities described in [Boruta API documentation](https://hexdocs.pm/boruta/Boruta.Ecto.Admin.html) to manage all entities you need to have your server up and running. If some are missing or can be improved do not hesitate to open an issue on [GitLab](https://gitlab.com/patatoid/boruta_auth/-/issues), it would be very welcome.
