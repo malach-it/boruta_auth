@@ -138,7 +138,7 @@ defmodule Boruta.Openid do
 
   defp check_id_token_client(id_token) do
     case VerifiableCredentials.validate_signature(id_token) do
-      {:ok, claims} ->
+      {:ok, _jwk, claims} ->
         {:ok, claims}
 
       {:error, error} ->

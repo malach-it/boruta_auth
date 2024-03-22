@@ -81,12 +81,12 @@ defmodule Boruta.VerifiableCredentials do
              resource_owner,
              credential_configuration
            ),
-         {:ok, _claims} <- validate_signature(proof["jwt"]),
+         {:ok, jwk, _claims} <- validate_signature(proof["jwt"]),
          {:ok, credential} <-
            generate_credential(
              claims,
              credential_configuration,
-             proof["jwt"],
+             {jwk, proof["jwt"]},
              client,
              credential_configuration[:format]
            ) do
@@ -150,7 +150,7 @@ defmodule Boruta.VerifiableCredentials do
         signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
         case Client.Token.verify(jwt, signer) do
-          {:ok, claims} -> {:ok, claims}
+          {:ok, claims} -> {:ok, jwk, claims}
           {:error, error} -> {:error, inspect(error)}
         end
 
@@ -167,7 +167,7 @@ defmodule Boruta.VerifiableCredentials do
 
     case Token.verify(jwt, signer) do
       {:ok, claims} ->
-        {:ok, claims}
+        {:ok, jwk, claims}
 
       _ ->
         {:error, "Bad proof signature"}
@@ -239,7 +239,7 @@ defmodule Boruta.VerifiableCredentials do
 
   defp validate_claims(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
-  defp generate_credential(claims, credential_configuration, proof, client, format)
+  defp generate_credential(claims, credential_configuration, {jwk, proof}, client, format)
        when format in ["jwt_vc", "jwt_vc_json"] do
     signer =
       Joken.Signer.create(
@@ -275,6 +275,9 @@ defmodule Boruta.VerifiableCredentials do
         ],
         "type" => credential_configuration[:types],
         "credentialSubject" => claims
+      },
+      "cnf" => %{
+        "jwk" => jwk
       }
     }
 
@@ -283,7 +286,7 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, credential}
   end
 
-  defp generate_credential(claims, credential_configuration, proof, client, format)
+  defp generate_credential(claims, credential_configuration, {jwk, proof}, client, format)
        when format in ["vc+sd-jwt"] do
     signer =
       Joken.Signer.create(
@@ -331,7 +334,10 @@ defmodule Boruta.VerifiableCredentials do
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
       # TODO implement c_nonce
       "nonce" => "boruta",
-      "_sd" => sd
+      "_sd" => sd,
+      "cnf" => %{
+        "jwk" => jwk
+      }
     }
 
     credential = Token.generate_and_sign!(claims, signer)
