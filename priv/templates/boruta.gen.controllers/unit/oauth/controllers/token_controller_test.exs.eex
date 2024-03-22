@@ -30,9 +30,9 @@ defmodule <%= @web_module %>.Controllers.Oauth.TokenControllerTest do
       conn = TokenController.token(conn, %{})
 
       assert json_response(conn, 400) == %{
-        "error" => "unknown_error",
-        "error_description" => "Error description"
-      }
+               "error" => "unknown_error",
+               "error_description" => "Error description"
+             }
     end
 
     test "returns an oauth response", %{conn: conn} do
@@ -51,11 +51,11 @@ defmodule <%= @web_module %>.Controllers.Oauth.TokenControllerTest do
       conn = TokenController.token(conn, %{})
 
       assert json_response(conn, 200) == %{
-        "access_token" => "access_token",
-        "expires_in" => 10,
-        "token_type" => "token_type",
-        "refresh_token" => "refresh_token"
-      }
+               "access_token" => "access_token",
+               "expires_in" => 10,
+               "token_type" => "token_type",
+               "refresh_token" => "refresh_token"
+             }
     end
   end
 end
