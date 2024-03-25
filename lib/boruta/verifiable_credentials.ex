@@ -9,6 +9,8 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
+  @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
+
   @authorization_details_schema %{
     "type" => "array",
     "items" => %{
@@ -69,7 +71,7 @@ defmodule Boruta.VerifiableCredentials do
       end
 
     # TODO filter from resource owner authorization details
-    with {_credential_identifier, credential_configuration} <-
+    with {credential_identifier, credential_configuration} <-
            Enum.find(credential_configuration, fn {_identifier, configuration} ->
              case configuration[:version] do
                "11" ->
@@ -91,7 +93,7 @@ defmodule Boruta.VerifiableCredentials do
          {:ok, credential} <-
            generate_credential(
              claims,
-             credential_configuration,
+             {credential_identifier, credential_configuration},
              {jwk, proof["jwt"]},
              client,
              credential_configuration[:format]
@@ -245,8 +247,8 @@ defmodule Boruta.VerifiableCredentials do
 
   defp validate_claims(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
-  defp generate_credential(claims, credential_configuration, {jwk, proof}, client, format)
-       when format in ["jwt_vc", "jwt_vc_json"] do
+  defp generate_credential(claims, {_credential_identifier, credential_configuration}, {jwk, proof}, client, format)
+       when format in ["jwt_vc_json"] do
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -292,7 +294,54 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, credential}
   end
 
-  defp generate_credential(claims, credential_configuration, {jwk, proof}, client, format)
+  defp generate_credential(claims, {credential_identifier, credential_configuration}, {jwk, proof}, client, format)
+       when format in ["jwt_vc"] do
+    signer =
+      Joken.Signer.create(
+        client.id_token_signature_alg,
+        %{"pem" => client.private_key},
+        %{
+          "typ" => "JWT",
+          # TODO craft ebsi compliant dids
+          "kid" => @public_client_did
+        }
+      )
+
+    sub =
+      case Joken.peek_header(proof) do
+        {:ok, headers} ->
+          case(extract_key(headers)) do
+            {_type, key} -> key
+          end
+      end
+
+    credential_id = SecureRandom.uuid()
+    claims = %{
+      "@context" => [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://www.w3.org/ns/credentials/examples/v2"
+      ],
+      # TODO store credential
+      "id" => Config.issuer() <> "/credentials/#{credential_id}",
+      "type" => credential_configuration[:types],
+      "issuer" => Config.issuer(),
+      "validFrom" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "credentialSubject" => %{
+        "id" => sub,
+        # TODO craft ebsi compliant dids
+        credential_identifier => claims |> Map.put("id", @public_client_did)
+      },
+      "cnf" => %{
+        "jwk" => jwk
+      }
+    }
+
+    credential = Token.generate_and_sign!(claims, signer)
+
+    {:ok, credential}
+  end
+
+  defp generate_credential(claims, {_credential_identifier, credential_configuration}, {jwk, proof}, client, format)
        when format in ["vc+sd-jwt"] do
     signer =
       Joken.Signer.create(
