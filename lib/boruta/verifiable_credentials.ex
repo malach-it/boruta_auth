@@ -71,7 +71,13 @@ defmodule Boruta.VerifiableCredentials do
     # TODO filter from resource owner authorization details
     with {_credential_identifier, credential_configuration} <-
            Enum.find(credential_configuration, fn {_identifier, configuration} ->
-             Enum.member?(configuration[:types], credential_params["credential_identifier"])
+             case configuration[:version] do
+               "11" ->
+                 Enum.empty?(configuration[:types] -- credential_params["types"])
+
+               "13" ->
+                 Enum.member?(configuration[:types], credential_params["credential_identifier"])
+             end
            end),
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
@@ -341,12 +347,18 @@ defmodule Boruta.VerifiableCredentials do
     }
 
     credential = Token.generate_and_sign!(claims, signer)
-    tokens = [credential] ++ (disclosures |> Enum.map(&Jason.encode!/1) |> Enum.map(&Base.url_encode64(&1, padding: false)))
+
+    tokens =
+      [credential] ++
+        (disclosures
+         |> Enum.map(&Jason.encode!/1)
+         |> Enum.map(&Base.url_encode64(&1, padding: false)))
 
     {:ok, Enum.join(tokens, "~")}
   end
 
-  defp generate_credential(_claims, _credential_configuration, _proof, _client, _format), do: {:error, "Unkown format."}
+  defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
+    do: {:error, "Unkown format."}
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
