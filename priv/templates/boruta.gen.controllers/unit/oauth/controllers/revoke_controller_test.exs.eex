@@ -29,9 +29,9 @@ defmodule <%= @web_module %>.Controllers.Oauth.RevokeControllerTest do
       conn = RevokeController.revoke(conn, %{})
 
       assert json_response(conn, 400) == %{
-        "error" => "unknown_error",
-        "error_description" => "Error description"
-      }
+               "error" => "unknown_error",
+               "error_description" => "Error description"
+             }
     end
 
     test "respond 200", %{conn: conn} do

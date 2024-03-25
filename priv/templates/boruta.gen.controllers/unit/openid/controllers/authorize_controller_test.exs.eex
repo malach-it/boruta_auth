@@ -50,7 +50,7 @@ defmodule <%= @web_module %>.Controllers.Openid.AuthorizeControllerTest do
     end
 
     test "redirects_to an error if prompt=none and user not logged in", %{conn: conn} do
-      conn = %{conn|query_params: %{"prompt" => "none"}}
+      conn = %{conn | query_params: %{"prompt" => "none"}}
 
       error = %Error{
         status: :unauthorized,
