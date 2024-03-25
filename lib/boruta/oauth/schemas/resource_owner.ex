@@ -19,6 +19,7 @@ defmodule Boruta.Oauth.ResourceOwner do
           authorization_details: list(map()),
           credential_configuration: %{
             String.t() => %{
+              version: String.t(),
               types: list(String.t()),
               format: list(String.t()),
               time_to_live: integer(),

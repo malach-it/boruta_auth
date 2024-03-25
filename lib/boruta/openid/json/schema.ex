@@ -17,8 +17,12 @@ defmodule Boruta.Openid.Json.Schema do
           "required" => ["proof_type", "jwt"]
         },
         "credential_identifier" => %{"type" => "string"},
+        "types" => %{
+          "type" => "array",
+          "items" => %{"type" => "string"}
+        }
       },
-      "required" => ["format", "proof", "credential_identifier"]
+      "required" => ["format", "proof"]
     }
     |> Schema.resolve()
   end

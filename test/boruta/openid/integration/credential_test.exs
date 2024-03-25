@@ -68,7 +68,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                   status: :bad_request,
                   error: :invalid_request,
                   error_description:
-                  "Request body validation failed. Required properties format, proof, credential_identifier are missing at #."
+                  "Request body validation failed. Required properties format, proof are missing at #."
                 }}
     end
 
@@ -132,6 +132,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
            sub: sub,
            credential_configuration: %{
              "UniversityDegree" => %{
+               version: "13",
                types: ["VerifiableCredential"],
                format: "jwt_vc",
                time_to_live: 3600,

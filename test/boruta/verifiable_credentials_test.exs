@@ -36,6 +36,7 @@ defmodule Boruta.VerifiableCredentialsTest do
         },
         credential_configuration: %{
           "credential_identifier" => %{
+            version: "13",
             types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc",
@@ -225,6 +226,7 @@ defmodule Boruta.VerifiableCredentialsTest do
         },
         credential_configuration: %{
           "credential_identifier" => %{
+            version: "13",
             types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc_json",
@@ -259,6 +261,7 @@ defmodule Boruta.VerifiableCredentialsTest do
         },
         credential_configuration: %{
           "credential_identifier" => %{
+            version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: ["firstname"],
