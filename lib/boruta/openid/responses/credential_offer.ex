@@ -31,11 +31,36 @@ defmodule Boruta.Openid.CredentialOfferResponse do
           resource_owner: resource_owner
         }
       ) do
-    credentials =
+    credential_identifiers =
       Enum.flat_map(resource_owner.authorization_details, fn detail ->
         detail["credential_identifiers"] || []
       end)
       |> Enum.uniq()
+
+   credentials = Enum.reject(resource_owner.credential_configuration, fn {_identifier, configuration} ->
+     not Enum.empty?(configuration[:types] -- credential_identifiers)
+   end)
+   |> Enum.group_by(fn {_identifier, configuration} ->
+     configuration[:format]
+   end)
+   |> Enum.reduce(%{}, fn {format, configurations}, acc ->
+     types = Enum.flat_map(configurations, fn {_identifier, configuration} ->
+       configuration[:types]
+     end)
+
+     case acc[format] do
+       nil ->
+         Map.put(acc, format, types)
+      types ->
+        acc[format] ++ types
+     end
+   end)
+   |> Enum.map(fn {format, types} ->
+     %{
+       format: format,
+       types: Enum.uniq(types)
+     }
+   end)
 
     credential_configuration_ids =
       Enum.map(resource_owner.authorization_details, fn detail ->

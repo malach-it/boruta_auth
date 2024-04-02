@@ -103,7 +103,7 @@ defmodule Boruta.VerifiableCredentials do
         credential: credential
       }
 
-      {:ok, credential}
+             {:ok, credential}
     else
       nil -> {:error, "Credential not found."}
       error -> error
