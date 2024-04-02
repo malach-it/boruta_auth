@@ -200,7 +200,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 }}
     end
 
-    test "returns a credential offer response", %{client: client, resource_owner: resource_owner} do
+    test "returns a credential offer response (draft 13)", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 
       resource_owner = %{
@@ -216,6 +216,60 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
               %CredentialOfferResponse{
                 credential_issuer: "boruta",
                 credential_configuration_ids: ["credential"],
+                grants: %{
+                  "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
+                    "pre-authorized_code" => preauthorized_code
+                  }
+                }
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert preauthorized_code
+    end
+
+    test "returns a credential offer response (draft 11)", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_identifiers" => ["credential", "test", "c"]
+            }
+        ],
+        credential_configuration: %{
+          "credentialjwtvc" => %{
+            format: "jwt_vc",
+            types: ["credential", "test"]
+          },
+          "credentialsdjwt" => %{
+            format: "vc+sd-jwt",
+            types: ["credential", "test"]
+          },
+          "credentialsc" => %{
+            format: "vc+sd-jwt",
+            types: ["credential", "test", "c"]
+          }
+        }
+      }
+
+      assert {:authorize_success,
+              %CredentialOfferResponse{
+                credential_issuer: "boruta",
+                credentials: [
+                  %{format: "jwt_vc", types: ["credential", "test"]},
+                  %{format: "vc+sd-jwt", types: ["credential", "test", "c"]}
+                ],
                 grants: %{
                   "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
                     "pre-authorized_code" => preauthorized_code
