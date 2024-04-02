@@ -294,6 +294,7 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, credential}
   end
 
+  # https://www.w3.org/TR/vc-data-model-2.0/
   defp generate_credential(claims, {credential_identifier, credential_configuration}, {jwk, proof}, client, format)
        when format in ["jwt_vc"] do
     signer =

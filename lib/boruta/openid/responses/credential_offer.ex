@@ -32,8 +32,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
         }
       ) do
     credentials =
-      Enum.map(resource_owner.authorization_details, fn detail ->
-        detail["credential_identifiers"]
+      Enum.flat_map(resource_owner.authorization_details, fn detail ->
+        detail["credential_identifiers"] || []
       end)
       |> Enum.uniq()
 
