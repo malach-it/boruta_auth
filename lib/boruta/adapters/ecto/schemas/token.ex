@@ -288,7 +288,7 @@ defmodule Boruta.Ecto.Token do
              authorization_details,
              error_formatter: BorutaFormatter
            ) do
-      :ok
+      changeset
     else
       {:error, errors} when is_list(errors) ->
         error = "authorization_details validation failed. " <> Enum.join(errors, " ")
