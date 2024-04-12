@@ -40,7 +40,12 @@ defmodule Boruta.VerifiableCredentialsTest do
             types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc",
-            claims: ["firstname"]
+            claims: [%{
+              "name" => "firstname",
+              "label" => "firstname",
+              "pointer" => "firstname",
+              "expiration" => "3600"
+            }]
           }
         }
       }
@@ -283,6 +288,238 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
+    end
+
+    test "issues vc+sd-jwt credential - valid", %{
+      credential_params: credential_params
+    } do
+
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => %{
+            "value" => "firstname",
+            "status" => "valid"
+          }
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            version: "13",
+            types: ["VerifiableCredential"],
+            format: "vc+sd-jwt",
+            claims: [%{
+              "name" => "firstname",
+              "label" => "firstname",
+              "pointer" => "firstname",
+              "expiration" => "3600"
+            }],
+            time_to_live: 60
+          }
+        }
+      }
+      client = insert(:client)
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "vc+sd-jwt"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 client,
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+      suspended_salt_key = String.split(credential, "~")
+                   |> List.last()
+                   |> Base.url_decode64!(padding: false)
+                   |> Jason.decode!()
+                   |> List.first()
+                   |> String.split("~")
+                   |> List.last()
+
+      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        client.private_key,
+        div(:os.system_time(:seconds), 3600) + 33
+      )
+    end
+
+    test "issues vc+sd-jwt credential - suspended", %{
+      credential_params: credential_params
+    } do
+
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => %{
+            "value" => "firstname",
+            "status" => "suspended"
+          }
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            version: "13",
+            types: ["VerifiableCredential"],
+            format: "vc+sd-jwt",
+            claims: [%{
+              "name" => "firstname",
+              "label" => "firstname",
+              "pointer" => "firstname",
+              "expiration" => "3600"
+            }],
+            time_to_live: 60
+          }
+        }
+      }
+      client = insert(:client)
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "vc+sd-jwt"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 client,
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+      suspended_salt_key = String.split(credential, "~")
+                   |> List.last()
+                   |> Base.url_decode64!(padding: false)
+                   |> Jason.decode!()
+                   |> List.first()
+                   |> String.split("~")
+                   |> List.last()
+
+      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        client.private_key,
+        div(:os.system_time(:seconds), 3600) + 55
+      )
+    end
+
+    test "issues vc+sd-jwt credential - revoked", %{
+      credential_params: credential_params
+    } do
+
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => %{
+            "value" => "firstname",
+            "status" => "revoked"
+          }
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            version: "13",
+            types: ["VerifiableCredential"],
+            format: "vc+sd-jwt",
+            claims: [%{
+              "name" => "firstname",
+              "label" => "firstname",
+              "pointer" => "firstname",
+              "expiration" => "3600"
+            }],
+            time_to_live: 60
+          }
+        }
+      }
+      client = insert(:client)
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "vc+sd-jwt"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 client,
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+      suspended_salt_key = String.split(credential, "~")
+                   |> List.last()
+                   |> Base.url_decode64!(padding: false)
+                   |> Jason.decode!()
+                   |> List.first()
+                   |> String.split("~")
+                   |> List.last()
+
+      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        client.private_key,
+        div(:os.system_time(:seconds), 3600) + 44
+      )
+    end
+
+    test "issues vc+sd-jwt credential - expired", %{
+      credential_params: credential_params
+    } do
+
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => %{
+            "value" => "firstname",
+            "status" => "valid"
+          }
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            version: "13",
+            types: ["VerifiableCredential"],
+            format: "vc+sd-jwt",
+            claims: [%{
+              "name" => "firstname",
+              "label" => "firstname",
+              "pointer" => "firstname",
+              "expiration" => "-1"
+            }],
+            time_to_live: 60
+          }
+        }
+      }
+      client = insert(:client)
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "vc+sd-jwt"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 client,
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+      suspended_salt_key = String.split(credential, "~")
+                   |> List.last()
+                   |> Base.url_decode64!(padding: false)
+                   |> Jason.decode!()
+                   |> List.first()
+                   |> String.split("~")
+                   |> List.last()
+
+      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        client.private_key,
+        div(:os.system_time(:seconds), 3600) + 33
+      )
+      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        client.private_key,
+        div(:os.system_time(:seconds), 3600) + 44
+      )
+      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        client.private_key,
+        div(:os.system_time(:seconds), 3600) + 55
+      )
     end
   end
 
