@@ -1,4 +1,43 @@
 defmodule Boruta.VerifiableCredentials do
+  defmodule Hotp do
+    @moduledoc """
+    Implements HOTP generation as described in the IETF RFC
+    [HOTP: An HMAC-Based One-Time Password Algorithm](https://www.ietf.org/rfc/rfc4226.txt)
+    > This implementation defaults to 6 digits using the sha1 algorithm as hashing function
+    """
+
+    import Bitwise
+
+    @hmac_algorithm :sha
+    @digits 6
+
+    @spec generate_hotp(secret :: String.t(), counter :: integer()) :: hotp :: String.t()
+    def generate_hotp(secret, counter) do
+      # Step 1: Generate an HMAC-SHA-1 value
+      hmac_result = :crypto.mac(:hmac, @hmac_algorithm, secret, <<counter::size(64)>>)
+
+      # Step 2: Dynamic truncation
+      truncated_hash = truncate_hash(hmac_result)
+
+      # Step 3: Compute HOTP value (6-digit OTP)
+      hotp = truncated_hash |> rem(10 ** @digits)
+
+      format_hotp(hotp)
+    end
+
+    defp truncate_hash(hmac_value) do
+      # NOTE the folowing hard coded values are part of the specification
+      offset = :binary.at(hmac_value, 19) &&& 0xF
+
+      with <<_::size(1), result::size(31)>> <- :binary.part(hmac_value, offset, 4) do
+        result
+      end
+    end
+
+    defp format_hotp(hotp) do
+      Integer.to_string(hotp, 16)
+    end
+  end
   @moduledoc false
 
   import Boruta.Config, only: [universalresolver_base_url: 0]
@@ -10,6 +49,8 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
+  @individual_claim_default_expiration 3600 * 24 * 30 * 365 * 120 # 10 years
+  @validity_shift 55
 
   @authorization_details_schema %{
     "type" => "array",
@@ -283,6 +324,8 @@ defmodule Boruta.VerifiableCredentials do
         ],
         "type" => credential_configuration[:types],
         "credentialSubject" => claims
+        |> Enum.map(fn {name, {claim, _expiration}} -> {name, claim} end)
+        |> Enum.into(%{})
       },
       "cnf" => %{
         "jwk" => jwk
@@ -330,7 +373,10 @@ defmodule Boruta.VerifiableCredentials do
       "credentialSubject" => %{
         "id" => sub,
         # TODO craft ebsi compliant dids
-        credential_identifier => claims |> Map.put("id", @public_client_did)
+        credential_identifier => claims
+        |> Enum.map(fn {name, {claim, _expiration}} -> {name, claim} end)
+        |> Enum.into(%{})
+        |> Map.put("id", @public_client_did)
       },
       "cnf" => %{
         "jwk" => jwk
@@ -363,8 +409,11 @@ defmodule Boruta.VerifiableCredentials do
       end
 
     claims_with_salt =
-      Enum.map(claims, fn claim ->
-        {claim, SecureRandom.hex()}
+      Enum.map(claims, fn {name, {value, expiration}} ->
+        secret = SecureRandom.hex()
+        hotp = Hotp.generate_hotp(client.private_key, div(:os.system_time(:seconds), expiration) + @validity_shift)
+        salt = "#{secret}~#{hotp}"
+        {{name, value}, salt}
       end)
 
     disclosures =
@@ -414,11 +463,11 @@ defmodule Boruta.VerifiableCredentials do
     claims =
       credential_configuration[:claims]
       |> Enum.map(fn
-        %{"name" => name, "pointer" => pointer} ->
-          {name, get_in(resource_owner.extra_claims, String.split(pointer, "."))}
+        %{"name" => name, "pointer" => pointer} = claim ->
+          {name, {get_in(resource_owner.extra_claims, String.split(pointer, ".")), String.to_integer(claim["expiration"]) || @individual_claim_default_expiration}}
 
         attribute when is_binary(attribute) ->
-          {attribute, get_in(resource_owner.extra_claims, String.split(attribute, "."))}
+          {attribute, {get_in(resource_owner.extra_claims, String.split(attribute, ".")), @individual_claim_default_expiration}}
       end)
       |> Enum.into(%{})
 
