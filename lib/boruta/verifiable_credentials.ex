@@ -38,6 +38,7 @@ defmodule Boruta.VerifiableCredentials do
       Integer.to_string(hotp, 16)
     end
   end
+
   @moduledoc false
 
   import Boruta.Config, only: [universalresolver_base_url: 0]
@@ -49,8 +50,11 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
-  @individual_claim_default_expiration 3600 * 24 * 30 * 365 * 120 # 10 years
-  @validity_shift 55
+  # 10 years
+  @individual_claim_default_expiration 3600 * 24 * 30 * 365 * 120
+  @validity_shift 33
+  @revokation_shift 44
+  @suspention_shift 55
 
   @authorization_details_schema %{
     "type" => "array",
@@ -144,7 +148,7 @@ defmodule Boruta.VerifiableCredentials do
         credential: credential
       }
 
-             {:ok, credential}
+      {:ok, credential}
     else
       nil -> {:error, "Credential not found."}
       error -> error
@@ -288,7 +292,13 @@ defmodule Boruta.VerifiableCredentials do
 
   defp validate_claims(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
-  defp generate_credential(claims, {_credential_identifier, credential_configuration}, {jwk, proof}, client, format)
+  defp generate_credential(
+         claims,
+         {_credential_identifier, credential_configuration},
+         {jwk, proof},
+         client,
+         format
+       )
        when format in ["jwt_vc_json"] do
     signer =
       Joken.Signer.create(
@@ -323,9 +333,10 @@ defmodule Boruta.VerifiableCredentials do
           "https://www.w3.org/2018/credentials/v1"
         ],
         "type" => credential_configuration[:types],
-        "credentialSubject" => claims
-        |> Enum.map(fn {name, {claim, _expiration}} -> {name, claim} end)
-        |> Enum.into(%{})
+        "credentialSubject" =>
+          claims
+          |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+          |> Enum.into(%{})
       },
       "cnf" => %{
         "jwk" => jwk
@@ -338,7 +349,13 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   # https://www.w3.org/TR/vc-data-model-2.0/
-  defp generate_credential(claims, {credential_identifier, credential_configuration}, {jwk, proof}, client, format)
+  defp generate_credential(
+         claims,
+         {credential_identifier, credential_configuration},
+         {jwk, proof},
+         client,
+         format
+       )
        when format in ["jwt_vc"] do
     signer =
       Joken.Signer.create(
@@ -360,6 +377,7 @@ defmodule Boruta.VerifiableCredentials do
       end
 
     credential_id = SecureRandom.uuid()
+
     claims = %{
       "@context" => [
         "https://www.w3.org/ns/credentials/v2",
@@ -373,10 +391,11 @@ defmodule Boruta.VerifiableCredentials do
       "credentialSubject" => %{
         "id" => sub,
         # TODO craft ebsi compliant dids
-        credential_identifier => claims
-        |> Enum.map(fn {name, {claim, _expiration}} -> {name, claim} end)
-        |> Enum.into(%{})
-        |> Map.put("id", @public_client_did)
+        credential_identifier =>
+          claims
+          |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+          |> Enum.into(%{})
+          |> Map.put("id", @public_client_did)
       },
       "cnf" => %{
         "jwk" => jwk
@@ -388,7 +407,13 @@ defmodule Boruta.VerifiableCredentials do
     {:ok, credential}
   end
 
-  defp generate_credential(claims, {_credential_identifier, credential_configuration}, {jwk, proof}, client, format)
+  defp generate_credential(
+         claims,
+         {_credential_identifier, credential_configuration},
+         {jwk, proof},
+         client,
+         format
+       )
        when format in ["vc+sd-jwt"] do
     signer =
       Joken.Signer.create(
@@ -409,9 +434,15 @@ defmodule Boruta.VerifiableCredentials do
       end
 
     claims_with_salt =
-      Enum.map(claims, fn {name, {value, expiration}} ->
+      Enum.map(claims, fn {name, {value, status, expiration}} ->
         secret = SecureRandom.hex()
-        hotp = Hotp.generate_hotp(client.private_key, div(:os.system_time(:seconds), expiration) + @validity_shift)
+
+        hotp =
+          Hotp.generate_hotp(
+            client.private_key,
+            div(:os.system_time(:seconds), expiration) + shift(status)
+          )
+
         salt = "#{secret}~#{hotp}"
         {{name, value}, salt}
       end)
@@ -464,10 +495,20 @@ defmodule Boruta.VerifiableCredentials do
       credential_configuration[:claims]
       |> Enum.map(fn
         %{"name" => name, "pointer" => pointer} = claim ->
-          {name, {get_in(resource_owner.extra_claims, String.split(pointer, ".")), String.to_integer(claim["expiration"]) || @individual_claim_default_expiration}}
+          resource_owner_claim =
+            case get_in(resource_owner.extra_claims, String.split(pointer, ".")) do
+              value when is_binary(value) -> %{"value" => value}
+              claim -> claim
+            end
+
+          {name,
+           {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
+            String.to_integer(claim["expiration"]) || @individual_claim_default_expiration}}
 
         attribute when is_binary(attribute) ->
-          {attribute, {get_in(resource_owner.extra_claims, String.split(attribute, ".")), @individual_claim_default_expiration}}
+          {attribute,
+           {get_in(resource_owner.extra_claims, String.split(attribute, ".")), "valid",
+            @individual_claim_default_expiration}}
       end)
       |> Enum.into(%{})
 
@@ -497,4 +538,8 @@ defmodule Boruta.VerifiableCredentials do
         {:error, Enum.join(errors, ", ") <> "."}
     end
   end
+
+  defp shift("valid"), do: @validity_shift
+  defp shift("revoked"), do: @revokation_shift
+  defp shift("suspended"), do: @suspention_shift
 end
