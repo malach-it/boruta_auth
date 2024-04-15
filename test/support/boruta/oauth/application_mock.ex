@@ -31,4 +31,10 @@ defmodule Boruta.Oauth.ApplicationMock do
 
   @impl Boruta.Oauth.Application
   def revoke_error(_conn, error), do: {:revoke_error, error}
+
+  @impl Boruta.Oauth.Application
+  def request_stored(_conn, request), do: {:request_stored, request}
+
+  @impl Boruta.Oauth.Application
+  def pushed_authorization_error(_conn, error), do: {:pushed_authorization_error, error}
 end

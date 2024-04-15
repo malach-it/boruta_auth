@@ -644,6 +644,84 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
   defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
 end
 
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
+  alias Boruta.CodesAdapter
+  alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.AuthorizationRequest
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Client
+  alias Boruta.Oauth.CodeRequest
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.Token
+  alias Boruta.VerifiableCredentials
+
+  def preauthorize(
+        %AuthorizationRequest{
+          client_id: client_id,
+          client_authentication: client_authentication,
+          redirect_uri: redirect_uri,
+          state: state,
+          scope: scope,
+          code_challenge: code_challenge,
+          code_challenge_method: code_challenge_method
+        }
+      ) do
+    with {:ok, client} <-
+           Authorization.Client.authorize(
+             id: client_id,
+             source: client_authentication,
+             redirect_uri: redirect_uri,
+             # in order to differentiate code from authorization_code requests
+             grant_type: "code"
+           ),
+         {:ok, scope} <-
+           Authorization.Scope.authorize(
+             scope: scope,
+             against: %{client: client}
+           ),
+         :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         redirect_uri: redirect_uri,
+         scope: scope,
+         state: state,
+         code_challenge: code_challenge,
+         code_challenge_method: code_challenge_method
+       }}
+    else
+      {:error, :invalid_code_challenge} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "Code challenge is invalid."
+         }}
+
+      error ->
+        error
+    end
+  end
+
+  def token(_params), do: raise "Not implemented"
+
+  @spec check_code_challenge(
+          client :: Client.t(),
+          code_challenge :: String.t(),
+          code_challenge_method :: String.t()
+        ) :: :ok | {:error, :invalid_code_challenge}
+  defp check_code_challenge(%Client{pkce: false}, _code_challenge, _code_challenge_method),
+    do: :ok
+
+  defp check_code_challenge(%Client{pkce: true}, "", _code_challenge_method),
+    do: {:error, :invalid_code_challenge}
+
+  defp check_code_challenge(%Client{pkce: true}, nil, _code_challenge_method),
+    do: {:error, :invalid_code_challenge}
+
+  defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
+end
+
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter

@@ -4,8 +4,17 @@ defmodule Boruta.OauthModule do
   alias Boruta.Oauth.ResourceOwner
 
   @callback token(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
-  @callback preauthorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
-  @callback authorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
+  @callback preauthorize(
+              conn :: Plug.Conn.t() | map(),
+              resource_owner :: ResourceOwner.t(),
+              module :: atom()
+            ) :: any()
+  @callback authorize(
+              conn :: Plug.Conn.t() | map(),
+              resource_owner :: ResourceOwner.t(),
+              module :: atom()
+            ) :: any()
+  @callback pushed_authorization_request(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @callback introspect(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @callback revoke(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
 end
@@ -23,9 +32,11 @@ defmodule Boruta.Oauth do
 
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizeResponse
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Introspect
   alias Boruta.Oauth.IntrospectResponse
+  alias Boruta.Oauth.PushedAuthorizationResponse
   alias Boruta.Oauth.Request
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Revoke
@@ -68,9 +79,14 @@ defmodule Boruta.Oauth do
 
   Triggers `preauthorize_success` in case of success and `preauthorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
-  @spec preauthorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
+  @spec preauthorize(
+          conn :: Plug.Conn.t() | map(),
+          resource_owner :: ResourceOwner.t(),
+          module :: atom()
+        ) :: any()
   @impl true
-  def preauthorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module) when is_atom(module) do
+  def preauthorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module)
+      when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, authorization} <- Authorization.preauthorize(request) do
       module.preauthorize_success(
@@ -94,9 +110,14 @@ defmodule Boruta.Oauth do
 
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
   """
-  @spec authorize(conn :: Plug.Conn.t() | map(), resource_owner :: ResourceOwner.t(), module :: atom()) :: any()
+  @spec authorize(
+          conn :: Plug.Conn.t() | map(),
+          resource_owner :: ResourceOwner.t(),
+          module :: atom()
+        ) :: any()
   @impl true
-  def authorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module) when is_atom(module) do
+  def authorize(%Plug.Conn{} = conn, %ResourceOwner{} = resource_owner, module)
+      when is_atom(module) do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, tokens} <- Authorization.token(request) do
       case AuthorizeResponse.from_tokens(tokens, request) do
@@ -143,6 +164,33 @@ defmodule Boruta.Oauth do
 
       _ ->
         module.authorize_error(conn, error)
+    end
+  end
+
+  alias Boruta.ClientsAdapter
+  alias Boruta.RequestsAdapter
+
+  @spec pushed_authorization_request(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
+  @impl true
+  def pushed_authorization_request(conn, module) do
+    with {:ok, request} <- Request.pushed_request(conn),
+         {:ok, authorization} <- Authorization.preauthorize(request),
+         %Client{} = client <- ClientsAdapter.get_client(authorization.client.id),
+         {:ok, request} <- RequestsAdapter.store_request(request, client) do
+      module.request_stored(conn, PushedAuthorizationResponse.from_request(request))
+    else
+      {:error, %Error{} = error} ->
+        formatted_pushed_error(conn, module, error)
+    end
+  end
+
+  defp formatted_pushed_error(conn, module, error) do
+    case Request.pushed_request(conn) do
+      {:ok, request} ->
+        module.pushed_authorization_error(conn, Error.with_format(error, request))
+
+      _ ->
+        module.pushed_authorization_error(conn, error)
     end
   end
 
