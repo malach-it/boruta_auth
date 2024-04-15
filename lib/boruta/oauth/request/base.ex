@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Request.Base do
 
   alias Boruta.BasicAuth
   alias Boruta.Oauth.AuthorizationCodeRequest
+  alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.HybridRequest
@@ -111,6 +112,20 @@ defmodule Boruta.Oauth.Request.Base do
         nil -> request
         authorization_details -> %{request | authorization_details: authorization_details}
       end
+
+    {:ok, request}
+  end
+
+  def build_request(%{"response_type" => "code", "method" => "POST"} = params) do
+    request = %AuthorizationRequest{
+      response_type: "code",
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      state: params["state"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      scope: params["scope"]
+    }
 
     {:ok, request}
   end

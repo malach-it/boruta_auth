@@ -13,6 +13,7 @@ defmodule Boruta.Ecto.Client do
       repo: 0,
       access_token_max_ttl: 0,
       authorization_code_max_ttl: 0,
+      authorization_request_max_ttl: 0,
       id_token_max_ttl: 0,
       refresh_token_max_ttl: 0
     ]
@@ -80,6 +81,7 @@ defmodule Boruta.Ecto.Client do
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
+    field(:authorization_request_ttl, :integer)
     field(:id_token_ttl, :integer)
     field(:refresh_token_ttl, :integer)
 
@@ -141,6 +143,7 @@ defmodule Boruta.Ecto.Client do
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
+    |> change_authorization_request_ttl()
     |> change_id_token_ttl()
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
@@ -247,6 +250,16 @@ defmodule Boruta.Ecto.Client do
 
       :error ->
         put_change(changeset, :authorization_code_ttl, authorization_code_max_ttl())
+    end
+  end
+
+  defp change_authorization_request_ttl(changeset) do
+    case fetch_change(changeset, :authorization_request_ttl) do
+      {:ok, _authorization_request_ttl} ->
+        validate_inclusion(changeset, :authorization_request_ttl, 1..authorization_request_max_ttl())
+
+      :error ->
+        put_change(changeset, :authorization_request_ttl, authorization_request_max_ttl())
     end
   end
 

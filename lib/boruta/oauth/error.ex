@@ -5,6 +5,7 @@ defmodule Boruta.Oauth.Error do
   > __Note__: Intended to follow [OAuth 2.0 errors](https://tools.ietf.org/html/rfc6749#section-5.2). Additional errors are provided as purpose.
   """
 
+  alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
@@ -24,7 +25,7 @@ defmodule Boruta.Oauth.Error do
             | :login_required
             | :unknown_error,
           error_description: String.t(),
-          format: :query | :fragment | nil,
+          format: :query | :fragment | :json | nil,
           redirect_uri: String.t() | nil,
           state: String.t() | nil
         }
@@ -103,6 +104,13 @@ defmodule Boruta.Oauth.Error do
 
   def with_format(%Error{} = error, %CodeRequest{redirect_uri: redirect_uri, state: state}) do
     %{error | format: :query, redirect_uri: redirect_uri, state: state}
+  end
+
+  def with_format(%Error{} = error, %AuthorizationRequest{
+        redirect_uri: redirect_uri,
+        state: state
+      }) do
+    %{error | format: :json, redirect_uri: redirect_uri, state: state}
   end
 
   def with_format(%Error{} = error, %SiopV2Request{redirect_uri: redirect_uri, state: state}) do

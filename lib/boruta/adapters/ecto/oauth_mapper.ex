@@ -79,3 +79,12 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Scope do
     struct(Oauth.Scope, Map.from_struct(scope))
   end
 end
+
+defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.AuthorizationRequest do
+  alias Boruta.Ecto
+  alias Boruta.Oauth
+
+  def to_oauth_schema(%Ecto.AuthorizationRequest{} = request) do
+    struct(Oauth.AuthorizationRequest, Map.from_struct(request))
+  end
+end
