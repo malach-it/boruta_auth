@@ -6,7 +6,7 @@ defmodule Boruta.Oauth.PushedAuthorizationRequestApplication do
   """
 
   @doc """
-  This function will be triggered in case of success invoking `Boruta.Oauth.pushed_authorization_request()/2`
+  This function will be triggered in case of success invoking `Boruta.Oauth.pushed_authorization_request/2`
   """
   @callback request_stored(
               conn :: Plug.Conn.t(),
@@ -14,7 +14,7 @@ defmodule Boruta.Oauth.PushedAuthorizationRequestApplication do
             ) ::
               any()
   @doc """
-  This function will be triggered in case of failure invoking `Boruta.Oauth.pushed_authorization_error/3`
+  This function will be triggered in case of failure invoking `Boruta.Oauth.pushed_authorization_request/2`
   """
   @callback pushed_authorization_error(
               conn :: Plug.Conn.t(),
