@@ -287,19 +287,20 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
             "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
           "client_assertion" => "bad jwt"
         }
-      }) == {:error, "Could not decode client assertion JWT."}
+      }) == {:error, "Could not verify client assertion."}
 
     end
 
     test "retruns an error with client assertion, claim missing" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
-      {:ok, client_assertion, _claims} = Token.encode_and_sign(%{}, signer)
+      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{}, signer)
+      {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert Request.Base.fetch_client_authentication(%{
         body_params: %{
           "client_assertion_type" =>
             "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => client_assertion
+          "client_assertion" => "#{client_attestation}~#{client_pop}"
         }
       }) == {:error, "Either alg header missing or cnf claim missing in client assertion."}
 
@@ -307,16 +308,17 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
 
     test "retruns an error with client assertion, bad signature" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
-      {:ok, client_assertion, _claims} = Token.encode_and_sign(%{
+      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{
         "iss" => "issuer",
         "cnf" => %{"jwk" => :bad_signature}
       }, signer)
+      {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert Request.Base.fetch_client_authentication(%{
         body_params: %{
           "client_assertion_type" =>
             "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => client_assertion
+          "client_assertion" => "#{client_attestation}~#{client_pop}"
         }
       }) == {:error, "Could not verify client assertion."}
 
@@ -325,16 +327,17 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
     test "retruns an error with client assertion, bad key" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
       {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
-      {:ok, client_assertion, _claims} = Token.encode_and_sign(%{
+      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{
         "iss" => "issuer",
         "cnf" => %{"jwk" => jwk}
       }, signer)
+      {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert Request.Base.fetch_client_authentication(%{
         body_params: %{
           "client_assertion_type" =>
             "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => client_assertion
+          "client_assertion" => "#{client_attestation}~#{client_pop}"
         }
       }) == {:error, "Invalid client assertion signature: :signature_error"}
 
@@ -343,16 +346,17 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
     test "authenticates" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      {:ok, client_assertion, _claims} = Token.encode_and_sign(%{
+      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{
         "iss" => "issuer",
         "cnf" => %{"jwk" => jwk}
       }, signer)
+      {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert {:ok, %{"client_authentication" => %{"type" => "jwt", "value" => value}, "client_id" => "issuer"}} = Request.Base.fetch_client_authentication(%{
         body_params: %{
           "client_assertion_type" =>
             "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => client_assertion
+          "client_assertion" => "#{client_attestation}~#{client_pop}"
         }
       })
 
