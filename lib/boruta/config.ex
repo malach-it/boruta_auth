@@ -37,7 +37,7 @@ defmodule Boruta.Config do
               preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
               resource_owners: nil,
               scopes: Boruta.Ecto.Scopes,
-              request: Boruta.Ecto.Requests
+              requests: Boruta.Ecto.Requests
             ],
             max_ttl: [
               authorization_request: 60,

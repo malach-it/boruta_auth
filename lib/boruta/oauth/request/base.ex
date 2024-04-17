@@ -15,6 +15,7 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.RevokeRequest
   alias Boruta.Oauth.SiopV2Request
   alias Boruta.Oauth.TokenRequest
+  alias Boruta.RequestsAdapter
   alias Boruta.VerifiableCredentials
 
   @spec authorization_header(req_headers :: list()) ::
@@ -221,6 +222,20 @@ defmodule Boruta.Oauth.Request.Base do
 
       _ ->
         {:error, "Unsigned request jwt param is malformed."}
+    end
+  end
+
+  def fetch_unsigned_request(%{query_params: %{"request_uri" => "urn:ietf:params:oauth:request_uri:" <> request_id}}) do
+    case RequestsAdapter.get_request(request_id) do
+      nil ->
+        {:error, "Could not fetch stored authorization request."}
+      request ->
+        case AuthorizationRequest.expired?(request) do
+          true ->
+            {:error, "Authorization request is expired."}
+          false ->
+            {:ok, AuthorizationRequest.to_params(request)}
+        end
     end
   end
 

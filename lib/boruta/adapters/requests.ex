@@ -4,27 +4,11 @@ defmodule Boruta.RequestsAdapter do
   """
   @behaviour Boruta.Oauth.Requests
 
-  import Boruta.Config, only: [repo: 0]
-  import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
-
-  alias Boruta.Ecto.AuthorizationRequest
+  import Boruta.Config, only: [requests: 0]
 
   @impl Boruta.Oauth.Requests
-  def store_request(request, client) do
-    params = %{
-      client_authentication: request.client_authentication,
-      response_type: request.response_type,
-      redirect_uri: request.redirect_uri,
-      scope: request.scope,
-      state: request.state,
-      code_challenge: request.code_challenge,
-      code_challenge_method: request.code_challenge_method
-    }
+  def get_request(request_id), do: requests().get_request(request_id)
 
-    with {:ok, request} <-
-           AuthorizationRequest.create_changeset(%AuthorizationRequest{}, params, client)
-           |> repo().insert() do
-      {:ok, to_oauth_schema(request)}
-    end
-  end
+  @impl Boruta.Oauth.Requests
+  def store_request(request, client), do: requests().store_request(request, client)
 end
