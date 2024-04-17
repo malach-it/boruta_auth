@@ -225,14 +225,18 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request_uri" => "urn:ietf:params:oauth:request_uri:" <> request_id}}) do
+  def fetch_unsigned_request(%{
+        query_params: %{"request_uri" => "urn:ietf:params:oauth:request_uri:" <> request_id}
+      }) do
     case RequestsAdapter.get_request(request_id) do
       nil ->
         {:error, "Could not fetch stored authorization request."}
+
       request ->
         case AuthorizationRequest.expired?(request) do
           true ->
             {:error, "Authorization request is expired."}
+
           false ->
             {:ok, AuthorizationRequest.to_params(request)}
         end
@@ -332,14 +336,15 @@ defmodule Boruta.Oauth.Request.Base do
           "client_assertion" => client_assertion
         }
       }) do
-    with {:ok, %{"alg" => alg}} <- Joken.peek_header(client_assertion),
-         {:ok, %{"cnf" => %{"jwk" => jwk}, "iss" => iss}} <- Joken.peek_claims(client_assertion) do
+    with [client_attestation, pop] <- String.split(client_assertion, "~"),
+         {:ok, %{"alg" => alg}} <- Joken.peek_header(client_attestation),
+         {:ok, %{"cnf" => %{"jwk" => jwk}, "iss" => iss}} <- Joken.peek_claims(client_attestation) do
       signer =
         Joken.Signer.create(alg, %{
           "pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()
         })
 
-      case VerifiableCredentials.Token.verify(client_assertion, signer) do
+      case VerifiableCredentials.Token.verify(pop, signer) do
         {:ok, _claims} ->
           client_authentication_params = %{
             "client_id" => iss,
