@@ -204,6 +204,7 @@ defmodule Boruta.Ecto.Client do
     ])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
+    |> validate_inclusion(:access_token_ttl, 1..authorization_request_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..id_token_max_ttl())
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
