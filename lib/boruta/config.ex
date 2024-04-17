@@ -40,7 +40,7 @@ defmodule Boruta.Config do
               requests: Boruta.Ecto.Requests
             ],
             max_ttl: [
-              authorization_request: 60,
+              authorization_request: 300,
               authorization_code: 60,
               access_token: 60 * 60 * 24,
               id_token: 60 * 60 * 24,
