@@ -7,6 +7,7 @@ defmodule Boruta.Migrations.ParImplementation do
         # 20240408194443_create_authorization_requests.exs
         create table(:authorization_requests, primary_key: false) do
           add :id, :uuid, primary_key: true
+          add :client_id, :string
           add :client_authentication, :jsonb
           add :response_type, :string
           add :redirect_uri, :string

@@ -15,6 +15,7 @@ defmodule Boruta.Ecto.AuthorizationRequest do
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
   schema "authorization_requests" do
+    field :client_id, :string
     field :client_authentication, :map
     field :response_type, :string
     field :redirect_uri, :string
@@ -30,6 +31,7 @@ defmodule Boruta.Ecto.AuthorizationRequest do
   def create_changeset(request, attrs, client) do
     request
     |> cast(attrs, [
+      :client_id,
       :client_authentication,
       :response_type,
       :redirect_uri,

@@ -36,4 +36,16 @@ defmodule Boruta.Oauth.AuthorizationRequest do
 
   def persisted?(%__MODULE__{id: nil}), do: false
   def persisted?(_request), do: true
+
+  def expired?(%__MODULE__{expires_at: expires_at}) do
+    expires_at < :os.system_time(:seconds)
+  end
+
+  @spec to_params(request :: t()) :: params :: map()
+  def to_params(request) do
+    Map.from_struct(request)
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {to_string(k), v} end)
+    |> Enum.into(%{})
+  end
 end

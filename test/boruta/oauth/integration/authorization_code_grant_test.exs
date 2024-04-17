@@ -16,6 +16,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.PushedAuthorizationResponse
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenResponse
@@ -687,6 +688,86 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns a code with pushed authorization request", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:request_stored,
+              %PushedAuthorizationResponse{
+                request_uri: request_uri
+              }} =
+               Oauth.pushed_authorization_request(
+                 %Plug.Conn{
+                   body_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "request_uri" => request_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :code
+      assert value
+      assert expires_in
+    end
+
+    test "returns an error with expired pushed authorization request", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+      Elixir.Ecto.Changeset.change(client, %{authorization_request_ttl: -1}) |> Repo.update()
+
+      assert {:request_stored,
+              %PushedAuthorizationResponse{
+                request_uri: request_uri
+              }} =
+               Oauth.pushed_authorization_request(
+                 %Plug.Conn{
+                   body_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "request_uri" => request_uri
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) == {:authorize_error,
+                %Boruta.Oauth.Error{
+                  error: :invalid_request,
+                  error_description: "Authorization request is expired.",
+                  status: :bad_request
+                }}
+    end
+
     test "code_challenge_method defaults to `plain`", %{
       pkce_client: client,
       resource_owner: resource_owner
@@ -1283,17 +1364,28 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     # TODO test dpop implementation
 
-    test "returns a token when dpop is valid", %{client: client, code: code, resource_owner: resource_owner} do
+    test "returns a token when dpop is valid", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => jwk,
-        "typ" => "dpop+jwt"
-      })
 
-      {:ok, dpop, _claims} = Token.encode_and_sign(%{
-        "htu" => "http://host/pa/th",
-        "htm" => "POST"
-      }, signer)
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
+      {:ok, dpop, _claims} =
+        Token.encode_and_sign(
+          %{
+            "htu" => "http://host/pa/th",
+            "htm" => "POST"
+          },
+          signer
+        )
+
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 

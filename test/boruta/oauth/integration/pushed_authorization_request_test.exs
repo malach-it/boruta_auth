@@ -9,10 +9,12 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
     use Joken.Config, default_signer: :pem_rs512
   end
 
+  alias Boruta.Ecto.AuthorizationRequest
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PushedAuthorizationResponse
+  alias Boruta.Repo
 
   describe "pushed authorization request - authorize" do
     setup do
@@ -230,7 +232,9 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
                  ApplicationMock
                )
 
-      assert request_uri =~ ~r/urn\:ietf\:params\:oauth\:request_uri\:/
+      assert [_, request_id] = Regex.run(~r/urn\:ietf\:params\:oauth\:request_uri\:(.+)/, request_uri)
+      request = Repo.get(AuthorizationRequest, request_id)
+      assert request.client_id
       assert expires_in
     end
   end
