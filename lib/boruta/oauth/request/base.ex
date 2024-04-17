@@ -240,7 +240,7 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}) do
-    with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
+    with %URI{scheme: "" <> scheme} when scheme in ["http", "https"] <- URI.parse(request_uri),
          {:ok, %Finch.Response{body: request, status: 200}} <-
            Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient),
          {:ok, params} <- Joken.peek_claims(request) do
