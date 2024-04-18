@@ -50,8 +50,7 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
-  # 10 years
-  @individual_claim_default_expiration 3600 * 24 * 30 * 365 * 120
+  @individual_claim_default_expiration 3600 * 24 * 365 * 120
   @validity_shift 33
   @revokation_shift 44
   @suspention_shift 55
@@ -123,7 +122,7 @@ defmodule Boruta.VerifiableCredentials do
                  Enum.empty?(configuration[:types] -- credential_params["types"])
 
                "13" ->
-                 Enum.member?(configuration[:types], credential_params["credential_identifier"])
+                 Enum.member?(configuration[:types], credential_params["vct"] || credential_params["credential_identifier"])
              end
            end),
          {:ok, proof} <- validate_proof_format(proof),
@@ -484,7 +483,7 @@ defmodule Boruta.VerifiableCredentials do
          |> Enum.map(&Jason.encode!/1)
          |> Enum.map(&Base.url_encode64(&1, padding: false)))
 
-    {:ok, Enum.join(tokens, "~")}
+    {:ok, Enum.join(tokens, "~") <> "~"}
   end
 
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
@@ -503,7 +502,7 @@ defmodule Boruta.VerifiableCredentials do
 
           {name,
            {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
-            String.to_integer(claim["expiration"]) || @individual_claim_default_expiration}}
+            claim["expiration"] && String.to_integer(claim["expiration"]) || @individual_claim_default_expiration}}
 
         attribute when is_binary(attribute) ->
           {attribute,
