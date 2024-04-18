@@ -333,7 +333,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       # TODO validate credential body
       assert credential
       suspended_salt_key = String.split(credential, "~")
-                   |> List.last()
+                   |> Enum.at(1)
                    |> Base.url_decode64!(padding: false)
                    |> Jason.decode!()
                    |> List.first()
@@ -389,7 +389,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       # TODO validate credential body
       assert credential
       suspended_salt_key = String.split(credential, "~")
-                   |> List.last()
+                   |> Enum.at(1)
                    |> Base.url_decode64!(padding: false)
                    |> Jason.decode!()
                    |> List.first()
@@ -445,7 +445,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       # TODO validate credential body
       assert credential
       suspended_salt_key = String.split(credential, "~")
-                   |> List.last()
+                   |> Enum.at(1)
                    |> Base.url_decode64!(padding: false)
                    |> Jason.decode!()
                    |> List.first()
@@ -501,7 +501,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       # TODO validate credential body
       assert credential
       suspended_salt_key = String.split(credential, "~")
-                   |> List.last()
+                   |> Enum.at(1)
                    |> Base.url_decode64!(padding: false)
                    |> Jason.decode!()
                    |> List.first()
