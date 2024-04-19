@@ -1,5 +1,5 @@
 defmodule Boruta.VerifiableCredentialsTest do
-  use Boruta.DataCase
+  use Boruta.DataCase, async: true
 
   import Boruta.Factory
 
@@ -479,7 +479,7 @@ defmodule Boruta.VerifiableCredentialsTest do
               "name" => "firstname",
               "label" => "firstname",
               "pointer" => "firstname",
-              "expiration" => "-1"
+              "expiration" => "1"
             }],
             time_to_live: 60
           }
@@ -498,6 +498,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                  %{}
                )
 
+      :timer.sleep(1000)
       # TODO validate credential body
       assert credential
       suspended_salt_key = String.split(credential, "~")
@@ -520,6 +521,53 @@ defmodule Boruta.VerifiableCredentialsTest do
         client.private_key,
         div(:os.system_time(:seconds), 3600) + 55
       )
+    end
+  end
+
+  describe "generate_sd_salt/3" do
+    test "generate a valid salt" do
+      secret = "secret"
+      expiration = 60
+      status = :valid
+      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+
+      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), expiration) + 33
+      )
+      assert VerifiableCredentials.verify_salt(secret, salt) == :valid
+    end
+
+    test "generate a revoked salt" do
+      secret = "secret"
+      expiration = 60
+      status = :revoked
+      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+
+      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), expiration) + 44
+      )
+      assert VerifiableCredentials.verify_salt(secret, salt) == :revoked
+    end
+
+    test "generate a suspended salt" do
+      secret = "secret"
+      expiration = 60
+      status = :suspended
+      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+
+      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), expiration) + 55
+      )
+      assert VerifiableCredentials.verify_salt(secret, salt) == :suspended
+    end
+  end
+
+  describe "verify_salt/2" do
+    test "returns invalid" do
+      assert VerifiableCredentials.verify_salt("secret", "invalid salt") == :invalid
     end
   end
 

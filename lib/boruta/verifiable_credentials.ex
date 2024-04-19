@@ -9,7 +9,7 @@ defmodule Boruta.VerifiableCredentials do
     import Bitwise
 
     @hmac_algorithm :sha
-    @digits 6
+    @digits 12
 
     @spec generate_hotp(secret :: String.t(), counter :: integer()) :: hotp :: String.t()
     def generate_hotp(secret, counter) do
@@ -35,7 +35,7 @@ defmodule Boruta.VerifiableCredentials do
     end
 
     defp format_hotp(hotp) do
-      Integer.to_string(hotp, 16)
+      Integer.to_string(hotp, 16) |> String.downcase()
     end
   end
 
@@ -51,9 +51,11 @@ defmodule Boruta.VerifiableCredentials do
 
   @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
-  @validity_shift 33
-  @revokation_shift 44
-  @suspention_shift 55
+  @status_table [
+    valid: {'val', 33},
+    revoked: {'rev', 44},
+    suspended: {'sus', 55}
+  ]
 
   @authorization_details_schema %{
     "type" => "array",
@@ -434,16 +436,7 @@ defmodule Boruta.VerifiableCredentials do
 
     claims_with_salt =
       Enum.map(claims, fn {name, {value, status, expiration}} ->
-        secret = SecureRandom.hex()
-
-        hotp =
-          Hotp.generate_hotp(
-            client.private_key,
-            div(:os.system_time(:seconds), expiration) + shift(status)
-          )
-
-        salt = "#{secret}~#{hotp}"
-        {{name, value}, salt}
+        {{name, value}, generate_sd_salt(client.private_key, expiration, String.to_atom(status))}
       end)
 
     disclosures =
@@ -488,6 +481,70 @@ defmodule Boruta.VerifiableCredentials do
 
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
     do: {:error, "Unkown format."}
+
+  def generate_sd_salt(secret, expiration, status) do
+    random = SecureRandom.hex(4) |> String.to_charlist()
+    padded_expiration = (:erlang.integer_to_list(expiration) |> :string.right(11, 0))
+    status_list = random ++ padded_expiration ++ Enum.flat_map(@status_table, fn {_status, {key, _shift}} ->
+      key
+    end)
+
+    salt = status_list
+    |> to_string()
+    |> Base.url_encode64(padding: false)
+
+    hotp =
+      Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), expiration) + shift(status)
+      )
+
+    "#{salt}~#{hotp}"
+  end
+
+  def verify_salt(secret, salt) do
+    [status_list, hotp] = String.split(salt, "~")
+
+    {_, %{expiration: expiration, statuses: statuses}} = status_list
+    |> Base.url_decode64!(padding: false)
+    |> to_charlist()
+    |> Enum.reduce({0, %{expiration: [], statuses: [], memory: []}}, fn char, {index, acc} ->
+      case index do
+        index when index < 8 ->
+          {index + 1, acc}
+        index when index == 18 ->
+          acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+          {index + 1, acc
+          |> Map.put(:expiration, acc[:memory]
+            |> Enum.drop_while(fn char -> char == 0 end)
+            |> :erlang.list_to_integer()
+          )
+          |> Map.put(:memory, [])}
+        index when index > 18 and rem(index - 18, 3) == 0 ->
+          acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+          {index + 1, acc
+          |> Map.put(:statuses, acc[:statuses] ++ [acc[:memory]])
+          |> Map.put(:memory, [])}
+        _ ->
+          acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+          {index + 1, acc}
+      end
+    end)
+
+    Enum.reduce_while(statuses, :expired, fn status, acc ->
+      {status, {_key, shift}} = Enum.find(@status_table, fn {_status, {key, _shift}} ->
+        key == status
+      end)
+      case hotp == Hotp.generate_hotp(
+        secret, div(:os.system_time(:seconds), expiration) + shift
+      ) do
+        true -> {:halt, status}
+        false -> {:cont, acc}
+      end
+    end)
+  rescue
+    _ -> :invalid
+  end
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
@@ -538,7 +595,5 @@ defmodule Boruta.VerifiableCredentials do
     end
   end
 
-  defp shift("valid"), do: @validity_shift
-  defp shift("revoked"), do: @revokation_shift
-  defp shift("suspended"), do: @suspention_shift
+  defp shift(status), do: @status_table[status] |> elem(1)
 end
