@@ -231,8 +231,26 @@ defmodule Boruta.Oauth.Request.Base do
 
   def fetch_client_authentication(%{
         req_headers: req_headers,
-        body_params: %{} = body_params
+        body_params: %{} = params
+      }) when params != %{} do
+    do_fetch_client_authentication(req_headers, params)
+  end
+
+  def fetch_client_authentication(%{
+        req_headers: req_headers,
+        query_params: %{} = params
+      }) when params != %{} do
+    do_fetch_client_authentication(req_headers, params)
+  end
+
+  def fetch_client_authentication(%{
+        req_headers: req_headers,
+        params: %{} = params
       }) do
+    do_fetch_client_authentication(req_headers, params)
+  end
+
+  defp do_fetch_client_authentication(req_headers, params) do
     with {:ok, authorization_header} <- authorization_header(req_headers),
          {:ok, [client_id, client_secret]} <- BasicAuth.decode(authorization_header) do
       client_authentication_params = %{
@@ -243,17 +261,20 @@ defmodule Boruta.Oauth.Request.Base do
       {:ok, client_authentication_params}
     else
       {:error, :no_authorization_header} ->
-        try do
-          {:ok,
-           %{
-             "client_authentication" => %{
-               "type" => "post",
-               "value" => body_params["client_secret"]
-             }
-           }}
-        rescue
-          _e in ArgumentError ->
+        
+        case params["client_secret"] do
+          nil ->
             {:error, "No client authentication method found in request."}
+
+          client_secret ->
+            {:ok,
+              Map.merge(params, %{
+                "client_authentication" => %{
+                  "type" => "post",
+                  "value" => client_secret
+                }
+              })
+            }
         end
 
       {:error, reason} ->
