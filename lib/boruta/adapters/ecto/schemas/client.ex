@@ -14,7 +14,8 @@ defmodule Boruta.Ecto.Client do
       access_token_max_ttl: 0,
       authorization_code_max_ttl: 0,
       id_token_max_ttl: 0,
-      refresh_token_max_ttl: 0
+      refresh_token_max_ttl: 0,
+      redirect_uri_validation_fun: 0
     ]
 
   alias Boruta.Ecto.Scope
@@ -291,10 +292,14 @@ defmodule Boruta.Ecto.Client do
     case URI.parse(uri) do
       %URI{scheme: scheme, host: host, fragment: fragment}
       when not is_nil(scheme) and not is_nil(host) and is_nil(fragment) ->
-        nil
+        # valid uri
+        nil 
 
       _ ->
-        "`#{uri}` is invalid"
+        case redirect_uri_validation_fun() do
+          {mod, fun} -> apply(mod, fun, [uri])
+          _ -> "`#{uri}` is invalid"
+        end
     end
   end
 
