@@ -52,9 +52,9 @@ defmodule Boruta.VerifiableCredentials do
   @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
   @status_table [
-    valid: {'val', 33},
-    revoked: {'rev', 44},
-    suspended: {'sus', 55}
+    valid: {'vld', 33},
+    revoked: {'rvk', 44},
+    suspended: {'spd', 55}
   ]
 
   @authorization_details_schema %{
@@ -124,7 +124,10 @@ defmodule Boruta.VerifiableCredentials do
                  Enum.empty?(configuration[:types] -- credential_params["types"])
 
                "13" ->
-                 Enum.member?(configuration[:types], credential_params["vct"] || credential_params["credential_identifier"])
+                 Enum.member?(
+                   configuration[:types],
+                   credential_params["vct"] || credential_params["credential_identifier"]
+                 )
              end
            end),
          {:ok, proof} <- validate_proof_format(proof),
@@ -435,8 +438,8 @@ defmodule Boruta.VerifiableCredentials do
       end
 
     claims_with_salt =
-      Enum.map(claims, fn {name, {value, status, expiration}} ->
-        {{name, value}, generate_sd_salt(client.private_key, expiration, String.to_atom(status))}
+      Enum.map(claims, fn {name, {value, status, ttl}} ->
+        {{name, value}, generate_sd_salt(client.private_key, ttl, String.to_atom(status))}
       end)
 
     disclosures =
@@ -482,21 +485,29 @@ defmodule Boruta.VerifiableCredentials do
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
     do: {:error, "Unkown format."}
 
-  def generate_sd_salt(secret, expiration, status) do
+  def generate_sd_salt(secret, ttl, status) do
     random = SecureRandom.hex(4) |> String.to_charlist()
-    padded_expiration = (:erlang.integer_to_list(expiration) |> :string.right(11, 0))
-    status_list = random ++ padded_expiration ++ Enum.flat_map(@status_table, fn {_status, {key, _shift}} ->
-      key
-    end)
+    padded_ttl = :binary.encode_unsigned(ttl)
+                 |> :binary.bin_to_list()
+                 |> :string.right(4, 0)
 
-    salt = status_list
-    |> to_string()
-    |> Base.url_encode64(padding: false)
+    status_list =
+      random ++
+        padded_ttl ++
+        Enum.flat_map(@status_table, fn {_status, {_key, shift}} when shift < 256 ->
+          :binary.encode_unsigned(shift)
+          |> :binary.bin_to_list()
+        end)
+
+    salt =
+      status_list
+      |> to_string()
+      |> Base.url_encode64()
 
     hotp =
       Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + shift(status)
+        div(:os.system_time(:seconds), ttl) + shift(status)
       )
 
     "#{salt}~#{hotp}"
@@ -505,45 +516,66 @@ defmodule Boruta.VerifiableCredentials do
   def verify_salt(secret, salt) do
     [status_list, hotp] = String.split(salt, "~")
 
-    {_, %{expiration: expiration, statuses: statuses}} = status_list
-    |> Base.url_decode64!(padding: false)
-    |> to_charlist()
-    |> Enum.reduce({0, %{expiration: [], statuses: [], memory: []}}, fn char, {index, acc} ->
-      case index do
-        index when index < 8 ->
-          {index + 1, acc}
-        index when index == 18 ->
-          acc = Map.put(acc, :memory, acc[:memory] ++ [char])
-          {index + 1, acc
-          |> Map.put(:expiration, acc[:memory]
-            |> Enum.drop_while(fn char -> char == 0 end)
-            |> :erlang.list_to_integer()
-          )
-          |> Map.put(:memory, [])}
-        index when index > 18 and rem(index - 18, 3) == 0 ->
-          acc = Map.put(acc, :memory, acc[:memory] ++ [char])
-          {index + 1, acc
-          |> Map.put(:statuses, acc[:statuses] ++ [acc[:memory]])
-          |> Map.put(:memory, [])}
-        _ ->
-          acc = Map.put(acc, :memory, acc[:memory] ++ [char])
-          {index + 1, acc}
-      end
-    end)
+    %{ttl: ttl, statuses: statuses} =
+      status_list
+      |> Base.url_decode64!()
+      |> to_charlist()
+      |> parse_statuslist()
 
-    Enum.reduce_while(statuses, :expired, fn status, acc ->
-      {status, {_key, shift}} = Enum.find(@status_table, fn {_status, {key, _shift}} ->
-        key == status
-      end)
-      case hotp == Hotp.generate_hotp(
-        secret, div(:os.system_time(:seconds), expiration) + shift
-      ) do
+    Enum.reduce_while(statuses, :expired, fn shift, acc ->
+      {status, {_key, _shift}} =
+        Enum.find(@status_table, fn {_status, {_key, table_shift}} ->
+         shift == table_shift
+        end)
+
+      case hotp ==
+             Hotp.generate_hotp(
+               secret,
+               div(:os.system_time(:seconds), ttl) + shift
+             ) do
         true -> {:halt, status}
         false -> {:cont, acc}
       end
     end)
   rescue
     _ -> :invalid
+  end
+
+  def parse_statuslist(statuslist) do
+    parse_statuslist(statuslist, {0, %{ttl: [], statuses: [], memory: []}})
+  end
+
+  def parse_statuslist([], {_index, result}), do: result
+
+  def parse_statuslist([h|t], {index, acc}) when index < 8 do
+    parse_statuslist(t, {index + 1, acc})
+  end
+
+  def parse_statuslist([char|t], {index, acc}) when index == 11 do
+    acc = acc
+          |> Map.put(
+            :ttl,
+            (acc[:memory] ++ [char])
+            |> Enum.drop_while(fn char -> char == 0 end)
+            |> :erlang.list_to_binary()
+            |> :binary.decode_unsigned()
+          )
+          |> Map.put(:memory, [])
+
+    parse_statuslist(t, {index + 1, acc})
+  end
+
+  def parse_statuslist([char|t], {index, acc}) when index > 11 do
+    acc = acc
+          |> Map.put(:statuses, acc[:statuses] ++ [char])
+          |> Map.put(:memory, [])
+
+    parse_statuslist(t, {index + 1, acc})
+  end
+
+  def parse_statuslist([char|t], {index, acc}) do
+    acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+    parse_statuslist(t, {index + 1, acc})
   end
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
@@ -559,7 +591,8 @@ defmodule Boruta.VerifiableCredentials do
 
           {name,
            {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
-            claim["expiration"] && String.to_integer(claim["expiration"]) || @individual_claim_default_expiration}}
+            (claim["expiration"] && String.to_integer(claim["expiration"])) ||
+              @individual_claim_default_expiration}}
 
         attribute when is_binary(attribute) ->
           {attribute,
