@@ -525,6 +525,20 @@ defmodule Boruta.VerifiableCredentialsTest do
   end
 
   describe "generate_sd_salt/3" do
+    test "generate a ten years valid salt" do
+      secret = "secret"
+      expiration = 3600 * 24 * 365 * 10
+      :binary.encode_unsigned(expiration) |> :binary.bin_to_list()
+      status = :valid
+      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+
+      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), expiration) + 33
+      )
+      assert VerifiableCredentials.verify_salt(secret, salt) == :valid
+    end
+
     test "generate a valid salt" do
       secret = "secret"
       expiration = 60
@@ -536,6 +550,25 @@ defmodule Boruta.VerifiableCredentialsTest do
         div(:os.system_time(:seconds), expiration) + 33
       )
       assert VerifiableCredentials.verify_salt(secret, salt) == :valid
+    end
+
+    test "generate a thousand salt" do
+      statuses = [:valid, :revoked, :suspended]
+      secret = "secret"
+
+      salts = Enum.map(1..1_000, fn _ ->
+        status = Enum.random(statuses)
+        expiration = Enum.random(1..3600)
+
+        assert salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+        {status, salt}
+      end)
+
+      Enum.map(salts, fn {status, salt} ->
+        :timer.tc(fn ->
+          assert VerifiableCredentials.verify_salt(secret, salt) == status
+        end)
+      end)
     end
 
     test "generate a revoked salt" do
