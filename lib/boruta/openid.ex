@@ -71,7 +71,7 @@ defmodule Boruta.Openid do
            VerifiableCredentials.issue_verifiable_credential(
              token.resource_owner,
              credential_params,
-             token.client,
+             token,
              default_credential_configuration
            ) do
       response = CredentialResponse.from_credential(credential)

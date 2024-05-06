@@ -99,13 +99,13 @@ defmodule Boruta.VerifiableCredentials do
   @spec issue_verifiable_credential(
           resource_owner :: ResourceOwner.t(),
           credential_params :: map(),
-          client :: Boruta.Oauth.Client.t(),
+          token :: Boruta.Oauth.Token.t(),
           default_credential_configuration :: map()
         ) :: {:ok, map()} | {:error, String.t()}
   def issue_verifiable_credential(
         resource_owner,
         credential_params,
-        client,
+        token,
         default_credential_configuration
       ) do
     proof = credential_params["proof"]
@@ -144,7 +144,7 @@ defmodule Boruta.VerifiableCredentials do
              claims,
              {credential_identifier, credential_configuration},
              {jwk, proof["jwt"]},
-             client,
+             token,
              credential_configuration[:format]
            ) do
       credential = %{
@@ -300,10 +300,11 @@ defmodule Boruta.VerifiableCredentials do
          claims,
          {_credential_identifier, credential_configuration},
          {jwk, proof},
-         client,
+         token,
          format
        )
        when format in ["jwt_vc_json"] do
+    client = token.client
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -329,8 +330,7 @@ defmodule Boruta.VerifiableCredentials do
       "iss" => Config.issuer(),
       "iat" => :os.system_time(:seconds),
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
-      # TODO implement c_nonce
-      "nonce" => "boruta",
+      "nonce" => token.c_nonce,
       "vc" => %{
         # TODO get context from configuration
         "@context" => [
@@ -357,10 +357,11 @@ defmodule Boruta.VerifiableCredentials do
          claims,
          {credential_identifier, credential_configuration},
          {jwk, proof},
-         client,
+         token,
          format
        )
        when format in ["jwt_vc"] do
+    client = token.client
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -415,10 +416,11 @@ defmodule Boruta.VerifiableCredentials do
          claims,
          {_credential_identifier, credential_configuration},
          {jwk, proof},
-         client,
+         token,
          format
        )
        when format in ["vc+sd-jwt"] do
+    client = token.client
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -463,8 +465,7 @@ defmodule Boruta.VerifiableCredentials do
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
-      # TODO implement c_nonce
-      "nonce" => "boruta",
+      "nonce" => token.c_nonce,
       "_sd" => sd,
       "cnf" => %{
         "jwk" => jwk
@@ -547,7 +548,7 @@ defmodule Boruta.VerifiableCredentials do
 
   def parse_statuslist([], {_index, result}), do: result
 
-  def parse_statuslist([h|t], {index, acc}) when index < 8 do
+  def parse_statuslist([_char|t], {index, acc}) when index < 8 do
     parse_statuslist(t, {index + 1, acc})
   end
 

@@ -12,6 +12,7 @@ defmodule Boruta.Oauth.TokenResponse do
             expires_in: nil,
             refresh_token: nil,
             id_token: nil,
+            c_nonce: nil,
             token: nil,
             authorization_details: nil
 
@@ -19,6 +20,7 @@ defmodule Boruta.Oauth.TokenResponse do
           token_type: String.t(),
           access_token: String.t() | nil,
           id_token: String.t() | nil,
+          c_nonce: String.t() | nil,
           expires_in: integer() | nil,
           refresh_token: String.t() | nil,
           token: Token.t(),
@@ -34,7 +36,8 @@ defmodule Boruta.Oauth.TokenResponse do
             %Token{
               value: value,
               expires_at: expires_at,
-              refresh_token: refresh_token
+              refresh_token: refresh_token,
+              c_nonce: c_nonce
             } = token
         } = params
       ) do
@@ -48,6 +51,7 @@ defmodule Boruta.Oauth.TokenResponse do
       expires_in: expires_in,
       refresh_token: refresh_token,
       id_token: params[:id_token] && params[:id_token].value,
+      c_nonce: c_nonce,
       authorization_details: token.authorization_details
     }
   end
@@ -58,7 +62,8 @@ defmodule Boruta.Oauth.TokenResponse do
             %Token{
               value: value,
               expires_at: expires_at,
-              refresh_token: refresh_token
+              refresh_token: refresh_token,
+              c_nonce: c_nonce
             } = token
         } = params
       ) do
@@ -72,6 +77,7 @@ defmodule Boruta.Oauth.TokenResponse do
       expires_in: expires_in,
       refresh_token: refresh_token,
       id_token: params[:id_token] && params[:id_token].value,
+      c_nonce: c_nonce,
       authorization_details: token.authorization_details
     }
   end
