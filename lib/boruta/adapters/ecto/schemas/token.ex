@@ -21,6 +21,7 @@ defmodule Boruta.Ecto.Token do
           authorization_details: list(),
           state: String.t(),
           nonce: String.t(),
+          c_nonce: String.t(),
           scope: String.t(),
           redirect_uri: String.t(),
           expires_at: integer(),
@@ -46,6 +47,8 @@ defmodule Boruta.Ecto.Token do
     }
   }
 
+  @c_nonce_length 4
+
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime_usec
@@ -58,6 +61,7 @@ defmodule Boruta.Ecto.Token do
     field(:previous_code, :string)
     field(:state, :string)
     field(:nonce, :string)
+    field(:c_nonce, :string)
     field(:scope, :string, default: "")
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
@@ -97,6 +101,7 @@ defmodule Boruta.Ecto.Token do
     |> put_change(:type, "access_token")
     |> validate_authorization_details()
     |> put_value()
+    |> put_c_nonce()
     |> put_expires_at()
   end
 
@@ -119,6 +124,7 @@ defmodule Boruta.Ecto.Token do
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
     |> put_value()
+    |> put_c_nonce()
     |> put_refresh_token()
     |> put_expires_at()
   end
@@ -215,6 +221,7 @@ defmodule Boruta.Ecto.Token do
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "code")
     |> put_value()
+    |> put_c_nonce()
     |> put_code_expires_at()
     |> put_code_challenge_method()
     |> encrypt_code_challenge()
@@ -239,6 +246,14 @@ defmodule Boruta.Ecto.Token do
       changeset,
       :value,
       token_generator().generate(:access_token, struct(data, changes))
+    )
+  end
+
+  defp put_c_nonce(changeset) do
+    put_change(
+      changeset,
+      :c_nonce,
+      SecureRandom.hex(@c_nonce_length)
     )
   end
 

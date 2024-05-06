@@ -756,6 +756,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 access_token: access_token,
                 expires_in: expires_in,
                 refresh_token: refresh_token,
+                c_nonce: c_nonce,
                 authorization_details: authorization_details
               }} =
                Oauth.token(
@@ -773,6 +774,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert authorization_details
       assert expires_in
       assert refresh_token
+      assert c_nonce
     end
 
     #
