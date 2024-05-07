@@ -24,7 +24,8 @@ defmodule Boruta.Ecto.Scope do
 
   def changeset(scope, attrs) do
     scope
-    |> cast(attrs, [:label, :name, :public])
+    |> cast(attrs, [:id, :label, :name, :public])
+    |> unique_constraint(:id, name: :scopes_pkey)
     |> unique_constraint(:id)
     |> unique_constraint(:name)
     |> validate_required([:name])
