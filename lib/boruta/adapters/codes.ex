@@ -10,4 +10,5 @@ defmodule Boruta.CodesAdapter do
   def get_by(params), do: codes().get_by(params)
   def create(params), do: codes().create(params)
   def revoke(code), do: codes().revoke(code)
+  def revoke_previous_token(code), do: codes().revoke_previous_token(code)
 end

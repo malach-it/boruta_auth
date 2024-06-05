@@ -25,9 +25,16 @@ defmodule Boruta.Oauth.Codes do
   }) :: code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
 
   @doc """
-  Revokes the given `Boruta.Oauth.Token`.
+  Revokes the given `Boruta.Oauth.Token` code.
   """
   @callback revoke(
+    token :: Boruta.Oauth.Token.t()
+  ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
+
+  @doc """
+  Revokes the the previouly issued token given `Boruta.Oauth.Token` code.
+  """
+  @callback revoke_previous_token(
     token :: Boruta.Oauth.Token.t()
   ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 end

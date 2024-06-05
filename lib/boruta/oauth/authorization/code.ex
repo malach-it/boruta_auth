@@ -35,11 +35,23 @@ defmodule Boruta.Oauth.Authorization.Code do
         redirect_uri: redirect_uri,
         client: %Client{id: client_id, pkce: false}
       }) do
-    with %Token{client: %Client{id: ^client_id}} = token <-
-           CodesAdapter.get_by(value: value, redirect_uri: redirect_uri),
-         :ok <- Token.ensure_valid(token) do
-      {:ok, token}
-    else
+    case CodesAdapter.get_by(value: value, redirect_uri: redirect_uri) do
+      %Token{client: %Client{id: ^client_id}} = token ->
+        case Token.ensure_valid(token) do
+          :ok ->
+            {:ok, token}
+
+          {:error, _error} ->
+            CodesAdapter.revoke_previous_token(token)
+
+            {:error,
+             %Error{
+               status: :bad_request,
+               error: :invalid_grant,
+               error_description: "Given authorization code is invalid, revoked, or expired."
+             }}
+        end
+
       _ ->
         {:error,
          %Error{

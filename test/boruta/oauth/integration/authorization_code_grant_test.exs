@@ -1125,32 +1125,30 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      case Oauth.token(
-             %Plug.Conn{
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => client.id,
-                 "code" => code.value,
-                 "redirect_uri" => redirect_uri
-               }
-             },
-             ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
 
-        _ ->
-          assert false
-      end
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
+      refute Repo.get_by(Ecto.Token, value: access_token).revoked_at
     end
 
     test "stores previous code", %{client: client, code: code, resource_owner: resource_owner} do
@@ -1228,17 +1226,18 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       redirect_uri = List.first(client.redirect_uris)
 
-      assert {:token_success, %TokenResponse{access_token: access_token}} = Oauth.token(
-        %Plug.Conn{
-          body_params: %{
-            "grant_type" => "authorization_code",
-            "client_id" => client.id,
-            "code" => code.value,
-            "redirect_uri" => redirect_uri
-          }
-        },
-        ApplicationMock
-      )
+      assert {:token_success, %TokenResponse{access_token: access_token}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
 
       assert {:token_error,
               %Error{
@@ -1257,6 +1256,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  },
                  ApplicationMock
                )
+
       assert Repo.get_by(Ecto.Token, value: access_token).revoked_at
     end
 
