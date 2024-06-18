@@ -28,6 +28,12 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
+  # TODO implement
+  @impl Boruta.Oauth.Clients
+  def get_client_by_did(_did) do
+    public!()
+  end
+
   @impl Boruta.Oauth.Clients
   def public! do
     case public!(:from_cache) do
