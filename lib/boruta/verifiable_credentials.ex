@@ -487,7 +487,7 @@ defmodule Boruta.VerifiableCredentials do
     do: {:error, "Unkown format."}
 
   def generate_sd_salt(secret, ttl, status) do
-    random = SecureRandom.hex(4) |> String.to_charlist()
+    random = :crypto.strong_rand_bytes(4) |> :binary.bin_to_list()
     padded_ttl = :binary.encode_unsigned(ttl)
                  |> :binary.bin_to_list()
                  |> :string.right(4, 0)
@@ -503,7 +503,7 @@ defmodule Boruta.VerifiableCredentials do
     salt =
       status_list
       |> to_string()
-      |> Base.url_encode64()
+      |> Base.url_encode64(padding: false)
 
     hotp =
       Hotp.generate_hotp(
@@ -519,7 +519,7 @@ defmodule Boruta.VerifiableCredentials do
 
     %{ttl: ttl, statuses: statuses} =
       status_list
-      |> Base.url_decode64!()
+      |> Base.url_decode64!(padding: false)
       |> to_charlist()
       |> parse_statuslist()
 
@@ -548,11 +548,16 @@ defmodule Boruta.VerifiableCredentials do
 
   def parse_statuslist([], {_index, result}), do: result
 
-  def parse_statuslist([_char|t], {index, acc}) when index < 8 do
+  def parse_statuslist([_char|t], {index, acc}) when index < 4 do
     parse_statuslist(t, {index + 1, acc})
   end
 
-  def parse_statuslist([char|t], {index, acc}) when index == 11 do
+  def parse_statuslist([char|t], {index, acc}) when index < 7 do
+    acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+    parse_statuslist(t, {index + 1, acc})
+  end
+
+  def parse_statuslist([char|t], {index, acc}) when index == 7 do
     acc = acc
           |> Map.put(
             :ttl,
@@ -566,16 +571,11 @@ defmodule Boruta.VerifiableCredentials do
     parse_statuslist(t, {index + 1, acc})
   end
 
-  def parse_statuslist([char|t], {index, acc}) when index > 11 do
+  def parse_statuslist([char|t], {index, acc}) when index > 7 do
     acc = acc
           |> Map.put(:statuses, acc[:statuses] ++ [char])
           |> Map.put(:memory, [])
 
-    parse_statuslist(t, {index + 1, acc})
-  end
-
-  def parse_statuslist([char|t], {index, acc}) do
-    acc = Map.put(acc, :memory, acc[:memory] ++ [char])
     parse_statuslist(t, {index + 1, acc})
   end
 
