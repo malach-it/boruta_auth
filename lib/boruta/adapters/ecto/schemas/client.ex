@@ -14,7 +14,8 @@ defmodule Boruta.Ecto.Client do
       access_token_max_ttl: 0,
       authorization_code_max_ttl: 0,
       id_token_max_ttl: 0,
-      refresh_token_max_ttl: 0
+      refresh_token_max_ttl: 0,
+      redirect_uri_validation_fun: 0
     ]
 
   alias Boruta.Ecto.Scope
@@ -267,9 +268,21 @@ defmodule Boruta.Ecto.Client do
 
   defp validate_redirect_uris(changeset) do
     validate_change(changeset, :redirect_uris, fn field, values ->
-      Enum.map(values, &validate_uri/1)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(fn error -> {field, error} end)
+
+      validate_fun = case redirect_uri_validation_fun() do
+          {mod, fun} -> fn uri -> apply(mod, fun, [uri]) end
+          fun when is_function(fun, 1) -> fun
+          _ -> &validate_uri/1
+        end
+      
+      Enum.map(values, fn uri -> validate_fun.(uri) end)
+      |> Enum.reject(fn 
+        :ok -> true 
+        _ -> false 
+      end)
+      |> Enum.map(fn 
+        error -> {field, error} 
+    end)
     end)
   end
 
@@ -291,7 +304,7 @@ defmodule Boruta.Ecto.Client do
     case URI.parse(uri) do
       %URI{scheme: scheme, host: host, fragment: fragment}
       when not is_nil(scheme) and not is_nil(host) and is_nil(fragment) ->
-        nil
+        :ok
 
       _ ->
         "`#{uri}` is invalid"

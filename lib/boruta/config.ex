@@ -135,12 +135,17 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :issuer)
   end
 
+  @doc false
+  def redirect_uri_validation_fun do
+    Keyword.get(override_config(), :redirect_uri_validation_fun)
+  end
+
   @spec oauth_config() :: keyword()
   @doc false
   defp oauth_config do
       Keyword.merge(
         @defaults,
-        Application.get_env(:boruta, Boruta.Oauth) || [],
+        override_config() || [],
         fn _, a, b ->
           if Keyword.keyword?(a) && Keyword.keyword?(b) do
             Keyword.merge(a, b)
@@ -150,4 +155,7 @@ defmodule Boruta.Config do
         end
       )
   end
+
+  defp override_config, do: Application.get_env(:boruta, Boruta.Oauth)
+
 end
