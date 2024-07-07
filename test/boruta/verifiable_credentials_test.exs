@@ -299,6 +299,10 @@ defmodule Boruta.VerifiableCredentialsTest do
         extra_claims: %{
           "firstname" => %{
             "value" => "firstname",
+            "status" => "suspended"
+          },
+          "lastname" => %{
+            "value" => "lastname",
             "status" => "valid"
           }
         },
@@ -311,6 +315,11 @@ defmodule Boruta.VerifiableCredentialsTest do
               "name" => "firstname",
               "label" => "firstname",
               "pointer" => "firstname",
+              "expiration" => "3600"
+            }, %{
+              "name" => "lastname",
+              "label" => "lastname",
+              "pointer" => "lastname",
               "expiration" => "3600"
             }],
             time_to_live: 60
@@ -332,17 +341,34 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      suspended_salt_key = String.split(credential, "~")
+      valid_salt = String.split(credential, "~")
+                   |> Enum.at(2)
+                   |> Base.url_decode64!(padding: false)
+                   |> Jason.decode!()
+                   |> List.first()
+      valid_salt_key = valid_salt
+                   |> String.split("~")
+                   |> List.last()
+      VerifiableCredentials.verify_salt(token.client.private_key, valid_salt)
+
+      assert valid_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+        token.client.private_key,
+        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:valid)
+      )
+
+      suspended_salt = String.split(credential, "~")
                    |> Enum.at(1)
                    |> Base.url_decode64!(padding: false)
                    |> Jason.decode!()
                    |> List.first()
+      suspended_salt_key = suspended_salt
                    |> String.split("~")
                    |> List.last()
+      VerifiableCredentials.verify_salt(token.client.private_key, suspended_salt)
 
       assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
         token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 33
+        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
       )
     end
 
@@ -398,7 +424,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
         token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 55
+        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
       )
     end
 
@@ -444,7 +470,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      suspended_salt_key = String.split(credential, "~")
+      revoked_salt_key = String.split(credential, "~")
                    |> Enum.at(1)
                    |> Base.url_decode64!(padding: false)
                    |> Jason.decode!()
@@ -452,9 +478,9 @@ defmodule Boruta.VerifiableCredentialsTest do
                    |> String.split("~")
                    |> List.last()
 
-      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
+      assert revoked_salt_key == VerifiableCredentials.Hotp.generate_hotp(
         token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 44
+        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:revoked)
       )
     end
 
@@ -534,7 +560,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + 33
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
       )
       assert VerifiableCredentials.verify_salt(secret, salt) == :valid
     end
@@ -547,7 +573,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + 33
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
       )
       assert VerifiableCredentials.verify_salt(secret, salt) == :valid
     end
@@ -579,7 +605,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + 44
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:revoked)
       )
       assert VerifiableCredentials.verify_salt(secret, salt) == :revoked
     end
@@ -592,7 +618,7 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + 55
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:suspended)
       )
       assert VerifiableCredentials.verify_salt(secret, salt) == :suspended
     end

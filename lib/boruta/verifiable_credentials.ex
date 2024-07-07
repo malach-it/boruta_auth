@@ -51,10 +51,11 @@ defmodule Boruta.VerifiableCredentials do
 
   @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
+
   @status_table [
-    valid: {'vld', 33},
-    revoked: {'rvk', 44},
-    suspended: {'spd', 55}
+    :valid,
+    :suspended,
+    :revoked
   ]
 
   @authorization_details_schema %{
@@ -494,11 +495,7 @@ defmodule Boruta.VerifiableCredentials do
 
     status_list =
       random ++
-        padded_ttl ++
-        Enum.flat_map(@status_table, fn {_status, {_key, shift}} when shift < 256 ->
-          :binary.encode_unsigned(shift)
-          |> :binary.bin_to_list()
-        end)
+        padded_ttl
 
     salt =
       status_list
@@ -517,22 +514,17 @@ defmodule Boruta.VerifiableCredentials do
   def verify_salt(secret, salt) do
     [status_list, hotp] = String.split(salt, "~")
 
-    %{ttl: ttl, statuses: statuses} =
+    %{ttl: ttl} =
       status_list
       |> Base.url_decode64!(padding: false)
       |> to_charlist()
       |> parse_statuslist()
 
-    Enum.reduce_while(statuses, :expired, fn shift, acc ->
-      {status, {_key, _shift}} =
-        Enum.find(@status_table, fn {_status, {_key, table_shift}} ->
-         shift == table_shift
-        end)
-
+    Enum.reduce_while(@status_table, :expired, fn status, acc ->
       case hotp ==
              Hotp.generate_hotp(
                secret,
-               div(:os.system_time(:seconds), ttl) + shift
+               div(:os.system_time(:seconds), ttl) + shift(status)
              ) do
         true -> {:halt, status}
         false -> {:cont, acc}
@@ -543,7 +535,7 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   def parse_statuslist(statuslist) do
-    parse_statuslist(statuslist, {0, %{ttl: [], statuses: [], memory: []}})
+    parse_statuslist(statuslist, {0, %{ttl: [], memory: []}})
   end
 
   def parse_statuslist([], {_index, result}), do: result
@@ -562,18 +554,9 @@ defmodule Boruta.VerifiableCredentials do
           |> Map.put(
             :ttl,
             (acc[:memory] ++ [char])
-            |> Enum.drop_while(fn char -> char == 0 end)
             |> :erlang.list_to_binary()
             |> :binary.decode_unsigned()
           )
-          |> Map.put(:memory, [])
-
-    parse_statuslist(t, {index + 1, acc})
-  end
-
-  def parse_statuslist([char|t], {index, acc}) when index > 7 do
-    acc = acc
-          |> Map.put(:statuses, acc[:statuses] ++ [char])
           |> Map.put(:memory, [])
 
     parse_statuslist(t, {index + 1, acc})
@@ -629,5 +612,8 @@ defmodule Boruta.VerifiableCredentials do
     end
   end
 
-  defp shift(status), do: @status_table[status] |> elem(1)
+  def shift(status) do
+    Atom.to_string(status)
+    |> :binary.decode_unsigned()
+  end
 end
