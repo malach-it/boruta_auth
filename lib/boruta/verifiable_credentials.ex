@@ -46,6 +46,7 @@ defmodule Boruta.VerifiableCredentials do
   alias Boruta.Config
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Scope
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
@@ -119,16 +120,18 @@ defmodule Boruta.VerifiableCredentials do
 
     # TODO filter from resource owner authorization details
     with {credential_identifier, credential_configuration} <-
-           Enum.find(credential_configuration, fn {_identifier, configuration} ->
+           Enum.find(credential_configuration, fn {identifier, configuration} ->
              case configuration[:version] do
                "11" ->
-                 Enum.empty?(configuration[:types] -- credential_params["types"])
+                 Enum.empty?(configuration[:types] -- credential_params["types"]) ||
+                   Enum.member?(identifier, Scope.split(token.scope))
 
                "13" ->
                  Enum.member?(
                    configuration[:types],
                    credential_params["vct"] || credential_params["credential_identifier"]
-                 )
+                 ) ||
+                   Enum.member?(identifier, Scope.split(token.scope))
              end
            end),
          {:ok, proof} <- validate_proof_format(proof),
@@ -306,6 +309,7 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["jwt_vc_json"] do
     client = token.client
+
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -363,6 +367,7 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["jwt_vc"] do
     client = token.client
+
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -422,6 +427,7 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["vc+sd-jwt"] do
     client = token.client
+
     signer =
       Joken.Signer.create(
         client.id_token_signature_alg,
@@ -489,9 +495,11 @@ defmodule Boruta.VerifiableCredentials do
 
   def generate_sd_salt(secret, ttl, status) do
     random = :crypto.strong_rand_bytes(4) |> :binary.bin_to_list()
-    padded_ttl = :binary.encode_unsigned(ttl)
-                 |> :binary.bin_to_list()
-                 |> :string.right(4, 0)
+
+    padded_ttl =
+      :binary.encode_unsigned(ttl)
+      |> :binary.bin_to_list()
+      |> :string.right(4, 0)
 
     status_list =
       random ++
@@ -540,24 +548,25 @@ defmodule Boruta.VerifiableCredentials do
 
   def parse_statuslist([], {_index, result}), do: result
 
-  def parse_statuslist([_char|t], {index, acc}) when index < 4 do
+  def parse_statuslist([_char | t], {index, acc}) when index < 4 do
     parse_statuslist(t, {index + 1, acc})
   end
 
-  def parse_statuslist([char|t], {index, acc}) when index < 7 do
+  def parse_statuslist([char | t], {index, acc}) when index < 7 do
     acc = Map.put(acc, :memory, acc[:memory] ++ [char])
     parse_statuslist(t, {index + 1, acc})
   end
 
-  def parse_statuslist([char|t], {index, acc}) when index == 7 do
-    acc = acc
-          |> Map.put(
-            :ttl,
-            (acc[:memory] ++ [char])
-            |> :erlang.list_to_binary()
-            |> :binary.decode_unsigned()
-          )
-          |> Map.put(:memory, [])
+  def parse_statuslist([char | t], {index, acc}) when index == 7 do
+    acc =
+      acc
+      |> Map.put(
+        :ttl,
+        (acc[:memory] ++ [char])
+        |> :erlang.list_to_binary()
+        |> :binary.decode_unsigned()
+      )
+      |> Map.put(:memory, [])
 
     parse_statuslist(t, {index + 1, acc})
   end
