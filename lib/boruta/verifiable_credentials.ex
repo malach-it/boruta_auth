@@ -50,7 +50,7 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
-  @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9Kbowkrd8N32k1hMP7589MHcyNK7C5CYhRki8Qk28SFfQ3S4UECo7cet1N7AMxbyNRdv13955RPTWUk8EnJtBCpP1pDB9gvK1x6zBZArptWqYFC2t7kNA3KXVMH53d9W3QWep"
+  @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9KbrSfZqXLVnTT5rRw7VCjbapSKSfZEUSekzuBrGZhfwxQTfsNVeUYsX5gH2eJ4LdVt6uctFyJsW76VygayYHiHpwnhGwAombiRJiimmRTMXUAa49VQ9NWT7PUK2P7VbBy4Bn"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
 
   @status_table [
@@ -301,9 +301,9 @@ defmodule Boruta.VerifiableCredentials do
   defp validate_claims(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp generate_credential(
-         claims,
+         _claims,
          {_credential_identifier, credential_configuration},
-         {jwk, proof},
+         {_jwk, proof},
          token,
          format
        )
@@ -316,7 +316,8 @@ defmodule Boruta.VerifiableCredentials do
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",
-          "kid" => Client.Crypto.kid_from_private_key(client.private_key)
+          "kid" => @public_client_did <> "#" <> String.replace(@public_client_did, "did:key:", "")
+          # "kid" => Client.Crypto.kid_from_private_key(client.private_key)
         }
       )
 
@@ -328,27 +329,43 @@ defmodule Boruta.VerifiableCredentials do
           end
       end
 
+    credential_id = SecureRandom.uuid()
+
+    now = :os.system_time(:seconds)
+
+    sub = sub |> String.split("#") |> List.first()
     claims = %{
       "sub" => sub,
       # TODO store credential
-      "jti" => Config.issuer() <> "/credentials/#{SecureRandom.uuid()}",
-      "iss" => Config.issuer(),
-      "iat" => :os.system_time(:seconds),
-      "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
+      "jti" => Config.issuer() <> "/credentials/#{credential_id}",
+      "iss" => @public_client_did,
+      "nbf" => now,
+      "iat" => now,
+      "exp" => now + credential_configuration[:time_to_live],
       "nonce" => token.c_nonce,
       "vc" => %{
-        # TODO get context from configuration
         "@context" => [
           "https://www.w3.org/2018/credentials/v1"
         ],
+        # TODO store credential
+        "id" => Config.issuer() <> "/credentials/#{credential_id}",
+        "issued" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
+        "issuanceDate" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
         "type" => credential_configuration[:types],
-        "credentialSubject" =>
-          claims
-          |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
-          |> Enum.into(%{})
-      },
-      "cnf" => %{
-        "jwk" => jwk
+        "issuer" => @public_client_did,
+        "validFrom" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
+        "credentialSubject" => %{
+          "id" => sub,
+          # credential_identifier =>
+          #   claims
+          #   |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+          #   |> Enum.into(%{})
+          #   |> Map.put("id", @public_client_did)
+        },
+        "credentialSchema" => %{
+          "id" => "https://api-pilot.ebsi.eu/trusted-schemas-registry/v2/schemas/z3MgUFUkb722uq4x3dv5yAJmnNmzDFeK5UC8x83QoeLJM",
+          "type" => "FullJsonSchemaValidator2021"
+        }
       }
     }
 
@@ -494,7 +511,8 @@ defmodule Boruta.VerifiableCredentials do
     do: {:error, "Unkown format."}
 
   def generate_sd_salt(secret, ttl, status) do
-    iat = :os.system_time(:microsecond)
+    iat =
+      :os.system_time(:microsecond)
       |> :binary.encode_unsigned()
       |> :binary.bin_to_list()
       |> :string.right(7, 0)
