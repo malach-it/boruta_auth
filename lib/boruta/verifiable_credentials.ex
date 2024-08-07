@@ -494,7 +494,10 @@ defmodule Boruta.VerifiableCredentials do
     do: {:error, "Unkown format."}
 
   def generate_sd_salt(secret, ttl, status) do
-    random = :crypto.strong_rand_bytes(4) |> :binary.bin_to_list()
+    iat = :os.system_time(:microsecond)
+      |> :binary.encode_unsigned()
+      |> :binary.bin_to_list()
+      |> :string.right(7, 0)
 
     padded_ttl =
       :binary.encode_unsigned(ttl)
@@ -502,7 +505,7 @@ defmodule Boruta.VerifiableCredentials do
       |> :string.right(4, 0)
 
     status_list =
-      random ++
+      iat ++
         padded_ttl
 
     salt =
@@ -548,16 +551,16 @@ defmodule Boruta.VerifiableCredentials do
 
   def parse_statuslist([], {_index, result}), do: result
 
-  def parse_statuslist([_char | t], {index, acc}) when index < 4 do
+  def parse_statuslist([_char | t], {index, acc}) when index < 7 do
     parse_statuslist(t, {index + 1, acc})
   end
 
-  def parse_statuslist([char | t], {index, acc}) when index < 7 do
+  def parse_statuslist([char | t], {index, acc}) when index < 10 do
     acc = Map.put(acc, :memory, acc[:memory] ++ [char])
     parse_statuslist(t, {index + 1, acc})
   end
 
-  def parse_statuslist([char | t], {index, acc}) when index == 7 do
+  def parse_statuslist([char | t], {index, acc}) when index == 10 do
     acc =
       acc
       |> Map.put(
