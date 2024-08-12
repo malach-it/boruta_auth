@@ -125,14 +125,14 @@ defmodule Boruta.VerifiableCredentials do
              case configuration[:version] do
                "11" ->
                  Enum.empty?(configuration[:types] -- credential_params["types"]) ||
-                   Enum.member?(identifier, Scope.split(token.scope))
+                   Enum.member?(Scope.split(token.scope), identifier)
 
                "13" ->
                  Enum.member?(
                    configuration[:types],
                    credential_params["vct"] || credential_params["credential_identifier"]
                  ) ||
-                   Enum.member?(identifier, Scope.split(token.scope))
+                   Enum.member?(Scope.split(token.scope), identifier)
              end
            end),
          {:ok, proof} <- validate_proof_format(proof),
