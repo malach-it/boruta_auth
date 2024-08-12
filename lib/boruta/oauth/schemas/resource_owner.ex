@@ -20,6 +20,7 @@ defmodule Boruta.Oauth.ResourceOwner do
           credential_configuration: %{
             String.t() => %{
               version: String.t(),
+              defered: boolean(),
               types: list(String.t()),
               format: list(String.t()),
               time_to_live: integer(),

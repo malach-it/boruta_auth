@@ -7,7 +7,11 @@ defmodule Boruta.Openid.CredentialApplication do
   @doc """
   This function will be triggered in case of success invoking `Boruta.Openid.credential/3`
   """
-  @callback credential_created(conn :: Plug.Conn.t(), credential :: Boruta.Openid.CredentialResponse.t()) ::
+  @callback credential_created(
+              conn :: Plug.Conn.t(),
+              credential ::
+                Boruta.Openid.CredentialResponse.t() | Boruta.Openid.DeferedCredentialResponse.t()
+            ) ::
               any()
   @doc """
   This function will be triggered in case of failure invoking `Boruta.Openid.credential/3`

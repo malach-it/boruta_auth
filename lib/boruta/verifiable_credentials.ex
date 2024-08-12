@@ -47,6 +47,7 @@ defmodule Boruta.VerifiableCredentials do
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
+  alias Boruta.Openid.Credential
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
@@ -151,8 +152,9 @@ defmodule Boruta.VerifiableCredentials do
              token,
              credential_configuration[:format]
            ) do
-      credential = %{
+      credential = %Credential{
         format: credential_configuration[:format],
+        defered: credential_configuration[:defered],
         credential: credential
       }
 

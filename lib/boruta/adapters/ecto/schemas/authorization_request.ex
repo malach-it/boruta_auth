@@ -8,7 +8,18 @@ defmodule Boruta.Ecto.AuthorizationRequest do
   import Ecto.Changeset
 
   @type t :: %__MODULE__{
-
+          id: String.t(),
+          client_id: String.t(),
+          client_authentication: map(),
+          response_type: String.t(),
+          redirect_uri: String.t(),
+          scope: String.t(),
+          state: String.t(),
+          code_challenge: String.t(),
+          code_challenge_method: String.t(),
+          expires_at: integer(),
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
         }
 
   @primary_key {:id, Ecto.UUID, autogenerate: true}

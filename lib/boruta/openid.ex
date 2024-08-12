@@ -26,11 +26,14 @@ defmodule Boruta.Openid do
 
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
+  alias Boruta.CredentialsAdapter
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
+  alias Boruta.Openid.Credential
   alias Boruta.Openid.CredentialResponse
+  alias Boruta.Openid.DeferedCredentialResponse
   alias Boruta.Openid.UserinfoResponse
   alias Boruta.VerifiableCredentials
 
@@ -74,6 +77,44 @@ defmodule Boruta.Openid do
              token,
              default_credential_configuration
            ) do
+      case credential do
+        %{defered: true} ->
+          case CredentialsAdapter.create_credential(credential, token) do
+            {:ok, credential} ->
+              response = DeferedCredentialResponse.from_credential(credential, token)
+              module.credential_created(conn, response)
+            {:error, error} ->
+              error = %Error{
+                status: :internal_server_error,
+                error: :unknown_error,
+                error_description: inspect(error)
+              }
+              module.credential_failure(conn, error)
+          end
+        _ ->
+          response = CredentialResponse.from_credential(credential)
+          module.credential_created(conn, response)
+      end
+    else
+      {:error, %Error{} = error} ->
+        module.credential_failure(conn, error)
+
+      {:error, reason} ->
+        error = %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: reason
+        }
+
+        module.credential_failure(conn, error)
+    end
+  end
+
+  def defered_credential(conn, module) do
+    with {:ok, access_token} <- BearerToken.extract_token(conn),
+         {:ok, token} <- AccessToken.authorize(value: access_token),
+         %Credential{} = credential <- CredentialsAdapter.get_by(access_token: token.value) do
+
       response = CredentialResponse.from_credential(credential)
       module.credential_created(conn, response)
     else

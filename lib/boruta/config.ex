@@ -14,7 +14,8 @@ defmodule Boruta.Config do
       preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
       resource_owners: MyApp.ResourceOwners, # mandatory for user flows
       scopes: Boruta.Ecto.Scopes,
-      requests: Boruta.Ecto.Requests
+      requests: Boruta.Ecto.Requests,
+      credentials: Boruta.Ecto.Credentials
     ],
     max_ttl: [
       authorization_code: 60,
@@ -37,7 +38,8 @@ defmodule Boruta.Config do
               preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
               resource_owners: nil,
               scopes: Boruta.Ecto.Scopes,
-              requests: Boruta.Ecto.Requests
+              requests: Boruta.Ecto.Requests,
+              credentials: Boruta.Ecto.Credentials
             ],
             max_ttl: [
               authorization_request: 300,
@@ -132,6 +134,12 @@ defmodule Boruta.Config do
   @doc false
   def requests do
     Keyword.fetch!(oauth_config(), :contexts)[:requests]
+  end
+
+  @spec credentials() :: module()
+  @doc false
+  def credentials do
+    Keyword.fetch!(oauth_config(), :contexts)[:credentials]
   end
 
   @spec resource_owners() :: module()

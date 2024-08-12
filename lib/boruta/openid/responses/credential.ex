@@ -13,6 +13,9 @@ defmodule Boruta.Openid.CredentialResponse do
   }
 
   def from_credential(credential) do
-    struct(__MODULE__, credential)
+    %__MODULE__{
+      credential: credential.credential,
+      format: credential.format
+    }
   end
 end
