@@ -41,9 +41,8 @@ defmodule Boruta.VerifiableCredentials do
 
   @moduledoc false
 
-  import Boruta.Config, only: [universalresolver_base_url: 0]
-
   alias Boruta.Config
+  alias Boruta.Did
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
@@ -203,12 +202,10 @@ defmodule Boruta.VerifiableCredentials do
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp verify_jwt({:did, did}, alg, jwt) do
-    resolver_url = "#{universalresolver_base_url()}/1.0/identifiers/#{did}"
-
-    case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
-      {:ok, %Finch.Response{body: body, status: 200}} ->
+    case Did.resolve(did) do
+      {:ok, did_document} ->
         %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
-          Jason.decode!(body)
+          did_document
 
         signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
@@ -217,11 +214,8 @@ defmodule Boruta.VerifiableCredentials do
           {:error, error} -> {:error, inspect(error)}
         end
 
-      {:ok, %Finch.Response{body: body}} ->
-        {:error, body}
-
-      _ ->
-        {:error, "Could not resolve did."}
+      {:error, error} ->
+        {:error, error}
     end
   end
 
