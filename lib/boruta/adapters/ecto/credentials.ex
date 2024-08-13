@@ -1,7 +1,5 @@
 defmodule Boruta.Ecto.Credentials do
-  @moduledoc """
-  Encapsulate injected `Boruta.Oauth.Credentials` adapter in context configuration
-  """
+  @moduledoc false
   @behaviour Boruta.Openid.Credentials
 
   import Boruta.Config, only: [repo: 0]

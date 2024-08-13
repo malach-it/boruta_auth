@@ -1,4 +1,8 @@
 defmodule Boruta.Dpop do
+  @moduledoc """
+  Implementation of [OAuth 2.0 Demonstrating Proof of Possession (DPoP)](https://datatracker.ietf.org/doc/html/rfc9449) RFC from the IETF
+  """
+
   defmodule Token do
     @moduledoc false
 

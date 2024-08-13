@@ -1,7 +1,5 @@
 defmodule Boruta.Ecto.Requests do
-  @moduledoc """
-  Encapsulate injected `Boruta.Oauth.Requests` adapter in context configuration
-  """
+  @moduledoc false
   @behaviour Boruta.Oauth.Requests
 
   import Boruta.Config, only: [repo: 0]
