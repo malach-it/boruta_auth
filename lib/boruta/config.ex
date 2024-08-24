@@ -24,7 +24,12 @@ defmodule Boruta.Config do
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
-    universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr",
+    universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr/1.0",
+    universalregistrar_base_url: "https://api.godiddy.com/0.1.0/universal-registrar",
+    universal_did_auth: %{
+      type: "bearer",
+      token: UNIVERSAL_API_KEY
+    },
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
@@ -48,7 +53,12 @@ defmodule Boruta.Config do
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
-            universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr",
+            universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr/1.0",
+            universalregistrar_base_url: "https://api.godiddy.com/0.1.0/universal-registrar",
+            universal_did_auth: %{
+              type: "bearer",
+              token: nil
+            },
             token_generator: Boruta.TokenGenerator,
             issuer: "boruta"
 
@@ -167,6 +177,18 @@ defmodule Boruta.Config do
   @doc false
   def universalresolver_base_url do
     Keyword.fetch!(oauth_config(), :universalresolver_base_url)
+  end
+
+  @spec universalregistrar_base_url() :: String.t()
+  @doc false
+  def universalregistrar_base_url do
+    Keyword.fetch!(oauth_config(), :universalregistrar_base_url)
+  end
+
+  @spec universal_did_auth() :: String.t()
+  @doc false
+  def universal_did_auth do
+    Keyword.fetch!(oauth_config(), :universal_did_auth)
   end
 
   @spec issuer() :: String.t()

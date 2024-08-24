@@ -50,7 +50,9 @@ defmodule Boruta.VerifiableCredentials do
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
-  @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9KbrSfZqXLVnTT5rRw7VCjbapSKSfZEUSekzuBrGZhfwxQTfsNVeUYsX5gH2eJ4LdVt6uctFyJsW76VygayYHiHpwnhGwAombiRJiimmRTMXUAa49VQ9NWT7PUK2P7VbBy4Bn"
+  # @public_client_did "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9KbrSfZqXLVn\
+  # TT5rRw7VCjbapSKSfZEUSekzuBrGZhfwxQTfsNVeUYsX5gH2eJ4LdVt6uctFyJsW76VygayYHiHpwnhGwAombi\
+  # RJiimmRTMXUAa49VQ9NWT7PUK2P7VbBy4Bn"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
 
   @status_table [
@@ -312,8 +314,12 @@ defmodule Boruta.VerifiableCredentials do
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",
-          "kid" => @public_client_did <> "#" <> String.replace(@public_client_did, "did:key:", "")
-          # "kid" => Client.Crypto.kid_from_private_key(client.private_key)
+          "kid" => case client.did do
+            nil ->
+              Client.Crypto.kid_from_private_key(client.private_key)
+            did ->
+              did <> "#" <> String.replace(did, "did:key:", "")
+          end
         }
       )
 
@@ -334,7 +340,7 @@ defmodule Boruta.VerifiableCredentials do
       "sub" => sub,
       # TODO store credential
       "jti" => Config.issuer() <> "/credentials/#{credential_id}",
-      "iss" => @public_client_did,
+      "iss" => client.did,
       "nbf" => now,
       "iat" => now,
       "exp" => now + credential_configuration[:time_to_live],
@@ -348,7 +354,7 @@ defmodule Boruta.VerifiableCredentials do
         "issued" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
         "issuanceDate" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
         "type" => credential_configuration[:types],
-        "issuer" => @public_client_did,
+        "issuer" => client.did,
         "validFrom" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
         "credentialSubject" => %{
           "id" => sub,
@@ -388,7 +394,7 @@ defmodule Boruta.VerifiableCredentials do
         %{
           "typ" => "JWT",
           # TODO craft ebsi compliant dids
-          "kid" => @public_client_did
+          "kid" => client.did
         }
       )
 
@@ -419,7 +425,7 @@ defmodule Boruta.VerifiableCredentials do
           claims
           |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
           |> Enum.into(%{})
-          |> Map.put("id", @public_client_did)
+          |> Map.put("id", client.did)
       },
       "cnf" => %{
         "jwk" => jwk

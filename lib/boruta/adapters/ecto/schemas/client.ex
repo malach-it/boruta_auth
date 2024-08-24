@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Client do
       refresh_token_max_ttl: 0
     ]
 
+  alias Boruta.Did
   alias Boruta.Ecto.Scope
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
@@ -90,6 +91,7 @@ defmodule Boruta.Ecto.Client do
 
     field(:public_key, :string)
     field(:private_key, :string)
+    field(:did, :string)
 
     field(:token_endpoint_auth_methods, {:array, :string}, default: ["client_secret_basic", "client_secret_post"])
     field(:token_endpoint_jwt_auth_alg, :string, default: "HS256")
@@ -228,6 +230,11 @@ defmodule Boruta.Ecto.Client do
     |> cast(%{secret: secret}, [:secret])
     |> put_secret()
     |> validate_required(:secret)
+  end
+
+  def did_changeset(client) do
+    change(client)
+    |> put_did()
   end
 
   def key_pair_changeset(client, attrs \\ %{}) do
@@ -377,6 +384,23 @@ defmodule Boruta.Ecto.Client do
 
       :error ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
+    end
+  end
+
+  defp put_did(%Ecto.Changeset{} = changeset) do
+    case get_field(changeset, :public_key) do
+      nil ->
+        changeset
+
+      pem ->
+        {_, jwk} = JOSE.JWK.from_pem(pem) |> JOSE.JWK.to_map()
+
+        case Did.create("key", jwk) do
+          {:ok, did} ->
+            put_change(changeset, :did, did)
+          {:error, error} ->
+            add_error(changeset, :did, error)
+        end
     end
   end
 end
