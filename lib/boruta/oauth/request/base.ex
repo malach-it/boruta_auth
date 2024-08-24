@@ -359,7 +359,7 @@ defmodule Boruta.Oauth.Request.Base do
     else
       {:ok, _payload} ->
         {:error, "Either alg header missing or cnf claim missing in client assertion."}
-      {:error, _error} ->
+      _ ->
         {:error, "Could not decode client assertion JWT."}
     end
   rescue

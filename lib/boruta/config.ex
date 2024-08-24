@@ -185,7 +185,7 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :universalregistrar_base_url)
   end
 
-  @spec universal_did_auth() :: String.t()
+  @spec universal_did_auth() :: map()
   @doc false
   def universal_did_auth do
     Keyword.fetch!(oauth_config(), :universal_did_auth)

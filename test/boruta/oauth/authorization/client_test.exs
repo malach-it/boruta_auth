@@ -287,7 +287,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
             "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
           "client_assertion" => "bad jwt"
         }
-      }) == {:error, "Could not verify client assertion."}
+      }) == {:error, "Could not decode client assertion JWT."}
 
     end
 

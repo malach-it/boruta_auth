@@ -9,7 +9,7 @@ defmodule Boruta.Openid.Credentials do
   @callback get_by(
               [access_token: access_token :: String.t()]
             ) ::
-              credential :: Boruta.Oauth.Credential.t() | nil
+              credential :: Boruta.Openid.Credential.t() | nil
 
   @doc """
   Stores a credential for later use (eg. defered flow)
@@ -18,6 +18,6 @@ defmodule Boruta.Openid.Credentials do
               credential :: Boruta.Openid.Credential.t(),
               token :: Boruta.Oauth.Token.t()
             ) ::
-              {:ok, credential :: Boruta.Oauth.Credential.t()}
+              {:ok, credential :: Boruta.Openid.Credential.t()}
               | {:error, Ecto.Changeset.t()}
 end

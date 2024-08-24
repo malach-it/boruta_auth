@@ -187,7 +187,7 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   @spec validate_signature(jwt :: String.t()) ::
-          {:ok, claims :: map()} | {:error, reason :: String.t()}
+          {:ok, jwk ::map(), claims :: map()} | {:error, reason :: String.t()}
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->

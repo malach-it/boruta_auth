@@ -84,17 +84,17 @@ defmodule Boruta.Oauth.Request do
   defdelegate authorize_request(conn, resource_owner), to: Request.Authorize, as: :request
 
   @spec pushed_request(conn :: Plug.Conn.t() | %{body_params: map()}) ::
-          {:error,
-           %Boruta.Oauth.Error{
-             :error => :invalid_request,
-             :error_description => String.t(),
-             :format => nil,
-             :redirect_uri => nil,
-             :status => :bad_request
-           }}
-          | {:ok,
-             oauth_request ::
-               %Boruta.Oauth.AuthorizationRequest{}}
+          {:ok,
+           oauth_request ::
+             %Boruta.Oauth.AuthorizationRequest{}}
+          | {:error,
+             %Boruta.Oauth.Error{
+               :error => :invalid_request,
+               :error_description => String.t(),
+               :format => nil,
+               :redirect_uri => nil,
+               :status => :bad_request
+             }}
   defdelegate pushed_request(conn), to: Request.Authorize, as: :pushed_request
 
   @doc """
