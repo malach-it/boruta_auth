@@ -38,7 +38,7 @@ defmodule Boruta.Did do
       "options" => %{
         "keyType" => "Ed25519",
         "clientSecretMode" => true,
-        "JwkJcsPub" => true
+        "jwkJcsPub" => true
       },
       "secret" => %{}
     }
