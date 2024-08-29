@@ -13,16 +13,19 @@ defmodule Boruta.Oauth.Client do
 
   @enforce_keys [:id]
   defstruct id: nil,
+            public_client_id: nil,
             name: nil,
             secret: nil,
             confidential: nil,
             authorize_scope: nil,
             authorized_scopes: [],
+            enforce_dpop: nil,
             redirect_uris: [],
             supported_grant_types: [],
             access_token_ttl: nil,
             id_token_ttl: nil,
             authorization_code_ttl: nil,
+            authorization_request_ttl: nil,
             refresh_token_ttl: nil,
             pkce: nil,
             public_refresh_token: nil,
@@ -36,21 +39,25 @@ defmodule Boruta.Oauth.Client do
             jwks_uri: nil,
             public_key: nil,
             private_key: nil,
+            did: nil,
             logo_uri: nil,
             metadata: %{}
 
   @type t :: %__MODULE__{
           id: any(),
+          public_client_id: String.t() | nil,
           secret: String.t(),
           confidential: boolean(),
           name: String.t(),
           authorize_scope: boolean(),
           authorized_scopes: list(Boruta.Oauth.Scope.t()),
+          enforce_dpop: boolean(),
           redirect_uris: list(String.t()),
           supported_grant_types: list(String.t()),
           access_token_ttl: integer(),
           id_token_ttl: integer(),
           authorization_code_ttl: integer(),
+          authorization_request_ttl: integer(),
           refresh_token_ttl: integer(),
           pkce: boolean(),
           public_refresh_token: boolean(),
@@ -64,6 +71,7 @@ defmodule Boruta.Oauth.Client do
           jwks_uri: String.t() | nil,
           public_key: String.t(),
           private_key: String.t(),
+          did: String.t(),
           logo_uri: String.t() | nil,
           metadata: map()
         }
@@ -72,6 +80,7 @@ defmodule Boruta.Oauth.Client do
     "client_credentials",
     "password",
     "authorization_code",
+    "preauthorized_code",
     "refresh_token",
     "implicit",
     "revoke",
@@ -87,6 +96,13 @@ defmodule Boruta.Oauth.Client do
   @spec grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "code") do
     Enum.member?(supported_grant_types, "authorization_code")
+  end
+
+  def grant_type_supported?(
+        %__MODULE__{supported_grant_types: supported_grant_types},
+        "preauthorization_code"
+      ) do
+    Enum.member?(supported_grant_types, "preauthorized_code")
   end
 
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, grant_type) do
@@ -119,12 +135,15 @@ defmodule Boruta.Oauth.Client do
 
   @spec should_check_secret?(client :: t(), grant_type :: String.t()) :: boolean()
   def should_check_secret?(_client, grant_type)
-      when grant_type in ["implicit", "code"],
+      when grant_type in ["implicit", "code", "preauthorized_code"],
       do: false
 
   def should_check_secret?(client, grant_type) when grant_type in ["refresh_token", "revoke"] do
     not apply(__MODULE__, :"public_#{grant_type}?", [client])
   end
+
+  def should_check_secret?(%__MODULE__{public_client_id: "" <> _client_id}, _grant_type),
+    do: false
 
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
@@ -144,12 +163,21 @@ defmodule Boruta.Oauth.Client do
     public_revoke
   end
 
+  @spec public?(client :: t()) :: boolean()
+  def public?(%__MODULE__{public_client_id: public_client_id}) when is_binary(public_client_id),
+    do: true
+
+  def public?(%__MODULE__{public_client_id: _public_client_id}), do: false
+
   defmodule Crypto do
     @moduledoc false
 
     alias Boruta.Oauth.Client
 
     @signature_algorithms [
+      ES256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
+      ES384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
+      ES512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
       RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
       RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24],
       RS512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32],
@@ -213,6 +241,23 @@ defmodule Boruta.Oauth.Client do
       end
     end
 
+    @spec verify_id_token_signature(id_token :: String.t(), jwk :: JOSE.JWK.t()) ::
+            :ok | {:error, reason :: String.t()}
+    def verify_id_token_signature(id_token, jwk) do
+      case Joken.peek_header(id_token) do
+        {:ok, %{"alg" => alg}} ->
+          signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+
+          case Token.verify(id_token, signer) do
+            {:ok, claims} -> {:ok, claims}
+            {:error, reason} -> {:error, inspect(reason)}
+          end
+
+        {:error, reason} ->
+          {:error, inspect(reason)}
+      end
+    end
+
     @spec userinfo_sign(payload :: map(), client :: Client.t()) ::
             jwt :: String.t() | {:error, reason :: String.t()}
     def userinfo_sign(
@@ -230,7 +275,9 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(signature_alg, secret)
 
           :asymmetric ->
-            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => id_token_kid || kid_from_private_key(private_key)})
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{
+              "kid" => id_token_kid || kid_from_private_key(private_key)
+            })
         end
 
       case Token.encode_and_sign(payload, signer) do
@@ -244,10 +291,10 @@ defmodule Boruta.Oauth.Client do
 
     @spec kid_from_private_key(private_pem :: String.t()) :: kid :: String.t()
     def kid_from_private_key(private_pem) do
-      :crypto.hash(:md5, private_pem) |> Base.encode64() |> String.slice(0..16)
+      :crypto.hash(:md5, private_pem) |> Base.url_encode64() |> String.slice(0..16)
     end
 
-    @spec userinfo_signature_type(Client.t()) :: id_token_signature_type :: atom()
+    @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
     def userinfo_signature_type(%Client{userinfo_signed_response_alg: signature_alg}),
       do: @signature_algorithms[String.to_atom(signature_alg)][:type]
 

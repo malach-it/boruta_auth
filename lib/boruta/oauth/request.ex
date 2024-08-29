@@ -41,6 +41,7 @@ defmodule Boruta.Oauth.Request do
                %Boruta.Oauth.AuthorizationCodeRequest{}
                | %Boruta.Oauth.ClientCredentialsRequest{}
                | %Boruta.Oauth.AuthorizationCodeRequest{}
+               | %Boruta.Oauth.PreauthorizedCodeRequest{}
                | %Boruta.Oauth.TokenRequest{}
                | %Boruta.Oauth.PasswordRequest{}}
   defdelegate token_request(conn), to: Request.Token, as: :request
@@ -81,6 +82,20 @@ defmodule Boruta.Oauth.Request do
                | %Boruta.Oauth.TokenRequest{}
                | %Boruta.Oauth.HybridRequest{}}
   defdelegate authorize_request(conn, resource_owner), to: Request.Authorize, as: :request
+
+  @spec pushed_request(conn :: Plug.Conn.t() | %{body_params: map()}) ::
+          {:ok,
+           oauth_request ::
+             %Boruta.Oauth.AuthorizationRequest{}}
+          | {:error,
+             %Boruta.Oauth.Error{
+               :error => :invalid_request,
+               :error_description => String.t(),
+               :format => nil,
+               :redirect_uri => nil,
+               :status => :bad_request
+             }}
+  defdelegate pushed_request(conn), to: Request.Authorize, as: :pushed_request
 
   @doc """
   Create request struct from an OAuth introspect request.

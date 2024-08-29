@@ -42,4 +42,24 @@ defmodule Boruta.Oauth.Request.Authorize do
          }}
     end
   end
+
+  def pushed_request(%{body_params: body_params} = request) do
+    with {:ok, unsigned_params} <- fetch_unsigned_request(request),
+         {:ok, params} <-
+           Validator.validate(
+             :authorize,
+             body_params
+             |> Enum.into(unsigned_params)
+           ) do
+      build_request(Enum.into(params, %{"method" => "POST"}))
+    else
+      {:error, error_description} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: error_description
+         }}
+    end
+  end
 end

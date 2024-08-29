@@ -4,7 +4,7 @@ defmodule Boruta.Ecto.Clients do
   @behaviour Boruta.Oauth.Clients
   @behaviour Boruta.Openid.Clients
 
-  import Boruta.Config, only: [repo: 0]
+  import Boruta.Config, only: [repo: 0, issuer: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto
@@ -28,6 +28,29 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
+  # TODO implement
+  @impl Boruta.Oauth.Clients
+  def get_client_by_did(_did) do
+    public!()
+  end
+
+  @impl Boruta.Oauth.Clients
+  def public! do
+    case public!(:from_cache) do
+      {:ok, client} -> client
+      {:error, _reason} -> public!(:from_database)
+    end
+  end
+
+  defp public!(:from_cache), do: ClientStore.get_public()
+
+  defp public!(:from_database) do
+    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, public_client_id: issuer()),
+         {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put_public() do
+      client
+    end
+  end
+
   def invalidate(client) do
     ClientStore.invalidate(client)
   end
@@ -44,8 +67,8 @@ defmodule Boruta.Ecto.Clients do
   def list_clients_jwk do
     clients = repo().all(Ecto.Client)
 
-    Enum.map(clients, &rsa_key/1)
-    |> Enum.uniq_by(fn %{"kid" => kid} -> kid end)
+    Enum.map(clients, fn client -> {client |> to_oauth_schema(), rsa_key(client)} end)
+    |> Enum.uniq_by(fn {_client, %{"kid" => kid}} -> kid end)
   end
 
   @impl Boruta.Openid.Clients

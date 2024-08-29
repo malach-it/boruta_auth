@@ -1,7 +1,18 @@
 defmodule Boruta.OpenidModule do
   @moduledoc false
+
   @callback jwks(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @callback userinfo(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
+  @callback register_client(
+              conn :: Plug.Conn.t() | map(),
+              registration_params :: map(),
+              module :: atom()
+            ) :: any()
+  @callback credential(
+              conn :: Plug.Conn.t() | map(),
+              credential_params :: map(),
+              module :: atom()
+            ) :: any()
 end
 
 defmodule Boruta.Openid do
@@ -14,15 +25,22 @@ defmodule Boruta.Openid do
   """
 
   alias Boruta.ClientsAdapter
+  alias Boruta.CodesAdapter
+  alias Boruta.CredentialsAdapter
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
+  alias Boruta.Openid.Credential
+  alias Boruta.Openid.CredentialResponse
+  alias Boruta.Openid.DeferedCredentialResponse
   alias Boruta.Openid.UserinfoResponse
+  alias Boruta.VerifiableCredentials
 
   def jwks(conn, module) do
     jwk_keys = ClientsAdapter.list_clients_jwk()
 
-    module.jwk_list(conn, jwk_keys)
+    module.jwk_list(conn, Enum.map(jwk_keys, &elem(&1, 1)))
   end
 
   def userinfo(conn, module) do
@@ -45,6 +63,164 @@ defmodule Boruta.Openid do
 
       {:error, changeset} ->
         module.registration_failure(conn, changeset)
+    end
+  end
+
+  def credential(conn, credential_params, default_credential_configuration, module) do
+    with {:ok, access_token} <- BearerToken.extract_token(conn),
+         {:ok, token} <- AccessToken.authorize(value: access_token),
+         {:ok, credential_params} <- validate_credential_params(credential_params),
+         {:ok, credential} <-
+           VerifiableCredentials.issue_verifiable_credential(
+             token.resource_owner,
+             credential_params,
+             token,
+             default_credential_configuration
+           ) do
+      case credential do
+        %{defered: true} ->
+          case CredentialsAdapter.create_credential(credential, token) do
+            {:ok, credential} ->
+              response = DeferedCredentialResponse.from_credential(credential, token)
+              module.credential_created(conn, response)
+            {:error, error} ->
+              error = %Error{
+                status: :internal_server_error,
+                error: :unknown_error,
+                error_description: inspect(error)
+              }
+              module.credential_failure(conn, error)
+          end
+        _ ->
+          response = CredentialResponse.from_credential(credential)
+          module.credential_created(conn, response)
+      end
+    else
+      {:error, %Error{} = error} ->
+        module.credential_failure(conn, error)
+
+      {:error, reason} ->
+        error = %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: reason
+        }
+
+        module.credential_failure(conn, error)
+    end
+  end
+
+  def defered_credential(conn, module) do
+    with {:ok, access_token} <- BearerToken.extract_token(conn),
+         {:ok, token} <- AccessToken.authorize(value: access_token),
+         %Credential{} = credential <- CredentialsAdapter.get_by(access_token: token.value) do
+
+      response = CredentialResponse.from_credential(credential)
+      module.credential_created(conn, response)
+    else
+      {:error, %Error{} = error} ->
+        module.credential_failure(conn, error)
+
+      {:error, reason} ->
+        error = %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: reason
+        }
+
+        module.credential_failure(conn, error)
+    end
+  end
+
+  @type direct_post_params :: %{
+          code_id: String.t(),
+          id_token: nil | String.t()
+        }
+  @spec direct_post(
+          conn :: Plug.Conn.t(),
+          direct_post_params :: direct_post_params(),
+          module :: atom()
+        ) :: any()
+  def direct_post(conn, direct_post_params, module) do
+    with {:ok, claims} <- check_id_token_client(direct_post_params[:id_token]),
+         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
+         :ok <- check_issuer(claims, code) do
+      query =
+        %{
+          code: code.value,
+          state: code.state
+        }
+        |> URI.encode_query()
+
+      response = URI.parse(code.redirect_uri)
+
+      response =
+        %{response | host: response.host || "", query: query}
+        |> URI.to_string()
+
+      module.direct_post_success(conn, response)
+    else
+      {:error, error} ->
+        module.authentication_failure(conn, error)
+
+      nil ->
+        module.code_not_found(conn)
+    end
+  end
+
+  defp check_id_token_client(nil),
+    do:
+      {:error,
+       %Error{
+         status: :unauthorized,
+         error: :unauthorized,
+         error_description: "id_token param missing."
+       }}
+
+  defp check_id_token_client(id_token) do
+    case VerifiableCredentials.validate_signature(id_token) do
+      {:ok, _jwk, claims} ->
+        {:ok, claims}
+
+      {:error, error} ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :unauthorized,
+           error_description: error
+         }}
+    end
+  end
+
+  defp check_issuer(claims, code) do
+    case claims["iss"] == code.sub do
+      true ->
+        :ok
+
+      false ->
+        {:error,
+         %Error{
+           error: :bad_request,
+           status: :bad_request,
+           error_description: "Code subject do not match with provided id_token"
+         }}
+    end
+  end
+
+  alias Boruta.Openid.Json.Schema
+  alias ExJsonSchema.Validator.Error.BorutaFormatter
+
+  defp validate_credential_params(params) do
+    case ExJsonSchema.Validator.validate(
+           Schema.credential(),
+           params,
+           error_formatter: BorutaFormatter
+         ) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Request body validation failed. " <> Enum.join(errors, " ")}
     end
   end
 

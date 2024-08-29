@@ -16,4 +16,5 @@ config :boruta, Boruta.Repo,
 config :boruta, Boruta.Oauth,
   contexts: [
     resource_owners: Boruta.Support.ResourceOwners
-  ]
+  ],
+  did_resolver_base_url: "https://universalresolver.boruta.patatoid.fr/1.0"

@@ -6,10 +6,17 @@ defmodule Boruta.Ecto.TokenStore do
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Token
 
-  @spec get([value: String.t()] | [refresh_token: String.t()]) ::
+  @spec get([value: String.t()] | [id: String.t()] | [refresh_token: String.t()]) ::
           {:ok, token :: Boruta.Oauth.Token.t()} | {:error, reason :: String.t()}
   def get(value: value) do
     case cache_backend().get({Token, :value, value}) do
+      nil -> {:error, "Not cached."}
+      %Token{} = token -> {:ok, token}
+    end
+  end
+
+  def get(id: id) do
+    case cache_backend().get({Token, :id, id}) do
       nil -> {:error, "Not cached."}
       %Token{} = token -> {:ok, token}
     end
@@ -30,6 +37,8 @@ defmodule Boruta.Ecto.TokenStore do
     with :ok <-
            cache_backend().put({Token, :value, token.value}, token, ttl: access_token_ttl * 1000),
          :ok <-
+           cache_backend().put({Token, :id, token.id}, token, ttl: access_token_ttl * 1000),
+         :ok <-
            cache_backend().put({Token, :refresh_token, token.refresh_token}, token,
              ttl: access_token_ttl * 1000
            ) do
@@ -38,9 +47,9 @@ defmodule Boruta.Ecto.TokenStore do
   end
 
   def put(
-        %Token{type: "code", client: %Client{authorization_code_ttl: authorization_code_ttl}} =
+        %Token{type: type, client: %Client{authorization_code_ttl: authorization_code_ttl}} =
           token
-      ) do
+      ) when type in ["code", "preauthorized_code"] do
     with :ok <-
            cache_backend().put({Token, :value, token.value}, token,
              ttl: authorization_code_ttl * 1000

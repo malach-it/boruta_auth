@@ -8,6 +8,7 @@ defmodule Boruta.Ecto.Admin do
   defdelegate create_client(attrs), to: Boruta.Ecto.Admin.Clients
   defdelegate update_client(client, attrs), to: Boruta.Ecto.Admin.Clients
   defdelegate regenerate_client_secret(client), to: Boruta.Ecto.Admin.Clients
+  defdelegate regenerate_client_did(client), to: Boruta.Ecto.Admin.Clients
   defdelegate regenerate_client_secret(client, secret), to: Boruta.Ecto.Admin.Clients
   defdelegate regenerate_client_key_pair(client), to: Boruta.Ecto.Admin.Clients
   defdelegate regenerate_client_key_pair(client, public_key, private_key), to: Boruta.Ecto.Admin.Clients

@@ -33,20 +33,19 @@ defmodule Boruta.Oauth.Authorization.Client do
           | [
               id: String.t(),
               source: map() | nil,
+              grant_type: String.t(),
+              code_verifier: String.t()
+            ]
+          | [
+              id: String.t(),
+              source: map() | nil,
               redirect_uri: String.t(),
               grant_type: String.t(),
               code_verifier: String.t()
             ]
         ) ::
           {:ok, Client.t()}
-          | {:error,
-             %Error{
-               :error => :invalid_client,
-               :error_description => String.t(),
-               :format => nil,
-               :redirect_uri => nil,
-               :status => :unauthorized
-             }}
+          | {:error, Error.t()}
   def authorize(id: id, source: source, grant_type: grant_type)
       when not is_nil(id) do
     with %Client{} = client <- ClientsAdapter.get_client(id),
@@ -107,6 +106,37 @@ defmodule Boruta.Oauth.Authorization.Client do
   end
 
   def authorize(
+        id: "did:" <> _key,
+        source: source,
+        redirect_uri: _redirect_uri,
+        grant_type: grant_type,
+        code_verifier: code_verifier
+      ) do
+    with %Client{} = client <- ClientsAdapter.public!(),
+         :ok <- validate_pkce(client, code_verifier),
+         true <- Client.grant_type_supported?(client, grant_type),
+         {:ok, client} <- maybe_check_client_secret(client, source, grant_type) do
+      {:ok, client}
+    else
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
+         }}
+
+      {:error, reason} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: to_string(reason)
+         }}
+    end
+  end
+
+  def authorize(
         id: id,
         source: source,
         redirect_uri: redirect_uri,
@@ -143,6 +173,45 @@ defmodule Boruta.Oauth.Authorization.Client do
            status: :unauthorized,
            error: :invalid_client,
            error_description: "Invalid client_id or redirect_uri."
+         }}
+    end
+  end
+
+  def authorize(
+        id: id,
+        source: source,
+        grant_type: grant_type,
+        code_verifier: code_verifier
+      )
+      when not is_nil(id) do
+    with %Client{} = client <- ClientsAdapter.get_client(id),
+         :ok <- validate_pkce(client, code_verifier),
+         true <- Client.grant_type_supported?(client, grant_type),
+         {:ok, client} <- maybe_check_client_secret(client, source, grant_type) do
+      {:ok, client}
+    else
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
+         }}
+
+      {:error, :invalid_pkce_request} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "PKCE request invalid."
+         }}
+
+      _ ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :invalid_client,
+           error_description: "Invalid client."
          }}
     end
   end
@@ -301,7 +370,11 @@ defmodule Boruta.Oauth.Authorization.Client do
   defp verify_secret_result(
          %Client{
            token_endpoint_auth_methods: ["private_key_jwt" | methods]
-         } = client, source, _error, _refreshed) do
+         } = client,
+         source,
+         _error,
+         _refreshed
+       ) do
     message = "Given client expects the credentials to be provided with a jwt assertion."
     do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
   end

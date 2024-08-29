@@ -3,14 +3,20 @@ defmodule Boruta.Oauth.Request.Base do
 
   alias Boruta.BasicAuth
   alias Boruta.Oauth.AuthorizationCodeRequest
+  alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.IntrospectRequest
   alias Boruta.Oauth.PasswordRequest
+  alias Boruta.Oauth.PreauthorizationCodeRequest
+  alias Boruta.Oauth.PreauthorizedCodeRequest
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.RevokeRequest
+  alias Boruta.Oauth.SiopV2Request
   alias Boruta.Oauth.TokenRequest
+  alias Boruta.RequestsAdapter
+  alias Boruta.VerifiableCredentials
 
   @spec authorization_header(req_headers :: list()) ::
           {:ok, header :: String.t()}
@@ -27,7 +33,8 @@ defmodule Boruta.Oauth.Request.Base do
      %ClientCredentialsRequest{
        client_id: params["client_id"],
        client_authentication: client_authentication_from_params(params),
-       scope: params["scope"]
+       scope: params["scope"],
+       dpop: params["dpop"]
      }}
   end
 
@@ -49,7 +56,32 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        code: params["code"],
        redirect_uri: params["redirect_uri"],
+       code_verifier: params["code_verifier"],
+       dpop: params["dpop"]
+     }}
+  end
+
+  def build_request(
+        %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params
+      ) do
+    {:ok,
+     %PreauthorizationCodeRequest{
+       preauthorized_code: params["pre-authorized_code"],
        code_verifier: params["code_verifier"]
+     }}
+  end
+
+  def build_request(
+        %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params
+      ) do
+    {:ok,
+     %PreauthorizedCodeRequest{
+       client_id: params["client_id"],
+       redirect_uri: params["redirect_uri"],
+       resource_owner: params["resource_owner"],
+       state: params["state"],
+       prompt: params["prompt"],
+       scope: params["scope"]
      }}
   end
 
@@ -63,19 +95,62 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
+  def build_request(%{"response_type" => "code", "client_metadata" => client_metadata} = params) do
+    request = %SiopV2Request{
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      state: params["state"],
+      nonce: params["nonce"],
+      prompt: params["prompt"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      scope: params["scope"],
+      client_metadata: client_metadata
+    }
+
+    request =
+      case params["authorization_details"] do
+        nil -> request
+        authorization_details -> %{request | authorization_details: authorization_details}
+      end
+
+    {:ok, request}
+  end
+
+  def build_request(%{"response_type" => "code", "method" => "POST"} = params) do
+    request = %AuthorizationRequest{
+      response_type: "code",
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      state: params["state"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      scope: params["scope"]
+    }
+
+    {:ok, request}
+  end
+
   def build_request(%{"response_type" => "code"} = params) do
-    {:ok,
-     %CodeRequest{
-       client_id: params["client_id"],
-       redirect_uri: params["redirect_uri"],
-       resource_owner: params["resource_owner"],
-       state: params["state"],
-       nonce: params["nonce"],
-       prompt: params["prompt"],
-       code_challenge: params["code_challenge"],
-       code_challenge_method: params["code_challenge_method"],
-       scope: params["scope"]
-     }}
+    request = %CodeRequest{
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      resource_owner: params["resource_owner"],
+      state: params["state"],
+      nonce: params["nonce"],
+      prompt: params["prompt"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      scope: params["scope"]
+    }
+
+    request =
+      case params["authorization_details"] do
+        nil -> request
+        authorization_details -> %{request | authorization_details: authorization_details}
+      end
+
+    {:ok, request}
   end
 
   def build_request(%{"response_type" => "introspect"} = params) do
@@ -92,20 +167,27 @@ defmodule Boruta.Oauth.Request.Base do
 
     case Enum.member?(response_types, "code") do
       true ->
-        {:ok,
-         %HybridRequest{
-           client_id: params["client_id"],
-           code_challenge: params["code_challenge"],
-           code_challenge_method: params["code_challenge_method"],
-           nonce: params["nonce"],
-           prompt: params["prompt"],
-           redirect_uri: params["redirect_uri"],
-           resource_owner: params["resource_owner"],
-           response_mode: params["response_mode"],
-           response_types: response_types,
-           scope: params["scope"],
-           state: params["state"]
-         }}
+        request = %HybridRequest{
+          client_id: params["client_id"],
+          code_challenge: params["code_challenge"],
+          code_challenge_method: params["code_challenge_method"],
+          nonce: params["nonce"],
+          prompt: params["prompt"],
+          redirect_uri: params["redirect_uri"],
+          resource_owner: params["resource_owner"],
+          response_mode: params["response_mode"],
+          response_types: response_types,
+          scope: params["scope"],
+          state: params["state"]
+        }
+
+        request =
+          case params["authorization_details"] do
+            nil -> request
+            authorization_details -> %{request | authorization_details: authorization_details}
+          end
+
+        {:ok, request}
 
       false ->
         {:ok,
@@ -143,8 +225,26 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
+  def fetch_unsigned_request(%{
+        query_params: %{"request_uri" => "urn:ietf:params:oauth:request_uri:" <> request_id}
+      }) do
+    case RequestsAdapter.get_request(request_id) do
+      nil ->
+        {:error, "Could not fetch stored authorization request."}
+
+      request ->
+        case AuthorizationRequest.expired?(request) do
+          true ->
+            {:error, "Authorization request is expired."}
+
+          false ->
+            {:ok, AuthorizationRequest.to_params(request)}
+        end
+    end
+  end
+
   def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}) do
-    with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
+    with %URI{scheme: "" <> scheme} when scheme in ["http", "https"] <- URI.parse(request_uri),
          {:ok, %Finch.Response{body: request, status: 200}} <-
            Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient),
          {:ok, params} <- Joken.peek_claims(request) do
@@ -227,6 +327,44 @@ defmodule Boruta.Oauth.Request.Base do
       {:error, _error} ->
         {:error, "Could not decode client assertion JWT."}
     end
+  end
+
+  def fetch_client_authentication(%{
+        body_params: %{
+          "client_assertion_type" =>
+            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+          "client_assertion" => client_assertion
+        }
+      }) do
+    with [client_attestation, pop] <- String.split(client_assertion, "~"),
+         {:ok, %{"alg" => alg}} <- Joken.peek_header(client_attestation),
+         {:ok, %{"cnf" => %{"jwk" => jwk}, "iss" => iss}} <- Joken.peek_claims(client_attestation) do
+      signer =
+        Joken.Signer.create(alg, %{
+          "pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()
+        })
+
+      case VerifiableCredentials.Token.verify(pop, signer) do
+        {:ok, _claims} ->
+          client_authentication_params = %{
+            "client_id" => iss,
+            "client_authentication" => %{"type" => "jwt", "value" => client_assertion}
+          }
+
+          {:ok, client_authentication_params}
+
+        {:error, error} ->
+          {:error, "Invalid client assertion signature: #{inspect(error)}"}
+      end
+    else
+      {:ok, _payload} ->
+        {:error, "Either alg header missing or cnf claim missing in client assertion."}
+      _ ->
+        {:error, "Could not decode client assertion JWT."}
+    end
+  rescue
+    _ ->
+      {:error, "Could not verify client assertion."}
   end
 
   def fetch_client_authentication(%{

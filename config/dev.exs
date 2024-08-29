@@ -8,7 +8,7 @@ import Config
 config :boruta, Boruta.Repo,
   username: "postgres",
   password: "postgres",
-  database: "boruta_dev",
+  database: "boruta_auth",
   hostname: "localhost",
   pool_size: 10
 

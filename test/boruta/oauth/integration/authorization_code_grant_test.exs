@@ -4,15 +4,23 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   import Boruta.Factory
   import Mox
 
+  defmodule Token do
+    @moduledoc false
+
+    use Joken.Config, default_signer: :pem_rs512
+  end
+
   alias Boruta.Ecto
   alias Boruta.Ecto.ScopeStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.PushedAuthorizationResponse
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenResponse
+  alias Boruta.Openid.SiopV2Response
   alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
@@ -187,6 +195,39 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   status: :unauthorized,
                   redirect_uri: redirect_uri
                 }}
+    end
+
+    test "returns an error when authorization details are invalid", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+      authorization_details = %{}
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :unknown_error,
+                 error_description:
+                   "\"authorization_details validation failed. The type at # `object` do not match the required types [\\\"array\\\"].\"",
+                 format: :query,
+                 redirect_uri: "https://redirect.uri",
+                 state: nil,
+                 status: :internal_server_error
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "authorization_details" => Jason.encode!(authorization_details)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns a code", %{client: client, resource_owner: resource_owner} do
@@ -647,6 +688,86 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns a code with pushed authorization request", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:request_stored,
+              %PushedAuthorizationResponse{
+                request_uri: request_uri
+              }} =
+               Oauth.pushed_authorization_request(
+                 %Plug.Conn{
+                   body_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "request_uri" => request_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :code
+      assert value
+      assert expires_in
+    end
+
+    test "returns an error with expired pushed authorization request", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+      Elixir.Ecto.Changeset.change(client, %{authorization_request_ttl: -1}) |> Repo.update()
+
+      assert {:request_stored,
+              %PushedAuthorizationResponse{
+                request_uri: request_uri
+              }} =
+               Oauth.pushed_authorization_request(
+                 %Plug.Conn{
+                   body_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "request_uri" => request_uri
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) == {:authorize_error,
+                %Boruta.Oauth.Error{
+                  error: :invalid_request,
+                  error_description: "Authorization request is expired.",
+                  status: :bad_request
+                }}
+    end
+
     test "code_challenge_method defaults to `plain`", %{
       pkce_client: client,
       resource_owner: resource_owner
@@ -725,6 +846,107 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert false
       end
     end
+
+    test "returns a code and stores authorization details", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      authorization_details = [
+        %{
+          "type" => "openid_credential",
+          "format" => "jwt_vc"
+        }
+      ]
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "authorization_details" => Jason.encode!(authorization_details)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :code
+      assert value
+      assert expires_in
+
+      assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
+    end
+
+    test "returns a code with siopv2" do
+      redirect_uri = "openid:"
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                client: client,
+                client_id: "did:key:test",
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid",
+                issuer: issuer,
+                response_mode: "direct_post",
+                nonce: "nonce"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 %ResourceOwner{sub: "sub"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert client.public_client_id == Boruta.Config.issuer()
+    end
+
+    @tag :skip
+    test "returns an error without nonce with siopv2", %{client: client} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "OpenID requests require a nonce.",
+                 format: :query,
+                 redirect_uri: "https://redirect.uri",
+                 state: nil,
+                 status: :bad_request
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}"
+                   }
+                 },
+                 %ResourceOwner{sub: "sub"},
+                 ApplicationMock
+               )
+    end
   end
 
   describe "authorization code grant - token" do
@@ -743,6 +965,25 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris)
+        )
+
+      siopv2_code =
+        insert(
+          :token,
+          type: "code",
+          client: Repo.get_by(Ecto.Client, public_client_id: Boruta.Config.issuer()),
+          sub: "did:key:test",
+          redirect_uri: List.first(client.redirect_uris)
+        )
+
+      authorization_details_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          authorization_details: [%{"type" => "openid_credential", "format" => "jwt_vc"}]
         )
 
       confidential_code =
@@ -873,8 +1114,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        expired_pkce_code: expired_pkce_code,
        revoked_pkce_code: revoked_pkce_code,
        pkce_code_s256: pkce_code_s256,
+       authorization_details_code: authorization_details_code,
        bad_redirect_uri_code: bad_redirect_uri_code,
-       code_with_scope: code_with_scope}
+       code_with_scope: code_with_scope,
+       siopv2_code: siopv2_code}
     end
 
     test "returns an error if request is invalid" do
@@ -888,7 +1131,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. Required properties code, client_id, redirect_uri are missing at #.",
+                    "Request body validation failed. Required properties code, client_id are missing at #.",
                   status: :bad_request
                 }}
     end
@@ -1117,6 +1360,67 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                   error_description: "Invalid client_id or redirect_uri.",
                   status: :unauthorized
                 }}
+    end
+
+    # TODO test dpop implementation
+
+    test "returns a token when dpop is valid", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
+      {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
+      {:ok, dpop, _claims} =
+        Token.encode_and_sign(
+          %{
+            "htu" => "http://host/pa/th",
+            "htm" => "POST"
+          },
+          signer
+        )
+
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.token(
+             %Plug.Conn{
+               method: "POST",
+               host: "host",
+               request_path: "/pa/th",
+               req_headers: [{"dpop", dpop}],
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
     end
 
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
@@ -1587,5 +1891,79 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
           assert false
       end
     end
+
+    test "returns a token with authorization details", %{
+      client: client,
+      authorization_details_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert expires_in
+      assert refresh_token
+
+      assert Repo.get_by(Ecto.Token, value: access_token).authorization_details ==
+               code.authorization_details
+    end
+
+    test "returns a token with siopv2", %{siopv2_code: code} do
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "authorization_code",
+                 "client_id" => "did:key:test",
+                 "code" => code.value
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           access_token: access_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert access_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+  end
+
+  def valid_public_key do
+    "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVOf8cU\n8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa9QyH\nsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8WdSq3d\nGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/U8xD\nZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2tpyQ0\nAEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQAB\n-----END RSA PUBLIC KEY-----\n\n"
+  end
+
+  def valid_private_key do
+    "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVO\nf8cU8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa\n9QyHsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8Wd\nSq3dGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/\nU8xDZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2t\npyQ0AEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQABAoIBAG0dg/upL8k1IWiv\n8BNphrXIYLYQmiiBQTPJWZGvWIC2sl7i40yvCXjDjiRnZNK9HwgL94XtALCXYRFR\nJD41bRA3MO5A0HSPIWwJXwS10/cU56HVCNHjwKa6Rz/QiG2kNASMZEMzlvHtrjna\ndx36/sjI3HH8gh1BaTZyiuDE72SMkPbL838jfL1YY9uJ0u6hWFDbdn3sqPfJ6Cnz\n1cu0piT35nkilnIGCNYA0i3lyMeo4XrdXaAJdN9nnqbCi5ewQWqaHbrIIY5LTgzJ\nYlOr3IiecyokFxHCbULXle60u0KqXYgBHmlQJJr1Dj4c9AkQmefjC2jRMlhOrIzo\nIkIUeMECgYEA+MNLB+w6vv1ogqzM3M1OLt6bziWJCn+XkziuMrCiY9KeDD+S70+E\nhfbhM5RjCE3wxC/k59039laT973BmdMHxrDd2zSjOFmCIORv5yrD5oBHMaMZcwuQ\n45Xisi4aoQoOhyznSnjo/RjeQB7qEDzXFznLLNT79HzqyAtCWD3UIu8CgYEA2yik\n9FKl7HJEY94D2K6vNh1AHGnkwIQC72pXzlUrVuwQYngj6/Gkhw8ayFBApHfwVCXj\no9rDYPdNrrAs0Zz0JsiJp6bOCEKCrMYE16UiejUUAg/OZ5eg6+3m3/iWatkzLUuK\n1LIkVBJlEyY0uPuAaBF0V0VleNvfCGhVYOn46+ECgYAUD4OsduNh5YOZDiBTKgdF\nBlSgMiyz+QgbKjX6Bn6B+EkgibvqqonwV7FffHbkA40H9SjLfe52YhL6poXHRtpY\nroillcAX2jgBOQrBJJS5sNyM5y81NNiRUdP/NHKXS/1R71ATlF6NkoTRvOx5NL7P\ns6xryB0tYSl5ylamUQ4bZwKBgHF6FB9mA//wErVbKcayfIqajq2nrwh30kVBXQG7\nW9uAE+PIrWDoF/bOvWFnHHGMoOYRUFNxXKUCqDiBhFNs34aNY6lpV1kzhxIK3ksC\neF2qyhdfM9Kz0mEXJ+pkfw4INNWJPfNv4hueArPtnnMB1rUMBJ+DkU0JG+zwiPTL\ncVZBAoGBAM6kOsh5KGn3aI83g9ZO0TrKLXXFotxJt31Wu11ydj9K33/Qj3UXcxd4\nJPXr600F0DkLeUKBob6BALeHFWcrSz5FGLGRqdRxdv+L6g18WH5m2xEs7o6M6e5I\nIhyUC60ZewJ2M8rV4KgCJJdZE2kENlSgjU92IDVPT9Oetrc7hQJd\n-----END RSA PRIVATE KEY-----\n\n"
   end
 end

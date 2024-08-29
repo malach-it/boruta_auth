@@ -7,6 +7,12 @@ defmodule Boruta.Oauth.Codes do
   Returns a `Boruta.Oauth.Token` by `value` and `redirect_uri`.
   """
   @callback get_by(
+    params :: [id: String.t()]
+  ) :: token :: Boruta.Oauth.Token | nil
+  @callback get_by(
+    params :: [value: String.t()]
+  ) :: token :: Boruta.Oauth.Token | nil
+  @callback get_by(
     params :: [value: String.t(), redirect_uri: String.t()]
   ) :: token :: Boruta.Oauth.Token | nil
 
@@ -21,7 +27,8 @@ defmodule Boruta.Oauth.Codes do
     :state => String.t(),
     :code_challenge => String.t(),
     :code_challenge_method => String.t(),
-    :resource_owner => Boruta.Oauth.ResourceOwner.t()
+    :authorization_details => list(map()),
+    optional(:resource_owner) => Boruta.Oauth.ResourceOwner.t()
   }) :: code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
 
   @doc """

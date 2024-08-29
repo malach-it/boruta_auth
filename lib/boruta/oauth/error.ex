@@ -5,9 +5,12 @@ defmodule Boruta.Oauth.Error do
   > __Note__: Intended to follow [OAuth 2.0 errors](https://tools.ietf.org/html/rfc6749#section-5.2). Additional errors are provided as purpose.
   """
 
+  alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
+  alias Boruta.Oauth.PreauthorizedCodeRequest
+  alias Boruta.Oauth.SiopV2Request
   alias Boruta.Oauth.TokenRequest
 
   @type t :: %__MODULE__{
@@ -22,7 +25,7 @@ defmodule Boruta.Oauth.Error do
             | :login_required
             | :unknown_error,
           error_description: String.t(),
-          format: :query | :fragment | nil,
+          format: :query | :fragment | :json | nil,
           redirect_uri: String.t() | nil,
           state: String.t() | nil
         }
@@ -40,17 +43,26 @@ defmodule Boruta.Oauth.Error do
   """
   @spec with_format(
           error :: Error.t(),
-          request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
+          request ::
+            CodeRequest.t()
+            | TokenRequest.t()
+            | HybridRequest.t()
+            | AuthorizationRequest.t()
+            | PreauthorizedCodeRequest.t()
+            | SiopV2Request.t()
         ) :: Error.t()
   def with_format(%Error{error: :invalid_client} = error, _) do
     %{error | format: nil, redirect_uri: nil}
   end
 
-  def with_format(%Error{error: :invalid_resource_owner} = error, %HybridRequest{
-        redirect_uri: redirect_uri,
-        state: state,
-        prompt: "none"
-      } = request) do
+  def with_format(
+        %Error{error: :invalid_resource_owner} = error,
+        %HybridRequest{
+          redirect_uri: redirect_uri,
+          state: state,
+          prompt: "none"
+        } = request
+      ) do
     %{
       error
       | error: :login_required,
@@ -95,11 +107,32 @@ defmodule Boruta.Oauth.Error do
     %{error | format: :query, redirect_uri: redirect_uri, state: state}
   end
 
-  def with_format(%Error{} = error, %HybridRequest{redirect_uri: redirect_uri, state: state} = request) do
+  def with_format(%Error{} = error, %AuthorizationRequest{
+        redirect_uri: redirect_uri,
+        state: state
+      }) do
+    %{error | format: :json, redirect_uri: redirect_uri, state: state}
+  end
+
+  def with_format(%Error{} = error, %SiopV2Request{redirect_uri: redirect_uri, state: state}) do
+    %{error | format: :query, redirect_uri: redirect_uri, state: state}
+  end
+
+  def with_format(
+        %Error{} = error,
+        %HybridRequest{redirect_uri: redirect_uri, state: state} = request
+      ) do
     %{error | format: response_mode(request), redirect_uri: redirect_uri, state: state}
   end
 
   def with_format(%Error{} = error, %TokenRequest{redirect_uri: redirect_uri, state: state}) do
+    %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
+  end
+
+  def with_format(%Error{} = error, %PreauthorizedCodeRequest{
+        redirect_uri: redirect_uri,
+        state: state
+      }) do
     %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
   end
 

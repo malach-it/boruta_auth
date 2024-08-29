@@ -11,18 +11,29 @@ defmodule Boruta.Config do
       access_tokens: Boruta.Ecto.AccessTokens,
       clients: Boruta.Ecto.Clients,
       codes: Boruta.Ecto.Codes,
+      preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
       resource_owners: MyApp.ResourceOwners, # mandatory for user flows
-      scopes: Boruta.Ecto.Scopes
+      scopes: Boruta.Ecto.Scopes,
+      requests: Boruta.Ecto.Requests,
+      credentials: Boruta.Ecto.Credentials
     ],
     max_ttl: [
       authorization_code: 60,
+      authorization_request: 60,
       access_token: 60 * 60 * 24,
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
+    did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
+    did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
+    universal_did_auth: %{
+      type: "bearer",
+      token: DID_API_KEY
+    },
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
+  > Note: To use the did resolver and registrar services, you must provide a compliant server. Here the default is set to the [Godiddy](https://godiddy.com/) server which require an API key to perform the requests.
   """
 
   @defaults cache_backend: Boruta.Cache,
@@ -30,15 +41,25 @@ defmodule Boruta.Config do
               access_tokens: Boruta.Ecto.AccessTokens,
               clients: Boruta.Ecto.Clients,
               codes: Boruta.Ecto.Codes,
+              preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
               resource_owners: nil,
-              scopes: Boruta.Ecto.Scopes
+              scopes: Boruta.Ecto.Scopes,
+              requests: Boruta.Ecto.Requests,
+              credentials: Boruta.Ecto.Credentials
             ],
             max_ttl: [
+              authorization_request: 300,
               authorization_code: 60,
               access_token: 60 * 60 * 24,
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
+            did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
+            did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
+            universal_did_auth: %{
+              type: "bearer",
+              token: nil
+            },
             token_generator: Boruta.TokenGenerator,
             issuer: "boruta"
 
@@ -64,6 +85,12 @@ defmodule Boruta.Config do
   @doc false
   def authorization_code_max_ttl do
     Keyword.fetch!(oauth_config(), :max_ttl)[:authorization_code]
+  end
+
+  @spec authorization_request_max_ttl() :: integer()
+  @doc false
+  def authorization_request_max_ttl do
+    Keyword.fetch!(oauth_config(), :max_ttl)[:authorization_request]
   end
 
   @spec id_token_max_ttl() :: integer()
@@ -102,10 +129,28 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :contexts)[:codes]
   end
 
+  @spec preauthorized_codes() :: module()
+  @doc false
+  def preauthorized_codes do
+    Keyword.fetch!(oauth_config(), :contexts)[:preauthorized_codes]
+  end
+
   @spec scopes() :: module()
   @doc false
   def scopes do
     Keyword.fetch!(oauth_config(), :contexts)[:scopes]
+  end
+
+  @spec requests() :: module()
+  @doc false
+  def requests do
+    Keyword.fetch!(oauth_config(), :contexts)[:requests]
+  end
+
+  @spec credentials() :: module()
+  @doc false
+  def credentials do
+    Keyword.fetch!(oauth_config(), :contexts)[:credentials]
   end
 
   @spec resource_owners() :: module()
@@ -127,6 +172,24 @@ defmodule Boruta.Config do
       module ->
         module
     end
+  end
+
+  @spec did_resolver_base_url() :: String.t()
+  @doc false
+  def did_resolver_base_url do
+    Keyword.fetch!(oauth_config(), :did_resolver_base_url)
+  end
+
+  @spec did_registrar_base_url() :: String.t()
+  @doc false
+  def did_registrar_base_url do
+    Keyword.fetch!(oauth_config(), :did_registrar_base_url)
+  end
+
+  @spec universal_did_auth() :: map()
+  @doc false
+  def universal_did_auth do
+    Keyword.fetch!(oauth_config(), :universal_did_auth)
   end
 
   @spec issuer() :: String.t()

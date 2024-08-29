@@ -19,7 +19,8 @@ defmodule Boruta.Oauth.CodeRequest do
           grant_type: String.t(),
           code_challenge: String.t(),
           code_challenge_method: String.t(),
-          response_types: String.t()
+          response_types: String.t(),
+          authorization_details: String.t()
         }
 
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
@@ -34,7 +35,8 @@ defmodule Boruta.Oauth.CodeRequest do
             grant_type: "authorization_code",
             code_challenge: "",
             code_challenge_method: "plain",
-            response_types: []
+            response_types: [],
+            authorization_details: "[]"
 
   alias Boruta.Oauth.Scope
 

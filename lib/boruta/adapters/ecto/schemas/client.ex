@@ -13,10 +13,12 @@ defmodule Boruta.Ecto.Client do
       repo: 0,
       access_token_max_ttl: 0,
       authorization_code_max_ttl: 0,
+      authorization_request_max_ttl: 0,
       id_token_max_ttl: 0,
       refresh_token_max_ttl: 0
     ]
 
+  alias Boruta.Did
   alias Boruta.Ecto.Scope
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
@@ -26,6 +28,7 @@ defmodule Boruta.Ecto.Client do
           authorize_scope: boolean(),
           redirect_uris: list(String.t()),
           supported_grant_types: list(String.t()),
+          enforce_dpop: boolean(),
           pkce: boolean(),
           public_refresh_token: boolean(),
           public_revoke: boolean(),
@@ -63,10 +66,12 @@ defmodule Boruta.Ecto.Client do
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
   schema "oauth_clients" do
+    field(:public_client_id, :string)
     field(:name, :string)
     field(:secret, :string)
     field(:confidential, :boolean, default: false)
     field(:authorize_scope, :boolean, default: false)
+    field(:enforce_dpop, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
 
     field(:supported_grant_types, {:array, :string}, default: Oauth.Client.grant_types())
@@ -77,6 +82,7 @@ defmodule Boruta.Ecto.Client do
 
     field(:access_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
+    field(:authorization_request_ttl, :integer)
     field(:id_token_ttl, :integer)
     field(:refresh_token_ttl, :integer)
 
@@ -85,6 +91,7 @@ defmodule Boruta.Ecto.Client do
 
     field(:public_key, :string)
     field(:private_key, :string)
+    field(:did, :string)
 
     field(:token_endpoint_auth_methods, {:array, :string}, default: ["client_secret_basic", "client_secret_post"])
     field(:token_endpoint_jwt_auth_alg, :string, default: "HS256")
@@ -114,10 +121,12 @@ defmodule Boruta.Ecto.Client do
       :confidential,
       :access_token_ttl,
       :authorization_code_ttl,
+      :authorization_request_ttl,
       :refresh_token_ttl,
       :id_token_ttl,
       :redirect_uris,
       :authorize_scope,
+      :enforce_dpop,
       :supported_grant_types,
       :token_endpoint_auth_methods,
       :token_endpoint_jwt_auth_alg,
@@ -137,6 +146,7 @@ defmodule Boruta.Ecto.Client do
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
+    |> change_authorization_request_ttl()
     |> change_id_token_ttl()
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
@@ -167,10 +177,12 @@ defmodule Boruta.Ecto.Client do
       :confidential,
       :access_token_ttl,
       :authorization_code_ttl,
+      :authorization_request_ttl,
       :refresh_token_ttl,
       :id_token_ttl,
       :redirect_uris,
       :authorize_scope,
+      :enforce_dpop,
       :supported_grant_types,
       :token_endpoint_auth_methods,
       :token_endpoint_jwt_auth_alg,
@@ -194,6 +206,7 @@ defmodule Boruta.Ecto.Client do
     ])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
+    |> validate_inclusion(:access_token_ttl, 1..authorization_request_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..id_token_max_ttl())
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
@@ -219,6 +232,11 @@ defmodule Boruta.Ecto.Client do
     |> validate_required(:secret)
   end
 
+  def did_changeset(client) do
+    change(client)
+    |> put_did()
+  end
+
   def key_pair_changeset(client, attrs \\ %{}) do
     client
     |> cast(attrs, [:public_key, :private_key])
@@ -242,6 +260,16 @@ defmodule Boruta.Ecto.Client do
 
       :error ->
         put_change(changeset, :authorization_code_ttl, authorization_code_max_ttl())
+    end
+  end
+
+  defp change_authorization_request_ttl(changeset) do
+    case fetch_change(changeset, :authorization_request_ttl) do
+      {:ok, _authorization_request_ttl} ->
+        validate_inclusion(changeset, :authorization_request_ttl, 1..authorization_request_max_ttl())
+
+      :error ->
+        put_change(changeset, :authorization_request_ttl, authorization_request_max_ttl())
     end
   end
 
@@ -356,6 +384,23 @@ defmodule Boruta.Ecto.Client do
 
       :error ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
+    end
+  end
+
+  defp put_did(%Ecto.Changeset{} = changeset) do
+    case get_field(changeset, :public_key) do
+      nil ->
+        changeset
+
+      pem ->
+        {_, jwk} = JOSE.JWK.from_pem(pem) |> JOSE.JWK.to_map()
+
+        case Did.create("key", jwk) do
+          {:ok, did} ->
+            put_change(changeset, :did, did)
+          {:error, error} ->
+            add_error(changeset, :did, error)
+        end
     end
   end
 end

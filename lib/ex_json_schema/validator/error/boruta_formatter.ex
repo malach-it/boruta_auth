@@ -22,6 +22,10 @@ defmodule ExJsonSchema.Validator.Error.BorutaFormatter do
     "#{path} do match required pattern /#{expected}/."
   end
 
+  def format(%Error.AdditionalProperties{}, path) do
+    "Schema does not allow additional properties: #{path}."
+  end
+
   def format(%Error.Type{actual: actual, expected: expected}, path) do
     "The type at #{path} `#{actual}` do not match the required types #{inspect(expected)}."
   end

@@ -5,7 +5,7 @@ defmodule Boruta.MixProject do
     [
       name: "Boruta core",
       app: :boruta,
-      version: "2.3.3",
+      version: "2.3.4",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -90,11 +90,19 @@ defmodule Boruta.MixProject do
           Boruta.Openid.JwksApplication,
           Boruta.Openid.Application,
           Boruta.Openid.DynamicRegistrationApplication,
-          Boruta.Openid.UserinfoApplication
+          Boruta.Openid.UserinfoApplication,
+          Boruta.Openid.CredentialApplication,
+          Boruta.Openid.DirectPostApplication,
+          Boruta.Oauth.PushedAuthorizationRequestApplication
         ],
         Responses: [
           Boruta.Oauth.AuthorizeResponse,
           Boruta.Oauth.TokenResponse,
+          Boruta.Oauth.PushedAuthorizationResponse,
+          Boruta.Openid.CredentialOfferResponse,
+          Boruta.Openid.CredentialResponse,
+          Boruta.Openid.DeferedCredentialResponse,
+          Boruta.Openid.SiopV2Response,
           Boruta.Oauth.IntrospectResponse
         ],
         Admin: [
@@ -111,7 +119,8 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Authorization.Nonce,
           Boruta.Oauth.Authorization.ResourceOwner,
           Boruta.Oauth.Authorization.Scope,
-          Boruta.Oauth.AuthorizationSuccess
+          Boruta.Oauth.AuthorizationSuccess,
+          Boruta.Dpop
         ],
         Introspection: [
           Boruta.Oauth.Introspect
@@ -124,16 +133,23 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Clients,
           Boruta.Oauth.Codes,
           Boruta.Oauth.ResourceOwners,
-          Boruta.Oauth.Scopes
+          Boruta.Oauth.Requests,
+          Boruta.Oauth.Scopes,
+          Boruta.Openid.PreauthorizedCodes,
+          Boruta.Openid.Credentials
         ],
         Schemas: [
           Boruta.Oauth.Token,
           Boruta.Oauth.IdToken,
           Boruta.Oauth.Client,
           Boruta.Oauth.Scope,
-          Boruta.Oauth.ResourceOwner
+          Boruta.Oauth.ResourceOwner,
+          Boruta.Openid.Credential
         ],
         "OAuth request": [
+          Boruta.Oauth.AuthorizationRequest,
+          Boruta.Oauth.PreauthorizedCodeRequest,
+          Boruta.Oauth.PreauthorizationCodeRequest,
           Boruta.Oauth.AuthorizationCodeRequest,
           Boruta.Oauth.ClientCredentialsRequest,
           Boruta.Oauth.CodeRequest,
@@ -143,6 +159,7 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.RefreshTokenRequest,
           Boruta.Oauth.RevokeRequest,
           Boruta.Oauth.TokenRequest,
+          Boruta.Oauth.SiopV2Request,
           Boruta.Oauth.Request
         ],
         "Ecto Adapter": [
@@ -152,19 +169,25 @@ defmodule Boruta.MixProject do
           Boruta.CodesAdapter,
           Boruta.ClientsAdapter,
           Boruta.ScopesAdapter,
-          Boruta.ScopesAdapter
+          Boruta.CredentialsAdapter,
+          Boruta.PreauthorizedCodesAdapter,
+          Boruta.RequestsAdapter
         ],
         "Ecto Schemas": [
           Boruta.Ecto.Token,
           Boruta.Ecto.Client,
-          Boruta.Ecto.Scope
+          Boruta.Ecto.Scope,
+          Boruta.Ecto.AuthorizationRequest,
+          Boruta.Ecto.Credential
         ],
         Utilities: [
           Boruta.Cache,
           Boruta.BasicAuth,
           Boruta.Oauth.BearerToken,
           Boruta.Oauth.Validator,
-          Boruta.Oauth.TokenGenerator
+          Boruta.Oauth.TokenGenerator,
+          Boruta.Did,
+          Boruta.VerifiableCredentials.Hotp
         ],
         Errors: [
           Boruta.Oauth.Error
