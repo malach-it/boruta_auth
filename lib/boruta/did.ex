@@ -5,13 +5,13 @@ defmodule Boruta.Did do
 
   import Boruta.Config, only: [
     universal_did_auth: 0,
-    universalresolver_base_url: 0,
-    universalregistrar_base_url: 0
+    did_resolver_base_url: 0,
+    did_registrar_base_url: 0
   ]
 
   @spec resolve(did :: String.t()) :: {:ok, did_document :: map()} | {:error, reason :: String.t()}
   def resolve(did) do
-    resolver_url = "#{universalresolver_base_url()}/identifiers/#{did}"
+    resolver_url = "#{did_resolver_base_url()}/identifiers/#{did}"
 
     case Finch.build(:get, resolver_url) |> Finch.request(OpenIDHttpClient) do
       {:ok, %Finch.Response{body: body, status: 200}} ->
@@ -45,7 +45,7 @@ defmodule Boruta.Did do
 
     case Finch.build(
       :post,
-      universalregistrar_base_url() <> "/create?method=#{method}",
+      did_registrar_base_url() <> "/create?method=#{method}",
       [
         {"Authorization", "Bearer #{universal_did_auth()[:token]}"},
         {"Content-Type", "application/json"}

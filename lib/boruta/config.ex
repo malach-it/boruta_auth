@@ -24,15 +24,16 @@ defmodule Boruta.Config do
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
-    universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr/1.0",
-    universalregistrar_base_url: "https://api.godiddy.com/0.1.0/universal-registrar",
+    did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
+    did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
     universal_did_auth: %{
       type: "bearer",
-      token: UNIVERSAL_API_KEY
+      token: DID_API_KEY
     },
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
+  > Note: To use the did resolver and registrar services, you must provide a compliant server. Here the default is set to the [Godiddy](https://godiddy.com/) server which require an API key to perform the requests.
   """
 
   @defaults cache_backend: Boruta.Cache,
@@ -53,8 +54,8 @@ defmodule Boruta.Config do
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
-            universalresolver_base_url: "https://universalresolver.boruta.patatoid.fr/1.0",
-            universalregistrar_base_url: "https://api.godiddy.com/0.1.0/universal-registrar",
+            did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
+            did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
             universal_did_auth: %{
               type: "bearer",
               token: nil
@@ -173,16 +174,16 @@ defmodule Boruta.Config do
     end
   end
 
-  @spec universalresolver_base_url() :: String.t()
+  @spec did_resolver_base_url() :: String.t()
   @doc false
-  def universalresolver_base_url do
-    Keyword.fetch!(oauth_config(), :universalresolver_base_url)
+  def did_resolver_base_url do
+    Keyword.fetch!(oauth_config(), :did_resolver_base_url)
   end
 
-  @spec universalregistrar_base_url() :: String.t()
+  @spec did_registrar_base_url() :: String.t()
   @doc false
-  def universalregistrar_base_url do
-    Keyword.fetch!(oauth_config(), :universalregistrar_base_url)
+  def did_registrar_base_url do
+    Keyword.fetch!(oauth_config(), :did_registrar_base_url)
   end
 
   @spec universal_did_auth() :: map()
