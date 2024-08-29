@@ -47,6 +47,7 @@ defmodule Boruta.Oauth.Error do
             CodeRequest.t()
             | TokenRequest.t()
             | HybridRequest.t()
+            | AuthorizationRequest.t()
             | PreauthorizedCodeRequest.t()
             | SiopV2Request.t()
         ) :: Error.t()

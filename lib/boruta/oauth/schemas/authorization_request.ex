@@ -22,16 +22,16 @@ defmodule Boruta.Oauth.AuthorizationRequest do
         }
 
   @type t :: %__MODULE__{
-          id: String.t(),
+          id: nil | String.t(),
           client_id: String.t(),
-          client_authentication: client_authentication(),
+          client_authentication: nil | client_authentication(),
           response_type: String.t(),
           redirect_uri: String.t(),
           scope: String.t(),
           state: String.t(),
           code_challenge: String.t(),
           code_challenge_method: String.t(),
-          expires_at: integer()
+          expires_at: nil | integer()
         }
 
   def persisted?(%__MODULE__{id: nil}), do: false

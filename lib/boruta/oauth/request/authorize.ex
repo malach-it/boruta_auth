@@ -3,7 +3,6 @@ defmodule Boruta.Oauth.Request.Authorize do
 
   import Boruta.Oauth.Request.Base
 
-  alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
@@ -44,18 +43,6 @@ defmodule Boruta.Oauth.Request.Authorize do
     end
   end
 
-  @spec pushed_request(conn :: map()) ::
-          {:ok,
-             oauth_request ::
-               AuthorizationRequest.t()}
-          | {:error,
-           %Boruta.Oauth.Error{
-             :error => :invalid_request,
-             :error_description => String.t(),
-             :format => nil,
-             :redirect_uri => nil,
-             :status => :bad_request
-           }}
   def pushed_request(%{body_params: body_params} = request) do
     with {:ok, unsigned_params} <- fetch_unsigned_request(request),
          {:ok, params} <-
