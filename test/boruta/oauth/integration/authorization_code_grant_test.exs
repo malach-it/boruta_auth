@@ -21,6 +21,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Openid.SiopV2Response
+  alias Boruta.Openid.VerifiablePresentationResponse
   alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
@@ -912,6 +913,46 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    }
                  },
                  %ResourceOwner{sub: "sub"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert client.public_client_id == Boruta.Config.issuer()
+    end
+
+    test "returns a code with verifiable presentation" do
+      redirect_uri = "openid:"
+      insert(:scope, name: "vp_token", public: true)
+      resource_owner = %ResourceOwner{
+        sub: "sub",
+        presentation_configuration: %{
+          "vp_token" => %{}
+        }
+      }
+
+      assert {:authorize_success,
+              %VerifiablePresentationResponse{
+                client: client,
+                client_id: "did:key:test",
+                response_type: "vp_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid vp_token",
+                issuer: issuer,
+                response_mode: "direct_post",
+                nonce: "nonce"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token"
+                   }
+                 },
+                 resource_owner,
                  ApplicationMock
                )
 

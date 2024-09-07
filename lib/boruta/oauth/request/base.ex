@@ -98,6 +98,7 @@ defmodule Boruta.Oauth.Request.Base do
   def build_request(%{"response_type" => "code", "client_metadata" => client_metadata} = params) do
     request = %PresentationRequest{
       client_id: params["client_id"],
+      resource_owner: params["resource_owner"],
       redirect_uri: params["redirect_uri"],
       state: params["state"],
       nonce: params["nonce"],

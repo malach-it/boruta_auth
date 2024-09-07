@@ -3,8 +3,6 @@ defmodule Boruta.Oauth.AuthorizeResponse do
   Response returned in case of authorization request success. Provides utilities and mandatory data needed to respond to the authorize part of implicit, code and hybrid flows.
   """
 
-  alias Boruta.Oauth.Error
-
   @enforce_keys [:type, :redirect_uri]
   defstruct access_token: nil,
             code: nil,
@@ -34,11 +32,13 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.CodeRequest
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.Token
   alias Boruta.Oauth.TokenRequest
   alias Boruta.Openid.CredentialOfferResponse
   alias Boruta.Openid.SiopV2Response
+  alias Boruta.Openid.VerifiablePresentationResponse
 
   @spec from_tokens(
           %{
@@ -46,7 +46,12 @@ defmodule Boruta.Oauth.AuthorizeResponse do
               token :: Boruta.Oauth.Token.t() | String.t()
           },
           request :: CodeRequest.t() | TokenRequest.t() | HybridRequest.t()
-        ) :: t() | CredentialOfferResponse.t() | SiopV2Response.t() | {:error, Boruta.Oauth.Error.t()}
+        ) ::
+          t()
+          | CredentialOfferResponse.t()
+          | SiopV2Response.t()
+          | VerifiablePresentationResponse.t()
+          | {:error, Boruta.Oauth.Error.t()}
   def from_tokens(
         %{
           code: %Token{
@@ -149,6 +154,15 @@ defmodule Boruta.Oauth.AuthorizeResponse do
         request
       ) do
     SiopV2Response.from_tokens(tokens, request)
+  end
+
+  def from_tokens(
+        %{
+          vp_code: _siopv2_code
+        } = tokens,
+        request
+      ) do
+    VerifiablePresentationResponse.from_tokens(tokens, request)
   end
 
   def from_tokens(_params, _request) do

@@ -732,10 +732,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.PresentationRequest
   alias Boruta.Oauth.Token
   alias Boruta.VerifiableCredentials
+  alias Boruta.VerifiablePresentations
 
   def preauthorize(
         %PresentationRequest{
           client_id: sub,
+          resource_owner: resource_owner,
           redirect_uri: redirect_uri,
           state: state,
           nonce: nonce,
@@ -755,9 +757,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            ),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
-         :ok <- check_client_metadata(client_metadata) do
+         :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
+         response_types <- VerifiablePresentations.response_types(scope, resource_owner.presentation_configuration) do
       {:ok,
        %AuthorizationSuccess{
+         response_types: response_types,
          redirect_uri: redirect_uri,
          client: client,
          sub: sub,
@@ -785,6 +789,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   def token(request) do
     with {:ok,
           %AuthorizationSuccess{
+            response_types: response_types,
             redirect_uri: redirect_uri,
             client: client,
             sub: sub,
@@ -808,13 +813,15 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                code_challenge_method: code_challenge_method,
                authorization_details: authorization_details
              }) do
-        {:ok, %{siopv2_code: code}}
+        case response_types do
+          ["id_token"] ->
+            {:ok, %{siopv2_code: code}}
+          ["vp_token"] ->
+            {:ok, %{vp_code: code}}
+        end
       end
     end
   end
-
-  # TODO perform client metadata checks
-  defp check_client_metadata(_client_metadata), do: :ok
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do

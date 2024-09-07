@@ -1,4 +1,4 @@
-defmodule Boruta.Openid.SiopV2Response do
+defmodule Boruta.Openid.VerifiablePresentationResponse do
   @moduledoc """
   Response in case of delivrance of Siop V2 flow
   """
@@ -20,7 +20,7 @@ defmodule Boruta.Openid.SiopV2Response do
 
   defstruct client_id: nil,
             code: nil,
-            response_type: "id_token",
+            response_type: "vp_token",
             scope: nil,
             redirect_uri: nil,
             issuer: nil,
@@ -40,7 +40,7 @@ defmodule Boruta.Openid.SiopV2Response do
           nonce: String.t()
         }
 
-  def from_tokens(%{siopv2_code: code}, request) do
+  def from_tokens(%{vp_code: code}, request) do
     %__MODULE__{
       client_id: request.client_id,
       code: code,

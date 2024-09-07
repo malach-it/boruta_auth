@@ -9,6 +9,7 @@ defmodule Boruta.Oauth.ResourceOwner do
             last_login_at: nil,
             extra_claims: %{},
             authorization_details: [],
+            presentation_configuration: %{},
             credential_configuration: %{}
 
   @type t :: %__MODULE__{
@@ -17,6 +18,9 @@ defmodule Boruta.Oauth.ResourceOwner do
           last_login_at: DateTime.t() | nil,
           extra_claims: Boruta.Oauth.IdToken.claims(),
           authorization_details: list(map()),
+          presentation_configuration: %{
+            String.t() => %{}
+          },
           credential_configuration: %{
             String.t() => %{
               version: String.t(),
