@@ -2,6 +2,7 @@ defmodule Boruta.VerifiableCredentialsTest do
   use Boruta.DataCase, async: true
 
   import Boruta.Factory
+  import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Config
   alias Boruta.Oauth.ResourceOwner
@@ -11,7 +12,8 @@ defmodule Boruta.VerifiableCredentialsTest do
     setup do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" => "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "kid" =>
+            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -40,12 +42,14 @@ defmodule Boruta.VerifiableCredentialsTest do
             types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }]
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              }
+            ]
           }
         }
       }
@@ -76,7 +80,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", %{}),
-               insert(:token),
+               insert(:token) |> to_oauth_schema(),
                %{}
              ) ==
                {:error,
@@ -99,7 +103,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:token),
+               insert(:token) |> to_oauth_schema(),
                %{}
              ) ==
                {:error,
@@ -123,7 +127,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:token),
+               insert(:token) |> to_oauth_schema(),
                %{}
              ) == {:error, "Proof JWT must be asymetrically signed."}
     end
@@ -144,7 +148,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:token),
+               insert(:token) |> to_oauth_schema(),
                %{}
              ) == {:error, "Proof JWT must have `openid4vci-proof+jwt` typ header."}
     end
@@ -168,7 +172,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:token),
+               insert(:token) |> to_oauth_schema(),
                %{}
              ) == {:error, "No proof key material found in JWT headers."}
     end
@@ -193,7 +197,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert VerifiableCredentials.issue_verifiable_credential(
                resource_owner,
                Map.put(credential_params, "proof", proof),
-               insert(:token),
+               insert(:token) |> to_oauth_schema(),
                %{}
              ) ==
                {:error,
@@ -212,7 +216,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                VerifiableCredentials.issue_verifiable_credential(
                  resource_owner,
                  credential_params,
-                 insert(:token),
+                 insert(:token) |> to_oauth_schema(),
                  %{}
                )
 
@@ -223,7 +227,6 @@ defmodule Boruta.VerifiableCredentialsTest do
     test "issues jwt_vc_json credential", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -239,6 +242,7 @@ defmodule Boruta.VerifiableCredentialsTest do
           }
         }
       }
+
       assert {:ok,
               %{
                 credential: credential,
@@ -247,7 +251,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                VerifiableCredentials.issue_verifiable_credential(
                  resource_owner,
                  credential_params,
-                 insert(:token),
+                 insert(:token) |> to_oauth_schema(),
                  %{}
                )
 
@@ -258,7 +262,6 @@ defmodule Boruta.VerifiableCredentialsTest do
     test "issues vc+sd-jwt credential", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -274,6 +277,7 @@ defmodule Boruta.VerifiableCredentialsTest do
           }
         }
       }
+
       assert {:ok,
               %{
                 credential: credential,
@@ -282,7 +286,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                VerifiableCredentials.issue_verifiable_credential(
                  resource_owner,
                  credential_params,
-                 insert(:token),
+                 insert(:token) |> to_oauth_schema(),
                  %{}
                )
 
@@ -293,7 +297,6 @@ defmodule Boruta.VerifiableCredentialsTest do
     test "issues vc+sd-jwt credential - valid", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -311,22 +314,27 @@ defmodule Boruta.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }, %{
-              "name" => "lastname",
-              "label" => "lastname",
-              "pointer" => "lastname",
-              "expiration" => "3600"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              },
+              %{
+                "name" => "lastname",
+                "label" => "lastname",
+                "pointer" => "lastname",
+                "expiration" => "3600"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
-      token = insert(:token)
+
+      token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -341,41 +349,51 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      valid_salt = String.split(credential, "~")
-                   |> Enum.at(2)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-      valid_salt_key = valid_salt
-                   |> String.split("~")
-                   |> List.last()
+
+      valid_salt =
+        String.split(credential, "~")
+        |> Enum.at(2)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+
+      valid_salt_key =
+        valid_salt
+        |> String.split("~")
+        |> List.last()
+
       VerifiableCredentials.verify_salt(token.client.private_key, valid_salt)
 
-      assert valid_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:valid)
-      )
+      assert valid_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:valid)
+               )
 
-      suspended_salt = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-      suspended_salt_key = suspended_salt
-                   |> String.split("~")
-                   |> List.last()
+      suspended_salt =
+        String.split(credential, "~")
+        |> Enum.at(1)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+
+      suspended_salt_key =
+        suspended_salt
+        |> String.split("~")
+        |> List.last()
+
       VerifiableCredentials.verify_salt(token.client.private_key, suspended_salt)
 
-      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
-      )
+      assert suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
+               )
     end
 
     test "issues vc+sd-jwt credential - suspended", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -389,17 +407,21 @@ defmodule Boruta.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
-      token = insert(:token)
+
+      token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -414,24 +436,26 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      suspended_salt_key = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-                   |> String.split("~")
-                   |> List.last()
 
-      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
-      )
+      suspended_salt_key =
+        String.split(credential, "~")
+        |> Enum.at(1)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+        |> String.split("~")
+        |> List.last()
+
+      assert suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
+               )
     end
 
     test "issues vc+sd-jwt credential - revoked", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -445,17 +469,21 @@ defmodule Boruta.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
-      token = insert(:token)
+
+      token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -470,24 +498,26 @@ defmodule Boruta.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      revoked_salt_key = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-                   |> String.split("~")
-                   |> List.last()
 
-      assert revoked_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:revoked)
-      )
+      revoked_salt_key =
+        String.split(credential, "~")
+        |> Enum.at(1)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+        |> String.split("~")
+        |> List.last()
+
+      assert revoked_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:revoked)
+               )
     end
 
     test "issues vc+sd-jwt credential - expired", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -501,17 +531,21 @@ defmodule Boruta.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "1"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "1"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
-      token = insert(:token)
+
+      token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -527,26 +561,33 @@ defmodule Boruta.VerifiableCredentialsTest do
       :timer.sleep(1000)
       # TODO validate credential body
       assert credential
-      suspended_salt_key = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-                   |> String.split("~")
-                   |> List.last()
 
-      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 33
-      )
-      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 44
-      )
-      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 55
-      )
+      suspended_salt_key =
+        String.split(credential, "~")
+        |> Enum.at(1)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+        |> String.split("~")
+        |> List.last()
+
+      refute suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + 33
+               )
+
+      refute suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + 44
+               )
+
+      refute suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + 55
+               )
     end
   end
 
@@ -558,10 +599,12 @@ defmodule Boruta.VerifiableCredentialsTest do
       status = :valid
       salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
 
-      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
-        secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
-      )
+      assert String.split(salt, "~") |> List.last() ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 secret,
+                 div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
+               )
+
       assert VerifiableCredentials.verify_salt(secret, salt) == :valid
     end
 
@@ -571,10 +614,12 @@ defmodule Boruta.VerifiableCredentialsTest do
       status = :valid
       salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
 
-      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
-        secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
-      )
+      assert String.split(salt, "~") |> List.last() ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 secret,
+                 div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
+               )
+
       assert VerifiableCredentials.verify_salt(secret, salt) == :valid
     end
 
@@ -582,13 +627,14 @@ defmodule Boruta.VerifiableCredentialsTest do
       statuses = [:valid, :revoked, :suspended]
       secret = "secret"
 
-      salts = Enum.map(1..1_000, fn _ ->
-        status = Enum.random(statuses)
-        expiration = Enum.random(1..3600)
+      salts =
+        Enum.map(1..1_000, fn _ ->
+          status = Enum.random(statuses)
+          expiration = Enum.random(1..3600)
 
-        assert salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
-        {status, salt}
-      end)
+          assert salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+          {status, salt}
+        end)
 
       Enum.map(salts, fn {status, salt} ->
         :timer.tc(fn ->
@@ -603,10 +649,13 @@ defmodule Boruta.VerifiableCredentialsTest do
       status = :revoked
       salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
 
-      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
-        secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:revoked)
-      )
+      assert String.split(salt, "~") |> List.last() ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 secret,
+                 div(:os.system_time(:seconds), expiration) +
+                   VerifiableCredentials.shift(:revoked)
+               )
+
       assert VerifiableCredentials.verify_salt(secret, salt) == :revoked
     end
 
@@ -616,10 +665,13 @@ defmodule Boruta.VerifiableCredentialsTest do
       status = :suspended
       salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
 
-      assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
-        secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:suspended)
-      )
+      assert String.split(salt, "~") |> List.last() ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 secret,
+                 div(:os.system_time(:seconds), expiration) +
+                   VerifiableCredentials.shift(:suspended)
+               )
+
       assert VerifiableCredentials.verify_salt(secret, salt) == :suspended
     end
   end

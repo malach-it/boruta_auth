@@ -228,7 +228,17 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(
               signature_alg,
               %{"pem" => private_key},
-              %{"kid" => id_token_kid || kid_from_private_key(private_key)}
+              %{
+                "typ" => "JWT",
+                "kid" =>
+                  case client.did do
+                    nil ->
+                      id_token_kid || kid_from_private_key(private_key)
+
+                    did ->
+                      did <> "#" <> String.replace(did, "did:key:", "")
+                  end
+              }
             )
         end
 
@@ -246,7 +256,8 @@ defmodule Boruta.Oauth.Client do
     def verify_id_token_signature(id_token, jwk) do
       case Joken.peek_header(id_token) do
         {:ok, %{"alg" => alg}} ->
-          signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
           case Token.verify(id_token, signer) do
             {:ok, claims} -> {:ok, claims}

@@ -308,21 +308,6 @@ defmodule Boruta.VerifiableCredentials do
        when format in ["jwt_vc_json"] do
     client = token.client
 
-    signer =
-      Joken.Signer.create(
-        client.id_token_signature_alg,
-        %{"pem" => client.private_key},
-        %{
-          "typ" => "JWT",
-          "kid" => case client.did do
-            nil ->
-              Client.Crypto.kid_from_private_key(client.private_key)
-            did ->
-              did <> "#" <> String.replace(did, "did:key:", "")
-          end
-        }
-      )
-
     sub =
       case Joken.peek_header(proof) do
         {:ok, headers} ->
@@ -371,7 +356,7 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Token.generate_and_sign!(claims, signer)
+    credential = Client.Crypto.id_token_sign(claims, token.client)
 
     {:ok, credential}
   end
@@ -386,17 +371,6 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["jwt_vc"] do
     client = token.client
-
-    signer =
-      Joken.Signer.create(
-        client.id_token_signature_alg,
-        %{"pem" => client.private_key},
-        %{
-          "typ" => "JWT",
-          # TODO craft ebsi compliant dids
-          "kid" => client.did
-        }
-      )
 
     sub =
       case Joken.peek_header(proof) do
@@ -432,7 +406,7 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Token.generate_and_sign!(claims, signer)
+    credential = Client.Crypto.id_token_sign(claims, token.client)
 
     {:ok, credential}
   end
@@ -446,16 +420,6 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["vc+sd-jwt"] do
     client = token.client
-
-    signer =
-      Joken.Signer.create(
-        client.id_token_signature_alg,
-        %{"pem" => client.private_key},
-        %{
-          "typ" => "JWT",
-          "kid" => Client.Crypto.kid_from_private_key(client.private_key)
-        }
-      )
 
     sub =
       case Joken.peek_header(proof) do
@@ -498,7 +462,7 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Token.generate_and_sign!(claims, signer)
+    credential = Client.Crypto.id_token_sign(claims, token.client)
 
     tokens =
       [credential] ++
