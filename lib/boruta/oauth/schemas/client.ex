@@ -71,7 +71,7 @@ defmodule Boruta.Oauth.Client do
           jwks_uri: String.t() | nil,
           public_key: String.t(),
           private_key: String.t(),
-          did: String.t(),
+          did: String.t() | nil,
           logo_uri: String.t() | nil,
           metadata: map()
         }
