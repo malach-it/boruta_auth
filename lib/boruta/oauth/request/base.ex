@@ -11,9 +11,9 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.PasswordRequest
   alias Boruta.Oauth.PreauthorizationCodeRequest
   alias Boruta.Oauth.PreauthorizedCodeRequest
+  alias Boruta.Oauth.PresentationRequest
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.RevokeRequest
-  alias Boruta.Oauth.SiopV2Request
   alias Boruta.Oauth.TokenRequest
   alias Boruta.RequestsAdapter
   alias Boruta.VerifiableCredentials
@@ -96,7 +96,7 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def build_request(%{"response_type" => "code", "client_metadata" => client_metadata} = params) do
-    request = %SiopV2Request{
+    request = %PresentationRequest{
       client_id: params["client_id"],
       redirect_uri: params["redirect_uri"],
       state: params["state"],

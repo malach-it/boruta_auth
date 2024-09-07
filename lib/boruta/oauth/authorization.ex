@@ -722,19 +722,19 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
   defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
 end
 
-defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
-  alias Boruta.Oauth.SiopV2Request
+  alias Boruta.Oauth.PresentationRequest
   alias Boruta.Oauth.Token
   alias Boruta.VerifiableCredentials
 
   def preauthorize(
-        %SiopV2Request{
+        %PresentationRequest{
           client_id: sub,
           redirect_uri: redirect_uri,
           state: state,

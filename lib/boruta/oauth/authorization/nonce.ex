@@ -14,16 +14,16 @@ defprotocol Boruta.Oauth.Authorization.Nonce do
           request ::
             Boruta.Oauth.CodeRequest.t()
             | Boruta.Oauth.TokenRequest.t()
-            | Boruta.Oauth.SiopV2Request.t()
+            | Boruta.Oauth.PresentationRequest.t()
         ) ::
           :ok | {:error, Boruta.Oauth.Error.t()}
   def authorize(request)
 end
 
-defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.SiopV2Request do
+defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.Error
 
-  def authorize(%Boruta.Oauth.SiopV2Request{nonce: nonce}) do
+  def authorize(%Boruta.Oauth.PresentationRequest{nonce: nonce}) do
     case nonce do
       nonce when nonce in [nil, ""] ->
         {:error,

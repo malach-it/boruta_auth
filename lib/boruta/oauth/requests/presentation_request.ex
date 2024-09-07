@@ -1,4 +1,4 @@
-defmodule Boruta.Oauth.SiopV2Request do
+defmodule Boruta.Oauth.PresentationRequest do
   @moduledoc """
   Code request
   """

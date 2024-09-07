@@ -10,7 +10,7 @@ defmodule Boruta.Oauth.Error do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.PreauthorizedCodeRequest
-  alias Boruta.Oauth.SiopV2Request
+  alias Boruta.Oauth.PresentationRequest
   alias Boruta.Oauth.TokenRequest
 
   @type t :: %__MODULE__{
@@ -49,7 +49,7 @@ defmodule Boruta.Oauth.Error do
             | HybridRequest.t()
             | AuthorizationRequest.t()
             | PreauthorizedCodeRequest.t()
-            | SiopV2Request.t()
+            | PresentationRequest.t()
         ) :: Error.t()
   def with_format(%Error{error: :invalid_client} = error, _) do
     %{error | format: nil, redirect_uri: nil}
@@ -114,7 +114,7 @@ defmodule Boruta.Oauth.Error do
     %{error | format: :json, redirect_uri: redirect_uri, state: state}
   end
 
-  def with_format(%Error{} = error, %SiopV2Request{redirect_uri: redirect_uri, state: state}) do
+  def with_format(%Error{} = error, %PresentationRequest{redirect_uri: redirect_uri, state: state}) do
     %{error | format: :query, redirect_uri: redirect_uri, state: state}
   end
 
