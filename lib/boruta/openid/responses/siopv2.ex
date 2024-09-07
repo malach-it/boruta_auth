@@ -71,7 +71,7 @@ defmodule Boruta.Openid.SiopV2Response do
       response_mode: response.response_mode,
       client_id: issuer(),
       redirect_uri: redirect_uri,
-      scope: response.scope,
+      scope: "openid",
       nonce: response.nonce
     }
 
@@ -81,7 +81,7 @@ defmodule Boruta.Openid.SiopV2Response do
           client_id: response.client_id,
           response_type: response.response_type,
           response_mode: response.response_mode,
-          scope: response.scope,
+          scope: "openid",
           redirect_uri: redirect_uri,
           request: request
         }
