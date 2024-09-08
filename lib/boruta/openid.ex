@@ -36,6 +36,7 @@ defmodule Boruta.Openid do
   alias Boruta.Openid.DeferedCredentialResponse
   alias Boruta.Openid.UserinfoResponse
   alias Boruta.VerifiableCredentials
+  alias Boruta.VerifiablePresentations
 
   def jwks(conn, module) do
     jwk_keys = ClientsAdapter.list_clients_jwk()
@@ -142,7 +143,7 @@ defmodule Boruta.Openid do
           module :: atom()
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
-    with {:ok, claims} <- check_id_token_client(direct_post_params[:id_token]),
+    with {:ok, claims} <- check_id_token_client(direct_post_params),
          %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
          :ok <- check_issuer(claims, code) do
       query =
@@ -168,16 +169,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_id_token_client(nil),
-    do:
-      {:error,
-       %Error{
-         status: :unauthorized,
-         error: :unauthorized,
-         error_description: "id_token param missing."
-       }}
-
-  defp check_id_token_client(id_token) do
+  defp check_id_token_client(%{id_token: id_token}) do
     case VerifiableCredentials.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
         {:ok, claims}
@@ -192,6 +184,30 @@ defmodule Boruta.Openid do
     end
   end
 
+  defp check_id_token_client(%{vp_token: vp_token}) do
+    case VerifiablePresentations.validate_signature(vp_token) do
+      {:ok, _jwk, claims} ->
+        {:ok, claims}
+
+      {:error, error} ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :unauthorized,
+           error_description: error
+         }}
+    end
+  end
+
+  defp check_id_token_client(_),
+    do:
+      {:error,
+       %Error{
+         status: :unauthorized,
+         error: :unauthorized,
+         error_description: "id_token or vp_token param missing."
+       }}
+
   defp check_issuer(claims, code) do
     case claims["iss"] == code.sub do
       true ->
@@ -202,7 +218,7 @@ defmodule Boruta.Openid do
          %Error{
            error: :bad_request,
            status: :bad_request,
-           error_description: "Code subject do not match with provided id_token"
+           error_description: "Code subject do not match with provided id_token or vp_token"
          }}
     end
   end

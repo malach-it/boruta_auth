@@ -34,7 +34,15 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           signer
         )
 
-      {:ok, client: client, code: code, id_token: id_token}
+      {:ok, vp_token, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "iss" => "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
+          },
+          signer
+        )
+
+      {:ok, client: client, code: code, id_token: id_token, vp_token: vp_token}
     end
 
     test "returns authentication failure without id_token" do
@@ -45,7 +53,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                %Boruta.Oauth.Error{
                  status: :unauthorized,
                  error: :unauthorized,
-                 error_description: "id_token param missing."
+                 error_description: "id_token or vp_token param missing."
                }
              } =
                Openid.direct_post(
@@ -57,7 +65,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "returns not found with a bad id_token" do
+    test "siopv2 - returns not found with a bad id_token" do
       conn = %Plug.Conn{}
 
       assert {:authentication_failure,
@@ -76,7 +84,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "returns not found with a bad code", %{id_token: id_token} do
+    test "siopv2 - returns not found with a bad code", %{id_token: id_token} do
       conn = %Plug.Conn{}
 
       assert {:code_not_found} =
@@ -90,7 +98,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "retruns an error when code subject does not match", %{id_token: id_token} do
+    test "siopv2 - retruns an error when code subject does not match", %{id_token: id_token} do
       code = insert(:token,
         type: "code",
         redirect_uri: "http://redirect.uri",
@@ -103,7 +111,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
          %Boruta.Oauth.Error{
            error: :bad_request,
            status: :bad_request,
-           error_description: "Code subject do not match with provided id_token"
+           error_description: "Code subject do not match with provided id_token or vp_token"
          }} =
                Openid.direct_post(
                  conn,
@@ -115,7 +123,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "authenticates", %{id_token: id_token, code: code} do
+    test "siopv2 - authenticates", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
       assert {:direct_post_success, callback_uri} =
@@ -124,6 +132,82 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  %{
                    code_id: code.id,
                    id_token: id_token
+                 },
+                 ApplicationMock
+               )
+
+      assert callback_uri =~ ~r/#{code.redirect_uri}/
+      assert callback_uri =~ ~r/code=#{code.value}/
+      assert callback_uri =~ ~r/state=#{code.state}/
+    end
+
+    test "oid4vp - returns not found with a bad id_token" do
+      conn = %Plug.Conn{}
+
+      assert {:authentication_failure,
+              %Boruta.Oauth.Error{
+                status: :unauthorized,
+                error: :unauthorized,
+                error_description: "{:error, :token_malformed}"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: "bad_code_id",
+                   vp_token: "bad_vp_token"
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - returns not found with a bad code", %{vp_token: vp_token} do
+      conn = %Plug.Conn{}
+
+      assert {:code_not_found} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: "bad_code_id",
+                   vp_token: vp_token
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - retruns an error when code subject does not match", %{vp_token: vp_token} do
+      code = insert(:token,
+        type: "code",
+        redirect_uri: "http://redirect.uri",
+        state: "state",
+        sub: "did:jwk:other"
+      )
+      conn = %Plug.Conn{}
+
+      assert {:authentication_failure,
+         %Boruta.Oauth.Error{
+           error: :bad_request,
+           status: :bad_request,
+           error_description: "Code subject do not match with provided id_token or vp_token"
+         }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - authenticates", %{vp_token: vp_token, code: code} do
+      conn = %Plug.Conn{}
+
+      assert {:direct_post_success, callback_uri} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token
                  },
                  ApplicationMock
                )
