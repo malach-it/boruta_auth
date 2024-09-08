@@ -84,14 +84,17 @@ defmodule Boruta.Openid do
             {:ok, credential} ->
               response = DeferedCredentialResponse.from_credential(credential, token)
               module.credential_created(conn, response)
+
             {:error, error} ->
               error = %Error{
                 status: :internal_server_error,
                 error: :unknown_error,
                 error_description: inspect(error)
               }
+
               module.credential_failure(conn, error)
           end
+
         _ ->
           response = CredentialResponse.from_credential(credential)
           module.credential_created(conn, response)
@@ -115,7 +118,6 @@ defmodule Boruta.Openid do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
          %Credential{} = credential <- CredentialsAdapter.get_by(access_token: token.value) do
-
       response = CredentialResponse.from_credential(credential)
       module.credential_created(conn, response)
     else
@@ -135,7 +137,9 @@ defmodule Boruta.Openid do
 
   @type direct_post_params :: %{
           code_id: String.t(),
-          id_token: nil | String.t()
+          id_token: nil | String.t(),
+          vp_token: nil | String.t(),
+          presentation_submission: nil | String.t()
         }
   @spec direct_post(
           conn :: Plug.Conn.t(),
@@ -144,22 +148,27 @@ defmodule Boruta.Openid do
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
     with {:ok, claims} <- check_id_token_client(direct_post_params),
-         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
-         :ok <- check_issuer(claims, code) do
-      query =
-        %{
-          code: code.value,
-          state: code.state
-        }
-        |> URI.encode_query()
+         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+      with :ok <- check_issuer(claims, code),
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
+        query =
+          %{
+            code: code.value,
+            state: code.state
+          }
+          |> URI.encode_query()
 
-      response = URI.parse(code.redirect_uri)
+        response = URI.parse(code.redirect_uri)
 
-      response =
-        %{response | host: response.host || "", query: query}
-        |> URI.to_string()
+        response =
+          %{response | host: response.host || "", query: query}
+          |> URI.to_string()
 
-      module.direct_post_success(conn, response)
+        module.direct_post_success(conn, response)
+      else
+        {:error, error} ->
+          module.authentication_failure(conn, %{error | redirect_uri: code.redirect_uri, state: code.state})
+      end
     else
       {:error, error} ->
         module.authentication_failure(conn, error)
@@ -216,12 +225,65 @@ defmodule Boruta.Openid do
       false ->
         {:error,
          %Error{
-           error: :bad_request,
+           error: :invalid_request,
+           format: :query,
            status: :bad_request,
            error_description: "Code subject do not match with provided id_token or vp_token"
          }}
     end
   end
+
+  defp maybe_check_presentation(
+         %{vp_token: vp_token, presentation_submission: presentation_submission},
+         presentation_definition
+       ) do
+    case Jason.decode(presentation_submission) do
+      {:ok, presentation_submission} ->
+        case VerifiablePresentations.validate_presentation(
+               vp_token,
+               presentation_submission,
+               presentation_definition
+             ) do
+          :ok ->
+            :ok
+
+          {:error, error} ->
+            error = %Error{
+              status: :bad_request,
+              format: :query,
+              error: :invalid_request,
+              error_description: error
+            }
+
+            {:error, error}
+        end
+
+      {:error, _error} ->
+        error = %Error{
+          status: :bad_request,
+          format: :query,
+          error: :invalid_request,
+          error_description: "presentation_submission is not a valid JSON object."
+        }
+
+        {:error, error}
+    end
+  end
+
+  defp maybe_check_presentation(
+         %{vp_token: _vp_token},
+         _presentation_definition
+       ) do
+    {:error,
+     %Error{
+       status: :bad_request,
+       format: :query,
+       error: :invalid_request,
+       error_description: "presentation_submission query parameter is missing."
+     }}
+  end
+
+  defp maybe_check_presentation(_, _), do: :ok
 
   alias Boruta.Openid.Json.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter

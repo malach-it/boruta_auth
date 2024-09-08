@@ -206,7 +206,7 @@ defmodule Boruta.VerifiableCredentials do
   defp verify_jwt({:did, did}, alg, jwt) do
     case Did.resolve(did) do
       {:ok, did_document} ->
-        %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
+        %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk} | _other]}} =
           did_document
 
         signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
