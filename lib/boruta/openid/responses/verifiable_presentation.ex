@@ -15,7 +15,8 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
     :issuer,
     :client,
     :response_mode,
-    :nonce
+    :nonce,
+    :presentation_definition
   ]
 
   defstruct client_id: nil,
@@ -26,7 +27,8 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
             issuer: nil,
             client: nil,
             response_mode: nil,
-            nonce: nil
+            nonce: nil,
+            presentation_definition: nil
 
   @type t :: %__MODULE__{
           client_id: String.t(),
@@ -37,7 +39,8 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
           issuer: String.t(),
           client: Boruta.Oauth.Client.t(),
           response_mode: String.t(),
-          nonce: String.t()
+          nonce: String.t(),
+          presentation_definition: map()
         }
 
   def from_tokens(%{vp_code: code}, request) do
@@ -49,7 +52,8 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
       issuer: Boruta.Config.issuer(),
       client: code.client,
       response_mode: "direct_post",
-      nonce: code.nonce
+      nonce: code.nonce,
+      presentation_definition: code.presentation_definition
     }
   end
 
@@ -61,6 +65,7 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
         ) :: deeplink :: String.t() | {:error, reason :: String.t()}
   def redirect_to_deeplink(%__MODULE__{} = response, redirect_uri_url_fn) do
     redirect_uri = redirect_uri_url_fn.(response.code.id)
+
     claims = %{
       iss: issuer(),
       aud: response.client_id,
@@ -70,7 +75,8 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
       client_id: issuer(),
       redirect_uri: redirect_uri,
       scope: "openid",
-      nonce: response.nonce
+      nonce: response.nonce,
+      presentation_definition: response.presentation_definition
     }
 
     with "" <> request <- Client.Crypto.id_token_sign(claims, response.client) do

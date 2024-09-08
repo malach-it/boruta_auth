@@ -12,4 +12,3 @@ defmodule Boruta.Migrations.ClientsDid do
     end
   end
 end
-

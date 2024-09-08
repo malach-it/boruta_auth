@@ -19,7 +19,9 @@ defmodule Boruta.Oauth.ResourceOwner do
           extra_claims: Boruta.Oauth.IdToken.claims(),
           authorization_details: list(map()),
           presentation_configuration: %{
-            String.t() => %{}
+            String.t() => %{
+              definition: map()
+            }
           },
           credential_configuration: %{
             String.t() => %{

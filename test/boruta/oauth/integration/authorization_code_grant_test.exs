@@ -926,7 +926,9 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner = %ResourceOwner{
         sub: "sub",
         presentation_configuration: %{
-          "vp_token" => %{}
+          "vp_token" => %{
+            definition: %{"test" => true}
+          }
         }
       }
 
@@ -939,7 +941,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 scope: "openid vp_token",
                 issuer: issuer,
                 response_mode: "direct_post",
-                nonce: "nonce"
+                nonce: "nonce",
+                presentation_definition: %{"test" => true}
               }} =
                Oauth.authorize(
                  %Plug.Conn{
