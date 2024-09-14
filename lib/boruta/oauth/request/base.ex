@@ -95,7 +95,7 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def build_request(%{"response_type" => "code", "client_metadata" => client_metadata} = params) do
+  def build_request(%{"response_type" => response_type, "client_metadata" => client_metadata} = params) when response_type in ["code", "vp_token"] do
     request = %PresentationRequest{
       client_id: params["client_id"],
       resource_owner: params["resource_owner"],

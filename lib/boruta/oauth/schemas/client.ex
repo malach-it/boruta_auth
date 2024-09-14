@@ -41,6 +41,7 @@ defmodule Boruta.Oauth.Client do
             private_key: nil,
             did: nil,
             logo_uri: nil,
+            response_mode: nil,
             metadata: %{}
 
   @type t :: %__MODULE__{
@@ -73,6 +74,7 @@ defmodule Boruta.Oauth.Client do
           private_key: String.t(),
           did: String.t() | nil,
           logo_uri: String.t() | nil,
+          response_mode: String.t(),
           metadata: map()
         }
 
@@ -84,7 +86,9 @@ defmodule Boruta.Oauth.Client do
     "refresh_token",
     "implicit",
     "revoke",
-    "introspect"
+    "introspect",
+    "id_token",
+    "vp_token"
   ]
 
   @doc """
@@ -246,7 +250,8 @@ defmodule Boruta.Oauth.Client do
     def verify_id_token_signature(id_token, jwk) do
       case Joken.peek_header(id_token) do
         {:ok, %{"alg" => alg}} ->
-          signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
           case Token.verify(id_token, signer) do
             {:ok, claims} -> {:ok, claims}

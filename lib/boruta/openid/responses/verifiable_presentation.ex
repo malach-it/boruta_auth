@@ -43,7 +43,7 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
           presentation_definition: map()
         }
 
-  def from_tokens(%{vp_code: code}, request) do
+  def from_tokens(%{vp_code: code, response_mode: response_mode}, request) do
     %__MODULE__{
       client_id: request.client_id,
       code: code,
@@ -51,7 +51,7 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
       redirect_uri: code.redirect_uri,
       issuer: Boruta.Config.issuer(),
       client: code.client,
-      response_mode: "direct_post",
+      response_mode: response_mode,
       nonce: code.nonce,
       presentation_definition: code.presentation_definition
     }

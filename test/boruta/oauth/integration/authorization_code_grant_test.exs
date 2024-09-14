@@ -887,7 +887,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
     end
 
-    test "returns a code with siopv2" do
+    test "returns a code with siopv2 (direct_post)" do
       redirect_uri = "openid:"
 
       assert {:authorize_success,
@@ -912,7 +912,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "scope" => "openid"
                    }
                  },
-                 %ResourceOwner{sub: "sub"},
+                 %ResourceOwner{sub: "did:key:test"},
                  ApplicationMock
                )
 
@@ -920,11 +920,46 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert client.public_client_id == Boruta.Config.issuer()
     end
 
-    test "returns a code with verifiable presentation" do
+    test "returns a code with siopv2 (post)" do
+      redirect_uri = "openid://"
+      client = insert(:client, response_mode: "post", redirect_uris: [redirect_uri])
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                client: response_client,
+                client_id: client_id,
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid",
+                issuer: issuer,
+                response_mode: "post",
+                nonce: "nonce"
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 %ResourceOwner{sub: "did:key:test"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert response_client.id == client.id
+      assert client_id == client.id
+    end
+
+    test "returns a code with verifiable presentation (direct_post)" do
       redirect_uri = "openid:"
       insert(:scope, name: "vp_token", public: true)
       resource_owner = %ResourceOwner{
-        sub: "sub",
+        sub: "did:key:test",
         presentation_configuration: %{
           "vp_token" => %{
             definition: %{"test" => true}
@@ -947,7 +982,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
-                     "response_type" => "code",
+                     "response_type" => "vp_token",
                      "client_id" => "did:key:test",
                      "redirect_uri" => redirect_uri,
                      "client_metadata" => "{}",
@@ -961,6 +996,51 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert issuer == Boruta.Config.issuer()
       assert client.public_client_id == Boruta.Config.issuer()
+    end
+
+    test "returns a code with verifiable presentation (post)" do
+      redirect_uri = "openid://"
+      client = insert(:client, response_mode: "post", redirect_uris: [redirect_uri])
+      insert(:scope, name: "vp_token", public: true)
+      resource_owner = %ResourceOwner{
+        sub: "did:key:test",
+        presentation_configuration: %{
+          "vp_token" => %{
+            definition: %{"test" => true}
+          }
+        }
+      }
+
+      assert {:authorize_success,
+              %VerifiablePresentationResponse{
+                client: response_client,
+                client_id: client_id,
+                response_type: "vp_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid vp_token",
+                issuer: issuer,
+                response_mode: "post",
+                nonce: "nonce",
+                presentation_definition: %{"test" => true}
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "vp_token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert response_client.id == client.id
+      assert client_id == client.id
     end
 
     @tag :skip

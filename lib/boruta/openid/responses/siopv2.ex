@@ -40,7 +40,7 @@ defmodule Boruta.Openid.SiopV2Response do
           nonce: String.t()
         }
 
-  def from_tokens(%{siopv2_code: code}, request) do
+  def from_tokens(%{siopv2_code: code, response_mode: response_mode}, request) do
     %__MODULE__{
       client_id: request.client_id,
       code: code,
@@ -48,7 +48,7 @@ defmodule Boruta.Openid.SiopV2Response do
       redirect_uri: code.redirect_uri,
       issuer: Boruta.Config.issuer(),
       client: code.client,
-      response_mode: "direct_post",
+      response_mode: response_mode,
       nonce: code.nonce
     }
   end

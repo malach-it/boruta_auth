@@ -12,4 +12,3 @@ defmodule Boruta.Migrations.VerifiablePresentationDefinitions do
     end
   end
 end
-

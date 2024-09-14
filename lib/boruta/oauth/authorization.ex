@@ -45,7 +45,8 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             code_challenge_method: nil,
             authorization_details: nil,
             presentation_definition: nil,
-            issuer: nil
+            issuer: nil,
+            response_mode: nil
 
   @type t :: %__MODULE__{
           response_types: list(String.t()),
@@ -62,7 +63,8 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           code_challenge_method: String.t() | nil,
           authorization_details: list(map()) | nil,
           presentation_definition: map() | nil,
-          issuer: String.t() | nil
+          issuer: String.t() | nil,
+          response_mode: String.t() | nil
         }
 end
 
@@ -736,7 +738,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
 
   def preauthorize(
         %PresentationRequest{
-          client_id: sub,
+          client_id: client_id,
           resource_owner: resource_owner,
           redirect_uri: redirect_uri,
           state: state,
@@ -748,9 +750,25 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           client_metadata: client_metadata
         } = request
       ) do
-    client = ClientsAdapter.public!()
+      with [response_type] = response_types <-
+           VerifiablePresentations.response_types(
+             scope,
+             resource_owner.presentation_configuration
+           ),
+         {:ok, client} <-
+           (case client_id do
+              "did:" <> _key ->
+                {:ok, ClientsAdapter.public!()}
 
-    with {:ok, scope} <-
+              client_id ->
+                Authorization.Client.authorize(
+                  id: client_id,
+                  source: nil,
+                  redirect_uri: redirect_uri,
+                  grant_type: response_type
+                )
+            end),
+         {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client}
@@ -758,11 +776,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
          :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
-         response_types <-
-           VerifiablePresentations.response_types(
-             scope,
-             resource_owner.presentation_configuration
-           ),
          presentation_definition <-
            VerifiablePresentations.presentation_definition(
              resource_owner.presentation_configuration,
@@ -774,13 +787,14 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          presentation_definition: presentation_definition,
          redirect_uri: redirect_uri,
          client: client,
-         sub: sub,
+         sub: resource_owner.sub,
          scope: scope,
          state: state,
          nonce: nonce,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
-         authorization_details: Jason.decode!(authorization_details)
+         authorization_details: Jason.decode!(authorization_details),
+         response_mode: client.response_mode
        }}
     else
       {:error, :invalid_code_challenge} ->
@@ -809,7 +823,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             nonce: nonce,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
-            authorization_details: authorization_details
+            authorization_details: authorization_details,
+            response_mode: response_mode
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
@@ -827,10 +842,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              }) do
         case response_types do
           ["id_token"] ->
-            {:ok, %{siopv2_code: code}}
+            {:ok, %{siopv2_code: code, response_mode: response_mode}}
 
           ["vp_token"] ->
-            {:ok, %{vp_code: code}}
+            {:ok, %{vp_code: code, response_mode: response_mode}}
         end
       end
     end
