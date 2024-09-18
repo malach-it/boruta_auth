@@ -13,6 +13,8 @@ defmodule Boruta.VerifiablePresentations do
   alias Boruta.Did
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Scope
+  alias Boruta.Openid.Json.Schema
+  alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   # TODO perform client metadata checks
   def check_client_metadata(_client_metadata), do: :ok
@@ -39,27 +41,33 @@ defmodule Boruta.VerifiablePresentations do
   end
 
   def validate_presentation(vp_token, presentation_submission, presentation_definition) do
-    # TODO use json schema to validate presentation submission
-    case Joken.peek_claims(vp_token) do
-      {:ok, vp_claims} ->
-        Enum.reduce_while(
-          Enum.zip(
-            presentation_definition["input_descriptors"],
-            presentation_submission["descriptor_map"]
-          ),
-          :ok,
-          fn {descriptor, map}, _acc ->
-            credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
+    with :ok <-
+           ExJsonSchema.Validator.validate(
+             Schema.presentation_submission(),
+             presentation_submission,
+             error_formatter: BorutaFormatter
+           ),
+         {:ok, _jwk, vp_claims} <- validate_signature(vp_token) do
+      Enum.reduce_while(
+        Enum.zip(
+          presentation_definition["input_descriptors"],
+          presentation_submission["descriptor_map"]
+        ),
+        :ok,
+        fn {descriptor, map}, _acc ->
+          credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
 
-            case credential_valid?(credential, descriptor, extract_format(map)) do
-              :ok -> {:cont, :ok}
-              {:error, error} -> {:halt, {:error, map["id"] <> " " <> error}}
-            end
+          case validate_credential(credential, descriptor, extract_format(map)) do
+            :ok -> {:cont, :ok}
+            {:error, error} -> {:halt, {:error, map["id"] <> " " <> error}}
           end
-        )
+        end
+      )
+    else
+      {:error, errors} when is_list(errors) ->
+        {:error, Enum.join(errors, ", ")}
 
-      _ ->
-        {:error, "vp_token is malformed."}
+      error -> error
     end
   end
 
@@ -83,18 +91,16 @@ defmodule Boruta.VerifiablePresentations do
 
   defp extract_format(%{"path_nested" => %{"format" => format}}), do: format
 
-  defp credential_valid?(credential, descriptor, "jwt_vc") do
-    with {:ok, claims} <- Joken.peek_claims(credential),
+  def validate_credential(credential, descriptor, "jwt_vc") do
+    with {:ok, _jwk, claims} <- validate_signature(credential),
          :ok <- validate_expiration(claims),
          :ok <- validate_valid_from(claims),
          :ok <- validate_status_list(claims) do
       validate_constraints(claims, descriptor)
     end
-
-    # TODO rule engine checks
   end
 
-  defp credential_valid?(_credential, _descriptor, format),
+  def validate_credential(_credential, _descriptor, format),
     do: {:error, "format \"#{format}\" is not supported"}
 
   defp validate_expiration(%{"exp" => expiry}) do
@@ -122,15 +128,18 @@ defmodule Boruta.VerifiablePresentations do
       {:ok, %Finch.Response{status: 200, body: statuc_credential}} ->
         case Joken.peek_claims(statuc_credential) do
           {:ok, %{"vc" => %{"credentialSubject" => status_list}}} ->
-            bit = status_list["encodedList"]
-            |> :binary.decode_unsigned()
-            |> :erlang.integer_to_list(2)
-            |> Enum.slice(status["statusListIndex"] |> String.to_integer(), 1)
-            |> :string.to_integer()
-            |> elem(0)
+            bit =
+              status_list["encodedList"]
+              |> :binary.decode_unsigned()
+              |> :erlang.integer_to_list(2)
+              |> Enum.slice(status["statusListIndex"] |> String.to_integer(), 1)
+              |> :string.to_integer()
+              |> elem(0)
 
             case bit do
-              1 -> :ok
+              1 ->
+                :ok
+
               0 ->
                 case status_list["statusPurpose"] do
                   "revocation" ->
@@ -149,16 +158,19 @@ defmodule Boruta.VerifiablePresentations do
 
   defp validate_status_list(_claims), do: :ok
 
-  defp validate_constraints(claims, %{"id" => id, "constraints" => %{"fields" => fields_constraints}}) do
+  defp validate_constraints(claims, %{
+         "id" => id,
+         "constraints" => %{"fields" => fields_constraints}
+       }) do
     Enum.reduce_while(fields_constraints, :ok, fn constraint, _result ->
       case Enum.reduce_while(constraint["path"], :ok, fn path, _result ->
-        value = get_in(claims, extract_path(path))
+             value = get_in(claims, extract_path(path))
 
-        case validate_filter(value, constraint["filter"]) do
-          :ok -> {:cont, :ok}
-          error -> {:halt, error}
-        end
-      end) do
+             case validate_filter(value, constraint["filter"]) do
+               :ok -> {:cont, :ok}
+               error -> {:halt, error}
+             end
+           end) do
         :ok -> {:cont, :ok}
         {:error, error} -> {:halt, {:error, "descriptor #{id} #{error}"}}
       end
@@ -167,21 +179,24 @@ defmodule Boruta.VerifiablePresentations do
 
   defp validate_constraints(_claims, _descriptor), do: {:error, "descriptor is invalid."}
 
-  defp validate_filter(value, %{"type" => "array", "contains" => %{"const" => contains}}) when is_list(value) do
+  defp validate_filter(value, %{"type" => "array", "contains" => %{"const" => contains}})
+       when is_list(value) do
     case Enum.member?(value, contains) do
       true -> :ok
-      false -> {:error, "does not contains #{contains}."}
+      false -> {:error, "does not contains \"#{contains}\"."}
     end
   end
 
-  defp validate_filter(value, %{"type" => "string", "pattern" => pattern}) when is_binary(value) do
+  defp validate_filter(value, %{"type" => "string", "pattern" => pattern})
+       when is_binary(value) do
     case Regex.match?(~r/#{pattern}/, value) do
       true -> :ok
-      false -> {:error, "does not contain pattern #{pattern}."}
+      false -> {:error, "does not contain pattern \"#{pattern}\"."}
     end
   end
 
-  defp validate_filter(value, %{"type" => "array", "contains" => %{"const" => contains}}) when is_list(value) do
+  defp validate_filter(value, %{"type" => "array", "contains" => %{"const" => contains}})
+       when is_list(value) do
     case Enum.member?(value, contains) do
       true -> :ok
       false -> {:error, "does not contains #{contains}."}
@@ -210,15 +225,21 @@ defmodule Boruta.VerifiablePresentations do
   defp verify_jwt({:did, did}, alg, jwt) do
     case Did.resolve(did) do
       {:ok, did_document} ->
-        %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk} | _other]}} =
-          did_document
+        %{"didDocument" => %{"verificationMethod" => methods}} = did_document
 
-        signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+        Enum.reduce_while(
+          methods,
+          {:error, "no did verification method found."},
+          fn %{"publicKeyJwk" => jwk}, _result ->
+            signer =
+              Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
-        case Client.Token.verify(jwt, signer) do
-          {:ok, claims} -> {:ok, jwk, claims}
-          {:error, error} -> {:error, inspect(error)}
-        end
+            case Client.Token.verify(jwt, signer) do
+              {:ok, claims} -> {:halt, {:ok, jwk, claims}}
+              {:error, error} -> {:cont, {:error, inspect(error)}}
+            end
+          end
+        )
 
       {:error, error} ->
         {:error, error}

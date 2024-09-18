@@ -26,4 +26,36 @@ defmodule Boruta.Openid.Json.Schema do
     }
     |> Schema.resolve()
   end
+
+  def presentation_submission do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "id" => %{"type" => "string"},
+        "definition_id" => %{"type" => "string"},
+        "descriptor_map" => %{
+          "type" => "array",
+          "items" => %{
+            "type" => "object",
+            "properties" => %{
+              "id" => %{"type" => "string"},
+              "format" => %{"type" => "string", "pattern" => "^jwt_vp$"},
+              "path" => %{"type" => "string"},
+              "path_nested" => %{
+                "type" => "object",
+                "properties" => %{
+                  "id" => %{"type" => "string"},
+                  "format" => %{"type" => "string", "pattern" => "^jwt_vc$"},
+                  "path" => %{"type" => "string"}
+                },
+                "required" => ["id", "format", "path"]
+              }
+            },
+            "required" => ["id", "format", "path", "path_nested"]
+          }
+        }
+      },
+      "required" => ["id", "descriptor_map"]
+    }
+  end
 end

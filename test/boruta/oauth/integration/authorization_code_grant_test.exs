@@ -900,7 +900,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 issuer: issuer,
                 response_mode: "direct_post",
                 nonce: "nonce"
-              }} =
+              } = response} =
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
@@ -918,6 +918,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert issuer == Boruta.Config.issuer()
       assert client.public_client_id == Boruta.Config.issuer()
+      assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~ ~r"#{redirect_uri}"
     end
 
     test "returns a code with siopv2 (post)" do
@@ -978,7 +979,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 response_mode: "direct_post",
                 nonce: "nonce",
                 presentation_definition: %{"test" => true}
-              }} =
+              } = response} =
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
@@ -996,6 +997,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert issuer == Boruta.Config.issuer()
       assert client.public_client_id == Boruta.Config.issuer()
+      assert VerifiablePresentationResponse.redirect_to_deeplink(response, fn code -> code end) =~ ~r"#{redirect_uri}"
     end
 
     test "returns a code with verifiable presentation (post)" do
