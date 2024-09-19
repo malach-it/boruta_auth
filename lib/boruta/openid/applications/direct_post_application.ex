@@ -6,7 +6,8 @@ defmodule Boruta.Openid.DirectPostApplication do
 
   @callback direct_post_success(
               conn :: Plug.Conn.t() | map(),
-              response :: any()
+              response :: any(),
+              token :: Boruta.Oauth.Token.t()
             ) :: any()
   @callback code_not_found(conn :: Plug.Conn.t()) :: any()
   @callback authentication_failure(conn :: Plug.Conn.t(), error :: Boruta.Oauth.Error.t()) ::
