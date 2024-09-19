@@ -24,6 +24,7 @@ defmodule Boruta.Openid do
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
+  alias Boruta.AccessTokensAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.CredentialsAdapter
@@ -31,6 +32,7 @@ defmodule Boruta.Openid do
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
   alias Boruta.Openid.Credential
   alias Boruta.Openid.CredentialResponse
@@ -156,7 +158,7 @@ defmodule Boruta.Openid do
                value: value,
                code_verifier: direct_post_params[:code_verifier]
              }),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, sub, presentation_claims} <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, _code} <- CodesAdapter.revoke(code) do
           query =
             %{
@@ -171,7 +173,25 @@ defmodule Boruta.Openid do
             %{response | host: response.host || "", query: query}
             |> URI.to_string()
 
-          module.direct_post_success(conn, response)
+          {:ok, token} =
+            AccessTokensAdapter.create(
+              %{
+                client: code.client,
+                resource_owner: %ResourceOwner{
+                  sub: sub,
+                  extra_claims: presentation_claims
+                },
+                redirect_uri: code.relying_party_redirect_uri,
+                sub: sub,
+                scope: code.scope,
+                state: code.state,
+                previous_code: code.value
+              },
+              refresh_token: false
+            )
+
+          module.direct_post_success(conn, response, token)
+
       else
         {:error, error} ->
           module.authentication_failure(conn, %{
@@ -240,8 +260,8 @@ defmodule Boruta.Openid do
                presentation_submission,
                presentation_definition
              ) do
-          :ok ->
-            :ok
+          {:ok, sub, claims} ->
+            {:ok, sub, claims}
 
           {:error, error} ->
             error = %Error{
@@ -279,7 +299,7 @@ defmodule Boruta.Openid do
      }}
   end
 
-  defp maybe_check_presentation(_, _), do: :ok
+  defp maybe_check_presentation(_, _), do: {:ok, nil, %{}}
 
   alias Boruta.Openid.Json.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
