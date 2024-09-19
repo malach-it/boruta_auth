@@ -21,6 +21,7 @@ defmodule Boruta.Oauth.Token do
             c_nonce: nil,
             scope: nil,
             redirect_uri: nil,
+            relying_party_redirect_uri: nil,
             expires_at: nil,
             client: nil,
             sub: nil,
@@ -31,7 +32,8 @@ defmodule Boruta.Oauth.Token do
             refresh_token_revoked_at: nil,
             code_challenge: nil,
             code_challenge_hash: nil,
-            code_challenge_method: nil
+            code_challenge_method: nil,
+            previous_code: nil
 
   # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
@@ -45,6 +47,7 @@ defmodule Boruta.Oauth.Token do
           c_nonce: String.t() | nil,
           scope: String.t(),
           redirect_uri: String.t() | nil,
+          relying_party_redirect_uri: String.t() | nil,
           expires_at: integer() | nil,
           client: Boruta.Oauth.Client.t() | nil,
           sub: String.t() | nil,
@@ -55,7 +58,8 @@ defmodule Boruta.Oauth.Token do
           code_challenge_method: String.t() | nil,
           inserted_at: DateTime.t() | nil,
           revoked_at: DateTime.t() | nil,
-          refresh_token_revoked_at: DateTime.t() | nil
+          refresh_token_revoked_at: DateTime.t() | nil,
+          previous_code: DateTime.t() | nil
         }
 
   @doc """
