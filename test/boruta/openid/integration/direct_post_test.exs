@@ -26,6 +26,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         type: "code",
         client: client,
         redirect_uri: "http://redirect.uri",
+        relying_party_redirect_uri: "http://relying.party.redirect.uri",
         state: "state",
         sub: wallet_did,
         presentation_definition: %{
@@ -375,6 +376,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.token.redirect_uri == code.relying_party_redirect_uri
     end
 
     test "siopv2 - authenticates (jwe)", %{id_token: id_token, code: code} do
@@ -778,6 +780,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.token.redirect_uri == code.relying_party_redirect_uri
     end
 
     test "oid4vp - authenticates (jwe)", %{vp_token: vp_token, code: code} do

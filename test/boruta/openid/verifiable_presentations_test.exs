@@ -189,7 +189,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                vp_token,
                presentation_submission,
                presentation_definition
-             ) == :ok
+             ) == {:ok, nil, %{"vc.test" => "pattern"}}
     end
   end
 
@@ -447,7 +447,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        :ok
+        {:ok, nil, %{"vc.test" => "pattern"}}
     end
   end
 

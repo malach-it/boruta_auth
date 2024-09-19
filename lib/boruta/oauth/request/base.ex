@@ -130,6 +130,7 @@ defmodule Boruta.Oauth.Request.Base do
       client_id: params["client_id"],
       resource_owner: params["resource_owner"],
       redirect_uri: params["redirect_uri"],
+      relying_party_redirect_uri: params["relying_party_redirect_uri"],
       state: params["state"],
       nonce: params["nonce"],
       prompt: params["prompt"],
