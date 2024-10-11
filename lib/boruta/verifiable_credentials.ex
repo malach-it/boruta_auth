@@ -196,28 +196,36 @@ defmodule Boruta.VerifiableCredentials do
       error ->
         {:error, inspect(error)}
     end
-  rescue
-    error ->
-      {:error, inspect(error)}
+  # rescue
+  #   error ->
+  #     {:error, inspect(error)}
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp verify_jwt({:did, did}, alg, jwt) do
-    case Did.resolve(did) do
-      {:ok, did_document} ->
-        %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk} | _other]}} =
-          did_document
+    with {:ok, did_document} <- Did.resolve(did),
+         %{"verificationMethod" => methods} <- did_document do
 
-        signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+        Enum.reduce_while(
+          methods,
+          {:error, "no did verification method found."},
+          fn %{"publicKeyJwk" => jwk}, _result ->
+            signer =
+              Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
-        case Client.Token.verify(jwt, signer) do
-          {:ok, claims} -> {:ok, jwk, claims}
-          {:error, error} -> {:error, inspect(error)}
-        end
+            case Client.Token.verify(jwt, signer) do
+              {:ok, claims} -> {:halt, {:ok, jwk, claims}}
+              {:error, error} -> {:cont, {:error, inspect(error)}}
+            end
+          end
+        )
 
+    else
       {:error, error} ->
         {:error, error}
+      did_document ->
+        {:error, "Invalid did document: \"#{inspect(did_document)}\""}
     end
   end
 

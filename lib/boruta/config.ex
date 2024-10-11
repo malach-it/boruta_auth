@@ -24,6 +24,7 @@ defmodule Boruta.Config do
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
+    ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
     did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
     did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
     universal_did_auth: %{
@@ -54,6 +55,7 @@ defmodule Boruta.Config do
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
+            ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
             did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
             did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
             universal_did_auth: %{
@@ -172,6 +174,12 @@ defmodule Boruta.Config do
       module ->
         module
     end
+  end
+
+  @spec ebsi_did_resolver_base_url() :: String.t()
+  @doc false
+  def ebsi_did_resolver_base_url do
+    Keyword.fetch!(oauth_config(), :ebsi_did_resolver_base_url)
   end
 
   @spec did_resolver_base_url() :: String.t()

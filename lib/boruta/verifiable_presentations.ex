@@ -215,17 +215,16 @@ defmodule Boruta.VerifiablePresentations do
       error ->
         {:error, inspect(error)}
     end
-  rescue
-    error ->
-      {:error, inspect(error)}
+  # rescue
+  #   error ->
+  #     {:error, inspect(error)}
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp verify_jwt({:did, did}, alg, jwt) do
-    case Did.resolve(did) do
-      {:ok, did_document} ->
-        %{"didDocument" => %{"verificationMethod" => methods}} = did_document
+    with {:ok, did_document} <- Did.resolve(did),
+         %{"verificationMethod" => methods} <- did_document do
 
         Enum.reduce_while(
           methods,
@@ -241,8 +240,11 @@ defmodule Boruta.VerifiablePresentations do
           end
         )
 
+    else
       {:error, error} ->
         {:error, error}
+      did_document ->
+        {:error, "Invalid did document: \"#{inspect(did_document)}\""}
     end
   end
 
