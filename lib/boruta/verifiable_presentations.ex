@@ -228,14 +228,14 @@ defmodule Boruta.VerifiablePresentations do
 
         Enum.reduce_while(
           methods,
-          {:error, "no did verification method found."},
-          fn %{"publicKeyJwk" => jwk}, _result ->
+          {:error, "no did verification method found with did #{did}."},
+          fn %{"publicKeyJwk" => jwk}, {:error, errors} ->
             signer =
               Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
             case Client.Token.verify(jwt, signer) do
               {:ok, claims} -> {:halt, {:ok, jwk, claims}}
-              {:error, error} -> {:cont, {:error, inspect(error)}}
+              {:error, error} -> {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
             end
           end
         )

@@ -1,4 +1,5 @@
 defmodule Boruta.Did do
+  # TODO integration tests
   @moduledoc """
     Utilities to manipulate dids using an universal resolver or registrar.
   """
@@ -19,7 +20,14 @@ defmodule Boruta.Did do
     case Finch.build(:get, resolver_url)
            |> Finch.request(OpenIDHttpClient) do
       {:ok, %Finch.Response{body: body, status: 200}} ->
-        Jason.decode(body)
+        case Jason.decode(body) do
+          {:ok, %{"didDocument" => did_document}} ->
+            {:ok, did_document}
+          {:ok, did_document} ->
+            {:ok, did_document}
+          {:error, error} ->
+            {:error, error}
+        end
 
       {:ok, %Finch.Response{body: body}} ->
         {:error, body}
