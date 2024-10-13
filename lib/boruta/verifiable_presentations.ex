@@ -260,6 +260,8 @@ defmodule Boruta.VerifiablePresentations do
     end
   end
 
+  defp verify_jwt(error, _alg, _jwt), do: error
+
   defp extract_key(%{"kid" => did}), do: {:did, did}
   defp extract_key(%{"jwk" => jwk}), do: {:jwk, jwk}
   defp extract_key(_headers), do: {:error, "No proof key material found in JWT headers"}
