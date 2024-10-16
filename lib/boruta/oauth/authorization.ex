@@ -725,7 +725,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
-  alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
@@ -755,19 +754,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              scope,
              resource_owner.presentation_configuration
            ),
-         {:ok, client} <-
-           (case client_id do
-              "did:" <> _key ->
-                {:ok, ClientsAdapter.public!()}
-
-              client_id ->
-                Authorization.Client.authorize(
-                  id: client_id,
-                  source: nil,
-                  redirect_uri: redirect_uri,
-                  grant_type: response_type
-                )
-            end),
+           {:ok, client} <- Authorization.Client.authorize(
+             id: client_id,
+             source: nil,
+             redirect_uri: redirect_uri,
+             grant_type: response_type
+           ),
          {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,

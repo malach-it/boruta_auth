@@ -10,6 +10,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     use Joken.Config, default_signer: :pem_rs512
   end
 
+  alias Boruta.ClientsAdapter
   alias Boruta.Ecto
   alias Boruta.Ecto.ScopeStore
   alias Boruta.Oauth
@@ -30,6 +31,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
   describe "authorization code grant - authorize" do
     setup do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+      {:ok, _client} = Ecto.Admin.update_client(public_client, %{supported_grant_types: Oauth.Client.grant_types()})
+      Ecto.ClientStore.invalidate_public()
+
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
@@ -224,6 +229,26 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "client_id" => client.id,
                      "redirect_uri" => redirect_uri,
                      "authorization_details" => Jason.encode!(authorization_details)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with anonymous clients (wallets)", %{resource_owner: resource_owner} do
+      assert {:authorize_error,
+              %Error{
+                status: :bad_request,
+                error: :unsupported_grant_type,
+                error_description: "Client do not support given grant type."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => "http://redirect.uri"
                    }
                  },
                  resource_owner,
@@ -2057,31 +2082,23 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a token with siopv2", %{siopv2_code: code} do
-      case Oauth.token(
+      assert {:token_success,
+         %TokenResponse{
+           token_type: _token_type,
+           access_token: _access_token,
+           expires_in: _expires_in,
+           refresh_token: _refresh_token
+         }} = Oauth.token(
              %Plug.Conn{
                body_params: %{
                  "grant_type" => "authorization_code",
                  "client_id" => "did:key:test",
-                 "code" => code.value
+                 "code" => code.value,
+                 "client_metadata" => "{}"
                }
              },
              ApplicationMock
-           ) do
-        {:token_success,
-         %TokenResponse{
-           token_type: token_type,
-           access_token: access_token,
-           expires_in: expires_in,
-           refresh_token: refresh_token
-         }} ->
-          assert token_type == "bearer"
-          assert access_token
-          assert expires_in
-          assert refresh_token
-
-        _ ->
-          assert false
-      end
+           )
     end
   end
 

@@ -46,6 +46,64 @@ defmodule Boruta.Oauth.Authorization.Client do
         ) ::
           {:ok, Client.t()}
           | {:error, Error.t()}
+  def authorize(
+        id: "did:" <> _key,
+        source: _source,
+        redirect_uri: _redirect_uri,
+        grant_type: grant_type
+      ) do
+    with %Client{} = client <- ClientsAdapter.public!(),
+         true <- Client.wallet_grant_type_supported?(client, grant_type) do
+      {:ok, client}
+    else
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
+         }}
+
+      {:error, reason} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: to_string(reason)
+         }}
+    end
+  end
+
+  def authorize(
+        id: "did:" <> _key,
+        source: _source,
+        redirect_uri: _redirect_uri,
+        grant_type: grant_type,
+        code_verifier: code_verifier
+      ) do
+    with %Client{} = client <- ClientsAdapter.public!(),
+         :ok <- validate_pkce(client, code_verifier),
+         true <- Client.wallet_grant_type_supported?(client, grant_type) do
+      {:ok, client}
+    else
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :unsupported_grant_type,
+           error_description: "Client do not support given grant type."
+         }}
+
+      {:error, reason} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: to_string(reason)
+         }}
+    end
+  end
+
   def authorize(id: id, source: source, grant_type: grant_type)
       when not is_nil(id) do
     with %Client{} = client <- ClientsAdapter.get_client(id),
@@ -101,37 +159,6 @@ defmodule Boruta.Oauth.Authorization.Client do
            status: :unauthorized,
            error: :invalid_client,
            error_description: "Invalid client_id or redirect_uri."
-         }}
-    end
-  end
-
-  def authorize(
-        id: "did:" <> _key,
-        source: source,
-        redirect_uri: _redirect_uri,
-        grant_type: grant_type,
-        code_verifier: code_verifier
-      ) do
-    with %Client{} = client <- ClientsAdapter.public!(),
-         :ok <- validate_pkce(client, code_verifier),
-         true <- Client.grant_type_supported?(client, grant_type),
-         {:ok, client} <- maybe_check_client_secret(client, source, grant_type) do
-      {:ok, client}
-    else
-      false ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :unsupported_grant_type,
-           error_description: "Client do not support given grant type."
-         }}
-
-      {:error, reason} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_request,
-           error_description: to_string(reason)
          }}
     end
   end

@@ -78,18 +78,24 @@ defmodule Boruta.Oauth.Client do
           metadata: map()
         }
 
-  @grant_types [
-    "client_credentials",
-    "password",
-    "authorization_code",
-    "preauthorized_code",
-    "refresh_token",
-    "implicit",
-    "revoke",
-    "introspect",
+  @wallet_grant_types [
     "id_token",
-    "vp_token"
+    "vp_token",
+    "authorization_code"
   ]
+
+  @grant_types Enum.uniq(
+                 [
+                   "client_credentials",
+                   "password",
+                   "authorization_code",
+                   "preauthorized_code",
+                   "refresh_token",
+                   "implicit",
+                   "revoke",
+                   "introspect"
+                 ] ++ @wallet_grant_types
+               )
 
   @doc """
   Returns grant types supported by the server. `Boruta.Oauth.Client` `supported_grant_types` attribute may be a subset of them.
@@ -112,6 +118,23 @@ defmodule Boruta.Oauth.Client do
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, grant_type) do
     Enum.member?(supported_grant_types, grant_type)
   end
+
+  @doc """
+  Returns wallet grant types supported by the server. `Boruta.Oauth.Client` `supported_grant_types` attribute may be a subset of them.
+  """
+  @spec wallet_grant_types() :: grant_types :: list(String.t())
+  def wallet_grant_types, do: @wallet_grant_types
+
+  @spec wallet_grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
+  def wallet_grant_type_supported?(
+        %__MODULE__{supported_grant_types: supported_grant_types},
+        grant_type
+      )
+      when grant_type in @wallet_grant_types do
+    Enum.member?(supported_grant_types, grant_type)
+  end
+
+  def wallet_grant_type_supported?(_client, _grant_type), do: false
 
   @spec check_secret(client :: t(), secret :: String.t()) :: :ok | {:error, String.t()}
   def check_secret(%__MODULE__{secret: secret}, secret), do: :ok

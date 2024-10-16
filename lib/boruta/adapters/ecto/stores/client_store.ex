@@ -53,4 +53,9 @@ defmodule Boruta.Ecto.ClientStore do
   def invalidate(client) do
     cache_backend().delete({Client, client.id})
   end
+
+  @spec invalidate_public() :: :ok
+  def invalidate_public do
+    cache_backend().delete({Client, :public})
+  end
 end
