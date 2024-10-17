@@ -1,4 +1,5 @@
 defmodule Boruta.Did do
+  # TODO integration tests
   @moduledoc """
     Utilities to manipulate dids using an universal resolver or registrar.
   """
@@ -6,27 +7,54 @@ defmodule Boruta.Did do
   import Boruta.Config,
     only: [
       universal_did_auth: 0,
+      ebsi_did_resolver_base_url: 0,
       did_resolver_base_url: 0,
       did_registrar_base_url: 0
     ]
 
   @spec resolve(did :: String.t()) ::
           {:ok, did_document :: map()} | {:error, reason :: String.t()}
-  def resolve(did) do
-    resolver_url = "#{did_resolver_base_url()}/identifiers/#{did}"
+  def resolve("did:ebsi" <> _key = did) do
+    resolver_url = "#{ebsi_did_resolver_base_url()}/identifiers/#{did}"
 
-    case Finch.build(:get, resolver_url, [
-           {"Authorization", "Bearer #{universal_did_auth()[:token]}"}
-         ])
-         |> Finch.request(OpenIDHttpClient) do
+    case Finch.build(:get, resolver_url)
+           |> Finch.request(OpenIDHttpClient) do
       {:ok, %Finch.Response{body: body, status: 200}} ->
-        Jason.decode(body)
+        case Jason.decode(body) do
+          {:ok, %{"didDocument" => did_document}} ->
+            {:ok, did_document}
+          {:ok, did_document} ->
+            {:ok, did_document}
+          {:error, error} ->
+            {:error, error}
+        end
 
       {:ok, %Finch.Response{body: body}} ->
         {:error, body}
 
       {:error, error} ->
         {:error, inspect(error)}
+    end
+  end
+
+  def resolve(did) do
+    resolver_url = "#{did_resolver_base_url()}/identifiers/#{did}"
+
+    with {:ok, %Finch.Response{body: body, status: 200}} <- Finch.build(:get, resolver_url, [
+           {"Authorization", "Bearer #{universal_did_auth()[:token]}"}
+         ])
+         |> Finch.request(OpenIDHttpClient),
+         {:ok, %{"didDocument" => did_document}} <- Jason.decode(body) do
+      {:ok, did_document}
+
+    else
+      {:ok, %Finch.Response{body: body}} ->
+        {:error, body}
+
+      {:error, error} ->
+        {:error, inspect(error)}
+      {:ok, response} ->
+        {:error, "Invalid resolver response: \"#{inspect(response)}\""}
     end
   end
 

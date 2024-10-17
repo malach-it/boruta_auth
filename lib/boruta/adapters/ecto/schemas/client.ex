@@ -43,7 +43,8 @@ defmodule Boruta.Ecto.Client do
           userinfo_signed_response_alg: String.t() | nil,
           jwt_public_key: String.t(),
           public_key: String.t(),
-          private_key: String.t()
+          private_key: String.t(),
+          response_mode: String.t()
         }
 
   @token_endpoint_auth_methods [
@@ -61,6 +62,8 @@ defmodule Boruta.Ecto.Client do
     :HS384,
     :HS512
   ]
+
+  @response_modes ["post", "direct_post"]
 
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
@@ -93,7 +96,10 @@ defmodule Boruta.Ecto.Client do
     field(:private_key, :string)
     field(:did, :string)
 
-    field(:token_endpoint_auth_methods, {:array, :string}, default: ["client_secret_basic", "client_secret_post"])
+    field(:token_endpoint_auth_methods, {:array, :string},
+      default: ["client_secret_basic", "client_secret_post"]
+    )
+
     field(:token_endpoint_jwt_auth_alg, :string, default: "HS256")
     field(:jwt_public_key, :string)
     field(:jwk, :map, virtual: true)
@@ -103,6 +109,8 @@ defmodule Boruta.Ecto.Client do
 
     field(:logo_uri, :string)
     field(:metadata, :map, default: %{})
+
+    field(:response_mode, :string, default: "direct_post")
 
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
@@ -140,7 +148,8 @@ defmodule Boruta.Ecto.Client do
       :id_token_kid,
       :userinfo_signed_response_alg,
       :logo_uri,
-      :metadata
+      :metadata,
+      :response_mode
     ])
     |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
@@ -152,6 +161,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
+    |> validate_inclusion(:response_mode, @response_modes)
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
     |> validate_inclusion(
       :token_endpoint_jwt_auth_alg,
@@ -196,7 +206,8 @@ defmodule Boruta.Ecto.Client do
       :id_token_kid,
       :userinfo_signed_response_alg,
       :logo_uri,
-      :metadata
+      :metadata,
+      :response_mode
     ])
     |> validate_required([
       :authorization_code_ttl,
@@ -209,6 +220,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_inclusion(:access_token_ttl, 1..authorization_request_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..id_token_max_ttl())
+    |> validate_inclusion(:response_mode, @response_modes)
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
     |> validate_inclusion(
       :token_endpoint_jwt_auth_alg,
@@ -266,7 +278,11 @@ defmodule Boruta.Ecto.Client do
   defp change_authorization_request_ttl(changeset) do
     case fetch_change(changeset, :authorization_request_ttl) do
       {:ok, _authorization_request_ttl} ->
-        validate_inclusion(changeset, :authorization_request_ttl, 1..authorization_request_max_ttl())
+        validate_inclusion(
+          changeset,
+          :authorization_request_ttl,
+          1..authorization_request_max_ttl()
+        )
 
       :error ->
         put_change(changeset, :authorization_request_ttl, authorization_request_max_ttl())
@@ -398,6 +414,7 @@ defmodule Boruta.Ecto.Client do
         case Did.create("key", jwk) do
           {:ok, did} ->
             put_change(changeset, :did, did)
+
           {:error, error} ->
             add_error(changeset, :did, error)
         end

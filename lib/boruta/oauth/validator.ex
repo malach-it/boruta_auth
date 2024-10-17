@@ -69,6 +69,7 @@ defmodule Boruta.Oauth.Validator do
   def validate(:authorize, %{"response_type" => response_types} = params)
       when response_types in [
              "token",
+             "vp_token",
              "id_token",
              "id_token token",
              "code",

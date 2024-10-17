@@ -44,7 +44,9 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             code_challenge: nil,
             code_challenge_method: nil,
             authorization_details: nil,
-            issuer: nil
+            presentation_definition: nil,
+            issuer: nil,
+            response_mode: nil
 
   @type t :: %__MODULE__{
           response_types: list(String.t()),
@@ -60,7 +62,9 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           code_challenge: String.t() | nil,
           code_challenge_method: String.t() | nil,
           authorization_details: list(map()) | nil,
-          issuer: String.t() | nil
+          presentation_definition: map() | nil,
+          issuer: String.t() | nil,
+          response_mode: String.t() | nil
         }
 end
 
@@ -655,17 +659,15 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
   alias Boruta.Oauth.Token
   alias Boruta.VerifiableCredentials
 
-  def preauthorize(
-        %AuthorizationRequest{
-          client_id: client_id,
-          client_authentication: client_authentication,
-          redirect_uri: redirect_uri,
-          state: state,
-          scope: scope,
-          code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method
-        }
-      ) do
+  def preauthorize(%AuthorizationRequest{
+        client_id: client_id,
+        client_authentication: client_authentication,
+        redirect_uri: redirect_uri,
+        state: state,
+        scope: scope,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method
+      }) do
     with {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
@@ -703,7 +705,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
     end
   end
 
-  def token(_params), do: raise "Not implemented"
+  def token(_params), do: raise("Not implemented")
 
   @spec check_code_challenge(
           client :: Client.t(),
@@ -722,20 +724,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
   defp check_code_challenge(%Client{pkce: true}, _code_challenge, _code_challenge_method), do: :ok
 end
 
-defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
-  alias Boruta.ClientsAdapter
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
-  alias Boruta.Oauth.SiopV2Request
+  alias Boruta.Oauth.PresentationRequest
   alias Boruta.Oauth.Token
   alias Boruta.VerifiableCredentials
+  alias Boruta.VerifiablePresentations
 
   def preauthorize(
-        %SiopV2Request{
-          client_id: sub,
+        %PresentationRequest{
+          client_id: client_id,
+          resource_owner: resource_owner,
           redirect_uri: redirect_uri,
           state: state,
           nonce: nonce,
@@ -746,27 +749,44 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
           client_metadata: client_metadata
         } = request
       ) do
-    client = ClientsAdapter.public!()
-
-    with {:ok, scope} <-
+      with [response_type] = response_types <-
+           VerifiablePresentations.response_types(
+             scope,
+             resource_owner.presentation_configuration
+           ),
+           {:ok, client} <- Authorization.Client.authorize(
+             id: client_id,
+             source: nil,
+             redirect_uri: redirect_uri,
+             grant_type: response_type
+           ),
+         {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client}
            ),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
-         :ok <- check_client_metadata(client_metadata) do
+         :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
+         presentation_definition <-
+           VerifiablePresentations.presentation_definition(
+             resource_owner.presentation_configuration,
+             scope
+           ) do
       {:ok,
        %AuthorizationSuccess{
+         response_types: response_types,
+         presentation_definition: presentation_definition,
          redirect_uri: redirect_uri,
          client: client,
-         sub: sub,
+         sub: resource_owner.sub,
          scope: scope,
          state: state,
          nonce: nonce,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
-         authorization_details: Jason.decode!(authorization_details)
+         authorization_details: Jason.decode!(authorization_details),
+         response_mode: client.response_mode
        }}
     else
       {:error, :invalid_code_challenge} ->
@@ -785,6 +805,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
   def token(request) do
     with {:ok,
           %AuthorizationSuccess{
+            response_types: response_types,
+            presentation_definition: presentation_definition,
             redirect_uri: redirect_uri,
             client: client,
             sub: sub,
@@ -793,7 +815,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
             nonce: nonce,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
-            authorization_details: authorization_details
+            authorization_details: authorization_details,
+            response_mode: response_mode
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
@@ -806,15 +829,19 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.SiopV2Request do
                nonce: nonce,
                code_challenge: code_challenge,
                code_challenge_method: code_challenge_method,
-               authorization_details: authorization_details
+               authorization_details: authorization_details,
+               presentation_definition: presentation_definition
              }) do
-        {:ok, %{siopv2_code: code}}
+        case response_types do
+          ["id_token"] ->
+            {:ok, %{siopv2_code: code, response_mode: response_mode}}
+
+          ["vp_token"] ->
+            {:ok, %{vp_code: code, response_mode: response_mode}}
+        end
       end
     end
   end
-
-  # TODO perform client metadata checks
-  defp check_client_metadata(_client_metadata), do: :ok
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do

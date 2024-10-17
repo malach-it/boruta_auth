@@ -1,4 +1,4 @@
-defmodule Boruta.Openid.SiopV2Response do
+defmodule Boruta.Openid.VerifiablePresentationResponse do
   @moduledoc """
   Response in case of delivrance of Siop V2 flow
   """
@@ -15,18 +15,20 @@ defmodule Boruta.Openid.SiopV2Response do
     :issuer,
     :client,
     :response_mode,
-    :nonce
+    :nonce,
+    :presentation_definition
   ]
 
   defstruct client_id: nil,
             code: nil,
-            response_type: "id_token",
+            response_type: "vp_token",
             scope: nil,
             redirect_uri: nil,
             issuer: nil,
             client: nil,
             response_mode: nil,
-            nonce: nil
+            nonce: nil,
+            presentation_definition: nil
 
   @type t :: %__MODULE__{
           client_id: String.t(),
@@ -37,10 +39,11 @@ defmodule Boruta.Openid.SiopV2Response do
           issuer: String.t(),
           client: Boruta.Oauth.Client.t(),
           response_mode: String.t(),
-          nonce: String.t()
+          nonce: String.t(),
+          presentation_definition: map()
         }
 
-  def from_tokens(%{siopv2_code: code, response_mode: response_mode}, request) do
+  def from_tokens(%{vp_code: code, response_mode: response_mode}, request) do
     %__MODULE__{
       client_id: request.client_id,
       code: code,
@@ -49,7 +52,8 @@ defmodule Boruta.Openid.SiopV2Response do
       issuer: Boruta.Config.issuer(),
       client: code.client,
       response_mode: response_mode,
-      nonce: code.nonce
+      nonce: code.nonce,
+      presentation_definition: code.presentation_definition
     }
   end
 
@@ -61,6 +65,7 @@ defmodule Boruta.Openid.SiopV2Response do
         ) :: deeplink :: String.t() | {:error, reason :: String.t()}
   def redirect_to_deeplink(%__MODULE__{} = response, redirect_uri_url_fn) do
     redirect_uri = redirect_uri_url_fn.(response.code.id)
+
     claims = %{
       iss: issuer(),
       aud: response.client_id,
@@ -70,7 +75,8 @@ defmodule Boruta.Openid.SiopV2Response do
       client_id: issuer(),
       redirect_uri: redirect_uri,
       scope: "openid",
-      nonce: response.nonce
+      nonce: response.nonce,
+      presentation_definition: response.presentation_definition
     }
 
     with "" <> request <- Client.Crypto.id_token_sign(claims, response.client) do

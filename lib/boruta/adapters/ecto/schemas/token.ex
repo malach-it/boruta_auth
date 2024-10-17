@@ -56,6 +56,7 @@ defmodule Boruta.Ecto.Token do
     field(:type, :string)
     field(:value, :string)
     field(:authorization_details, {:array, :map}, default: [])
+    field(:presentation_definition, :map)
     field(:refresh_token, :string)
     field(:previous_token, :string)
     field(:previous_code, :string)
@@ -187,7 +188,8 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
-      :authorization_details
+      :authorization_details,
+      :presentation_definition
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)

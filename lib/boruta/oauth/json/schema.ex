@@ -127,10 +127,26 @@ defmodule Boruta.Oauth.Json.Schema do
         "response_type" => %{"type" => "string", "pattern" => "id_token"},
         "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
         "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
+          "type" => "string"
         },
         "state" => %{"type" => "string"},
+        "nonce" => %{"type" => "string"},
+        "redirect_uri" => %{"type" => "string"}
+      },
+      "required" => ["response_type", "client_id", "redirect_uri"]
+    }
+    |> Schema.resolve()
+  end
+
+  def vp_token do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "response_type" => %{"type" => "string", "pattern" => "vp_token"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment)$"},
+        "client_id" => %{"type" => "string"},
+        "state" => %{"type" => "string"},
+        "client_metadata" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"}
       },

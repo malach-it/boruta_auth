@@ -196,28 +196,36 @@ defmodule Boruta.VerifiableCredentials do
       error ->
         {:error, inspect(error)}
     end
-  rescue
-    error ->
-      {:error, inspect(error)}
+  # rescue
+  #   error ->
+  #     {:error, inspect(error)}
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp verify_jwt({:did, did}, alg, jwt) do
-    case Did.resolve(did) do
-      {:ok, did_document} ->
-        %{"didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} =
-          did_document
+    with {:ok, did_document} <- Did.resolve(did),
+         %{"verificationMethod" => methods} <- did_document do
 
-        signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+        Enum.reduce_while(
+          methods,
+          {:error, "no did verification method found with did #{did}."},
+          fn %{"publicKeyJwk" => jwk}, {:error, errors} ->
+            signer =
+              Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
-        case Client.Token.verify(jwt, signer) do
-          {:ok, claims} -> {:ok, jwk, claims}
-          {:error, error} -> {:error, inspect(error)}
-        end
+            case Client.Token.verify(jwt, signer) do
+              {:ok, claims} -> {:halt, {:ok, jwk, claims}}
+              {:error, error} -> {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
+            end
+          end
+        )
 
+    else
       {:error, error} ->
         {:error, error}
+      did_document ->
+        {:error, "Invalid did document: \"#{inspect(did_document)}\""}
     end
   end
 
@@ -232,6 +240,8 @@ defmodule Boruta.VerifiableCredentials do
         {:error, "Bad proof signature"}
     end
   end
+
+  defp verify_jwt(error, _alg, _jwt), do: error
 
   defp validate_proof_format(proof) do
     case ExJsonSchema.Validator.validate(
@@ -308,6 +318,21 @@ defmodule Boruta.VerifiableCredentials do
        when format in ["jwt_vc_json"] do
     client = token.client
 
+    signer =
+      Joken.Signer.create(
+        client.id_token_signature_alg,
+        %{"pem" => client.private_key},
+        %{
+          "typ" => "JWT",
+          "kid" => case client.did do
+            nil ->
+              Client.Crypto.kid_from_private_key(client.private_key)
+            did ->
+              did <> "#" <> String.replace(did, "did:key:", "")
+          end
+        }
+      )
+
     sub =
       case Joken.peek_header(proof) do
         {:ok, headers} ->
@@ -356,7 +381,7 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Client.Crypto.id_token_sign(claims, token.client)
+    credential = Token.generate_and_sign!(claims, signer)
 
     {:ok, credential}
   end
@@ -371,6 +396,17 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["jwt_vc"] do
     client = token.client
+
+    signer =
+      Joken.Signer.create(
+        client.id_token_signature_alg,
+        %{"pem" => client.private_key},
+        %{
+          "typ" => "JWT",
+          # TODO craft ebsi compliant dids
+          "kid" => client.did
+        }
+      )
 
     sub =
       case Joken.peek_header(proof) do
@@ -406,7 +442,7 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Client.Crypto.id_token_sign(claims, token.client)
+    credential = Token.generate_and_sign!(claims, signer)
 
     {:ok, credential}
   end
@@ -420,6 +456,16 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["vc+sd-jwt"] do
     client = token.client
+
+    signer =
+      Joken.Signer.create(
+        client.id_token_signature_alg,
+        %{"pem" => client.private_key},
+        %{
+          "typ" => "JWT",
+          "kid" => Client.Crypto.kid_from_private_key(client.private_key)
+        }
+      )
 
     sub =
       case Joken.peek_header(proof) do
@@ -462,7 +508,7 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Client.Crypto.id_token_sign(claims, token.client)
+    credential = Token.generate_and_sign!(claims, signer)
 
     tokens =
       [credential] ++

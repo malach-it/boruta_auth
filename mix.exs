@@ -159,7 +159,7 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.RefreshTokenRequest,
           Boruta.Oauth.RevokeRequest,
           Boruta.Oauth.TokenRequest,
-          Boruta.Oauth.SiopV2Request,
+          Boruta.Oauth.PresentationRequest,
           Boruta.Oauth.Request
         ],
         "Ecto Adapter": [

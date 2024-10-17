@@ -1,4 +1,4 @@
-defmodule Boruta.Oauth.SiopV2Request do
+defmodule Boruta.Oauth.PresentationRequest do
   @moduledoc """
   Code request
   """
@@ -8,6 +8,7 @@ defmodule Boruta.Oauth.SiopV2Request do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
+          resource_owner: Boruta.Oauth.ResourceOwner.t(),
           redirect_uri: String.t(),
           state: String.t(),
           nonce: String.t(),
@@ -23,6 +24,7 @@ defmodule Boruta.Oauth.SiopV2Request do
 
   @enforce_keys [:client_id, :redirect_uri]
   defstruct client_id: nil,
+            resource_owner: nil,
             redirect_uri: nil,
             state: "",
             nonce: "",
