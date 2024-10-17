@@ -103,7 +103,8 @@ defmodule Boruta.MixProject do
           Boruta.Openid.CredentialResponse,
           Boruta.Openid.DeferedCredentialResponse,
           Boruta.Openid.SiopV2Response,
-          Boruta.Oauth.IntrospectResponse
+          Boruta.Oauth.IntrospectResponse,
+          Boruta.Openid.VerifiablePresentationResponse
         ],
         Admin: [
           Boruta.Ecto.Admin.Tokens,
