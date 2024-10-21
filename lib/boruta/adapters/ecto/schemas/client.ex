@@ -22,6 +22,7 @@ defmodule Boruta.Ecto.Client do
   alias Boruta.Ecto.Scope
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
+  alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   @type t :: %__MODULE__{
           secret: String.t(),
@@ -65,6 +66,36 @@ defmodule Boruta.Ecto.Client do
 
   @response_modes ["post", "direct_post"]
 
+  @key_pair_type_schema %{
+    "type" => "object",
+    "properties" => %{
+      "type" => %{"type" => "string", "pattern" => "^ec|rsa"},
+      "modulus_size" => %{"type" => "string"},
+      "exponent_size" => %{"type" => "string"},
+      "curve" => %{"type" => "string", "pattern" => "^P-256|P-384|P-512"}
+    },
+    "required" => ["type"]
+  }
+
+  @key_pair_type_jwt_algs %{
+    "ec" => [
+      "ES256",
+      "ES384",
+      "ES512",
+      "HS256",
+      "HS384",
+      "HS512"
+    ],
+    "rsa" => [
+      "RS256",
+      "RS384",
+      "RS512",
+      "HS256",
+      "HS384",
+      "HS512"
+    ]
+  }
+
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
@@ -91,6 +122,14 @@ defmodule Boruta.Ecto.Client do
 
     field(:id_token_signature_alg, :string, default: "RS512")
     field(:id_token_kid, :string)
+
+    field(:key_pair_type, :map,
+      default: %{
+        "type" => "rsa",
+        "modulus_size" => "1024",
+        "exponent_size" => "65537"
+      }
+    )
 
     field(:public_key, :string)
     field(:private_key, :string)
@@ -149,9 +188,10 @@ defmodule Boruta.Ecto.Client do
       :userinfo_signed_response_alg,
       :logo_uri,
       :metadata,
-      :response_mode
+      :response_mode,
+      :key_pair_type
     ])
-    |> validate_required([:redirect_uris])
+    |> validate_required([:redirect_uris, :key_pair_type])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_authorization_code_ttl()
@@ -173,6 +213,7 @@ defmodule Boruta.Ecto.Client do
     )
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
     |> translate_jwk()
+    |> validate_key_pair_type()
     |> generate_key_pair()
     |> put_secret()
     |> validate_required(:secret)
@@ -207,13 +248,15 @@ defmodule Boruta.Ecto.Client do
       :userinfo_signed_response_alg,
       :logo_uri,
       :metadata,
-      :response_mode
+      :response_mode,
+      :key_pair_type
     ])
     |> validate_required([
       :authorization_code_ttl,
       :access_token_ttl,
       :refresh_token_ttl,
-      :id_token_ttl
+      :id_token_ttl,
+      :key_pair_type
     ])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
@@ -234,6 +277,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+    |> validate_key_pair_type()
     |> translate_jwk()
   end
 
@@ -309,6 +353,30 @@ defmodule Boruta.Ecto.Client do
     end
   end
 
+  defp validate_key_pair_type(changeset) do
+    key_pair_type = get_field(changeset, :key_pair_type)
+
+    case ExJsonSchema.Validator.validate(
+           @key_pair_type_schema,
+           key_pair_type,
+           error_formatter: BorutaFormatter
+         ) do
+      :ok ->
+        changeset
+        |> validate_inclusion(
+          :id_token_signature_alg,
+          @key_pair_type_jwt_algs[key_pair_type["type"]]
+        )
+        |> validate_inclusion(
+          :userinfo_signed_response_alg,
+          @key_pair_type_jwt_algs[key_pair_type["type"]]
+        )
+
+      {:error, errors} ->
+        add_error(changeset, :key_pair_type, "validation failed: #{Enum.join(errors, " ")}")
+    end
+  end
+
   defp validate_redirect_uris(changeset) do
     validate_change(changeset, :redirect_uris, fn field, values ->
       Enum.map(values, &validate_uri/1)
@@ -379,15 +447,34 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp generate_key_pair(changeset) do
-    private_key = JOSE.JWK.generate_key({:rsa, 1024, 65_537})
-    public_key = JOSE.JWK.to_public(private_key)
+    private_key =
+      case get_field(changeset, :key_pair_type) do
+        %{"type" => "rsa", "modulus_size" => modulus_size, "exponent_size" => exponent_size} ->
+          JOSE.JWK.generate_key(
+            {:rsa, String.to_integer(modulus_size), String.to_integer(exponent_size)}
+          )
 
-    {_type, public_pem} = JOSE.JWK.to_pem(public_key)
-    {_type, private_pem} = JOSE.JWK.to_pem(private_key)
+        %{"type" => "ec", "curve" => curve} ->
+          JOSE.JWK.generate_key({:ec, curve})
 
-    changeset
-    |> put_change(:public_key, public_pem)
-    |> put_change(:private_key, private_pem)
+        _ ->
+          nil
+      end
+
+    case private_key do
+      nil ->
+        add_error(changeset, :private_key, "private_key_type is invalid")
+
+      private_key ->
+        public_key = JOSE.JWK.to_public(private_key)
+
+        {_type, public_pem} = JOSE.JWK.to_pem(public_key)
+        {_type, private_pem} = JOSE.JWK.to_pem(private_key)
+
+        changeset
+        |> put_change(:public_key, public_pem)
+        |> put_change(:private_key, private_pem)
+    end
   end
 
   defp put_secret(%Ecto.Changeset{data: data, changes: changes} = changeset) do
