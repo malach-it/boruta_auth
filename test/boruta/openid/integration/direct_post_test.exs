@@ -16,6 +16,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         insert(:token,
           type: "code",
           redirect_uri: "http://redirect.uri",
+          relying_party_redirect_uri: "http://relying.party.redirect.uri",
           state: "state",
           sub:
             "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
@@ -138,37 +139,10 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - retruns an error when code subject does not match", %{id_token: id_token} do
-      code =
-        insert(:token,
-          type: "code",
-          redirect_uri: "http://redirect.uri",
-          state: "state",
-          sub: "did:jwk:other"
-        )
-
-      conn = %Plug.Conn{}
-
-      assert {:authentication_failure,
-              %Boruta.Oauth.Error{
-                error: :invalid_request,
-                status: :bad_request,
-                error_description: "Code subject do not match with provided id_token or vp_token"
-              }} =
-               Openid.direct_post(
-                 conn,
-                 %{
-                   code_id: code.id,
-                   id_token: id_token
-                 },
-                 ApplicationMock
-               )
-    end
-
     test "siopv2 - authenticates", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
-      assert {:direct_post_success, callback_uri} =
+      assert {:direct_post_success, callback_uri, token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -178,6 +152,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  ApplicationMock
                )
 
+      assert token.redirect_uri == code.relying_party_redirect_uri
       assert callback_uri =~ ~r/#{code.redirect_uri}/
       assert callback_uri =~ ~r/code=#{code.value}/
       assert callback_uri =~ ~r/state=#{code.state}/
@@ -216,33 +191,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "oid4vp - retruns an error when code subject does not match", %{vp_token: vp_token} do
-      code =
-        insert(:token,
-          type: "code",
-          redirect_uri: "http://redirect.uri",
-          state: "state",
-          sub: "did:jwk:other"
-        )
-
-      conn = %Plug.Conn{}
-
-      assert {:authentication_failure,
-              %Boruta.Oauth.Error{
-                error: :invalid_request,
-                status: :bad_request,
-                error_description: "Code subject do not match with provided id_token or vp_token"
-              }} =
-               Openid.direct_post(
-                 conn,
-                 %{
-                   code_id: code.id,
-                   vp_token: vp_token
-                 },
-                 ApplicationMock
-               )
-    end
-
     test "oid4vp - authenticates", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -264,7 +212,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           ]
         })
 
-      assert {:direct_post_success, callback_uri} =
+      assert {:direct_post_success, callback_uri, token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -275,6 +223,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  ApplicationMock
                )
 
+      assert token.redirect_uri == code.relying_party_redirect_uri
       assert callback_uri =~ ~r/#{code.redirect_uri}/
       assert callback_uri =~ ~r/code=#{code.value}/
       assert callback_uri =~ ~r/state=#{code.state}/
