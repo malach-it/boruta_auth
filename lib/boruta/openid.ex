@@ -147,25 +147,24 @@ defmodule Boruta.Openid do
           module :: atom()
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
-    with {:ok, claims} <- check_id_token_client(direct_post_params),
+    with {:ok, _claims} <- check_id_token_client(direct_post_params),
          %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
-      with :ok <- check_issuer(claims, code),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
-        query =
-          %{
-            code: code.value,
-            state: code.state
-          }
-          |> URI.encode_query()
+      case maybe_check_presentation(direct_post_params, code.presentation_definition) do
+        :ok ->
+          query =
+            %{
+              code: code.value,
+              state: code.state
+            }
+            |> URI.encode_query()
 
-        response = URI.parse(code.redirect_uri)
+          response = URI.parse(code.redirect_uri)
 
-        response =
-          %{response | host: response.host || "", query: query}
-          |> URI.to_string()
+          response =
+            %{response | host: response.host || "", query: query}
+            |> URI.to_string()
 
-        module.direct_post_success(conn, response)
-      else
+          module.direct_post_success(conn, response)
         {:error, error} ->
           module.authentication_failure(conn, %{error | redirect_uri: code.redirect_uri, state: code.state})
       end
@@ -216,22 +215,6 @@ defmodule Boruta.Openid do
          error: :unauthorized,
          error_description: "id_token or vp_token param missing."
        }}
-
-  defp check_issuer(claims, code) do
-    case claims["iss"] == code.sub do
-      true ->
-        :ok
-
-      false ->
-        {:error,
-         %Error{
-           error: :invalid_request,
-           format: :query,
-           status: :bad_request,
-           error_description: "Code subject do not match with provided id_token or vp_token"
-         }}
-    end
-  end
 
   defp maybe_check_presentation(
          %{vp_token: vp_token, presentation_submission: presentation_submission},

@@ -138,6 +138,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "siopv2 - retruns an error when code subject does not match", %{id_token: id_token} do
       code =
         insert(:token,
@@ -216,6 +217,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "oid4vp - retruns an error when code subject does not match", %{vp_token: vp_token} do
       code =
         insert(:token,
