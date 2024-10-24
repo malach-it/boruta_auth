@@ -8,9 +8,15 @@ defmodule Boruta.Oauth.IdToken do
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
 
-  @type claims :: %{
-          String.t() => String.t() | claims()
-        }
+  @type claim_definition :: map()
+
+  @type claims ::
+          %{
+            String.t() => term() | claims()
+          }
+          | %{
+              String.t() => claim_definition() | claims()
+            }
 
   @type tokens :: %{
           optional(:code) => %Oauth.Token{
@@ -78,7 +84,7 @@ defmodule Boruta.Oauth.IdToken do
       end
 
     resource_owners().claims(resource_owner, scope)
-    |> Map.merge(resource_owner.extra_claims)
+    |> Map.merge(format_claims(resource_owner.extra_claims))
     |> Map.put("sub", sub)
     |> Map.put("iss", issuer())
     |> Map.put("aud", client.id)
@@ -87,4 +93,28 @@ defmodule Boruta.Oauth.IdToken do
     |> Map.put("exp", iat + client.id_token_ttl)
     |> Map.put("nonce", nonce)
   end
+
+  @doc """
+  Format claims according to either a claim value or a claim definition.
+
+  Claim definitions contain the "display" and "value" reserved words helping the formatting.
+  """
+  @spec format_claims(claims :: claims()) :: claims()
+  def format_claims(claims) do
+    Enum.map(claims, &format_claim/1)
+    |> Enum.into(%{})
+  end
+
+  defp format_claim({key, %{"value" => value} = claim}) do
+    case claim["display"] do
+      nil ->
+        {key, value}
+      [] ->
+        {key, value}
+      attributes ->
+        {key, Map.take(claim, ["value"] ++ attributes)}
+    end
+  end
+
+  defp format_claim(claim), do: claim
 end

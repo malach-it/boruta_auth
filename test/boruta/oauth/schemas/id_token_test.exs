@@ -573,6 +573,54 @@ defmodule Boruta.Oauth.IdTokenTest do
     end
   end
 
+  describe "format_claims/1" do
+    test "returns claims with json values" do
+      claims = %{
+        "boolean" => true,
+        "string" => "true"
+      }
+
+      assert IdToken.format_claims(claims) == claims
+    end
+
+    test "returns claims with claims definition but display" do
+      claims = %{
+        "boolean" => %{"value" => true},
+        "string" => %{"value" => "true"}
+      }
+
+      assert IdToken.format_claims(claims) == %{
+        "boolean" => true,
+        "string" => "true"
+      }
+    end
+
+    test "returns claims with claims definition and empty display" do
+      claims = %{
+        "boolean" => %{"value" => true, "display" => []},
+        "string" => %{"value" => "true", "display" => []}
+      }
+
+      assert IdToken.format_claims(claims) == %{
+        "boolean" => true,
+        "string" => "true"
+      }
+    end
+
+    test "returns claims with claims definition and display" do
+      claims = %{
+        "boolean" => %{"value" => true, "status" => "suspended", "display" => ["status"]},
+        "string" => %{"value" => "true", "status" => "valid", "display" => ["status"]}
+      }
+
+      assert IdToken.format_claims(claims) == %{
+        "boolean" => %{"value" => true, "status" => "suspended"},
+        "string" => %{"value" => "true", "status" => "valid"}
+      }
+
+    end
+  end
+
   def build_client do
     %Client{
       id: "client_id",

@@ -7,6 +7,7 @@ defmodule Boruta.Oauth.Token do
 
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
 
@@ -151,6 +152,7 @@ defmodule Boruta.Oauth.Token do
     userinfo =
       resource_owner
       |> resource_owners().claims(scope)
+      |> Map.merge(IdToken.format_claims(resource_owner.extra_claims))
       |> Map.put(:sub, resource_owner.sub)
 
     {:ok, userinfo}
