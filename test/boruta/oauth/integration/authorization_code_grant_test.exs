@@ -1739,6 +1739,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            resource_owner
            | extra_claims: %{
                "term" => true,
+               "hide" => %{"display" => false, "hide" => true},
+               "hide_value" => %{"display" => false, "hide" => true},
                "value" => %{"value" => true},
                "display" => %{"value" => true, "display" => []},
                "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}

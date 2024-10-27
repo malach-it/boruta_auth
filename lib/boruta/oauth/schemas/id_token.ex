@@ -102,11 +102,16 @@ defmodule Boruta.Oauth.IdToken do
   @spec format_claims(claims :: claims()) :: claims()
   def format_claims(claims) do
     Enum.map(claims, &format_claim/1)
+    |> Enum.reject(&is_nil/1)
     |> Enum.into(%{})
   end
 
+  defp format_claim({_key, %{"display" => false}}), do: nil
+
   defp format_claim({key, %{"value" => value} = claim}) do
     case claim["display"] do
+      false ->
+        nil
       nil ->
         {key, value}
       [] ->

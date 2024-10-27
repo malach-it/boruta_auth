@@ -517,7 +517,15 @@ defmodule Boruta.Oauth.IdTokenTest do
       client = %{build_client() | id_token_signature_alg: "HS512"}
       inserted_at = DateTime.utc_now()
       last_login_at = DateTime.utc_now()
-      resource_owner = %{resource_owner | last_login_at: last_login_at}
+      resource_owner = %{resource_owner | last_login_at: last_login_at,
+            extra_claims: %{
+               "term" => true,
+               "hide" => %{"display" => false, "hide" => true},
+               "value" => %{"value" => true},
+               "display" => %{"value" => true, "display" => []},
+               "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
+             }
+      }
 
       code = %Token{
         type: "code",
@@ -565,7 +573,11 @@ defmodule Boruta.Oauth.IdTokenTest do
                "at_hash" => at_hash,
                "c_hash" => c_hash,
                "auth_time" => ^auth_time,
-               "resource_owner_claim" => "claim"
+               "resource_owner_claim" => "claim",
+                   "display" => true,
+                   "status" => %{"status" => "suspended", "value" => true},
+                   "term" => true,
+                   "value" => true
              } = claims
 
       assert at_hash == "7CyD7ey2AwTRVOvbhb369hqSvRQuccT3sloVuctfPAo"
@@ -618,6 +630,15 @@ defmodule Boruta.Oauth.IdTokenTest do
         "string" => %{"value" => "true", "status" => "valid"}
       }
 
+    end
+
+    test "returns claims without hidden values" do
+      claims = %{
+        "hide" => %{"display" => false, "hide" => true},
+        "hide_value" => %{"display" => false, "hide" => true},
+      }
+
+      assert IdToken.format_claims(claims) == %{}
     end
   end
 

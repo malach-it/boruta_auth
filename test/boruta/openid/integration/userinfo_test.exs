@@ -82,6 +82,8 @@ defmodule Boruta.OpenidTest.UserinfoTest do
            sub: sub,
            extra_claims: %{
              "term" => true,
+             "hide" => %{"display" => false, "hide" => true},
+             "hide_value" => %{"display" => false, "value" => "hide"},
              "value" => %{"value" => true},
              "display" => %{"value" => true, "display" => []},
              "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
