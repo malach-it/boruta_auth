@@ -32,7 +32,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
   describe "authorization code grant - authorize" do
     setup do
       public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
-      {:ok, _client} = Ecto.Admin.update_client(public_client, %{supported_grant_types: Oauth.Client.grant_types()})
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          supported_grant_types: Oauth.Client.grant_types()
+        })
+
       Ecto.ClientStore.invalidate_public()
 
       user = %User{}
@@ -786,7 +791,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                },
                resource_owner,
                ApplicationMock
-             ) == {:authorize_error,
+             ) ==
+               {:authorize_error,
                 %Boruta.Oauth.Error{
                   error: :invalid_request,
                   error_description: "Authorization request is expired.",
@@ -943,7 +949,9 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert issuer == Boruta.Config.issuer()
       assert client.public_client_id == Boruta.Config.issuer()
-      assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~ ~r"#{redirect_uri}"
+
+      assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
+               ~r"#{redirect_uri}"
     end
 
     test "returns a code with siopv2 (post)" do
@@ -984,6 +992,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code with verifiable presentation (direct_post)" do
       redirect_uri = "openid:"
       insert(:scope, name: "vp_token", public: true)
+
       resource_owner = %ResourceOwner{
         sub: "did:key:test",
         presentation_configuration: %{
@@ -1022,13 +1031,16 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert issuer == Boruta.Config.issuer()
       assert client.public_client_id == Boruta.Config.issuer()
-      assert VerifiablePresentationResponse.redirect_to_deeplink(response, fn code -> code end) =~ ~r"#{redirect_uri}"
+
+      assert VerifiablePresentationResponse.redirect_to_deeplink(response, fn code -> code end) =~
+               ~r"#{redirect_uri}"
     end
 
     test "returns a code with verifiable presentation (post)" do
       redirect_uri = "openid://"
       client = insert(:client, response_mode: "post", redirect_uris: [redirect_uri])
       insert(:scope, name: "vp_token", public: true)
+
       resource_owner = %ResourceOwner{
         sub: "did:key:test",
         presentation_configuration: %{
@@ -1721,7 +1733,18 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 2, fn _params ->
+        {:ok,
+         %{
+           resource_owner
+           | extra_claims: %{
+               "term" => true,
+               "value" => %{"value" => true},
+               "display" => %{"value" => true, "display" => []},
+               "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
+             }
+         }}
+      end)
       |> expect(:claims, fn _sub, _scope -> %{} end)
 
       redirect_uri = List.first(client.redirect_uris)
@@ -1764,7 +1787,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    "iat" => _iat,
                    "exp" => _exp,
                    "sub" => ^resource_owner_id,
-                   "nonce" => ^nonce
+                   "nonce" => ^nonce,
+                   "display" => true,
+                   "status" => %{"status" => "suspended", "value" => true},
+                   "term" => true,
+                   "value" => true
                  } = claims
 
         _ ->
@@ -2083,22 +2110,23 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a token with siopv2", %{siopv2_code: code} do
       assert {:token_success,
-         %TokenResponse{
-           token_type: _token_type,
-           access_token: _access_token,
-           expires_in: _expires_in,
-           refresh_token: _refresh_token
-         }} = Oauth.token(
-             %Plug.Conn{
-               body_params: %{
-                 "grant_type" => "authorization_code",
-                 "client_id" => "did:key:test",
-                 "code" => code.value,
-                 "client_metadata" => "{}"
-               }
-             },
-             ApplicationMock
-           )
+              %TokenResponse{
+                token_type: _token_type,
+                access_token: _access_token,
+                expires_in: _expires_in,
+                refresh_token: _refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => "did:key:test",
+                     "code" => code.value,
+                     "client_metadata" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
     end
   end
 

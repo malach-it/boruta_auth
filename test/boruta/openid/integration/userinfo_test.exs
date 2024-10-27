@@ -77,7 +77,16 @@ defmodule Boruta.OpenidTest.UserinfoTest do
         |> put_req_header("authorization", "Bearer #{access_token}")
 
       expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
-        {:ok, %ResourceOwner{sub: sub}}
+        {:ok,
+         %ResourceOwner{
+           sub: sub,
+           extra_claims: %{
+             "term" => true,
+             "value" => %{"value" => true},
+             "display" => %{"value" => true, "display" => []},
+             "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
+           }
+         }}
       end)
 
       expect(Boruta.Support.ResourceOwners, :claims, fn %ResourceOwner{sub: ^sub}, _scope ->
@@ -86,9 +95,18 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       assert {:userinfo_fetched,
               %UserinfoResponse{
-                userinfo: %{:sub => ^sub, "claim" => true},
+                userinfo: userinfo,
                 format: :json
               }} = Openid.userinfo(conn, ApplicationMock)
+
+      assert userinfo == %{
+               :sub => sub,
+               "claim" => true,
+               "display" => true,
+               "status" => %{"status" => "suspended", "value" => true},
+               "term" => true,
+               "value" => true
+             }
     end
   end
 
@@ -154,7 +172,9 @@ defmodule Boruta.OpenidTest.UserinfoTest do
       sub = SecureRandom.uuid()
       claims = %{"claim" => true}
       %Token{client: client, value: access_token} = insert(:token, sub: sub)
-      {:ok, _client} = Ecto.Changeset.change(client, %{userinfo_signed_response_alg: "HS512"}) |> Repo.update()
+
+      {:ok, _client} =
+        Ecto.Changeset.change(client, %{userinfo_signed_response_alg: "HS512"}) |> Repo.update()
 
       conn = %Plug.Conn{body_params: %{"access_token" => access_token}}
 
