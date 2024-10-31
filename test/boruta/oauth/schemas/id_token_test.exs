@@ -19,6 +19,10 @@ defmodule Boruta.Oauth.IdTokenTest do
       claims
     end)
 
+    stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+      {:ok, []}
+    end)
+
     {:ok, resource_owner: resource_owner, claims: claims}
   end
 
