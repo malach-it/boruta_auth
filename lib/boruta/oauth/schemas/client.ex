@@ -201,6 +201,8 @@ defmodule Boruta.Oauth.Client do
   defmodule Crypto do
     @moduledoc false
 
+    import Boruta.Config, only: [resource_owners: 0]
+
     alias Boruta.Oauth.Client
 
     @signature_algorithms [
@@ -248,25 +250,31 @@ defmodule Boruta.Oauth.Client do
             secret: secret
           } = client
         ) do
-      signer =
-        case id_token_signature_type(client) do
-          :symmetric ->
-            Joken.Signer.create(signature_alg, secret)
+      with {:ok, trust_chain} <- resource_owners().trust_chain(client) do
+        signer =
+          case id_token_signature_type(client) do
+            :symmetric ->
+              Joken.Signer.create(signature_alg, secret)
 
-          :asymmetric ->
-            Joken.Signer.create(
-              signature_alg,
-              %{"pem" => private_key},
-              %{"kid" => id_token_kid || kid_from_private_key(private_key)}
-            )
+            :asymmetric ->
+              Joken.Signer.create(
+                signature_alg,
+                %{"pem" => private_key},
+                %{
+                  "kid" => id_token_kid || kid_from_private_key(private_key),
+                  "trust_chain" => trust_chain
+                }
+              )
+          end
+
+        case Token.encode_and_sign(payload, signer) do
+          {:ok, token, _payload} ->
+            token
+
+          {:error, error} ->
+            {:error,
+             "Could not sign the given payload with client credentials: #{inspect(error)}"}
         end
-
-      case Token.encode_and_sign(payload, signer) do
-        {:ok, token, _payload} ->
-          token
-
-        {:error, error} ->
-          {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
       end
     end
 

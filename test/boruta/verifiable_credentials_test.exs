@@ -2,6 +2,7 @@ defmodule Boruta.VerifiableCredentialsTest do
   use Boruta.DataCase, async: true
 
   import Boruta.Factory
+  import Mox
 
   alias Boruta.Config
   alias Boruta.Oauth.ResourceOwner
@@ -9,6 +10,10 @@ defmodule Boruta.VerifiableCredentialsTest do
 
   describe "issue_verifiable_credential/4" do
     setup do
+      stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+        {:ok, []}
+      end)
+
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
           "kid" => "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",

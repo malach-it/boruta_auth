@@ -17,6 +17,14 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
   setup :verify_on_exit!
 
+  setup do
+    stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+      {:ok, []}
+    end)
+
+    :ok
+  end
+
   describe "deliver verifiable credentials" do
     test "returns an error with no access token" do
       conn = %Plug.Conn{}
