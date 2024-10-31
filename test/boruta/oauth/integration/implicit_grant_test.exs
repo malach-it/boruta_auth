@@ -387,6 +387,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
       |> expect(:claims, fn _sub, _scope -> %{} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -471,6 +472,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
       |> expect(:claims, fn _sub, _scope -> %{} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
