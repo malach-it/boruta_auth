@@ -6,7 +6,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   alias Boruta.ClientsAdapter
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
-  alias Boruta.VerifiablePresentations
+  alias Boruta.Openid.VerifiablePresentations
 
   describe "authenticates with direct post response" do
     setup do

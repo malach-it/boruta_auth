@@ -1,5 +1,5 @@
-defmodule Boruta.VerifiablePresentationsTest do
-  alias Boruta.VerifiablePresentations
+defmodule Boruta.Openid.VerifiablePresentationsTest do
+  alias Boruta.Openid.VerifiablePresentations
   use ExUnit.Case
 
   describe "validate_presentation/3" do
