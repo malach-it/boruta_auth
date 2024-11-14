@@ -15,7 +15,8 @@ defmodule Boruta.Config do
       resource_owners: MyApp.ResourceOwners, # mandatory for user flows
       scopes: Boruta.Ecto.Scopes,
       requests: Boruta.Ecto.Requests,
-      credentials: Boruta.Ecto.Credentials
+      credentials: Boruta.Ecto.Credentials,
+      signatures: Boruta.Internal.Signatures
     ],
     max_ttl: [
       authorization_code: 60,
@@ -46,7 +47,8 @@ defmodule Boruta.Config do
               resource_owners: nil,
               scopes: Boruta.Ecto.Scopes,
               requests: Boruta.Ecto.Requests,
-              credentials: Boruta.Ecto.Credentials
+              credentials: Boruta.Ecto.Credentials,
+              signatures: Boruta.Internal.Signatures
             ],
             max_ttl: [
               authorization_request: 300,
@@ -153,6 +155,12 @@ defmodule Boruta.Config do
   @doc false
   def credentials do
     Keyword.fetch!(oauth_config(), :contexts)[:credentials]
+  end
+
+  @spec signatures() :: module()
+  @doc false
+  def signatures do
+    Keyword.fetch!(oauth_config(), :contexts)[:signatures]
   end
 
   @spec resource_owners() :: module()

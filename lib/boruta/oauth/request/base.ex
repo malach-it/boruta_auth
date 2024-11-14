@@ -15,8 +15,8 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.RevokeRequest
   alias Boruta.Oauth.TokenRequest
+  alias Boruta.Openid.VerifiableCredentials
   alias Boruta.RequestsAdapter
-  alias Boruta.VerifiableCredentials
 
   @spec authorization_header(req_headers :: list()) ::
           {:ok, header :: String.t()}

@@ -1,4 +1,4 @@
-defmodule Boruta.VerifiableCredentials do
+defmodule Boruta.Openid.VerifiableCredentials do
   defmodule Hotp do
     @moduledoc """
     Implements HOTP generation as described in the IETF RFC
@@ -47,6 +47,7 @@ defmodule Boruta.VerifiableCredentials do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Openid.Credential
+  alias Boruta.SignaturesAdapter
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
@@ -105,7 +106,7 @@ defmodule Boruta.VerifiableCredentials do
           credential_params :: map(),
           token :: Boruta.Oauth.Token.t(),
           default_credential_configuration :: map()
-        ) :: {:ok, map()} | {:error, String.t()}
+        ) :: {:ok, credential :: Credential.t()} | {:error, reason :: String.t()}
   def issue_verifiable_credential(
         resource_owner,
         credential_params,
@@ -338,23 +339,6 @@ defmodule Boruta.VerifiableCredentials do
        when format in ["jwt_vc_json"] do
     client = token.client
 
-    signer =
-      Joken.Signer.create(
-        client.id_token_signature_alg,
-        %{"pem" => client.private_key},
-        %{
-          "typ" => "JWT",
-          "kid" =>
-            case client.did do
-              nil ->
-                Client.Crypto.kid_from_private_key(client.private_key)
-
-              did ->
-                did <> "#" <> String.replace(did, "did:key:", "")
-            end
-        }
-      )
-
     sub =
       case Joken.peek_header(proof) do
         {:ok, headers} ->
@@ -363,10 +347,8 @@ defmodule Boruta.VerifiableCredentials do
           end
       end
 
-    credential_id = SecureRandom.uuid()
-
     now = :os.system_time(:seconds)
-
+    credential_id = SecureRandom.uuid()
     sub = sub |> String.split("#") |> List.first()
     iss = case client.did do
       nil ->
@@ -375,7 +357,7 @@ defmodule Boruta.VerifiableCredentials do
         did |> String.split("#") |> List.first()
     end
 
-    claims = %{
+    payload = %{
       "sub" => sub,
       # TODO store credential
       "jti" => Config.issuer() <> "/credentials/#{credential_id}",
@@ -411,9 +393,13 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Token.generate_and_sign!(claims, signer)
+    case SignaturesAdapter.verifiable_credential_sign(payload, client) do
+      {:error, error} ->
+        {:error, error}
 
-    {:ok, credential}
+      credential ->
+        {:ok, credential}
+    end
   end
 
   # https://www.w3.org/TR/vc-data-model-2.0/
@@ -427,17 +413,6 @@ defmodule Boruta.VerifiableCredentials do
        when format in ["jwt_vc"] do
     client = token.client
 
-    signer =
-      Joken.Signer.create(
-        client.id_token_signature_alg,
-        %{"pem" => client.private_key},
-        %{
-          "typ" => "JWT",
-          # TODO craft ebsi compliant dids
-          "kid" => client.did
-        }
-      )
-
     sub =
       case Joken.peek_header(proof) do
         {:ok, headers} ->
@@ -448,7 +423,7 @@ defmodule Boruta.VerifiableCredentials do
 
     credential_id = SecureRandom.uuid()
 
-    claims = %{
+    payload = %{
       "@context" => [
         "https://www.w3.org/ns/credentials/v2",
         "https://www.w3.org/ns/credentials/examples/v2"
@@ -472,9 +447,13 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Token.generate_and_sign!(claims, signer)
+    case SignaturesAdapter.verifiable_credential_sign(payload, client) do
+      {:error, error} ->
+        {:error, error}
 
-    {:ok, credential}
+      credential ->
+        {:ok, credential}
+    end
   end
 
   defp generate_credential(
@@ -486,16 +465,6 @@ defmodule Boruta.VerifiableCredentials do
        )
        when format in ["vc+sd-jwt"] do
     client = token.client
-
-    signer =
-      Joken.Signer.create(
-        client.id_token_signature_alg,
-        %{"pem" => client.private_key},
-        %{
-          "typ" => "dc+sd-jwt",
-          "kid" => client.did || Client.Crypto.kid_from_private_key(client.private_key)
-        }
-      )
 
     sub =
       case Joken.peek_header(proof) do
@@ -532,7 +501,7 @@ defmodule Boruta.VerifiableCredentials do
         did |> String.split("#") |> List.first()
     end
 
-    claims = %{
+    payload = %{
       "sub" => sub,
       "iss" => iss,
       "vct" => credential_configuration[:vct],
@@ -545,15 +514,19 @@ defmodule Boruta.VerifiableCredentials do
       }
     }
 
-    credential = Token.generate_and_sign!(claims, signer)
+    case SignaturesAdapter.verifiable_credential_sign(payload, client) do
+      {:error, error} ->
+        {:error, error}
 
-    tokens =
-      [credential] ++
-        (disclosures
-         |> Enum.map(&Jason.encode!/1)
-         |> Enum.map(&Base.url_encode64(&1, padding: false)))
+      credential ->
+        tokens =
+          [credential] ++
+            (disclosures
+             |> Enum.map(&Jason.encode!/1)
+             |> Enum.map(&Base.url_encode64(&1, padding: false)))
 
-    {:ok, Enum.join(tokens, "~") <> "~"}
+        {:ok, Enum.join(tokens, "~") <> "~"}
+    end
   end
 
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
