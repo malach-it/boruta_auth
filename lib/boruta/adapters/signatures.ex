@@ -31,8 +31,8 @@ defmodule Boruta.SignaturesAdapter do
   def userinfo_sign(payload, client), do: signatures().userinfo_sign(payload, client)
 
   @impl Boruta.Openid.Signatures
-  def verifiable_credential_sign(payload, client),
-    do: signatures().verifiable_credential_sign(payload, client)
+  def verifiable_credential_sign(payload, client, format),
+    do: signatures().verifiable_credential_sign(payload, client, format)
 
   @impl Boruta.Oauth.Signatures
   def kid_from_private_key(private_pem), do: signatures().kid_from_private_key(private_pem)
