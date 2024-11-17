@@ -108,18 +108,12 @@ defmodule Boruta.Oauth.IdToken do
 
   defp format_claim({_key, %{"display" => false}}), do: nil
 
-  defp format_claim({key, %{"value" => value} = claim}) do
-    case claim["display"] do
-      false ->
-        nil
-      nil ->
-        {key, value}
-      [] ->
-        {key, value}
-      attributes ->
-        {key, Map.take(claim, ["value"] ++ attributes)}
-    end
-  end
+  defp format_claim({key, %{"display" => []} = value}), do: {key, value["value"]}
+
+  defp format_claim({key, %{"display" => attributes} = value}) when is_list(attributes),
+    do: {key, Map.take(value, ["value"] ++ attributes)}
+
+  defp format_claim({key, %{"value" => value}}), do: {key, value}
 
   defp format_claim(claim), do: claim
 end
