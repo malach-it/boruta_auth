@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `Boruta.Oauth.IdToken.generate/2` returns a tuple
+- `Boruta.Oauth.ResourceOwners.get_by/1` is invoked with token scope as additional parameter
 
 ## [3.0.0-beta.2] - 2024-10-17
 

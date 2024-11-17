@@ -25,7 +25,7 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
       token.resource_owner ||
         with "" <> sub <- token.sub,
              false <- Regex.match?(~r/^did\:/, sub),
-             {:ok, resource_owner} <- resource_owners().get_by(sub: sub) do
+             {:ok, resource_owner} <- resource_owners().get_by(sub: sub, scope: token.scope) do
           resource_owner
         else
           # NOTE resource owner is public (sub is a did)

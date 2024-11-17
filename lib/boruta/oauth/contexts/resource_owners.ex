@@ -8,7 +8,10 @@ defmodule Boruta.Oauth.ResourceOwners do
   @doc """
   Returns a resource owner by (username) or (id).
   """
-  @callback get_by([username: String.t()] | [sub: String.t()]) ::
+  @callback get_by(
+              [username: String.t()]
+              | [sub: String.t(), scope: String.t()]
+            ) ::
               {:ok, resource_owner :: ResourceOwner.t()} | {:error, String.t()}
 
   @doc """
@@ -25,7 +28,8 @@ defmodule Boruta.Oauth.ResourceOwners do
   @doc """
   Returns `id_token` identity claims for the given resource owner. Those claims will be present in resulting `id_token` of OpenID Connect flows.
   """
-  @callback claims(resource_owner :: ResourceOwner.t(), scope :: String.t()) :: claims :: Boruta.Oauth.IdToken.claims()
+  @callback claims(resource_owner :: ResourceOwner.t(), scope :: String.t()) ::
+              claims :: Boruta.Oauth.IdToken.claims()
 
   @optional_callbacks claims: 2
 end

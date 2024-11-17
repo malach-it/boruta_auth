@@ -82,7 +82,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       sub = SecureRandom.uuid()
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok, %ResourceOwner{sub: sub}}
       end)
 
@@ -127,7 +127,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
       credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
       sub = SecureRandom.uuid()
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok,
          %ResourceOwner{
            sub: sub,
@@ -232,7 +232,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       sub = SecureRandom.uuid()
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok, %ResourceOwner{sub: sub}}
       end)
 
@@ -277,7 +277,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
       credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
       sub = SecureRandom.uuid()
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok,
          %ResourceOwner{
            sub: sub,
@@ -341,7 +341,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
       credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
       sub = SecureRandom.uuid()
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok,
          %ResourceOwner{
            sub: sub,

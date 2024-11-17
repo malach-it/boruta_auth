@@ -76,7 +76,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
         %Plug.Conn{}
         |> put_req_header("authorization", "Bearer #{access_token}")
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok,
          %ResourceOwner{
            sub: sub,
@@ -155,7 +155,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       conn = %Plug.Conn{body_params: %{"access_token" => access_token}}
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok, %ResourceOwner{sub: sub}}
       end)
 
@@ -180,7 +180,7 @@ defmodule Boruta.OpenidTest.UserinfoTest do
 
       conn = %Plug.Conn{body_params: %{"access_token" => access_token}}
 
-      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub ->
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
         {:ok, %ResourceOwner{sub: sub}}
       end)
 
