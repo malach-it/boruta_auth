@@ -1,4 +1,4 @@
-defmodule Boruta.Internal.Signatures.KeyPair do
+defmodule Boruta.Internal.Signatures.SigningKey do
   @moduledoc false
 
   @enforce_keys [:type]

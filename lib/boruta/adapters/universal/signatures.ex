@@ -1,4 +1,4 @@
-defmodule Boruta.Internal.Signatures do
+defmodule Boruta.Universal.Signatures do
   @behaviour Boruta.Oauth.Signatures
 
   defmodule Token do
@@ -10,6 +10,8 @@ defmodule Boruta.Internal.Signatures do
   end
 
   @moduledoc false
+
+  import Boruta.Config, only: [universal_did_auth: 0]
 
   alias Boruta.Internal.Signatures.SigningKey
   alias Boruta.Oauth.Client
@@ -135,40 +137,35 @@ defmodule Boruta.Internal.Signatures do
     end
   end
 
+  @universal_format %{
+    "jwt_vc" => "jwt"
+  }
   @spec verifiable_credential_sign(payload :: map(), client :: Client.t(), format :: String.t()) ::
           jwt :: String.t() | {:error, reason :: String.t()}
   def verifiable_credential_sign(
-        payload,
+        credential,
         %Client{
           id_token_signature_alg: signature_alg
         } = client,
-        _format
+        format
       ) do
-    with {:ok, signing_key} <- get_signing_key(client, :verifiable_credential) do
-      signer =
-        case id_token_signature_type(client) do
-          :symmetric ->
-            Joken.Signer.create(signature_alg, signing_key.secret)
-
-          :asymmetric ->
-            Joken.Signer.create(
-              signature_alg,
-              %{"pem" => signing_key.private_key},
-              %{
-                "typ" => "JWT",
-                "kid" => signing_key.kid,
-                "trust_chain" => signing_key.trust_chain
-              }
-            )
-        end
-
-      case Token.encode_and_sign(payload, signer) do
-        {:ok, token, _payload} ->
-          token
-
-        {:error, error} ->
-          {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
-      end
+    payload = %{
+      "credential" => credential,
+      "options" => %{
+        "format" => @universal_format[format]
+      }
+    }
+    case Finch.build(:post, "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue", [
+           {"Authorization", "Bearer #{universal_did_auth()[:token]}"},
+           {"Content-Type", "application/json"}
+         ], Jason.encode!(payload))
+         |> Finch.request(OpenIDHttpClient) |> dbg do
+      {:ok, %Finch.Response{body: body, status: 201}} ->
+        body
+      {:ok, %Finch.Response{body: body}} ->
+        {:error, "Could not sign verifiable credential - #{body}"}
+      {:error, error} ->
+        {:error, "Could not sign verifiable credential - #{inspect(error)}"}
     end
   end
 
