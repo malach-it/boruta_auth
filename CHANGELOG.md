@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Boruta.Oauth.IdToken.generate/2` returns a tuple
 - `Boruta.Oauth.ResourceOwners.get_by/1` is invoked with token scope as additional parameter
 
+### Security
+
+- oid4vp deeplinks (and QR codes) use codes time to live to avoid sharing to other holders
+
 ## [3.0.0-beta.2] - 2024-10-17
 
 ### Added

@@ -27,6 +27,7 @@ defmodule Boruta.Openid do
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.CredentialsAdapter
+  alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Error
@@ -148,7 +149,8 @@ defmodule Boruta.Openid do
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
     with {:ok, _claims} <- check_id_token_client(direct_post_params),
-         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+         %Token{value: value} <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
+         {:ok, code} <- Authorization.Code.authorize(%{value: value}) do
       case maybe_check_presentation(direct_post_params, code.presentation_definition) do
         :ok ->
           query =

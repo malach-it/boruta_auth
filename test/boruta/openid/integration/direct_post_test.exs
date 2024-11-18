@@ -64,7 +64,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
             "exp" => :os.system_time(:second) + 10,
             "vc" => %{
               "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
-              "type" => ["VerifiableAttestation"],
+              "type" => ["VerifiableAttestation"]
             }
           },
           signer
@@ -166,6 +166,28 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    test "siopv2 - returns an error with expired code", %{id_token: id_token} do
+      code = insert(:token, type: "code", expires_at: 0)
+      conn = %Plug.Conn{}
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :bad_request,
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired."
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+    end
+
     test "siopv2 - authenticates", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -240,6 +262,47 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  %{
                    code_id: code.id,
                    vp_token: vp_token
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - returns an error with expired code", %{vp_token: vp_token} do
+      code = insert(:token, type: "code", expires_at: 0)
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :bad_request,
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired."
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
                  },
                  ApplicationMock
                )
