@@ -1,5 +1,6 @@
 defmodule Boruta.Oauth.IdTokenTest do
   use ExUnit.Case
+
   import Mox
 
   alias Boruta.Oauth.Client

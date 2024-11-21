@@ -36,8 +36,8 @@ defmodule Boruta.Openid do
   alias Boruta.Openid.CredentialResponse
   alias Boruta.Openid.DeferedCredentialResponse
   alias Boruta.Openid.UserinfoResponse
-  alias Boruta.VerifiableCredentials
-  alias Boruta.VerifiablePresentations
+  alias Boruta.Openid.VerifiableCredentials
+  alias Boruta.Openid.VerifiablePresentations
 
   def jwks(conn, module) do
     jwk_keys = ClientsAdapter.list_clients_jwk()
