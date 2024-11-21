@@ -203,15 +203,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              redirect_uri: redirect_uri,
              client: client,
              code_verifier: code_verifier
-           }),
-         {:ok, %ResourceOwner{sub: sub}} <-
-           Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
+           }) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
          code: code,
          redirect_uri: redirect_uri,
-         sub: sub,
+         sub: code.resource_owner.sub,
          scope: code.scope,
          nonce: code.nonce,
          authorization_details: code.authorization_details
@@ -751,6 +749,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PresentationRequest
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
   alias Boruta.VerifiableCredentials
   alias Boruta.VerifiablePresentations
@@ -802,7 +801,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          redirect_uri: redirect_uri,
          relying_party_redirect_uri: relying_party_redirect_uri,
          client: client,
-         sub: resource_owner.sub,
+         sub: client_id,
          scope: scope,
          state: state,
          nonce: nonce,
@@ -845,6 +844,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            preauthorize(request) do
       with {:ok, code} <-
              CodesAdapter.create(%{
+               resource_owner: %ResourceOwner{sub: sub},
                client: client,
                redirect_uri: redirect_uri,
                relying_party_redirect_uri: relying_party_redirect_uri,
