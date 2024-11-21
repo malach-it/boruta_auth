@@ -11,17 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Boruta.Oauth.IdToken.generate/2` returns a tuple
 - `Boruta.Oauth.ResourceOwners.get_by/1` is invoked with token scope as additional parameter
+- resource owners extra_claims appear in id_token with a definition format
 
 ### Security
 
 - oid4vp deeplinks (and QR codes) use codes time to live to avoid sharing to other holders
+
+### Fixed
+
+- adjustements to verifiable credential issuance and presentation
 
 ## [3.0.0-beta.2] - 2024-10-17
 
 ### Added
 
 - OpenID for Verifiable Credentials Presentation implementation
-- Resolve EBSI dids
+- resolve EBSI dids
 
 ## [3.0.0-beta.1] - 2024-09-01
 
