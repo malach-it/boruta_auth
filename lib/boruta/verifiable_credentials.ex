@@ -309,8 +309,8 @@ defmodule Boruta.VerifiableCredentials do
   defp validate_claims(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   defp generate_credential(
-         _claims,
-         {_credential_identifier, credential_configuration},
+         claims,
+         {credential_identifier, credential_configuration},
          {_jwk, proof},
          token,
          format
@@ -368,11 +368,11 @@ defmodule Boruta.VerifiableCredentials do
         "validFrom" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
         "credentialSubject" => %{
           "id" => sub,
-          # credential_identifier =>
-          #   claims
-          #   |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
-          #   |> Enum.into(%{})
-          #   |> Map.put("id", @public_client_did)
+          credential_identifier =>
+            claims
+            |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+            |> Enum.into(%{})
+            |> Map.put("id", client.did)
         },
         "credentialSchema" => %{
           "id" => "https://api-pilot.ebsi.eu/trusted-schemas-registry/v2/schemas/z3MgUFUkb722uq4x3dv5yAJmnNmzDFeK5UC8x83QoeLJM",
