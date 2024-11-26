@@ -125,8 +125,8 @@ defmodule Boruta.VerifiablePresentations do
 
   defp validate_status_list(%{"vc" => %{"credentialStatus" => status}}) do
     case Finch.build(:get, status["statusListCredential"]) |> Finch.request(OpenIDHttpClient) do
-      {:ok, %Finch.Response{status: 200, body: statuc_credential}} ->
-        case Joken.peek_claims(statuc_credential) do
+      {:ok, %Finch.Response{status: 200, body: status_credential}} ->
+        case Joken.peek_claims(status_credential) do
           {:ok, %{"vc" => %{"credentialSubject" => status_list}}} ->
             bit =
               status_list["encodedList"]
@@ -209,6 +209,9 @@ defmodule Boruta.VerifiablePresentations do
           {:ok, jwk :: map(), claims :: map()} | {:error, reason :: String.t()}
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
+      {:ok, %{"alg" => "EdDSA"} = headers} ->
+        verify_jwt(extract_key(headers), "ES256", jwt)
+
       {:ok, %{"alg" => alg} = headers} ->
         verify_jwt(extract_key(headers), alg, jwt)
 

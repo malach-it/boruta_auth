@@ -229,6 +229,18 @@ defmodule Boruta.VerifiableCredentials do
     end
   end
 
+  defp verify_jwt({:jwk, jwk}, "EdDSA", jwt) do
+    signer = Joken.Signer.create("ES256", %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
+
+    case Token.verify(jwt, signer) do
+      {:ok, claims} ->
+        {:ok, jwk, claims}
+
+      _ ->
+        {:error, "Bad proof signature"}
+    end
+  end
+
   defp verify_jwt({:jwk, jwk}, alg, jwt) do
     signer = Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
 
@@ -261,7 +273,7 @@ defmodule Boruta.VerifiableCredentials do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg, "typ" => typ} = headers} ->
         alg_check =
-          case alg =~ ~r/^(RS|ES)/ do
+          case alg =~ ~r/^(RS|ES|EdDSA)/ do
             true ->
               :ok
 
