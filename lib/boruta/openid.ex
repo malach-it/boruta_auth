@@ -24,6 +24,8 @@ defmodule Boruta.Openid do
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
+  import Boruta.Config, only: [resource_owners: 0]
+
   alias Boruta.AccessTokensAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
@@ -32,7 +34,6 @@ defmodule Boruta.Openid do
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Error
-  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
   alias Boruta.Openid.Credential
   alias Boruta.Openid.CredentialResponse
@@ -159,7 +160,31 @@ defmodule Boruta.Openid do
                code_verifier: direct_post_params[:code_verifier]
              }),
            {:ok, sub, presentation_claims} <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, _code} <- CodesAdapter.revoke(code) do
+           {:ok, _code} <- CodesAdapter.revoke(code),
+           {:ok, resource_owner} <-
+             resource_owners().from_holder(%{
+               presentation_claims: presentation_claims,
+               sub: sub,
+               scope: code.scope
+             }),
+           {:ok, scope} <-
+             Authorization.Scope.authorize(
+               scope: code.scope,
+               against: %{resource_owner: resource_owner}
+             ),
+           {:ok, token} <-
+             AccessTokensAdapter.create(
+               %{
+                 client: code.client,
+                 resource_owner: resource_owner,
+                 redirect_uri: code.relying_party_redirect_uri,
+                 sub: resource_owner.sub,
+                 scope: scope,
+                 state: code.state,
+                 previous_code: code.value
+               },
+               refresh_token: false
+             ) do
           query =
             %{
               code: code.value,
@@ -167,31 +192,13 @@ defmodule Boruta.Openid do
             }
             |> URI.encode_query()
 
-          response = URI.parse(code.redirect_uri)
+        response = URI.parse(code.redirect_uri)
 
-          response =
-            %{response | host: response.host || "", query: query}
-            |> URI.to_string()
+        response =
+          %{response | host: response.host || "", query: query}
+          |> URI.to_string()
 
-          {:ok, token} =
-            AccessTokensAdapter.create(
-              %{
-                client: code.client,
-                resource_owner: %ResourceOwner{
-                  sub: sub,
-                  extra_claims: presentation_claims
-                },
-                redirect_uri: code.relying_party_redirect_uri,
-                sub: sub,
-                scope: code.scope,
-                state: code.state,
-                previous_code: code.value
-              },
-              refresh_token: false
-            )
-
-          module.direct_post_success(conn, response, token)
-
+        module.direct_post_success(conn, response, token)
       else
         {:error, error} ->
           module.authentication_failure(conn, %{
@@ -211,7 +218,7 @@ defmodule Boruta.Openid do
   end
 
   defp check_id_token_client(%{id_token: id_token}) do
-    case VerifiableCredentials.validate_signature(id_token) do
+    case VerifiablePresentations.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
         {:ok, claims}
 
