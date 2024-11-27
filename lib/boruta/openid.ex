@@ -24,6 +24,8 @@ defmodule Boruta.Openid do
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
+  import Boruta.Config, only: [resource_owners: 0]
+
   alias Boruta.AccessTokensAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
@@ -33,7 +35,6 @@ defmodule Boruta.Openid do
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
-  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
   alias Boruta.Openid.Credential
   alias Boruta.Openid.CredentialResponse
@@ -170,23 +171,32 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-             {:ok, sub, presentation_claims} <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
                client_encryption_key: claims["client_encryption_key"],
                client_encryption_alg: claims["client_encryption_alg"]
              }),
+           {:ok, sub, presentation_claims} <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, _code} <- CodesAdapter.revoke(code),
+           {:ok, resource_owner} <-
+             resource_owners().from_holder(%{
+               presentation_claims: presentation_claims,
+               sub: sub,
+               scope: code.scope
+             }),
+           {:ok, scope} <-
+             Authorization.Scope.authorize(
+               scope: code.scope,
+               against: %{resource_owner: resource_owner}
+             ),
            {:ok, token} <-
              AccessTokensAdapter.create(
                %{
                  client: code.client,
-                 resource_owner: %ResourceOwner{
-                   sub: sub,
-                   extra_claims: presentation_claims
-                 },
+                 resource_owner: resource_owner,
                  redirect_uri: code.relying_party_redirect_uri,
-                 sub: sub,
-                 scope: code.scope,
+                 sub: resource_owner.sub,
+                 scope: scope,
                  state: code.state,
                  previous_code: code.value
                },
@@ -230,61 +240,8 @@ defmodule Boruta.Openid do
     end
   end
 
-  def direct_post(conn, direct_post_params, module) do
-    with {:ok, claims} <- check_id_token_client(direct_post_params),
-         %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
-      with {:ok, code} <-
-             Authorization.Code.authorize(%{
-               value: value,
-               code_verifier: direct_post_params[:code_verifier]
-             }),
-           :ok <-
-             maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, code} <-
-             CodesAdapter.update_client_encryption(code, %{
-               client_encryption_key: claims["client_encryption_key"],
-               client_encryption_alg: claims["client_encryption_alg"]
-             }) do
-        module.direct_post_success(conn, %DirectPostResponse{
-          id_token: direct_post_params[:id_token],
-          vp_token: direct_post_params[:vp_token],
-          code: code,
-          redirect_uri: code.redirect_uri,
-          state: code.state,
-          client_encryption_key: claims["client_encryption_key"],
-          client_encryption_alg: claims["client_encryption_alg"]
-        })
-      else
-        {:error, "" <> error} ->
-          module.authentication_failure(conn, %Error{
-            error: :unknown_error,
-            status: :unprocessable_entity,
-            error_description: error,
-            format: :query,
-            redirect_uri: code.redirect_uri,
-            state: code.state
-          })
-
-        {:error, error} ->
-          module.authentication_failure(conn, %{
-            error
-            | format: :query,
-              redirect_uri: code.redirect_uri,
-              state: code.state
-          })
-      end
-    else
-      {:error, error} ->
-        module.authentication_failure(conn, %{error | format: :query})
-
-      nil ->
-        module.code_not_found(conn)
-    end
-  end
-
   defp check_id_token_client(%{id_token: id_token}) when not is_nil(id_token) do
-    case VerifiableCredentials.validate_signature(id_token) do
+    case VerifiablePresentations.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
         {:ok, claims}
 
