@@ -781,6 +781,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              scope,
              resource_owner.presentation_configuration
            ),
+         # TODO preform a relying_party_redirect_uri verification
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
@@ -860,6 +861,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             response_mode: response_mode
           }} <-
            preauthorize(request) do
+      # TODO create a presentation specific code
       with {:ok, code} <-
              CodesAdapter.create(%{
                resource_owner: %ResourceOwner{sub: sub},
