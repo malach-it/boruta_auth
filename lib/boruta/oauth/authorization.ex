@@ -774,17 +774,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              scope,
              resource_owner.presentation_configuration
            ),
+         # TODO preform a relying_party_redirect_uri verification
          {:ok, client} <-
            Authorization.Client.authorize(
              id: client_id,
              source: nil,
              redirect_uri: redirect_uri,
              grant_type: response_type
-           ),
-         {:ok, scope} <-
-           Authorization.Scope.authorize(
-             scope: scope,
-             against: %{client: client}
            ),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
@@ -842,6 +838,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             response_mode: response_mode
           }} <-
            preauthorize(request) do
+      # TODO create a presentation specific code
       with {:ok, code} <-
              CodesAdapter.create(%{
                resource_owner: %ResourceOwner{sub: sub},

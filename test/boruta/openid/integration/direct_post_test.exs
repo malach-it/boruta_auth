@@ -2,11 +2,25 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   use Boruta.DataCase
 
   import Boruta.Factory
+  import Mox
 
   alias Boruta.ClientsAdapter
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.VerifiablePresentations
+
+  setup do
+    stub(Boruta.Support.ResourceOwners, :from_holder, fn %{sub: sub} ->
+      {:ok, %ResourceOwner{sub: sub}}
+    end)
+
+    stub(Boruta.Support.ResourceOwners, :authorized_scopes, fn _resource_owner ->
+      []
+    end)
+
+    :ok
+  end
 
   describe "authenticates with direct post response" do
     setup do

@@ -55,7 +55,10 @@ defmodule Boruta.VerifiablePresentations do
         ),
         {:ok, nil, %{}},
         fn {descriptor, map}, {:ok, _sub, claims} ->
-          credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
+          credential = case map["path_nested"] do
+            nil -> vp_token
+            path_nested -> get_in(vp_claims, extract_path(path_nested["path"]))
+          end
 
           case validate_credential(credential, descriptor, extract_format(map)) do
             {:ok, sub, current_claims} -> {:cont, {:ok, sub, Map.merge(claims, current_claims)}}
@@ -91,6 +94,35 @@ defmodule Boruta.VerifiablePresentations do
   end
 
   defp extract_format(%{"path_nested" => %{"format" => format}}), do: format
+  defp extract_format(%{"format" => format}), do: format
+
+  def validate_credential(credential, descriptor, "vc+sd-jwt") do
+    [credential|disclosures] = String.split(credential, "~")
+    with {:ok, _jwk, %{"_sd" => sd}} <- validate_signature(credential) do
+      claims = Enum.map(disclosures, fn disclosure ->
+        with {:ok, json} <- Base.url_decode64(disclosure, padding: false),
+             {:ok, [_salt, key, value]} <- Jason.decode(json),
+             true <- Enum.any?(sd, fn sd ->
+               case Base.url_decode64(sd, padding: false) do
+                 {:ok, sd} ->
+                   :crypto.hash(:sha256, disclosure) == sd
+                 _ -> false
+               end
+             end) do
+          {key, value}
+        else
+          _ ->
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.into(%{})
+
+      with {:ok, filtered_claims} <- validate_constraints(claims, descriptor) do
+        {:ok, claims["sub"], filtered_claims}
+      end
+    end
+  end
 
   def validate_credential(credential, descriptor, "jwt_vc") do
     with {:ok, _jwk, claims} <- validate_signature(credential),
@@ -207,11 +239,14 @@ defmodule Boruta.VerifiablePresentations do
     end
   end
 
+  defp validate_filter(_value, nil), do: :ok
+
   defp validate_filter(_value, _filter), do: {:error, "has an invalid or unknown filter."}
 
   @spec validate_signature(jwt :: String.t()) ::
           {:ok, jwk :: map(), claims :: map()} | {:error, reason :: String.t()}
   def validate_signature(jwt) when is_binary(jwt) do
+    jwt = String.split(jwt, "~") |> List.first()
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => "EdDSA"} = headers} ->
         verify_jwt(extract_key(headers), "ES256", jwt)
