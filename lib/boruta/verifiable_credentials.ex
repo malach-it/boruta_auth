@@ -487,7 +487,7 @@ defmodule Boruta.VerifiableCredentials do
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",
-          "kid" => Client.Crypto.kid_from_private_key(client.private_key)
+          "kid" => client.did || Client.Crypto.kid_from_private_key(client.private_key)
         }
       )
 
@@ -521,7 +521,7 @@ defmodule Boruta.VerifiableCredentials do
 
     claims = %{
       "sub" => sub,
-      "iss" => Config.issuer(),
+      "iss" => client.did || Config.issuer(),
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
