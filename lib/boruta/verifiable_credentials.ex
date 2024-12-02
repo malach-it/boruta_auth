@@ -125,14 +125,18 @@ defmodule Boruta.VerifiableCredentials do
            Enum.find(credential_configuration, fn {identifier, configuration} ->
              case configuration[:version] do
                "11" ->
-                 Enum.empty?(configuration[:types] -- credential_params["types"]) ||
+                 (credential_params["types"] &&
+                    Enum.empty?(configuration[:types] -- credential_params["types"])) ||
                    Enum.member?(Scope.split(token.scope), identifier)
 
                "13" ->
-                 Enum.member?(
-                   configuration[:types],
-                   credential_params["vct"] || credential_params["credential_identifier"]
-                 ) ||
+                 types = credential_params["vct"] || credential_params["credential_identifier"]
+
+                 (types &&
+                    Enum.member?(
+                      configuration[:types],
+                      types
+                    )) ||
                    Enum.member?(Scope.split(token.scope), identifier)
              end
            end),
@@ -187,7 +191,7 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   @spec validate_signature(jwt :: String.t()) ::
-          {:ok, jwk ::map(), claims :: map()} | {:error, reason :: String.t()}
+          {:ok, jwk :: map(), claims :: map()} | {:error, reason :: String.t()}
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->
@@ -196,9 +200,10 @@ defmodule Boruta.VerifiableCredentials do
       error ->
         {:error, inspect(error)}
     end
-  # rescue
-  #   error ->
-  #     {:error, inspect(error)}
+
+    # rescue
+    #   error ->
+    #     {:error, inspect(error)}
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
@@ -206,31 +211,34 @@ defmodule Boruta.VerifiableCredentials do
   defp verify_jwt({:did, did}, alg, jwt) do
     with {:ok, did_document} <- Did.resolve(did),
          %{"verificationMethod" => methods} <- did_document do
+      Enum.reduce_while(
+        methods,
+        {:error, "no did verification method found with did #{did}."},
+        fn %{"publicKeyJwk" => jwk}, {:error, errors} ->
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
-        Enum.reduce_while(
-          methods,
-          {:error, "no did verification method found with did #{did}."},
-          fn %{"publicKeyJwk" => jwk}, {:error, errors} ->
-            signer =
-              Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+          case Client.Token.verify(jwt, signer) do
+            {:ok, claims} ->
+              {:halt, {:ok, jwk, claims}}
 
-            case Client.Token.verify(jwt, signer) do
-              {:ok, claims} -> {:halt, {:ok, jwk, claims}}
-              {:error, error} -> {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
-            end
+            {:error, error} ->
+              {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
           end
-        )
-
+        end
+      )
     else
       {:error, error} ->
         {:error, error}
+
       did_document ->
         {:error, "Invalid did document: \"#{inspect(did_document)}\""}
     end
   end
 
   defp verify_jwt({:jwk, jwk}, "EdDSA", jwt) do
-    signer = Joken.Signer.create("ES256", %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
+    signer =
+      Joken.Signer.create("ES256", %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
 
     case Token.verify(jwt, signer) do
       {:ok, claims} ->
@@ -336,12 +344,14 @@ defmodule Boruta.VerifiableCredentials do
         %{"pem" => client.private_key},
         %{
           "typ" => "JWT",
-          "kid" => case client.did do
-            nil ->
-              Client.Crypto.kid_from_private_key(client.private_key)
-            did ->
-              did <> "#" <> String.replace(did, "did:key:", "")
-          end
+          "kid" =>
+            case client.did do
+              nil ->
+                Client.Crypto.kid_from_private_key(client.private_key)
+
+              did ->
+                did <> "#" <> String.replace(did, "did:key:", "")
+            end
         }
       )
 
@@ -358,6 +368,7 @@ defmodule Boruta.VerifiableCredentials do
     now = :os.system_time(:seconds)
 
     sub = sub |> String.split("#") |> List.first()
+
     claims = %{
       "sub" => sub,
       # TODO store credential
@@ -387,7 +398,8 @@ defmodule Boruta.VerifiableCredentials do
             |> Map.put("id", client.did)
         },
         "credentialSchema" => %{
-          "id" => "https://api-pilot.ebsi.eu/trusted-schemas-registry/v2/schemas/z3MgUFUkb722uq4x3dv5yAJmnNmzDFeK5UC8x83QoeLJM",
+          "id" =>
+            "https://api-pilot.ebsi.eu/trusted-schemas-registry/v2/schemas/z3MgUFUkb722uq4x3dv5yAJmnNmzDFeK5UC8x83QoeLJM",
           "type" => "FullJsonSchemaValidator2021"
         }
       }
