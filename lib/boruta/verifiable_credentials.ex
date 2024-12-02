@@ -525,7 +525,6 @@ defmodule Boruta.VerifiableCredentials do
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
-      "nonce" => token.c_nonce,
       "_sd" => sd,
       "cnf" => %{
         "jwk" => jwk
