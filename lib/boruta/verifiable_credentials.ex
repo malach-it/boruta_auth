@@ -486,7 +486,7 @@ defmodule Boruta.VerifiableCredentials do
         client.id_token_signature_alg,
         %{"pem" => client.private_key},
         %{
-          "typ" => "JWT",
+          "typ" => "dc+sd-jwt",
           "kid" => client.did || Client.Crypto.kid_from_private_key(client.private_key)
         }
       )
