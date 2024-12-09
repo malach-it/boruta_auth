@@ -30,6 +30,7 @@ defmodule Boruta.Ecto.Client do
           redirect_uris: list(String.t()),
           supported_grant_types: list(String.t()),
           enforce_dpop: boolean(),
+          enforce_tx_code: boolean(),
           pkce: boolean(),
           public_refresh_token: boolean(),
           public_revoke: boolean(),
@@ -105,6 +106,7 @@ defmodule Boruta.Ecto.Client do
     field(:secret, :string)
     field(:confidential, :boolean, default: false)
     field(:authorize_scope, :boolean, default: false)
+    field(:enforce_tx_code, :boolean, default: false)
     field(:enforce_dpop, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
 
@@ -174,6 +176,7 @@ defmodule Boruta.Ecto.Client do
       :redirect_uris,
       :authorize_scope,
       :enforce_dpop,
+      :enforce_tx_code,
       :supported_grant_types,
       :token_endpoint_auth_methods,
       :token_endpoint_jwt_auth_alg,
@@ -234,6 +237,7 @@ defmodule Boruta.Ecto.Client do
       :redirect_uris,
       :authorize_scope,
       :enforce_dpop,
+      :enforce_tx_code,
       :supported_grant_types,
       :token_endpoint_auth_methods,
       :token_endpoint_jwt_auth_alg,

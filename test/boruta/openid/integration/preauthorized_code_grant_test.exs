@@ -4,6 +4,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
   import Boruta.Factory
   import Mox
 
+  alias Boruta.Ecto
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
@@ -200,7 +201,10 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 }}
     end
 
-    test "returns a credential offer response (draft 13)", %{client: client, resource_owner: resource_owner} do
+    test "returns a credential offer response (draft 13)", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       redirect_uri = List.first(client.redirect_uris)
 
       resource_owner = %{
@@ -215,6 +219,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert {:authorize_success,
               %CredentialOfferResponse{
                 credential_issuer: "boruta",
+                tx_code_required: false,
                 credential_configuration_ids: ["credential"],
                 grants: %{
                   "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
@@ -237,7 +242,58 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert preauthorized_code
     end
 
-    test "returns a credential offer response (draft 11)", %{client: client, resource_owner: resource_owner} do
+    test "returns a credential offer response (tx_code)", %{resource_owner: resource_owner} do
+      client = insert(:client, redirect_uris: ["https://redirect.uri"], enforce_tx_code: true)
+      redirect_uri = List.first(client.redirect_uris)
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_configuration_id" => "credential"
+            }
+          ]
+      }
+
+      assert {:authorize_success,
+              %CredentialOfferResponse{
+                credential_issuer: "boruta",
+                credential_configuration_ids: ["credential"],
+                tx_code: tx_code,
+                tx_code_required: true,
+                grants: %{
+                  "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
+                    "pre-authorized_code" => preauthorized_code,
+                    "tx_code" => %{
+                      "length" => 4,
+                      "input_mode" => "text",
+                      "description" => "Please provide the one-time code that was sent via e-mail"
+                    }
+                  }
+                }
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert preauthorized_code
+      assert tx_code
+      assert [%Ecto.Token{tx_code: tx_code}] = Repo.all(Boruta.Ecto.Token)
+      assert String.length(tx_code) == 4
+    end
+
+    test "returns a credential offer response (draft 11)", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
       redirect_uri = List.first(client.redirect_uris)
 
       resource_owner = %{
@@ -246,26 +302,27 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
             %{
               "credential_identifiers" => ["credential", "test", "c"]
             }
-        ],
-        credential_configuration: %{
-          "credentialjwtvc" => %{
-            format: "jwt_vc",
-            types: ["credential", "test"]
-          },
-          "credentialsdjwt" => %{
-            format: "vc+sd-jwt",
-            types: ["credential", "test"]
-          },
-          "credentialsc" => %{
-            format: "vc+sd-jwt",
-            types: ["credential", "test", "c"]
+          ],
+          credential_configuration: %{
+            "credentialjwtvc" => %{
+              format: "jwt_vc",
+              types: ["credential", "test"]
+            },
+            "credentialsdjwt" => %{
+              format: "vc+sd-jwt",
+              types: ["credential", "test"]
+            },
+            "credentialsc" => %{
+              format: "vc+sd-jwt",
+              types: ["credential", "test", "c"]
+            }
           }
-        }
       }
 
       assert {:authorize_success,
               %CredentialOfferResponse{
                 credential_issuer: "boruta",
+                tx_code_required: false,
                 credentials: [
                   %{format: "jwt_vc", types: ["credential", "test"]},
                   %{format: "vc+sd-jwt", types: ["credential", "test", "c"]}
@@ -584,6 +641,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
+      tx_code_client = insert(:client, enforce_tx_code: true)
 
       code =
         insert(
@@ -592,6 +650,23 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
           client: client,
           sub: resource_owner.sub,
           redirect_uri: List.first(client.redirect_uris),
+          authorization_details: [
+            %{
+              "credential_definition" => %{
+                "type" => ["credential"]
+              }
+            }
+          ]
+        )
+
+      tx_code_code =
+        insert(
+          :token,
+          type: "preauthorized_code",
+          client: tx_code_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          tx_code: "CODE",
           authorization_details: [
             %{
               "credential_definition" => %{
@@ -654,6 +729,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       {:ok,
        resource_owner: resource_owner,
        code: code,
+       tx_code_code: tx_code_code,
        expired_code: expired_code,
        revoked_code: revoked_code,
        openid_code: openid_code,
@@ -746,6 +822,32 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 }}
     end
 
+    test "returns an error when tx_code is invalid", %{
+      tx_code_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert {
+               :token_error,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "Given transaction code is invalid.",
+                 status: :bad_request
+               }
+             } =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+                     "pre-authorized_code" => code.value
+                   }
+                 },
+                 ApplicationMock
+               )
+    end
+
     test "returns a token", %{code: code, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
@@ -764,6 +866,38 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                    body_params: %{
                      "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
                      "pre-authorized_code" => code.value
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert authorization_details
+      assert expires_in
+      assert refresh_token
+      assert c_nonce
+    end
+
+    test "returns a token with tx code", %{tx_code_code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token,
+                c_nonce: c_nonce,
+                authorization_details: authorization_details
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+                     "pre-authorized_code" => code.value,
+                     "tx_code" => "CODE"
                    }
                  },
                  ApplicationMock

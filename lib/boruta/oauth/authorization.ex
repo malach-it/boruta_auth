@@ -260,23 +260,27 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeRequest do
+  alias Boruta.Oauth.Client
   alias Boruta.AccessTokensAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.PreauthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
 
   def preauthorize(%PreauthorizationCodeRequest{
-        preauthorized_code: preauthorized_code
+        preauthorized_code: preauthorized_code,
+        tx_code: tx_code
       }) do
     with {:ok, code} <-
            Authorization.Code.authorize(%{
              value: preauthorized_code
            }),
+         :ok <- maybe_check_tx_code(tx_code, code),
          {:ok, %ResourceOwner{sub: sub}} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       {:ok,
@@ -325,6 +329,20 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
       end
     end
   end
+
+  defp maybe_check_tx_code(tx_code, %Token{client: %Client{enforce_tx_code: true}, tx_code: against_tx_code}) do
+    case tx_code == against_tx_code do
+      true -> :ok
+      false ->
+        {:error, %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: "Given transaction code is invalid."
+        }}
+    end
+  end
+
+  defp maybe_check_tx_code(_tx_code, _preauthorized_code), do: :ok
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
@@ -749,12 +767,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           client_metadata: client_metadata
         } = request
       ) do
-      with [response_type] = response_types <-
+    with [response_type] = response_types <-
            VerifiablePresentations.response_types(
              scope,
              resource_owner.presentation_configuration
            ),
-           {:ok, client} <- Authorization.Client.authorize(
+         {:ok, client} <-
+           Authorization.Client.authorize(
              id: client_id,
              source: nil,
              redirect_uri: redirect_uri,

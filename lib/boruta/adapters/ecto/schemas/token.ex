@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Token do
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t(),
+          tx_code: String.t() | nil,
           authorization_details: list(),
           state: String.t(),
           nonce: String.t(),
@@ -68,6 +69,7 @@ defmodule Boruta.Ecto.Token do
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)
     field(:refresh_token_revoked_at, :utc_datetime_usec)
+    field(:tx_code, :string)
     field(:code_challenge, :string, virtual: true)
     field(:code_challenge_hash, :string)
     field(:code_challenge_method, :string, default: "plain")
@@ -146,6 +148,7 @@ defmodule Boruta.Ecto.Token do
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
     |> put_value()
+    |> put_tx_code()
     |> put_code_expires_at()
   end
 
@@ -172,6 +175,7 @@ defmodule Boruta.Ecto.Token do
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
     |> put_value()
+    |> put_tx_code()
     |> put_code_expires_at()
     |> put_code_challenge_method()
     |> encrypt_code_challenge()
@@ -251,6 +255,10 @@ defmodule Boruta.Ecto.Token do
     )
   end
 
+  defp put_tx_code(%Ecto.Changeset{data: data, changes: changes} = changeset) do
+    put_change(changeset, :tx_code, token_generator().generate(:tx_code, struct(data, changes)))
+  end
+
   defp put_c_nonce(changeset) do
     put_change(
       changeset,
@@ -298,7 +306,7 @@ defmodule Boruta.Ecto.Token do
   end
 
   defp validate_authorization_details(changeset) do
-    with [_h|_t] = authorization_details <- get_field(changeset, :authorization_details),
+    with [_h | _t] = authorization_details <- get_field(changeset, :authorization_details),
          :ok <-
            ExJsonSchema.Validator.validate(
              @authorization_details_schema,

@@ -67,6 +67,7 @@ defmodule Boruta.Oauth.Request.Base do
     {:ok,
      %PreauthorizationCodeRequest{
        preauthorized_code: params["pre-authorized_code"],
+       tx_code: params["tx_code"],
        code_verifier: params["code_verifier"]
      }}
   end
