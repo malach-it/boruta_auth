@@ -522,6 +522,7 @@ defmodule Boruta.VerifiableCredentials do
     claims = %{
       "sub" => sub,
       "iss" => client.did || Config.issuer(),
+      "vct" => credential_configuration[:vct],
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
