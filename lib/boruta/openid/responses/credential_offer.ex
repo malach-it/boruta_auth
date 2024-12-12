@@ -82,8 +82,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
       case preauthorized_code.client do
         %Client{enforce_tx_code: true} ->
           Map.put(grant, "tx_code", %{
-            "length" => 4,
-            "input_mode" => "text",
+            "length" => Config.token_generator().tx_code_length(),
+            "input_mode" => Config.token_generator().tx_code_input_mode(),
             "description" => "Please provide the one-time code that was sent via e-mail"
           })
 

@@ -8,7 +8,17 @@ defmodule Boruta.TokenGenerator do
   defmodule TxCode do
     @moduledoc false
 
-    use Puid, charset: :alpha_upper, bits: 16
+    use Puid, charset: :decimal, bits: 13
+  end
+
+  @impl Boruta.Oauth.TokenGenerator
+  def tx_code_length do
+    4
+  end
+
+  @impl Boruta.Oauth.TokenGenerator
+  def tx_code_input_mode do
+    "numeric"
   end
 
   @impl Boruta.Oauth.TokenGenerator

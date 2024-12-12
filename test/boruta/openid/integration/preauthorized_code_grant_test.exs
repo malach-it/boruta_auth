@@ -266,7 +266,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                     "pre-authorized_code" => preauthorized_code,
                     "tx_code" => %{
                       "length" => 4,
-                      "input_mode" => "text",
+                      "input_mode" => "numeric",
                       "description" => "Please provide the one-time code that was sent via e-mail"
                     }
                   }
