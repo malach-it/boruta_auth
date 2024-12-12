@@ -97,7 +97,7 @@ defmodule Boruta.Openid do
           end
 
         _ ->
-          response = CredentialResponse.from_credential(credential)
+          response = CredentialResponse.from_credential(credential, token)
           module.credential_created(conn, response)
       end
     else
@@ -119,7 +119,7 @@ defmodule Boruta.Openid do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
          %Credential{} = credential <- CredentialsAdapter.get_by(access_token: token.value) do
-      response = CredentialResponse.from_credential(credential)
+      response = CredentialResponse.from_credential(credential, token)
       module.credential_created(conn, response)
     else
       {:error, %Error{} = error} ->
