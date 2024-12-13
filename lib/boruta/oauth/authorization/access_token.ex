@@ -32,12 +32,19 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
+      {:error, msg} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_access_token,
+           error_description: msg
+         }}
       _ ->
         {:error,
          %Error{
            status: :bad_request,
            error: :invalid_access_token,
-           error_description: "Given access token is invalid, revoked, or expired."
+           error_description: "Given access token is invalid."
          }}
     end
   end
