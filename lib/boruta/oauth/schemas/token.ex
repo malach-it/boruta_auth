@@ -134,8 +134,8 @@ defmodule Boruta.Oauth.Token do
           :ok | {:error, String.t()}
   def ensure_valid(token, type \\ :access_token) do
     case {revoked?(token, type), expired?(token, type)} do
-      {true, _} -> {:error, "Given access token is revoked."}
-      {_, true} -> {:error, "Given access token is expired."}
+      {true, _} -> {:error, "Token revoked."}
+      {_, true} -> {:error, "Token expired."}
       _ -> :ok
     end
   end
