@@ -22,6 +22,7 @@ defmodule Boruta.Ecto.Client do
   alias Boruta.Ecto.Scope
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
+  alias Boruta.Universal
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   @type t :: %__MODULE__{
@@ -70,10 +71,10 @@ defmodule Boruta.Ecto.Client do
   @key_pair_type_schema %{
     "type" => "object",
     "properties" => %{
-      "type" => %{"type" => "string", "pattern" => "^ec|rsa"},
+      "type" => %{"type" => "string", "pattern" => "^ec|rsa|universal$"},
       "modulus_size" => %{"type" => "string"},
       "exponent_size" => %{"type" => "string"},
-      "curve" => %{"type" => "string", "pattern" => "^P-256|P-384|P-512"}
+      "curve" => %{"type" => "string", "pattern" => "^P-256|P-384|P-512$"}
     },
     "required" => ["type"]
   }
@@ -461,6 +462,9 @@ defmodule Boruta.Ecto.Client do
         %{"type" => "ec", "curve" => curve} ->
           JOSE.JWK.generate_key({:ec, curve})
 
+        %{"type" => "universal"} ->
+          "universal"
+
         _ ->
           nil
       end
@@ -468,6 +472,21 @@ defmodule Boruta.Ecto.Client do
     case private_key do
       nil ->
         add_error(changeset, :private_key, "private_key_type is invalid")
+
+      "universal" ->
+        with {:ok, did, jwk} <- Did.create("key"),
+             {:ok, key} <- Universal.Signatures.SigningKey.get_key_by_did(did) do
+          public_key = JOSE.JWK.from_map(jwk)
+          {_type, public_pem} = JOSE.JWK.to_pem(public_key)
+
+          changeset
+          |> put_change(:private_key, key["id"])
+          |> put_change(:public_key, public_pem)
+          |> put_change(:did, did)
+        else
+          {:error, error} ->
+            add_error(changeset, :private_key, error)
+        end
 
       private_key ->
         public_key = JOSE.JWK.to_public(private_key)
