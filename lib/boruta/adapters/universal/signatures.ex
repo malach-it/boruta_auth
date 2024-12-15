@@ -11,7 +11,10 @@ defmodule Boruta.Universal.Signatures do
 
   @moduledoc false
 
-  import Boruta.Config, only: [universal_did_auth: 0]
+  import Boruta.Config, only: [
+    universal_did_auth: 0,
+    signature_credentials_base_url: 0
+  ]
 
   alias Boruta.Internal.Signatures.SigningKey
   alias Boruta.Oauth.Client
@@ -155,7 +158,7 @@ defmodule Boruta.Universal.Signatures do
         "format" => @universal_format[format]
       }
     }
-    case Finch.build(:post, "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue", [
+    case Finch.build(:post, signature_credentials_base_url(), [
            {"Authorization", "Bearer #{universal_did_auth()[:token]}"},
            {"Content-Type", "application/json"}
          ], Jason.encode!(payload))
