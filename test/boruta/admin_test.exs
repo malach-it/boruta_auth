@@ -91,6 +91,12 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
+    # TODO create an universal mock adapter
+    @tag :skip
+    test "creates a client with universal key" do
+      assert {:ok, %Client{}} = Admin.create_client(Map.put(@client_valid_attrs, :key_pair_type, %{"type" => "universal"}))
+    end
+
     test "creates a client with supported_grant_types" do
       assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
                Admin.create_client(

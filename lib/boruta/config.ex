@@ -61,6 +61,7 @@ defmodule Boruta.Config do
             did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
             did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
             signature_credentials_base_url: "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
+            universal_keys_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys",
             universal_did_auth: %{
               type: "bearer",
               token: nil
@@ -207,6 +208,12 @@ defmodule Boruta.Config do
   @doc false
   def signature_credentials_base_url do
     Keyword.fetch!(oauth_config(), :signature_credentials_base_url)
+  end
+
+  @spec universal_keys_base_url() :: String.t()
+  @doc false
+  def universal_keys_base_url do
+    Keyword.fetch!(oauth_config(), :universal_keys_base_url)
   end
 
   @spec universal_did_auth() :: map()
