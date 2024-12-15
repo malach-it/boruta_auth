@@ -60,6 +60,7 @@ defmodule Boruta.Config do
             ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
             did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
             did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
+            signature_credentials_base_url: "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
             universal_did_auth: %{
               type: "bearer",
               token: nil
@@ -200,6 +201,12 @@ defmodule Boruta.Config do
   @doc false
   def did_registrar_base_url do
     Keyword.fetch!(oauth_config(), :did_registrar_base_url)
+  end
+
+  @spec signature_credentials_base_url() :: String.t()
+  @doc false
+  def signature_credentials_base_url do
+    Keyword.fetch!(oauth_config(), :signature_credentials_base_url)
   end
 
   @spec universal_did_auth() :: map()
