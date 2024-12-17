@@ -87,7 +87,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       resource_owner: resource_owner,
       credential_params: credential_params
     } do
-      signer = Joken.Signer.create("HS256", "secret", %{})
+      signer = Joken.Signer.create("HS256", "secret", %{"typ" => "unknown"})
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
@@ -103,7 +103,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                %{}
              ) ==
                {:error,
-                "Proof JWT must be asymetrically signed, Proof JWT must have `openid4vci-proof+jwt` typ header, No proof key material found in JWT headers."}
+                "Proof JWT must be asymetrically signed, Proof JWT must have `openid4vci-proof+jwt` or `JWT` typ header, No proof key material found in JWT headers."}
     end
 
     test "verifies proof - the algorithm is asymetric", %{
@@ -132,7 +132,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       resource_owner: resource_owner,
       credential_params: credential_params
     } do
-      signer = Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{"kid" => "kid"})
+      signer = Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{"typ" => "unknown", "kid" => "kid"})
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
@@ -146,7 +146,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                Map.put(credential_params, "proof", proof),
                insert(:token),
                %{}
-             ) == {:error, "Proof JWT must have `openid4vci-proof+jwt` typ header."}
+             ) == {:error, "Proof JWT must have `openid4vci-proof+jwt` or `JWT` typ header."}
     end
 
     test "verifies proof - must have proof material", %{

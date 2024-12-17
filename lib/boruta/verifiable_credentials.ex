@@ -290,12 +290,12 @@ defmodule Boruta.VerifiableCredentials do
           end
 
         typ_check =
-          case typ =~ ~r/^openid4vci-proof\+jwt$/ do
+          case typ =~ ~r/^openid4vci-proof\+jwt|JWT$/ do
             true ->
               :ok
 
             false ->
-              "Proof JWT must have `openid4vci-proof+jwt` typ header"
+              "Proof JWT must have `openid4vci-proof+jwt` or `JWT` typ header"
           end
 
         key_check =
