@@ -368,12 +368,18 @@ defmodule Boruta.VerifiableCredentials do
     now = :os.system_time(:seconds)
 
     sub = sub |> String.split("#") |> List.first()
+    iss = case client.did do
+      nil ->
+        Config.issuer()
+      did ->
+        did |> String.split("#") |> List.first()
+    end
 
     claims = %{
       "sub" => sub,
       # TODO store credential
       "jti" => Config.issuer() <> "/credentials/#{credential_id}",
-      "iss" => client.did,
+      "iss" => iss,
       "nbf" => now,
       "iat" => now,
       "exp" => now + credential_configuration[:time_to_live],
@@ -519,9 +525,16 @@ defmodule Boruta.VerifiableCredentials do
         :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
       end)
 
+    iss = case client.did do
+      nil ->
+        Config.issuer()
+      did ->
+        did |> String.split("#") |> List.first()
+    end
+
     claims = %{
       "sub" => sub,
-      "iss" => client.did || Config.issuer(),
+      "iss" => iss,
       "vct" => credential_configuration[:vct],
       "iat" => :os.system_time(:seconds),
       # TODO get exp from configuration
