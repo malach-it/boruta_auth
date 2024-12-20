@@ -26,9 +26,6 @@ defmodule Boruta.Internal.Signatures do
     HS512: [type: :symmetric, hash_algorithm: :SHA512, binary_size: 32]
   ]
 
-  @spec signature_algorithms() :: list(atom())
-  def signature_algorithms, do: Keyword.keys(@signature_algorithms)
-
   @spec hash_alg(Client.t()) :: hash_alg :: atom()
   def hash_alg(%Client{id_token_signature_alg: signature_alg}),
     do: @signature_algorithms[String.to_atom(signature_alg)][:hash_algorithm]
@@ -80,23 +77,6 @@ defmodule Boruta.Internal.Signatures do
         {:error, error} ->
           {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
       end
-    end
-  end
-
-  @spec verify_id_token_signature(id_token :: String.t(), jwk :: JOSE.JWK.t()) ::
-          :ok | {:error, reason :: String.t()}
-  def verify_id_token_signature(id_token, jwk) do
-    case Joken.peek_header(id_token) do
-      {:ok, %{"alg" => alg}} ->
-        signer = Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
-
-        case Token.verify(id_token, signer) do
-          {:ok, claims} -> {:ok, claims}
-          {:error, reason} -> {:error, inspect(reason)}
-        end
-
-      {:error, reason} ->
-        {:error, inspect(reason)}
     end
   end
 
@@ -172,11 +152,6 @@ defmodule Boruta.Internal.Signatures do
     end
   end
 
-  @spec kid_from_private_key(private_pem :: String.t()) :: kid :: String.t()
-  def kid_from_private_key(private_pem) do
-    :crypto.hash(:md5, private_pem) |> Base.url_encode64() |> String.slice(0..16)
-  end
-
   @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
   def userinfo_signature_type(%Client{userinfo_signed_response_alg: signature_alg}),
     do: @signature_algorithms[String.to_atom(signature_alg)][:type]
@@ -191,7 +166,7 @@ defmodule Boruta.Internal.Signatures do
        type: :internal,
        private_key: client.private_key,
        secret: client.secret,
-       kid: client.id_token_kid || kid_from_private_key(client.private_key)
+       kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key)
      }}
   end
 
@@ -211,7 +186,7 @@ defmodule Boruta.Internal.Signatures do
        type: :internal,
        private_key: client.private_key,
        secret: client.secret,
-       kid: client.did || client.id_token_kid || kid_from_private_key(client.private_key)
+       kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key)
      }}
   end
 end

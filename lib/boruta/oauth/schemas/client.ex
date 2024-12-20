@@ -43,7 +43,8 @@ defmodule Boruta.Oauth.Client do
             did: nil,
             logo_uri: nil,
             response_mode: nil,
-            metadata: %{}
+            metadata: %{},
+            signatures_adapter: nil
 
   @type t :: %__MODULE__{
           id: any(),
@@ -77,7 +78,8 @@ defmodule Boruta.Oauth.Client do
           did: String.t() | nil,
           logo_uri: String.t() | nil,
           response_mode: String.t(),
-          metadata: map()
+          metadata: map(),
+          signatures_adapter: String.t()
         }
 
   @wallet_grant_types [
@@ -198,40 +200,88 @@ defmodule Boruta.Oauth.Client do
 
   def public?(%__MODULE__{public_client_id: _public_client_id}), do: false
 
+  @spec signatures_adapter(client :: t()) :: signatures_adapter :: atom()
+  def signatures_adapter(%__MODULE__{signatures_adapter: signatures_adapter}) do
+    String.to_atom(signatures_adapter)
+  end
+
   defmodule Crypto do
     @moduledoc false
 
     alias Boruta.Oauth.Client
-    alias Boruta.SignaturesAdapter
+
+    @signature_algorithms [
+      :ES256,
+      :ES384,
+      :ES512,
+      :RS256,
+      :RS384,
+      :RS512,
+      :HS256,
+      :HS384,
+      :HS512,
+      :EdDSA
+    ]
 
     @spec signature_algorithms() :: list(atom())
-    def signature_algorithms, do: SignaturesAdapter.signature_algorithms()
+    def signature_algorithms, do: @signature_algorithms
 
     @spec hash_alg(Client.t()) :: hash_alg :: atom()
-    def hash_alg(client), do: SignaturesAdapter.hash_alg(client)
+    def hash_alg(client), do: Client.signatures_adapter(client).hash_alg(client)
 
     @spec hash_binary_size(Client.t()) :: binary_size :: integer()
-    def hash_binary_size(client), do: SignaturesAdapter.hash_binary_size(client)
+    def hash_binary_size(client), do: Client.signatures_adapter(client).hash_binary_size(client)
 
     @spec hash(string :: String.t(), client :: Client.t()) :: hash :: String.t()
-    def hash(string, client), do: SignaturesAdapter.hash(string, client)
+    def hash(string, client), do: Client.signatures_adapter(client).hash(string, client)
 
     @spec id_token_sign(payload :: map(), client :: Client.t()) ::
             jwt :: String.t() | {:error, reason :: String.t()}
-    def id_token_sign(payload, client), do: SignaturesAdapter.id_token_sign(payload, client)
+    def id_token_sign(payload, client),
+      do: Client.signatures_adapter(client).id_token_sign(payload, client)
 
     @spec verify_id_token_signature(id_token :: String.t(), jwk :: JOSE.JWK.t()) ::
             :ok | {:error, reason :: String.t()}
-    def verify_id_token_signature(id_token, jwk), do: SignaturesAdapter.verify_id_token_signature(id_token, jwk)
+    def verify_id_token_signature(id_token, jwk) do
+      case Joken.peek_header(id_token) do
+        {:ok, %{"alg" => "EdDSA"}} ->
+          signer =
+            Joken.Signer.create(
+              "EdDSA",
+              %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()},
+              %{"alg" => "EdDSA"}
+            )
+
+          case Token.verify(id_token, signer) do
+            {:ok, claims} -> {:ok, claims}
+            {:error, reason} -> {:error, inspect(reason)}
+          end
+
+        {:ok, %{"alg" => alg}} ->
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+
+          case Token.verify(id_token, signer) do
+            {:ok, claims} -> {:ok, claims}
+            {:error, reason} -> {:error, inspect(reason)}
+          end
+
+        {:error, reason} ->
+          {:error, inspect(reason)}
+      end
+    end
 
     @spec userinfo_sign(payload :: map(), client :: Client.t()) ::
             jwt :: String.t() | {:error, reason :: String.t()}
-    def userinfo_sign(payload, client), do: SignaturesAdapter.userinfo_sign(payload, client)
+    def userinfo_sign(payload, client),
+      do: Client.signatures_adapter(client).userinfo_sign(payload, client)
 
     @spec kid_from_private_key(private_pem :: String.t()) :: kid :: String.t()
-    def kid_from_private_key(private_pem), do: SignaturesAdapter.kid_from_private_key(private_pem)
+    def kid_from_private_key(private_pem) do
+      :crypto.hash(:md5, private_pem) |> Base.url_encode64() |> String.slice(0..16)
+    end
 
     @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
-    def userinfo_signature_type(client), do: SignaturesAdapter.userinfo_signature_type(client)
+    def userinfo_signature_type(client), do: Client.signatures_adapter(client).userinfo_signature_type(client)
   end
 end

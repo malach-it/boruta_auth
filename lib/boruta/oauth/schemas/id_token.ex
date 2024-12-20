@@ -5,6 +5,7 @@ defmodule Boruta.Oauth.IdToken do
 
   import Boruta.Config, only: [resource_owners: 0, issuer: 0]
 
+  alias Boruta.Did
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
 
@@ -86,7 +87,7 @@ defmodule Boruta.Oauth.IdToken do
     resource_owners().claims(resource_owner, scope)
     |> Map.merge(format_claims(resource_owner.extra_claims))
     |> Map.put("sub", sub)
-    |> Map.put("iss", issuer())
+    |> Map.put("iss", Did.controller(client.did) || issuer())
     |> Map.put("aud", client.id)
     |> Map.put("iat", iat)
     |> Map.put("auth_time", auth_time)

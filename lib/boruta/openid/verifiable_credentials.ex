@@ -151,7 +151,6 @@ defmodule Boruta.Openid.VerifiableCredentials do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Openid.Credential
-  alias Boruta.SignaturesAdapter
   alias ExJsonSchema.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
@@ -443,20 +442,11 @@ defmodule Boruta.Openid.VerifiableCredentials do
     credential_id = SecureRandom.uuid()
     sub = sub |> String.split("#") |> List.first()
 
-    iss =
-      case client.did do
-        nil ->
-          Config.issuer()
-
-        did ->
-          did |> String.split("#") |> List.first()
-      end
-
     payload = %{
       "sub" => sub,
       # TODO store credential
       "jti" => Config.issuer() <> "/credentials/#{credential_id}",
-      "iss" => iss,
+      "iss" => Did.controller(client.did) || Config.issuer(),
       "nbf" => now,
       "iat" => now,
       "exp" => now + credential_configuration[:time_to_live],
@@ -488,7 +478,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       }
     }
 
-    case SignaturesAdapter.verifiable_credential_sign(payload, client, format) do
+    case Client.signatures_adapter(client).verifiable_credential_sign(payload, client, format) do
       {:error, error} ->
         {:error, error}
 
@@ -528,7 +518,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       "issued" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
       "issuanceDate" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
       "type" => credential_configuration[:types],
-      "issuer" => client.did || Config.issuer(),
+      "issuer" => Did.controller(client.did),
       "validFrom" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "credentialSubject" => %{
         "id" => sub,
@@ -543,7 +533,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       }
     }
 
-    case SignaturesAdapter.verifiable_credential_sign(payload, client, format) do
+    case Client.signatures_adapter(client).verifiable_credential_sign(payload, client, format) do
       {:error, error} ->
         {:error, error}
 
@@ -599,7 +589,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
     payload = %{
       "sub" => sub,
       "vct" => credential_configuration[:vct],
-      "iss" => iss,
+      "iss" => Did.controller(client.did) || Config.issuer(),
       "iat" => :os.system_time(:seconds),
       "exp" => :os.system_time(:seconds) + credential_configuration[:time_to_live],
       "_sd" => sd,
@@ -608,7 +598,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       }
     }
 
-    case SignaturesAdapter.verifiable_credential_sign(payload, client, format) do
+    case Client.signatures_adapter(client).verifiable_credential_sign(payload, client, format) do
       {:error, error} ->
         {:error, error}
 

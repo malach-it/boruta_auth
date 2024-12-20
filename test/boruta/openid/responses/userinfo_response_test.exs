@@ -17,7 +17,7 @@ defmodule Boruta.Openid.UserinfoResponseTest do
 
     test "returns userinfo with client userinfo_signed_response_alg" do
       userinfo = %{"sub" => "sub"}
-      client = %Client{id: SecureRandom.uuid(), secret: "secret", userinfo_signed_response_alg: "HS256"}
+      client = %Client{id: SecureRandom.uuid(), secret: "secret", userinfo_signed_response_alg: "HS256", signatures_adapter: "Elixir.Boruta.Internal.Signatures"}
 
       assert %UserinfoResponse{
         userinfo: ^userinfo,
