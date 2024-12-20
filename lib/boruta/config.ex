@@ -48,7 +48,6 @@ defmodule Boruta.Config do
               scopes: Boruta.Ecto.Scopes,
               requests: Boruta.Ecto.Requests,
               credentials: Boruta.Ecto.Credentials,
-              signatures: Boruta.Internal.Signatures
             ],
             max_ttl: [
               authorization_request: 300,
@@ -62,6 +61,7 @@ defmodule Boruta.Config do
             did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
             signature_credentials_base_url: "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
             universal_keys_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys",
+            universal_sign_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys/sign",
             universal_did_auth: %{
               type: "bearer",
               token: nil
@@ -159,12 +159,6 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :contexts)[:credentials]
   end
 
-  @spec signatures() :: module()
-  @doc false
-  def signatures do
-    Keyword.fetch!(oauth_config(), :contexts)[:signatures]
-  end
-
   @spec resource_owners() :: module()
   @doc false
   def resource_owners do
@@ -214,6 +208,12 @@ defmodule Boruta.Config do
   @doc false
   def universal_keys_base_url do
     Keyword.fetch!(oauth_config(), :universal_keys_base_url)
+  end
+
+  @spec universal_sign_base_url() :: String.t()
+  @doc false
+  def universal_sign_base_url do
+    Keyword.fetch!(oauth_config(), :universal_sign_base_url)
   end
 
   @spec universal_did_auth() :: map()

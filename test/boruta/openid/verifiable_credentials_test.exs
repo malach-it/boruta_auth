@@ -207,12 +207,12 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                VerifiableCredentials.issue_verifiable_credential(
                  resource_owner,
                  credential_params,
-                 insert(:token, client: build(:client, did: "did:indy:danube:BjVFw137Xf75GbWw3ApYof")) |> to_oauth_schema(),
+                 insert(:token) |> to_oauth_schema(),
                  %{}
                )
 
       # TODO validate credential body
-      assert credential |> dbg
+      assert credential
     end
 
     test "issues jwt_vc_json credential", %{
@@ -253,7 +253,6 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     test "issues vc+sd-jwt credential", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{

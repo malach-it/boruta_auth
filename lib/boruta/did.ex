@@ -61,8 +61,12 @@ defmodule Boruta.Did do
     end
   end
 
-  @spec create(method :: String.t(), jwk :: map()) ::
-          {:ok, did :: String.t()} | {:error, reason :: String.t()}
+  @dialyzer {:no_return, create: 1}
+  @dialyzer {:no_return, create: 2}
+  @spec create(method :: String.t()) ::
+          {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
+  @spec create(method :: String.t(), jwk :: map() | nil) ::
+          {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
   def create("key" = method, jwk \\ nil) do
     payload = %{
       "didDocument" => %{
@@ -123,4 +127,8 @@ defmodule Boruta.Did do
         {:error, "Could not create did."}
     end
   end
+
+  @spec controller(did :: String.t() | nil) :: controller :: String.t() | nil
+  def controller(nil), do: nil
+  def controller(did), do: String.split(did, "#") |> List.first()
 end
