@@ -9,6 +9,7 @@ defmodule Boruta.Config do
     cache_backend: Boruta.Cache,
     contexts: [
       access_tokens: Boruta.Ecto.AccessTokens,
+      agent_tokens: Boruta.Ecto.AgentTokens,
       clients: Boruta.Ecto.Clients,
       codes: Boruta.Ecto.Codes,
       preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
@@ -22,6 +23,7 @@ defmodule Boruta.Config do
       authorization_code: 60,
       authorization_request: 60,
       access_token: 60 * 60 * 24,
+      agent_token: 60 * 60 * 24 * 30,
       id_token: 60 * 60 * 24,
       refresh_token: 60 * 60 * 24 * 30
     ],
@@ -41,6 +43,7 @@ defmodule Boruta.Config do
   @defaults cache_backend: Boruta.Cache,
             contexts: [
               access_tokens: Boruta.Ecto.AccessTokens,
+              agent_tokens: Boruta.Ecto.AgentTokens,
               clients: Boruta.Ecto.Clients,
               codes: Boruta.Ecto.Codes,
               preauthorized_codes: Boruta.Ecto.PreauthorizedCodes,
@@ -53,6 +56,7 @@ defmodule Boruta.Config do
               authorization_request: 300,
               authorization_code: 60,
               access_token: 60 * 60 * 24,
+              agent_token: 60 * 60 * 24 * 30,
               id_token: 60 * 60 * 24,
               refresh_token: 60 * 60 * 24 * 30
             ],
@@ -85,6 +89,12 @@ defmodule Boruta.Config do
   @doc false
   def access_token_max_ttl do
     Keyword.fetch!(oauth_config(), :max_ttl)[:access_token]
+  end
+
+  @spec agent_token_max_ttl() :: integer()
+  @doc false
+  def agent_token_max_ttl do
+    Keyword.fetch!(oauth_config(), :max_ttl)[:agent_token]
   end
 
   @spec authorization_code_max_ttl() :: integer()
@@ -121,6 +131,12 @@ defmodule Boruta.Config do
   @doc false
   def access_tokens do
     Keyword.fetch!(oauth_config(), :contexts)[:access_tokens]
+  end
+
+  @spec agent_tokens() :: module()
+  @doc false
+  def agent_tokens do
+    Keyword.fetch!(oauth_config(), :contexts)[:agent_tokens]
   end
 
   @spec clients() :: module()

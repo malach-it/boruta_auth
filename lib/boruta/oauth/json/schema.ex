@@ -28,6 +28,32 @@ defmodule Boruta.Oauth.Json.Schema do
     |> Schema.resolve()
   end
 
+  def agent_credentials do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "grant_type" => %{"type" => "string", "pattern" => "agent_credentials"},
+        "client_id" => %{
+          "type" => "string",
+          "pattern" => @uuid_pattern
+        },
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
+        "scope" => %{"type" => "string"},
+        "bind_data" => %{"type" => "string"},
+        "bind_configuration" => %{"type" => "string"}
+      },
+      "required" => ["grant_type", "client_id", "client_authentication"]
+    }
+    |> Schema.resolve()
+  end
+
   def password do
     %{
       "type" => "object",
@@ -266,7 +292,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "properties" => %{
         "grant_type" => %{
           "type" => "string",
-          "pattern" => "^(client_credentials|password|authorization_code|refresh_token)$"
+          "pattern" => "^(client_credentials|agent_credentials|password|authorization_code|refresh_token)$"
         }
       },
       "required" => ["grant_type"]

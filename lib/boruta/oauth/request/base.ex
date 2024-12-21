@@ -2,6 +2,7 @@ defmodule Boruta.Oauth.Request.Base do
   @moduledoc false
 
   alias Boruta.BasicAuth
+  alias Boruta.Oauth.AgentCredentialsRequest
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.ClientCredentialsRequest
@@ -35,6 +36,18 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        scope: params["scope"],
        dpop: params["dpop"]
+     }}
+  end
+
+  def build_request(%{"grant_type" => "agent_credentials"} = params) do
+    {:ok,
+     %AgentCredentialsRequest{
+       client_id: params["client_id"],
+       client_authentication: client_authentication_from_params(params),
+       scope: params["scope"],
+       dpop: params["dpop"],
+       bind_data: params["bind_data"],
+       bind_configuration: params["bind_configuration"]
      }}
   end
 
