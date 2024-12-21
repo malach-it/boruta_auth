@@ -31,7 +31,9 @@ defmodule Boruta.Ecto.Token do
           revoked_at: DateTime.t(),
           refresh_token_revoked_at: DateTime.t(),
           previous_token: String.t() | nil,
-          previous_code: String.t() | nil
+          previous_code: String.t() | nil,
+          bind_data: map() | nil,
+          bind_configuration: map() | nil
         }
 
   @authorization_details_schema %{
@@ -73,8 +75,11 @@ defmodule Boruta.Ecto.Token do
     field(:code_challenge, :string, virtual: true)
     field(:code_challenge_hash, :string)
     field(:code_challenge_method, :string, default: "plain")
+    # TODO rename to token_ttl
     field(:access_token_ttl, :integer, virtual: true)
     field(:authorization_code_ttl, :integer, virtual: true)
+    field(:bind_data, :map)
+    field(:bind_configuration, :map)
 
     field(:resource_owner, :map, virtual: true)
 
@@ -126,6 +131,57 @@ defmodule Boruta.Ecto.Token do
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
+    |> put_value()
+    |> put_c_nonce()
+    |> put_refresh_token()
+    |> put_expires_at()
+  end
+
+  @doc false
+  def data_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :client_id,
+      :redirect_uri,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :access_token_ttl,
+      :previous_code,
+      :authorization_details,
+      :bind_data,
+      :bind_configuration
+    ])
+    |> validate_required([:access_token_ttl, :client_id, :bind_data, :bind_configuration])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "agent_token")
+    |> validate_authorization_details()
+    |> put_value()
+    |> put_c_nonce()
+    |> put_expires_at()
+  end
+
+  @doc false
+  def data_changeset_with_refresh_token(token, attrs) do
+    token
+    |> cast(attrs, [
+      :access_token_ttl,
+      :client_id,
+      :redirect_uri,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :previous_token,
+      :previous_code,
+      :authorization_details,
+      :bind_data,
+      :bind_configuration
+    ])
+    |> validate_required([:access_token_ttl, :client_id, :bind_data, :bind_configuration])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "agent_token")
     |> put_value()
     |> put_c_nonce()
     |> put_refresh_token()

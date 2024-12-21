@@ -46,7 +46,9 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             authorization_details: nil,
             presentation_definition: nil,
             issuer: nil,
-            response_mode: nil
+            response_mode: nil,
+            bind_data: nil,
+            bind_configuration: nil
 
   @type t :: %__MODULE__{
           response_types: list(String.t()),
@@ -64,7 +66,9 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           authorization_details: list(map()) | nil,
           presentation_definition: map() | nil,
           issuer: String.t() | nil,
-          response_mode: String.t() | nil
+          response_mode: String.t() | nil,
+          bind_data: map(),
+          bind_configuration: map()
         }
 end
 
@@ -106,6 +110,67 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
                refresh_token: true
              ) do
         {:ok, %{token: access_token}}
+      end
+    end
+  end
+end
+
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
+  alias Boruta.AgentTokensAdapter
+  alias Boruta.Dpop
+  alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.AgentCredentialsRequest
+  alias Boruta.Oauth.Token
+
+  def preauthorize(%AgentCredentialsRequest{
+        client_id: client_id,
+        client_authentication: client_source,
+        scope: scope,
+        grant_type: grant_type,
+        dpop: dpop,
+        bind_data: bind_data,
+        bind_configuration: bind_configuration
+      }) do
+    with {:ok, client} <-
+           Authorization.Client.authorize(
+             id: client_id,
+             source: client_source,
+             grant_type: grant_type
+           ),
+         :ok <- Dpop.validate(dpop, client),
+         {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}),
+         {:ok, bind_data, bind_configuration} <-
+           Authorization.Data.authorize(bind_data, bind_configuration) do
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         scope: scope,
+         bind_data: bind_data,
+         bind_configuration: bind_configuration
+       }}
+    end
+  end
+
+  def token(request) do
+    with {:ok,
+          %AuthorizationSuccess{
+            client: client,
+            scope: scope,
+            bind_data: bind_data,
+            bind_configuration: bind_configuration
+          }} <- preauthorize(request) do
+      with {:ok, agent_token} <-
+             AgentTokensAdapter.create(
+               %{
+                 client: client,
+                 scope: scope,
+                 bind_data: bind_data,
+                 bind_configuration: bind_configuration
+               },
+               refresh_token: true
+             ) do
+        {:ok, %{agent_token: agent_token}}
       end
     end
   end
