@@ -13,11 +13,11 @@ defmodule Boruta.Oauth.Authorization.AgentToken do
       {:ok, %{resource_owner | extra_claims: claims}}
     else
       nil ->
-        %Error{
+        {:error, %Error{
           status: :unauthorized,
           error: :invalid_agent_token,
           error_description: "Agent token is invalid"
-        }
+        }}
     end
   end
 end

@@ -173,6 +173,44 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 }}
     end
 
+    test "returns an error when agent_token is invalid", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_configuration_id" => "credential"
+            }
+          ]
+      }
+
+      assert {:authorize_error,
+              %Boruta.Oauth.Error{
+                error: :invalid_agent_token,
+                error_description: "Agent token is invalid",
+                format: :fragment,
+                redirect_uri: "https://redirect.uri",
+                status: :unauthorized
+              }
+            } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "agent_token" => "invalid"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
     test "returns an error if grant type is not allowed by client", %{
       client_without_grant_type: client,
       resource_owner: resource_owner
