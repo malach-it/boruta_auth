@@ -47,6 +47,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             presentation_definition: nil,
             issuer: nil,
             response_mode: nil,
+            agent_token: nil,
             bind_data: nil,
             bind_configuration: nil
 
@@ -67,6 +68,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           presentation_definition: map() | nil,
           issuer: String.t() | nil,
           response_mode: String.t() | nil,
+          agent_token: String.t() | nil,
           bind_data: map(),
           bind_configuration: map()
         }
@@ -347,7 +349,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
            }),
          :ok <- maybe_check_tx_code(tx_code, code),
          {:ok, %ResourceOwner{sub: sub}} <-
-           Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
+           (case code.agent_token do
+             nil ->
+               Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
+             _ ->
+               {:ok, code.resource_owner}
+           end) do
       {:ok,
        %AuthorizationSuccess{
          client: code.client,
@@ -545,6 +552,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
   alias Boruta.Oauth.Token
 
   def preauthorize(%PreauthorizedCodeRequest{
+        agent_token: agent_token,
         client_id: client_id,
         redirect_uri: redirect_uri,
         resource_owner: resource_owner,
@@ -560,7 +568,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
              grant_type: grant_type
            ),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
-           Authorization.ResourceOwner.authorize(resource_owner: resource_owner),
+           (case agent_token do
+              nil ->
+                Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
+
+              agent_token ->
+                Authorization.AgentToken.authorize(
+                  agent_token: agent_token,
+                  resource_owner: resource_owner
+                )
+            end),
          {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,
@@ -573,7 +590,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
          sub: sub,
          scope: scope,
          state: state,
-         resource_owner: resource_owner
+         resource_owner: resource_owner,
+         agent_token: agent_token
        }}
     else
       {:error, :invalid_code_challenge} ->
@@ -598,7 +616,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
             sub: sub,
             scope: scope,
             state: state,
-            nonce: nonce
+            nonce: nonce,
+            agent_token: agent_token
           }} <-
            preauthorize(request) do
       # TODO create a preauthorized code
@@ -610,7 +629,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                sub: sub,
                scope: scope,
                state: state,
-               nonce: nonce
+               nonce: nonce,
+               agent_token: agent_token
              }) do
         {:ok, %{preauthorized_code: preauthorized_code}}
       end

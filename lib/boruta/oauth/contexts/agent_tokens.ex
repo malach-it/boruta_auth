@@ -41,4 +41,9 @@ defmodule Boruta.Oauth.AgentTokens do
   @callback revoke_refresh_token(
     token :: Boruta.Oauth.Token.t()
   ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
+
+  @doc """
+  Extract resource owner claims from an agent token
+  """
+  @callback claims_from_agent_token(token :: Boruta.Oauth.Token.t()) :: {:ok, claims :: map()}
 end

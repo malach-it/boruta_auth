@@ -9,6 +9,7 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
   Note : `resource_owner` is an addition that must be provided by the application layer.
   """
   @type t :: %__MODULE__{
+          agent_token: String.t() | nil,
           client_id: String.t(),
           redirect_uri: String.t(),
           state: String.t(),
@@ -20,7 +21,8 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
         }
 
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
-  defstruct client_id: nil,
+  defstruct agent_token: nil,
+            client_id: nil,
             redirect_uri: nil,
             state: "",
             prompt: "",

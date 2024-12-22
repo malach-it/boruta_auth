@@ -32,6 +32,7 @@ defmodule Boruta.Ecto.Token do
           refresh_token_revoked_at: DateTime.t(),
           previous_token: String.t() | nil,
           previous_code: String.t() | nil,
+          agent_token: String.t() | nil,
           bind_data: map() | nil,
           bind_configuration: map() | nil
         }
@@ -78,6 +79,7 @@ defmodule Boruta.Ecto.Token do
     # TODO rename to token_ttl
     field(:access_token_ttl, :integer, virtual: true)
     field(:authorization_code_ttl, :integer, virtual: true)
+    field(:agent_token, :string)
     field(:bind_data, :map)
     field(:bind_configuration, :map)
 
@@ -199,7 +201,8 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :authorization_details,
-      :redirect_uri
+      :redirect_uri,
+      :agent_token
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub])
     |> foreign_key_constraint(:client_id)
@@ -222,7 +225,8 @@ defmodule Boruta.Ecto.Token do
       :code_challenge,
       :code_challenge_method,
       :authorization_details,
-      :redirect_uri
+      :redirect_uri,
+      :agent_token
     ])
     |> validate_required([
       :authorization_code_ttl,
