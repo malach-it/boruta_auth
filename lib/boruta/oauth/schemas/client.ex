@@ -87,7 +87,8 @@ defmodule Boruta.Oauth.Client do
   @wallet_grant_types [
     "id_token",
     "vp_token",
-    "authorization_code"
+    "authorization_code",
+    "agent_credentials"
   ]
 
   @grant_types Enum.uniq(
@@ -181,7 +182,7 @@ defmodule Boruta.Oauth.Client do
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
   def should_check_secret?(_client, grant_type)
-      when grant_type in ["client_credentials", "introspect"],
+      when grant_type in ["client_credentials", "agent_credentials", "introspect"],
       do: true
 
   def should_check_secret?(%__MODULE__{confidential: false}, _grant_type), do: false
