@@ -706,6 +706,24 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
           ]
         )
 
+      agent_token = insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+      agent_code =
+        insert(
+          :token,
+          type: "preauthorized_code",
+          client: client,
+          sub: nil,
+          agent_token: agent_token.value,
+          redirect_uri: List.first(client.redirect_uris),
+          authorization_details: [
+            %{
+              "credential_definition" => %{
+                "type" => ["credential"]
+              }
+            }
+          ]
+        )
+
       tx_code_code =
         insert(
           :token,
@@ -776,6 +794,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       {:ok,
        resource_owner: resource_owner,
        code: code,
+       agent_code: agent_code,
        tx_code_code: tx_code_code,
        expired_code: expired_code,
        revoked_code: revoked_code,
@@ -920,6 +939,36 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
       assert token_type == "bearer"
       assert access_token
+      assert authorization_details
+      assert expires_in
+      assert refresh_token
+      assert c_nonce
+    end
+
+    test "returns a token with an agent_token", %{agent_code: code} do
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token,
+                c_nonce: c_nonce,
+                authorization_details: authorization_details
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+                     "pre-authorized_code" => code.value
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert access_token
+      assert %Ecto.Token{agent_token: agent_token} = Repo.get_by(Ecto.Token, value: access_token)
+      assert agent_token
       assert authorization_details
       assert expires_in
       assert refresh_token
