@@ -22,7 +22,7 @@ defmodule Boruta.Oauth.AgentCredentialsRequest do
   defstruct client_id: nil,
             client_authentication: nil,
             scope: "",
-            grant_type: "client_credentials",
+            grant_type: "agent_credentials",
             dpop: nil,
             bind_data: "",
             bind_configuration: ""
