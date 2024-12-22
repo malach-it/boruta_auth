@@ -22,7 +22,8 @@ defmodule Boruta.Oauth.AccessTokens do
     optional(:state) => String.t(),
     optional(:previous_token) => String.t(),
     optional(:resource_owner) => Boruta.Oauth.ResourceOwner.t(),
-    optional(:authorization_details) => list(map())
+    optional(:authorization_details) => list(map()),
+    optional(:agent_token) => String.t() | nil
   }, options :: [
     refresh_token: boolean()
   ]) :: token :: Boruta.Oauth.Token.t() | {:error, reason :: term()}

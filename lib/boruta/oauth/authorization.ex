@@ -362,7 +362,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
          sub: sub,
          scope: code.scope,
          nonce: code.nonce,
-         authorization_details: code.authorization_details
+         authorization_details: code.authorization_details,
+         agent_token: code.agent_token
        }}
     end
   end
@@ -375,7 +376,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
             sub: sub,
             scope: scope,
             nonce: nonce,
-            authorization_details: authorization_details
+            authorization_details: authorization_details,
+            agent_token: agent_token
           }} <-
            preauthorize(request),
          {:ok, access_token} <-
@@ -385,7 +387,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
                previous_code: code.value,
                sub: sub,
                scope: scope,
-               authorization_details: authorization_details
+               authorization_details: authorization_details,
+               agent_token: agent_token
              },
              refresh_token: true
            ),

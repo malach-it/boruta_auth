@@ -58,6 +58,7 @@ defmodule Boruta.Ecto.AccessTokens do
     previous_token = params[:previous_token]
     previous_code = params[:previous_code]
     resource_owner = params[:resource_owner]
+    agent_token = params[:agent_token]
 
     authorization_details =
       params[:authorization_details] || (resource_owner && resource_owner.authorization_details)
@@ -71,7 +72,8 @@ defmodule Boruta.Ecto.AccessTokens do
       access_token_ttl: access_token_ttl,
       previous_token: previous_token,
       previous_code: previous_code,
-      authorization_details: authorization_details
+      authorization_details: authorization_details,
+      agent_token: agent_token
     }
 
     changeset =
