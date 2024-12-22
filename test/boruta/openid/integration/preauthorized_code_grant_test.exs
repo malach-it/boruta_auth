@@ -16,7 +16,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
   setup :verify_on_exit!
 
-  describe "authorization code grant - authorize" do
+  describe "preauthorization code grant - authorize" do
     setup do
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
@@ -241,6 +241,51 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                )
 
       assert preauthorized_code
+    end
+
+    test "returns a credential offer response (agent_token)", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      agent_token = insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+      redirect_uri = List.first(client.redirect_uris)
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_configuration_id" => "credential"
+            }
+          ]
+      }
+
+      assert {:authorize_success,
+              %CredentialOfferResponse{
+                credential_issuer: "boruta",
+                tx_code_required: false,
+                credential_configuration_ids: ["credential"],
+                grants: %{
+                  "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
+                    "pre-authorized_code" => preauthorized_code
+                  }
+                }
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "agent_token" => agent_token.value
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert preauthorized_code
+      assert %Ecto.Token{agent_token: agent_token} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+      assert agent_token
     end
 
     test "returns a credential offer response (tx_code)", %{resource_owner: resource_owner} do

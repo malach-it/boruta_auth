@@ -126,4 +126,9 @@ defmodule Boruta.Ecto.AgentTokens do
       error -> error
     end
   end
+
+  @impl Boruta.Oauth.AgentTokens
+  def claims_from_agent_token(%Oauth.Token{bind_data: bind_data}) do
+    {:ok, bind_data}
+  end
 end
