@@ -103,7 +103,8 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :access_token_ttl,
       :previous_code,
-      :authorization_details
+      :authorization_details,
+      :agent_token
     ])
     |> validate_required([:access_token_ttl])
     |> validate_required([:client_id])
@@ -128,7 +129,8 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :previous_token,
       :previous_code,
-      :authorization_details
+      :authorization_details,
+      :agent_token
     ])
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
