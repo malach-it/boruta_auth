@@ -1810,7 +1810,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
-      Boruta.Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
+      Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
 
       case Oauth.token(
              %Plug.Conn{
@@ -2125,6 +2125,1100 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "client_id" => "did:key:test",
                      "code" => code.value,
                      "client_metadata" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+    end
+  end
+
+  describe "agent code grant - token" do
+    setup do
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+      client = insert(:client)
+      confidential_client = insert(:client, confidential: true)
+      pkce_client = insert(:client, pkce: true)
+      client_without_grant_type = insert(:client, supported_grant_types: [])
+
+      code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris)
+        )
+
+      siopv2_code =
+        insert(
+          :token,
+          type: "code",
+          client: Repo.get_by(Ecto.Client, public_client_id: Boruta.Config.issuer()),
+          sub: "did:key:test",
+          redirect_uri: List.first(client.redirect_uris)
+        )
+
+      authorization_details_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          authorization_details: [%{"type" => "openid_credential", "format" => "jwt_vc"}]
+        )
+
+      confidential_code =
+        insert(
+          :token,
+          type: "code",
+          client: confidential_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris)
+        )
+
+      openid_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          scope: "openid",
+          nonce: "nonce"
+        )
+
+      pkce_code =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: "code challenge",
+          code_challenge_hash: Oauth.Token.hash("code challenge"),
+          code_challenge_method: "plain"
+        )
+
+      expired_pkce_code =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: "code challenge",
+          code_challenge_hash: Oauth.Token.hash("code challenge"),
+          code_challenge_method: "plain",
+          expires_at: :os.system_time(:seconds) - 10
+        )
+
+      revoked_pkce_code =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: "code challenge",
+          code_challenge_hash: Oauth.Token.hash("code challenge"),
+          code_challenge_method: "plain",
+          revoked_at: DateTime.utc_now()
+        )
+
+      given_code_challenge =
+        :crypto.hash(:sha256, "strong random challenge me from client")
+        |> Base.url_encode64(padding: false)
+
+      pkce_code_s256 =
+        insert(
+          :token,
+          type: "code",
+          client: pkce_client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(pkce_client.redirect_uris),
+          code_challenge: given_code_challenge,
+          code_challenge_hash: Oauth.Token.hash(given_code_challenge),
+          code_challenge_method: "S256"
+        )
+
+      expired_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          expires_at: :os.system_time(:seconds) - 10
+        )
+
+      revoked_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          revoked_at: DateTime.utc_now()
+        )
+
+      bad_redirect_uri_code =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: "http://bad.redirect.uri"
+        )
+
+      code_with_scope =
+        insert(
+          :token,
+          type: "code",
+          client: client,
+          sub: resource_owner.sub,
+          redirect_uri: List.first(client.redirect_uris),
+          scope: "hello world"
+        )
+
+      {:ok,
+       client: client,
+       confidential_client: confidential_client,
+       pkce_client: pkce_client,
+       client_without_grant_type: client_without_grant_type,
+       resource_owner: resource_owner,
+       code: code,
+       confidential_code: confidential_code,
+       expired_code: expired_code,
+       revoked_code: revoked_code,
+       openid_code: openid_code,
+       pkce_code: pkce_code,
+       expired_pkce_code: expired_pkce_code,
+       revoked_pkce_code: revoked_pkce_code,
+       pkce_code_s256: pkce_code_s256,
+       authorization_details_code: authorization_details_code,
+       bad_redirect_uri_code: bad_redirect_uri_code,
+       code_with_scope: code_with_scope,
+       siopv2_code: siopv2_code}
+    end
+
+    test "returns an error if request is invalid" do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{"grant_type" => "agent_code"}
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description:
+                    "Request body validation failed. Required properties code, client_id, bind_data, bind_configuration are missing at #.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if `client_id` is invalid" do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+                   "code" => "bad_code",
+                   "redirect_uri" => "http://redirect.uri",
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_client,
+                  error_description: "Invalid client_id or redirect_uri.",
+                  status: :unauthorized
+                }}
+    end
+
+    test "returns an error if `client_id` is absent" do
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "code" => "bad_code",
+                   "redirect_uri" => "http://redirect.uri",
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description:
+                    "Request body validation failed. Required property client_id is missing at #.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if `code` is invalid", %{client: client} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => "bad_code",
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if `code` and request redirect_uri do not match", %{
+      client: client,
+      bad_redirect_uri_code: bad_redirect_uri_code
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => bad_redirect_uri_code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if grant type is not allowed by client", %{
+      client_without_grant_type: client,
+      code: code
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :unsupported_grant_type,
+                  error_description: "Client do not support given grant type.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is expired", %{
+      client: client,
+      expired_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is revoked", %{
+      client: client,
+      revoked_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if code was issued to an other client", %{
+      code: code,
+      resource_owner: resource_owner
+    } do
+      client = insert(:client)
+
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when client secret is invalid and client confidential", %{
+      confidential_client: client,
+      confidential_code: code
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "client_secret" => "bad_secret",
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_client,
+                  error_description: "Invalid client_id or redirect_uri.",
+                  status: :unauthorized
+                }}
+    end
+
+    # TODO test dpop implementation
+
+    test "returns a token when dpop is valid", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
+      {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
+      {:ok, dpop, _claims} =
+        Token.encode_and_sign(
+          %{
+            "htu" => "http://host/pa/th",
+            "htm" => "POST"
+          },
+          signer
+        )
+
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   method: "POST",
+                   host: "host",
+                   request_path: "/pa/th",
+                   req_headers: [{"dpop", dpop}],
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert expires_in
+      assert refresh_token
+    end
+
+    test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert expires_in
+      assert refresh_token
+      refute Repo.get_by(Ecto.Token, value: agent_token).revoked_at
+    end
+
+    test "returns a token with bind data", %{client: client, code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => Jason.encode!(%{"test" => true}),
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert expires_in
+      assert refresh_token
+      refute Repo.get_by(Ecto.Token, value: agent_token).revoked_at
+      assert Repo.get_by(Ecto.Token, value: agent_token).bind_data == %{"test" => true}
+    end
+
+    test "stores previous code", %{client: client, code: code, resource_owner: resource_owner} do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                agent_token: agent_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token = Repo.get_by(Ecto.Token, value: agent_token)
+      assert token.previous_code == code.value
+    end
+
+    test "returns a token with a confidential client", %{
+      confidential_client: client,
+      confidential_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "agent_code",
+                 "client_id" => client.id,
+                 "client_secret" => client.secret,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri,
+                 "bind_data" => "{}",
+                 "bind_configuration" => "{}"
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           agent_token: agent_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert agent_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns an error if token is used twice", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success, %TokenResponse{agent_token: agent_token}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert {:token_error,
+              %Error{
+                error: :invalid_grant,
+                error_description: "Given authorization code is invalid, revoked, or expired.",
+                status: :bad_request
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert Repo.get_by(Ecto.Token, value: agent_token).revoked_at
+    end
+
+    test "returns a token and an id_token with openid scope", %{
+      client: client,
+      openid_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params ->
+        {:ok,
+         %{
+           resource_owner
+           | extra_claims: %{
+               "term" => true,
+               "hide" => %{"display" => false, "hide" => true},
+               "hide_value" => %{"display" => false, "hide" => true},
+               "value" => %{"value" => true},
+               "display" => %{"value" => true, "display" => []},
+               "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
+             }
+         }}
+      end)
+      |> expect(:claims, fn _sub, _scope -> %{} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                id_token: id_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert id_token
+      assert expires_in
+      assert refresh_token
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+
+      {:ok, claims} = Oauth.Client.Token.verify_and_validate(id_token, signer)
+      client_id = client.id
+      resource_owner_id = resource_owner.sub
+      nonce = code.nonce
+
+      assert %{
+               "aud" => ^client_id,
+               "iat" => _iat,
+               "exp" => _exp,
+               "sub" => ^resource_owner_id,
+               "nonce" => ^nonce,
+               "display" => true,
+               "status" => %{"status" => "suspended", "value" => true},
+               "term" => true,
+               "value" => true
+             } = claims
+    end
+
+    test "returns a token from cache", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
+
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "agent_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri,
+                 "bind_data" => "{}",
+                 "bind_configuration" => "{}"
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           agent_token: agent_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert agent_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns a token with scope", %{
+      client: client,
+      code_with_scope: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      case Oauth.token(
+             %Plug.Conn{
+               body_params: %{
+                 "grant_type" => "agent_code",
+                 "client_id" => client.id,
+                 "code" => code.value,
+                 "redirect_uri" => redirect_uri,
+                 "bind_data" => "{}",
+                 "bind_configuration" => "{}"
+               }
+             },
+             ApplicationMock
+           ) do
+        {:token_success,
+         %TokenResponse{
+           token_type: token_type,
+           agent_token: agent_token,
+           expires_in: expires_in,
+           refresh_token: refresh_token
+         }} ->
+          assert token_type == "bearer"
+          assert agent_token
+          assert expires_in
+          assert refresh_token
+
+        _ ->
+          assert false
+      end
+    end
+
+    test "returns an error with pkce without code_verifier", %{
+      pkce_client: client,
+      pkce_code: code
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "PKCE request invalid.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error with pkce and bad code_verifier", %{
+      pkce_client: client,
+      pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "code_verifier" => "bad code challenge",
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Code verifier is invalid.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is expired with pkce", %{
+      pkce_client: client,
+      expired_pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "code_verifier" => code.code_challenge,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error when code is revoked with pkce", %{
+      pkce_client: client,
+      revoked_pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "agent_code",
+                   "client_id" => client.id,
+                   "code" => code.value,
+                   "redirect_uri" => redirect_uri,
+                   "code_verifier" => code.code_challenge,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_grant,
+                  error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns a token with pkce", %{
+      pkce_client: client,
+      pkce_code: code,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "code_verifier" => code.code_challenge,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert expires_in
+      assert refresh_token
+    end
+
+    @tag :pkce_256
+    test "returns a token with pkce `S256`", %{
+      pkce_client: client,
+      pkce_code_s256: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "code_verifier" => "strong random challenge me from client",
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert expires_in
+      assert refresh_token
+    end
+
+    test "returns a token with authorization details", %{
+      client: client,
+      authorization_details_code: code,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:token_success,
+              %TokenResponse{
+                token_type: token_type,
+                agent_token: agent_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert token_type == "bearer"
+      assert agent_token
+      assert expires_in
+      assert refresh_token
+
+      assert Repo.get_by(Ecto.Token, value: agent_token).authorization_details ==
+               code.authorization_details
+    end
+
+    test "returns a token with siopv2", %{siopv2_code: code} do
+      assert {:token_success,
+              %TokenResponse{
+                token_type: _token_type,
+                agent_token: _agent_token,
+                expires_in: _expires_in,
+                refresh_token: _refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => "did:key:test",
+                     "code" => code.value,
+                     "client_metadata" => "{}",
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
