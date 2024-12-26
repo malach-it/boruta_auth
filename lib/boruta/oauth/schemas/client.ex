@@ -96,6 +96,7 @@ defmodule Boruta.Oauth.Client do
                    "client_credentials",
                    "password",
                    "authorization_code",
+                   "agent_code",
                    "preauthorized_code",
                    "refresh_token",
                    "implicit",
