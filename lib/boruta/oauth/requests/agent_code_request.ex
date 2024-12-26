@@ -25,7 +25,7 @@ defmodule Boruta.Oauth.AgentCodeRequest do
             client_authentication: nil,
             redirect_uri: nil,
             code: nil,
-            grant_type: "authorization_code",
+            grant_type: "agent_code",
             code_verifier: "",
             dpop: nil,
             bind_data: nil,
