@@ -8,6 +8,11 @@ defmodule Boruta.Migrations.ClientsSignaturesAdapters do
         alter table(:oauth_clients) do
           add :signatures_adapter, :string, null: false, default: "Elixir.Boruta.Internal.Signatures"
         end
+
+        # 20241226184245_modify_oauth_clients_did.exs
+        alter table(:oauth_clients) do
+          modify :did, :text
+        end
       end
     end
   end
