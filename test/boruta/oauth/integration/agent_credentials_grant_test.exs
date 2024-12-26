@@ -48,7 +48,7 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Request body validation failed. Required property client_id is missing at #.",
+                    "Request body validation failed. Required properties client_id, bind_data, bind_configuration are missing at #.",
                   status: :bad_request
                 }}
     end
@@ -59,7 +59,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                  body_params: %{
                    "grant_type" => "agent_credentials",
                    "client_id" => "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-                   "client_secret" => "client_secret"
+                   "client_secret" => "client_secret",
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
                  }
                },
                ApplicationMock
@@ -78,7 +80,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                  body_params: %{
                    "grant_type" => "agent_credentials",
                    "client_id" => client.id,
-                   "client_secret" => "bad_client_secret"
+                   "client_secret" => "bad_client_secret",
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
                  }
                },
                ApplicationMock
@@ -104,7 +108,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -127,7 +133,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -155,7 +163,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -183,7 +193,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -213,7 +225,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -243,7 +257,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -281,7 +297,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -320,7 +338,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    body_params: %{
                      "grant_type" => "agent_credentials",
                      "client_id" => client.id,
-                     "client_secret" => client.secret
+                     "client_secret" => client.secret,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
                    }
                  },
                  ApplicationMock
@@ -526,7 +546,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    "grant_type" => "agent_credentials",
                    "client_id" => client.id,
                    "client_secret" => client.secret,
-                   "scope" => given_scope
+                   "scope" => given_scope,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
                  }
                },
                ApplicationMock
@@ -580,7 +602,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    "grant_type" => "agent_credentials",
                    "client_id" => client.id,
                    "client_secret" => client.secret,
-                   "scope" => given_scope
+                   "scope" => given_scope,
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
                  }
                },
                ApplicationMock
@@ -600,7 +624,9 @@ defmodule Boruta.OauthTest.AgentCredentialsGrantTest do
                    "grant_type" => "agent_credentials",
                    "client_id" => client.id,
                    "client_secret" => client.secret,
-                   "scope" => ""
+                   "scope" => "",
+                   "bind_data" => "{}",
+                   "bind_configuration" => "{}"
                  }
                },
                ApplicationMock

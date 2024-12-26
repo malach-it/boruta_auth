@@ -326,6 +326,112 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
   end
 end
 
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
+  alias Boruta.AgentTokensAdapter
+  alias Boruta.CodesAdapter
+  alias Boruta.Dpop
+  alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.AgentCodeRequest
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Client
+  alias Boruta.Oauth.IdToken
+  alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Scope
+  alias Boruta.Oauth.Token
+
+  def preauthorize(%AgentCodeRequest{
+        client_id: client_id,
+        client_authentication: client_source,
+        code: code,
+        redirect_uri: redirect_uri,
+        grant_type: grant_type,
+        code_verifier: code_verifier,
+    dpop: dpop,
+    bind_data: bind_data,
+    bind_configuration: bind_configuration
+      }) do
+    # TODO check client did against request from code phase in case of siopv2 requests
+    with {:ok, client} <-
+           Authorization.Client.authorize(
+             id: client_id,
+             source: client_source,
+             redirect_uri: redirect_uri,
+             grant_type: grant_type,
+             code_verifier: code_verifier
+           ),
+         :ok <- Dpop.validate(dpop, client),
+         {:ok, code} <-
+           Authorization.Code.authorize(%{
+             value: code,
+             redirect_uri: redirect_uri,
+             client: client,
+             code_verifier: code_verifier
+           }),
+         {:ok, %ResourceOwner{sub: sub}} <-
+           Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner),
+         {:ok, bind_data, bind_configuration} <-
+           Authorization.Data.authorize(bind_data, bind_configuration) do
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         code: code,
+         redirect_uri: redirect_uri,
+         sub: sub,
+         scope: code.scope,
+         nonce: code.nonce,
+         authorization_details: code.authorization_details,
+         bind_data: bind_data,
+         bind_configuration: bind_configuration,
+       }}
+    end
+  end
+
+  def token(request) do
+    with {:ok,
+          %AuthorizationSuccess{
+            client: client,
+            code: code,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            nonce: nonce,
+            authorization_details: authorization_details,
+            bind_data: bind_data,
+            bind_configuration: bind_configuration,
+          }} <-
+           preauthorize(request),
+         {:ok, agent_token} <-
+           AgentTokensAdapter.create(
+             %{
+               client: client,
+               redirect_uri: redirect_uri,
+               previous_code: code.value,
+               sub: sub,
+               scope: scope,
+               authorization_details: authorization_details,
+               bind_data: bind_data,
+               bind_configuration: bind_configuration
+             },
+             refresh_token: true
+           ),
+         {:ok, _code} <- CodesAdapter.revoke(code) do
+      # TODO check if from an hybrid request
+      case {Client.public?(client), String.match?(scope, ~r/#{Scope.openid().name}/)} do
+        {true, _} ->
+          {:ok, %{agent_token: agent_token}}
+
+        {_, true} ->
+          id_token = IdToken.generate(%{token: agent_token}, nonce)
+
+          {:ok, %{agent_token: agent_token, id_token: id_token}}
+
+        {_, false} ->
+          {:ok, %{agent_token: agent_token}}
+      end
+    end
+  end
+end
+
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeRequest do
   alias Boruta.Oauth.Client
   alias Boruta.AccessTokensAdapter

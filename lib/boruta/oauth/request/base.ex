@@ -2,6 +2,7 @@ defmodule Boruta.Oauth.Request.Base do
   @moduledoc false
 
   alias Boruta.BasicAuth
+  alias Boruta.Oauth.AgentCodeRequest
   alias Boruta.Oauth.AgentCredentialsRequest
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationRequest
@@ -71,6 +72,20 @@ defmodule Boruta.Oauth.Request.Base do
        redirect_uri: params["redirect_uri"],
        code_verifier: params["code_verifier"],
        dpop: params["dpop"]
+     }}
+  end
+
+  def build_request(%{"grant_type" => "agent_code"} = params) do
+    {:ok,
+     %AgentCodeRequest{
+       client_id: params["client_id"],
+       client_authentication: client_authentication_from_params(params),
+       code: params["code"],
+       redirect_uri: params["redirect_uri"],
+       code_verifier: params["code_verifier"],
+       dpop: params["dpop"],
+       bind_data: params["bind_data"],
+       bind_configuration: params["bind_configuration"]
      }}
   end
 
