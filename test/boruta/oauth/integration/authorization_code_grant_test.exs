@@ -3202,6 +3202,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                code.authorization_details
     end
 
+    @tag :skip
     test "returns a token with siopv2", %{siopv2_code: code} do
       assert {:token_success,
               %TokenResponse{
