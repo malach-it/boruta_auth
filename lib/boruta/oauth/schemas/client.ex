@@ -113,7 +113,8 @@ defmodule Boruta.Oauth.Client do
 
   @spec grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "code") do
-    Enum.member?(supported_grant_types, "authorization_code")
+    Enum.member?(supported_grant_types, "authorization_code") ||
+      Enum.member?(supported_grant_types, "agent_code")
   end
 
   def grant_type_supported?(
