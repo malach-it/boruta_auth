@@ -346,9 +346,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
         redirect_uri: redirect_uri,
         grant_type: grant_type,
         code_verifier: code_verifier,
-    dpop: dpop,
-    bind_data: bind_data,
-    bind_configuration: bind_configuration
+        dpop: dpop,
+        bind_data: bind_data,
+        bind_configuration: bind_configuration
       }) do
     # TODO check client did against request from code phase in case of siopv2 requests
     with {:ok, client} <-
@@ -367,10 +367,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
              client: client,
              code_verifier: code_verifier
            }),
-         {:ok, %ResourceOwner{sub: sub}} <-
+         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner),
          {:ok, bind_data, bind_configuration} <-
-           Authorization.Data.authorize(bind_data, bind_configuration) do
+           Authorization.Data.authorize(bind_data, bind_configuration, resource_owner) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
