@@ -710,9 +710,4 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
   defp do_validate_headers([error | checks], errors),
     do: do_validate_headers(checks, errors ++ [error])
-
-  def shift(status) do
-    Atom.to_string(status)
-    |> :binary.decode_unsigned()
-  end
 end
