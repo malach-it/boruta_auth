@@ -115,6 +115,7 @@ defmodule Boruta.MixProject do
         Authorization: [
           Boruta.Oauth.Authorization,
           Boruta.Oauth.Authorization.AccessToken,
+          Boruta.Oauth.Authorization.AgentToken,
           Boruta.Oauth.Authorization.Client,
           Boruta.Oauth.Authorization.Code,
           Boruta.Oauth.Authorization.Nonce,
@@ -131,6 +132,7 @@ defmodule Boruta.MixProject do
         ],
         Contexts: [
           Boruta.Oauth.AccessTokens,
+          Boruta.Oauth.AgentTokens,
           Boruta.Oauth.Clients,
           Boruta.Oauth.Codes,
           Boruta.Oauth.ResourceOwners,
@@ -161,12 +163,15 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.RevokeRequest,
           Boruta.Oauth.TokenRequest,
           Boruta.Oauth.PresentationRequest,
+          Boruta.Oauth.AgentCodeRequest,
+          Boruta.Oauth.AgentCredentialsRequest,
           Boruta.Oauth.Request
         ],
         "Ecto Adapter": [
           Boruta.Cache,
           Boruta.Cache.Primary,
           Boruta.AccessTokensAdapter,
+          Boruta.AgentTokensAdapter,
           Boruta.CodesAdapter,
           Boruta.ClientsAdapter,
           Boruta.ScopesAdapter,
@@ -181,6 +186,10 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.AuthorizationRequest,
           Boruta.Ecto.Credential
         ],
+        Signatures: [
+          Boruta.Oauth.Signatures,
+          Boruta.Openid.Signatures
+        ],
         Utilities: [
           Boruta.Cache,
           Boruta.BasicAuth,
@@ -188,7 +197,8 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator,
           Boruta.Did,
-          Boruta.Openid.VerifiableCredentials.Hotp
+          Boruta.Openid.VerifiableCredentials.Hotp,
+          Boruta.Openid.VerifiableCredentials.Status
         ],
         Errors: [
           Boruta.Oauth.Error
