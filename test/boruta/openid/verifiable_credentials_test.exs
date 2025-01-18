@@ -545,13 +545,13 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     end
   end
 
-  describe "generate_sd_salt/3" do
+  describe "Status.generate_status/3" do
     test "generate a ten years valid salt" do
       secret = "secret"
       expiration = 3600 * 24 * 365 * 10
       :binary.encode_unsigned(expiration) |> :binary.bin_to_list()
       status = :valid
-      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
@@ -564,7 +564,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       secret = "secret"
       expiration = 60
       status = :valid
-      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
@@ -587,7 +587,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       Enum.map(salts, fn {status, salt} ->
         :timer.tc(fn ->
-          assert VerifiableCredentials.verify_salt(secret, salt) == status
+          assert VerifiableCredentials.Status.verify_status_token(secret, salt) == status
         end)
       end)
     end
@@ -596,7 +596,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       secret = "secret"
       expiration = 60
       status = :revoked
-      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
@@ -609,7 +609,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       secret = "secret"
       expiration = 60
       status = :suspended
-      salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
@@ -619,9 +619,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     end
   end
 
-  describe "verify_salt/2" do
+  describe "Status.verify_status_token/2" do
     test "returns invalid" do
-      assert VerifiableCredentials.verify_salt("secret", "invalid salt") == :invalid
+      assert VerifiableCredentials.Status.verify_status_token("secret", "invalid salt") == :invalid
     end
   end
 
