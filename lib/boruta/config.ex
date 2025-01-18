@@ -4,7 +4,7 @@ defmodule Boruta.Config do
 
   Boruta configuration can be set as following in `config.exs` overriding following default configuration
   ```
-  config :boruta, Boruta.Oauth,
+  config :boruta_ssi, Boruta.Oauth,
     repo: MyApp.Repo, # mandatory
     cache_backend: Boruta.Cache,
     contexts: [
@@ -164,7 +164,7 @@ defmodule Boruta.Config do
         Missing configuration for resource_owners context. You can set your own
         `Boruta.Oauth.ResourceOwners` behaviour implementation in config:
 
-          config :boruta, Boruta.Oauth,
+          config :boruta_ssi, Boruta.Oauth,
             repo: MyApp.Repo,
             contexts: [
               resource_owners: MyApp.ResourceOwners
@@ -211,7 +211,7 @@ defmodule Boruta.Config do
   defp oauth_config do
       Keyword.merge(
         @defaults,
-        Application.get_env(:boruta, Boruta.Oauth) || [],
+        Application.get_env(:boruta_ssi, Boruta.Oauth) || [],
         fn _, a, b ->
           if Keyword.keyword?(a) && Keyword.keyword?(b) do
             Keyword.merge(a, b)

@@ -4,6 +4,6 @@ defmodule Boruta.Cache do
   """
 
   use Nebulex.Cache,
-    otp_app: :boruta,
+    otp_app: :boruta_ssi,
     adapter: Nebulex.Adapters.Replicated
 end

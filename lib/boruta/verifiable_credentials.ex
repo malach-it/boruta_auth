@@ -41,7 +41,7 @@ defmodule Boruta.VerifiableCredentials do
 
   defmodule Status do
     @moduledoc """
-    Implements status tokens as stated in [this specification draft](https://github.com/malach-it/vc-decentralized-status/blob/main/SPECIFICATION.md) helping to annotate identity information.
+    Implements status tokens as stated in [this working draft](https://github.com/malach-it/vc-decentralized-status/blob/main/SPECIFICATION.md) helping to annotate identity information.
     """
 
     @status_table [
@@ -113,22 +113,22 @@ defmodule Boruta.VerifiableCredentials do
       _ -> :invalid
     end
 
-    def parse_statuslist(statuslist) do
+    defp parse_statuslist(statuslist) do
       parse_statuslist(statuslist, {0, %{ttl: [], memory: []}})
     end
 
-    def parse_statuslist([], {_index, result}), do: result
+    defp parse_statuslist([], {_index, result}), do: result
 
-    def parse_statuslist([_char | t], {index, acc}) when index < 7 do
+    defp parse_statuslist([_char | t], {index, acc}) when index < 7 do
       parse_statuslist(t, {index + 1, acc})
     end
 
-    def parse_statuslist([char | t], {index, acc}) when index < 10 do
+    defp parse_statuslist([char | t], {index, acc}) when index < 10 do
       acc = Map.put(acc, :memory, acc[:memory] ++ [char])
       parse_statuslist(t, {index + 1, acc})
     end
 
-    def parse_statuslist([char | t], {index, acc}) when index == 10 do
+    defp parse_statuslist([char | t], {index, acc}) when index == 10 do
       acc =
         acc
         |> Map.put(

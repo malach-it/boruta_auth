@@ -1,18 +1,14 @@
-# Since configuration is shared in umbrella projects, this file
-# should only configure the :boruta application itself
-# and only for organization purposes. All other config goes to
-# the umbrella root.
 import Config
 
 # Configure your database
-config :boruta, Boruta.Repo,
+config :boruta_ssi, Boruta.Repo,
   username: "postgres",
   password: "postgres",
   database: "boruta_auth",
   hostname: "localhost",
   pool_size: 10
 
-config :boruta, Boruta.Oauth,
+config :boruta_ssi, Boruta.Oauth,
   contexts: [
     resource_owners: Dummy.ResourceOwners
   ]
