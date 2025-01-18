@@ -224,7 +224,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   end
 
   defp template_path(path) do
-    :code.priv_dir(:boruta)
+    :code.priv_dir(:boruta_ssi)
     |> Path.join("templates/boruta.gen.controllers")
     |> Path.join(path <> ".eex")
   end
@@ -232,7 +232,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
   defp raw_file_paths(paths) do
     paths
     |> Enum.map(fn path ->
-      :code.priv_dir(:boruta)
+      :code.priv_dir(:boruta_ssi)
       |> Path.join("templates/boruta.gen.controllers")
       |> Path.join(path)
     end)
