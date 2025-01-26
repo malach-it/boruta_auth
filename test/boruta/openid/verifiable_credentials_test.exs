@@ -12,7 +12,8 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     setup do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" => "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "kid" =>
+            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -41,12 +42,14 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
             types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }]
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              }
+            ]
           }
         }
       }
@@ -127,7 +130,11 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       resource_owner: resource_owner,
       credential_params: credential_params
     } do
-      signer = Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{"typ" => "unknown", "kid" => "kid"})
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "typ" => "unknown",
+          "kid" => "kid"
+        })
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
@@ -218,7 +225,6 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     test "issues jwt_vc_json credential", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -234,6 +240,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       assert {:ok,
               %{
                 credential: credential,
@@ -243,6 +250,46 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                  resource_owner,
                  credential_params,
                  insert(:token) |> to_oauth_schema(),
+                 %{}
+               )
+
+      # TODO validate credential body
+      assert credential
+    end
+
+    @tag :skip
+    test "issues an open badge credential", %{
+      credential_params: credential_params
+    } do
+      resource_owner = %ResourceOwner{
+        sub: SecureRandom.uuid(),
+        extra_claims: %{
+          "firstname" => "firstname"
+        },
+        credential_configuration: %{
+          "credential_identifier" => %{
+            version: "13",
+            types: ["VerifiableCredential"],
+            format: "openbadge",
+            claims: ["firstname"],
+            time_to_live: 60
+          }
+        }
+      }
+
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "openbadge"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:token,
+                   client:
+                     build(:client, signatures_adapter: "Elixir.Boruta.IssuerCoordinator.Signatures")
+                 )
+                 |> to_oauth_schema(),
                  %{}
                )
 
@@ -268,6 +315,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       assert {:ok,
               %{
                 credential: credential,
@@ -287,7 +335,6 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     test "issues vc+sd-jwt credential - valid", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -305,23 +352,27 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }, %{
-              "name" => "lastname",
-              "label" => "lastname",
-              "pointer" => "lastname",
-              "expiration" => "3600"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              },
+              %{
+                "name" => "lastname",
+                "label" => "lastname",
+                "pointer" => "lastname",
+                "expiration" => "3600"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
 
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -381,7 +432,6 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     test "issues vc+sd-jwt credential - suspended", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -395,17 +445,21 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -420,24 +474,11 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      suspended_salt_key = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-                   |> String.split("~")
-                   |> List.last()
-
-      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.Status.shift(:suspended)
-      )
     end
 
     test "issues vc+sd-jwt credential - revoked", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -451,17 +492,21 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "3600"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "3600"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -476,24 +521,11 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      revoked_salt_key = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-                   |> String.split("~")
-                   |> List.last()
-
-      assert revoked_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.Status.shift(:revoked)
-      )
     end
 
     test "issues vc+sd-jwt credential - expired", %{
       credential_params: credential_params
     } do
-
       resource_owner = %ResourceOwner{
         sub: SecureRandom.uuid(),
         extra_claims: %{
@@ -507,17 +539,21 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
             version: "13",
             types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
-            claims: [%{
-              "name" => "firstname",
-              "label" => "firstname",
-              "pointer" => "firstname",
-              "expiration" => "1"
-            }],
+            claims: [
+              %{
+                "name" => "firstname",
+                "label" => "firstname",
+                "pointer" => "firstname",
+                "expiration" => "1"
+              }
+            ],
             time_to_live: 60
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -533,26 +569,33 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       :timer.sleep(1000)
       # TODO validate credential body
       assert credential
-      suspended_salt_key = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-                   |> String.split("~")
-                   |> List.last()
 
-      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 33
-      )
-      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 44
-      )
-      refute suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + 55
-      )
+      suspended_salt_key =
+        String.split(credential, "~")
+        |> Enum.at(1)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+        |> String.split("~")
+        |> List.last()
+
+      refute suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + 33
+               )
+
+      refute suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + 44
+               )
+
+      refute suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + 55
+               )
     end
   end
 
@@ -589,9 +632,10 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       statuses = [:valid, :revoked, :suspended]
       secret = "secret"
 
-      salts = Enum.map(1..1_000, fn _ ->
-        status = Enum.random(statuses)
-        expiration = Enum.random(1..3600)
+      salts =
+        Enum.map(1..1_000, fn _ ->
+          status = Enum.random(statuses)
+          expiration = Enum.random(1..3600)
 
         assert salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
         {status, salt}

@@ -1,5 +1,6 @@
 defmodule Boruta.Universal.Signatures do
   @behaviour Boruta.Oauth.Signatures
+  @behaviour Boruta.Openid.Signatures
 
   defmodule Token do
     @moduledoc false
