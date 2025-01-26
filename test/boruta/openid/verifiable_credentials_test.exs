@@ -336,35 +336,46 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       # TODO validate credential body
       assert credential
-      valid_salt = String.split(credential, "~")
-                   |> Enum.at(2)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-      valid_salt_key = valid_salt
-                   |> String.split("~")
-                   |> List.last()
-      VerifiableCredentials.verify_salt(token.client.private_key, valid_salt)
 
-      assert valid_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:valid)
-      )
+      valid_salt =
+        String.split(credential, "~")
+        |> Enum.at(2)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
 
-      suspended_salt = String.split(credential, "~")
-                   |> Enum.at(1)
-                   |> Base.url_decode64!(padding: false)
-                   |> Jason.decode!()
-                   |> List.first()
-      suspended_salt_key = suspended_salt
-                   |> String.split("~")
-                   |> List.last()
-      VerifiableCredentials.verify_salt(token.client.private_key, suspended_salt)
+      valid_salt_key =
+        valid_salt
+        |> String.split("~")
+        |> List.last()
 
-      assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
-        token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
-      )
+      VerifiableCredentials.Status.verify_status_token(token.client.private_key, valid_salt)
+
+      assert valid_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + VerifiableCredentials.Status.shift(:valid)
+               )
+
+      suspended_salt =
+        String.split(credential, "~")
+        |> Enum.at(1)
+        |> Base.url_decode64!(padding: false)
+        |> Jason.decode!()
+        |> List.first()
+
+      suspended_salt_key =
+        suspended_salt
+        |> String.split("~")
+        |> List.last()
+
+      VerifiableCredentials.Status.verify_status_token(token.client.private_key, suspended_salt)
+
+      assert suspended_salt_key ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 token.client.private_key,
+                 div(:os.system_time(:seconds), 3600) + VerifiableCredentials.Status.shift(:suspended)
+               )
     end
 
     test "issues vc+sd-jwt credential - suspended", %{
@@ -419,7 +430,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       assert suspended_salt_key == VerifiableCredentials.Hotp.generate_hotp(
         token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:suspended)
+        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.Status.shift(:suspended)
       )
     end
 
@@ -475,7 +486,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       assert revoked_salt_key == VerifiableCredentials.Hotp.generate_hotp(
         token.client.private_key,
-        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.shift(:revoked)
+        div(:os.system_time(:seconds), 3600) + VerifiableCredentials.Status.shift(:revoked)
       )
     end
 
@@ -555,9 +566,10 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.Status.shift(:valid)
       )
-      assert VerifiableCredentials.verify_salt(secret, salt) == :valid
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :valid
+
     end
 
     test "generate a valid salt" do
@@ -568,9 +580,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:valid)
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.Status.shift(:valid)
       )
-      assert VerifiableCredentials.verify_salt(secret, salt) == :valid
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :valid
     end
 
     test "generate a thousand salt" do
@@ -581,7 +593,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
         status = Enum.random(statuses)
         expiration = Enum.random(1..3600)
 
-        assert salt = VerifiableCredentials.generate_sd_salt(secret, expiration, status)
+        assert salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
         {status, salt}
       end)
 
@@ -600,9 +612,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:revoked)
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.Status.shift(:revoked)
       )
-      assert VerifiableCredentials.verify_salt(secret, salt) == :revoked
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :revoked
     end
 
     test "generate a suspended salt" do
@@ -613,9 +625,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
       assert String.split(salt, "~") |> List.last() == VerifiableCredentials.Hotp.generate_hotp(
         secret,
-        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.shift(:suspended)
+        div(:os.system_time(:seconds), expiration) + VerifiableCredentials.Status.shift(:suspended)
       )
-      assert VerifiableCredentials.verify_salt(secret, salt) == :suspended
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :suspended
     end
   end
 
