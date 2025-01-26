@@ -164,6 +164,72 @@ defmodule Boruta.OpenidTest.CredentialTest do
       # TODO validate credential body
       assert credential
     end
+
+    @tag :skip
+    test "returns an openbadge credential" do
+      {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk,
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, token, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
+
+      proof = %{
+        "proof_type" => "jwt",
+        "jwt" => token
+      }
+
+      credential_params = %{"format" => "openbadge", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
+      sub = SecureRandom.uuid()
+
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
+        {:ok,
+         %ResourceOwner{
+           sub: sub,
+           credential_configuration: %{
+             "UniversityDegree" => %{
+               version: "13",
+               types: ["VerifiableCredential"],
+               format: "openbadge",
+               time_to_live: 3600,
+               claims: ["family_name"]
+             }
+           },
+           extra_claims: %{
+             "family_name" => "family_name"
+           }
+         }}
+      end)
+
+      %Token{value: access_token} =
+        insert(:token,
+          sub: sub,
+          authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}]
+        )
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_created,
+                %CredentialResponse{
+                  format: "openbadge",
+                  credential: credential
+                }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+
+      # TODO validate credential body
+      assert credential
+    end
   end
 
   describe "deliver defered verifiable credentials" do

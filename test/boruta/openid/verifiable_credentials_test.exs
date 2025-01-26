@@ -591,6 +591,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       }
 
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -675,7 +676,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -735,7 +738,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -795,7 +800,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,

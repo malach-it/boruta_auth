@@ -30,6 +30,9 @@ defmodule Boruta.Config do
     ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
     did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
     did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
+    universal_keys_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys",
+    universal_sign_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys/sign",
+    issuer_coordinator_sign_url: "http://localhost:4005/instance/test/credentials/issue",
     universal_did_auth: %{
       type: "bearer",
       token: DID_API_KEY
@@ -66,6 +69,7 @@ defmodule Boruta.Config do
             signature_credentials_base_url: "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
             universal_keys_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys",
             universal_sign_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys/sign",
+            issuer_coordinator_sign_url: "http://localhost:4005/instance/test/credentials/issue",
             universal_did_auth: %{
               type: "bearer",
               token: nil
@@ -230,6 +234,12 @@ defmodule Boruta.Config do
   @doc false
   def universal_sign_base_url do
     Keyword.fetch!(oauth_config(), :universal_sign_base_url)
+  end
+
+  @spec issuer_coordinator_sign_url() :: String.t()
+  @doc false
+  def issuer_coordinator_sign_url do
+    Keyword.fetch!(oauth_config(), :issuer_coordinator_sign_url)
   end
 
   @spec universal_did_auth() :: map()
