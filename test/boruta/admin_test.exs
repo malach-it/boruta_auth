@@ -262,7 +262,14 @@ defmodule Boruta.Ecto.AdminTest do
                {:signatures_adapter,
                 {
                   "is invalid",
-                  [{:validation, :inclusion}, {:enum, ["Elixir.Boruta.Internal.Signatures"]}]
+                  [
+                    {:validation, :inclusion},
+                    {:enum,
+                     [
+                       "Elixir.Boruta.Internal.Signatures",
+                       "Elixir.Boruta.IssuerCoordinator.Signatures"
+                     ]}
+                  ]
                 }}
              ]
     end

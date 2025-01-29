@@ -27,7 +27,7 @@ Once the application is up, we can go on to the authorization part. First, you c
 
   def deps do
   ...
-      {:boruta, "~> 2.0"}
+      {:boruta_ssi, "~> 0.1"}
   ...
   end
 ```
@@ -72,7 +72,7 @@ And give mandatory boruta configuration
 ```elixir
 # config/config.exs
 
-config :boruta, Boruta.Oauth,
+config :boruta_ssi, Boruta.Oauth,
   repo: BorutaExample.Repo,
   issuer: "https://example.com"
 ```
@@ -130,7 +130,7 @@ and inject it with the main configuration
 ```elixir
 # config/config.exs
 
-config :boruta, Boruta.Oauth,
+config :boruta_ssi, Boruta.Oauth,
   repo: BorutaExample.Repo,
   contexts: [
     resource_owners: BorutaExample.ResourceOwners

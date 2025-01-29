@@ -34,7 +34,10 @@ defmodule Boruta.Oauth.Token do
             code_challenge: nil,
             code_challenge_hash: nil,
             code_challenge_method: nil,
-            previous_code: nil
+            previous_code: nil,
+            bind_data: nil,
+            bind_configuration: nil,
+            agent_token: nil
 
   # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
@@ -60,7 +63,10 @@ defmodule Boruta.Oauth.Token do
           inserted_at: DateTime.t() | nil,
           revoked_at: DateTime.t() | nil,
           refresh_token_revoked_at: DateTime.t() | nil,
-          previous_code: String.t() | nil
+          previous_code: String.t() | nil,
+          bind_data: String.t() | nil,
+          bind_configuration: String.t() | nil,
+          agent_token: String.t() | nil
         }
 
   @doc """

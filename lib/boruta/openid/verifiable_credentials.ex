@@ -1,4 +1,6 @@
 defmodule Boruta.Openid.VerifiableCredentials do
+  @moduledoc false
+
   defmodule Hotp do
     @moduledoc """
     Implements HOTP generation as described in the IETF RFC
@@ -39,7 +41,109 @@ defmodule Boruta.Openid.VerifiableCredentials do
     end
   end
 
-  @moduledoc false
+  defmodule Status do
+    @moduledoc """
+    Implements status tokens as stated in [this specification draft](https://github.com/malach-it/vc-decentralized-status/blob/main/SPECIFICATION.md) helping to annotate identity information.
+    """
+
+    @status_table [
+      :valid,
+      :suspended,
+      :revoked
+    ]
+
+    @spec shift(status :: atom()) :: shift :: integer()
+    def shift(status) do
+      Atom.to_string(status)
+      |> :binary.decode_unsigned()
+    end
+
+    @spec generate_status_token(secret :: String.t(), ttl :: integer(), status :: atom()) ::
+            status_token :: String.t()
+    def generate_status_token(secret, ttl, status) do
+      iat =
+        :os.system_time(:microsecond)
+        |> :binary.encode_unsigned()
+        |> :binary.bin_to_list()
+        |> :string.right(7, 0)
+
+      padded_ttl =
+        :binary.encode_unsigned(ttl)
+        |> :binary.bin_to_list()
+        |> :string.right(4, 0)
+
+      status_list =
+        iat ++
+          padded_ttl
+
+      status_information =
+        status_list
+        |> to_string()
+        |> Base.url_encode64(padding: false)
+
+      derived_status =
+        Hotp.generate_hotp(
+          secret,
+          div(:os.system_time(:seconds), ttl) + shift(status)
+        )
+
+      "#{status_information}~#{derived_status}"
+    end
+
+    @spec verify_status_token(secret :: String.t(), status_token :: String.t()) ::
+            status :: atom()
+    def verify_status_token(secret, status_token) do
+      [status_list, hotp] = String.split(status_token, "~")
+
+      %{ttl: ttl} =
+        status_list
+        |> Base.url_decode64!(padding: false)
+        |> to_charlist()
+        |> parse_statuslist()
+
+      Enum.reduce_while(@status_table, :expired, fn status, acc ->
+        case hotp ==
+               Hotp.generate_hotp(
+                 secret,
+                 div(:os.system_time(:seconds), ttl) + shift(status)
+               ) do
+          true -> {:halt, status}
+          false -> {:cont, acc}
+        end
+      end)
+    rescue
+      _ -> :invalid
+    end
+
+    defp parse_statuslist(statuslist) do
+      parse_statuslist(statuslist, {0, %{ttl: [], memory: []}})
+    end
+
+    defp parse_statuslist([], {_index, result}), do: result
+
+    defp parse_statuslist([_char | t], {index, acc}) when index < 7 do
+      parse_statuslist(t, {index + 1, acc})
+    end
+
+    defp parse_statuslist([char | t], {index, acc}) when index < 10 do
+      acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+      parse_statuslist(t, {index + 1, acc})
+    end
+
+    defp parse_statuslist([char | t], {index, acc}) when index == 10 do
+      acc =
+        acc
+        |> Map.put(
+          :ttl,
+          (acc[:memory] ++ [char])
+          |> :erlang.list_to_binary()
+          |> :binary.decode_unsigned()
+        )
+        |> Map.put(:memory, [])
+
+      parse_statuslist(t, {index + 1, acc})
+    end
+  end
 
   alias Boruta.Config
   alias Boruta.Did
@@ -54,12 +158,6 @@ defmodule Boruta.Openid.VerifiableCredentials do
   # TT5rRw7VCjbapSKSfZEUSekzuBrGZhfwxQTfsNVeUYsX5gH2eJ4LdVt6uctFyJsW76VygayYHiHpwnhGwAombi\
   # RJiimmRTMXUAa49VQ9NWT7PUK2P7VbBy4Bn"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
-
-  @status_table [
-    :valid,
-    :suspended,
-    :revoked
-  ]
 
   @authorization_details_schema %{
     "type" => "array",
@@ -470,7 +568,8 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
     claims_with_salt =
       Enum.map(claims, fn {name, {value, status, ttl}} ->
-        {{name, value}, generate_sd_salt(client.private_key, ttl, String.to_atom(status))}
+        {{name, value},
+         Status.generate_status_token(client.private_key, ttl, String.to_atom(status))}
       end)
 
     disclosures =
@@ -515,90 +614,78 @@ defmodule Boruta.Openid.VerifiableCredentials do
     end
   end
 
+  defp generate_credential(
+         _claims,
+         {_credential_identifier, _credential_configuration},
+         {_jwk, _proof},
+         token,
+         format
+       )
+       when format in ["openbadge"] do
+    client = token.client
+
+    payload = %{
+      "@context" => [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+      ],
+      "id" => "urn:uuid:2fe53dc9-b2ec-4939-9b2c-0d00f6663b6c",
+      "type" => [
+        "VerifiableCredential",
+        "OpenBadgeCredential"
+      ],
+      "name" => "DCC Test Credential",
+      "issuer" => %{
+        "type" => [
+          "Profile"
+        ],
+        "id" => "did:key:z6MkhVTX9BF3NGYX6cc7jWpbNnR7cAjH8LUffabZP8Qu4ysC",
+        "name" => "Digital Credentials Consortium Test Issuer",
+        "url" => "https://dcconsortium.org",
+        "image" =>
+          "https://user-images.githubusercontent.com/752326/230469660-8f80d264-eccf-4edd-8e50-ea634d407778.png"
+      },
+      "validFrom" => "2023-08-02T17:43:32.903Z",
+      "credentialSubject" => %{
+        "type" => [
+          "AchievementSubject"
+        ],
+        "achievement" => %{
+          "id" => "urn:uuid:bd6d9316-f7ae-4073-a1e5-2f7f5bd22922",
+          "type" => [
+            "Achievement"
+          ],
+          "achievementType" => "Diploma",
+          "name" => "Badge",
+          "description" =>
+            "This is a sample credential issued by the Digital Credentials Consortium to demonstrate the functionality of Verifiable Credentials for wallets and verifiers.",
+          "criteria" => %{
+            "type" => "Criteria",
+            "narrative" =>
+              "This credential was issued to a student that demonstrated proficiency in the Python programming language that occurred from **February 17, 2023** to **June 12, 2023**."
+          },
+          "image" => %{
+            "id" =>
+              "https://user-images.githubusercontent.com/752326/214947713-15826a3a-b5ac-4fba-8d4a-884b60cb7157.png",
+            "type" => "Image"
+          }
+        },
+        "name" => "Jane Doe"
+      }
+    }
+
+    case Client.signatures_adapter(client).verifiable_credential_sign(payload, client, format) do
+      {:error, error} ->
+        {:error, error}
+
+      credential ->
+
+        {:ok, credential}
+    end
+  end
+
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
     do: {:error, "Unkown format."}
-
-  def generate_sd_salt(secret, ttl, status) do
-    iat =
-      :os.system_time(:microsecond)
-      |> :binary.encode_unsigned()
-      |> :binary.bin_to_list()
-      |> :string.right(7, 0)
-
-    padded_ttl =
-      :binary.encode_unsigned(ttl)
-      |> :binary.bin_to_list()
-      |> :string.right(4, 0)
-
-    status_list =
-      iat ++
-        padded_ttl
-
-    salt =
-      status_list
-      |> to_string()
-      |> Base.url_encode64(padding: false)
-
-    hotp =
-      Hotp.generate_hotp(
-        secret,
-        div(:os.system_time(:seconds), ttl) + shift(status)
-      )
-
-    "#{salt}~#{hotp}"
-  end
-
-  def verify_salt(secret, salt) do
-    [status_list, hotp] = String.split(salt, "~")
-
-    %{ttl: ttl} =
-      status_list
-      |> Base.url_decode64!(padding: false)
-      |> to_charlist()
-      |> parse_statuslist()
-
-    Enum.reduce_while(@status_table, :expired, fn status, acc ->
-      case hotp ==
-             Hotp.generate_hotp(
-               secret,
-               div(:os.system_time(:seconds), ttl) + shift(status)
-             ) do
-        true -> {:halt, status}
-        false -> {:cont, acc}
-      end
-    end)
-  rescue
-    _ -> :invalid
-  end
-
-  def parse_statuslist(statuslist) do
-    parse_statuslist(statuslist, {0, %{ttl: [], memory: []}})
-  end
-
-  def parse_statuslist([], {_index, result}), do: result
-
-  def parse_statuslist([_char | t], {index, acc}) when index < 7 do
-    parse_statuslist(t, {index + 1, acc})
-  end
-
-  def parse_statuslist([char | t], {index, acc}) when index < 10 do
-    acc = Map.put(acc, :memory, acc[:memory] ++ [char])
-    parse_statuslist(t, {index + 1, acc})
-  end
-
-  def parse_statuslist([char | t], {index, acc}) when index == 10 do
-    acc =
-      acc
-      |> Map.put(
-        :ttl,
-        (acc[:memory] ++ [char])
-        |> :erlang.list_to_binary()
-        |> :binary.decode_unsigned()
-      )
-      |> Map.put(:memory, [])
-
-    parse_statuslist(t, {index + 1, acc})
-  end
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
@@ -640,9 +727,4 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
   defp do_validate_headers([error | checks], errors),
     do: do_validate_headers(checks, errors ++ [error])
-
-  def shift(status) do
-    Atom.to_string(status)
-    |> :binary.decode_unsigned()
-  end
 end

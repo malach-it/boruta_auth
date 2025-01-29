@@ -27,7 +27,7 @@ defmodule Boruta.Oauth.Validator do
   @spec validate(action :: :token | :authorize | :introspect | :revoke, params :: map()) ::
           {:ok, params :: map()} | {:error, message :: String.t()}
   def validate(:token, %{"grant_type" => grant_type} = params)
-      when grant_type in ["password", "client_credentials", "authorization_code", "refresh_token"] do
+      when grant_type in ["password", "client_credentials", "agent_credentials", "agent_code", "authorization_code", "refresh_token"] do
     case ExJsonSchema.Validator.validate(
            apply(Schema, String.to_atom(grant_type), []),
            params,
