@@ -151,7 +151,8 @@ defmodule Boruta.Openid do
     with {:ok, _claims} <- check_id_token_client(direct_post_params),
          %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
       with {:ok, code} <- Authorization.Code.authorize(%{value: value}),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, _code} <- CodesAdapter.revoke(code) do
           query =
             %{
               code: code.value,

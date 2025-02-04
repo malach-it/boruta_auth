@@ -188,6 +188,37 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    test "siopv2 - returns an error on replay", %{id_token: id_token, code: code} do
+      conn = %Plug.Conn{}
+
+      assert {:direct_post_success, _callback_uri} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :bad_request,
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired."
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+    end
+
     test "siopv2 - authenticates", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -288,6 +319,57 @@ defmodule Boruta.OpenidTest.DirectPostTest do
             }
           ]
         })
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :bad_request,
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired."
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - returns an error on replay", %{vp_token: vp_token, code: code} do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, _callback_uri} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
 
       assert {
                :authentication_failure,
