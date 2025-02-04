@@ -3,9 +3,9 @@ defmodule Boruta.MixProject do
 
   def project do
     [
-      name: "Boruta ssi core",
-      app: :boruta_ssi,
-      version: "0.1.0-beta.1",
+      name: "Boruta core",
+      app: :boruta,
+      version: "3.0.0-beta.3",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -188,8 +188,7 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator,
           Boruta.Did,
-          Boruta.VerifiableCredentials.Hotp,
-          Boruta.VerifiableCredentials.Status
+          Boruta.VerifiableCredentials.Hotp
         ],
         Errors: [
           Boruta.Oauth.Error
@@ -200,7 +199,7 @@ defmodule Boruta.MixProject do
 
   defp package do
     %{
-      name: "boruta_ssi",
+      name: "boruta",
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/malach-it/boruta_auth"

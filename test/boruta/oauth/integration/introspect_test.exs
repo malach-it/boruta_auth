@@ -252,20 +252,20 @@ defmodule Boruta.OauthTest.IntrospectTest do
   end
 
   defp set_config_value(path, value) do
-    :boruta_ssi
+    :boruta
     |> Application.get_env(Boruta.Oauth)
     |> put_in(path, value)
     |> put_env()
   end
 
   defp remove_config_value(key) do
-    :boruta_ssi
+    :boruta
     |> Application.get_env(Boruta.Oauth)
     |> Keyword.delete(key)
     |> put_env()
   end
 
-  defp put_env(value), do: Application.put_env(:boruta_ssi, Boruta.Oauth, value)
+  defp put_env(value), do: Application.put_env(:boruta, Boruta.Oauth, value)
 
   defp using_basic_auth(username, password) do
     authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
