@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
-## [boruta - 3.0.0-beta.3] - 2024-11-21
+## [3.0.0-beta.3] - 2024-11-21
 
 ### Changed
 
@@ -21,14 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - adjustements to verifiable credential issuance and presentation
 
-## [boruta - 3.0.0-beta.2] - 2024-10-17
+## [3.0.0-beta.2] - 2024-10-17
 
 ### Added
 
 - OpenID for Verifiable Credentials Presentation implementation
 - resolve EBSI dids
 
-## [boruta - 3.0.0-beta.1] - 2024-09-01
+## [3.0.0-beta.1] - 2024-09-01
 
 ### Added
 
@@ -40,13 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preauthorized code flow implementation
 - support for vc+sd-jwt, jwt_vc_json credentials formats
 
-## [boruta - 2.3.4] - 2024-06-10
+## [2.3.4] - 2024-06-10
 
 ### Fixed
 
 - revoke previous issued tokens in case of code replay (authorization code grant)
 
-## [boruta - 2.3.3] - 2024-03-20
+## [2.3.3] - 2024-03-20
 
 ### Removed
 
@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - revoke previous issued tokens in case of code replay
 
-## [boruta - 2.3.2] - 2023-12-23
+## [2.3.2] - 2023-12-23
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 
@@ -66,14 +66,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - according to OpenID Connect core 1.0, clients have a `logo_uri` attribute
 - `boruta.gen.migration` triggers a form to get statistics about boruta usage
 
-## [boruta - 2.3.1] - 2023-04-24
+## [2.3.1] - 2023-04-24
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 
 ### Fixed
 - public key is optional for oauth clients
 
-## [boruta - 2.3.0] - 2023-04-09
+## [2.3.0] - 2023-04-09
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 
@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - handle userinfo signed responses
 - client key pair regeneration admin function `Admin.regenerate_client_key_pair/1,3`
 
-## [boruta - 2.2.2] - 2022-10-25
+## [2.2.2] - 2022-10-25
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 
@@ -95,13 +95,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - store the previous code associated with the delivered access token in authorization code grants
 - prompt=none management for authorization code grant requests
 
-## [boruta - 2.2.1] - 2022-10-16
+## [2.2.1] - 2022-10-16
 
 ### Security
 
 - remove symmetric keys from openid jwks
 
-## [boruta - 2.2.0] - 2022-09-13
+## [2.2.0] - 2022-09-13
 
 - Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 - Upgrade to this version need you to invalidate the cache by running `Boruta.Config.cache_backend().delete_all()`
@@ -120,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - enable refresh token rotation, revoke previous refresh token on successful refresh token requests
 - fix redirect_uri injection in implicit, hybrid and code grants
 
-## [boruta - 2.1.5] - 2022-06-15
+## [2.1.5] - 2022-06-15
 
 ### Added
 
@@ -135,7 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - id token `at_hash` and `c_hash` binary sizes for SHA256 and SHA384 signature hash algorithms
 
-## [boruta - 2.1.4] - 2022-06-07
+## [2.1.4] - 2022-06-07
 
 Note that you must run the `boruta.gen.migration` task to keep your database schema up to date while upgrading to this version.
 
@@ -150,7 +150,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 - prefer `invalid_grant` to `invalid_code` and `invalid_refresh_token`
 - error messages have been improved
 
-## [boruta - 2.1.3] - 2022-05-17
+## [2.1.3] - 2022-05-17
 
 ### Added
 
@@ -162,19 +162,19 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 - generated migrations can be rollbacked
 - clients pkey constraint do not crash on admin create
 
-## [boruta - 2.1.2] - 2022-05-02
+## [2.1.2] - 2022-05-02
 
 ### Fixed
 
 - hybrid requests shall return all errors as fragment
 
-## [boruta - 2.1.1] - 2022-04-30
+## [2.1.1] - 2022-04-30
 
 ### Fixed
 
 - dialyzer warning on `Boruta.Oauth.Error` struct type
 
-## [boruta - 2.1.0] - 2022-04-29
+## [2.1.0] - 2022-04-29
 
 ### Added
 
@@ -185,7 +185,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 
 - OpenID Connect prompt=none login_required errors in domain
 
-## [boruta - 2.0.1] - 2022-04-12
+## [2.0.1] - 2022-04-12
 
 ### Added
 
@@ -200,7 +200,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 
 - generated openid authorize controller prompt=none error params type
 
-## [boruta - 2.0.0] - 2022-01-26
+## [2.0.0] - 2022-01-26
 
 ### Added
 
@@ -218,7 +218,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 - `Boruta.Ecto.Admin.list_active_tokens/0,1` returns query result instead of an `Ecto.Query`
 - `Boruta.Oauth.ResourceOwners.claims/2` callback takes a `Boruta.Oauth.ResourceOwner` struct instead of `sub` as parameter
 
-## [boruta - 2.0.0-rc.1] - 2021-11-17
+## [2.0.0-rc.1] - 2021-11-17
 
 ### Fixed
 
@@ -235,7 +235,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 - Ecto `ClientsAdapter.get_by(id: id, secret: secret)` is removed in preference of `ClientsAdapter.get_client(id)` and `Oauth.Client.check_secret(client, secret)`.
 - Ecto `ClientsAdapter.get_by(id: id, redirect_uri: redirect_uri)` is removed in preference of `ClientsAdapter.get_client(id)` and `Oauth.Client.check_redirect_uri(client, redirect_uri)`.
 
-## [boruta - 2.0.0-rc.0] 2021-10-12
+## [2.0.0-rc.0] 2021-10-12
 
 ### Added
 
@@ -275,13 +275,13 @@ becomes
 
 - `boruta.gen.controllers` generated paths in umbrella apps
 
-## [boruta - 1.2.1] - 2021-10-10
+## [1.2.1] - 2021-10-10
 
 ### Security
 
 - remove redirect_uris regex pattern check
 
-## [boruta - 1.2.0] - 2021-09-15
+## [1.2.0] - 2021-09-15
 
 ### Added
 
@@ -299,7 +299,7 @@ becomes
 
 - `invalid_client` do not return neither format, nor redirect_uri in `Boruta.Oauth.Error`.
 
-## [boruta - 1.1.0] - 2021-08-16
+## [1.1.0] - 2021-08-16
 
 ### Added
 
@@ -319,19 +319,19 @@ becomes
 
 - Internal server errors when no client_id provided to token and refresh_token grants
 
-## [boruta - 1.0.3] - 2021-07-29
+## [1.0.3] - 2021-07-29
 
 ### Security
 
 - Refresh token revocation
 
-## [boruta - 1.0.2] - 2021-06-29
+## [1.0.2] - 2021-06-29
 
 ### Added
 
 - Different OAuth flows integration guides
 
-## [boruta - 1.0.1] - 2021-03-10
+## [1.0.1] - 2021-03-10
 
 ### Fixed
 
@@ -341,4 +341,4 @@ becomes
 
 - Documentation
 
-## [boruta - 1.0.0] - 2021-03-10
+## [1.0.0] - 2021-03-10

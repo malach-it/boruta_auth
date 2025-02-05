@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
       ensure_repo(repo, args)
 
       {:ok, migration_paths} =
-        :code.priv_dir(:boruta_ssi)
+        :code.priv_dir(:boruta)
         |> Path.join("boruta/migrations")
         |> File.ls()
 

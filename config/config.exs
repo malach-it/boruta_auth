@@ -1,9 +1,13 @@
+# Since configuration is shared in umbrella projects, this file
+# should only configure the :boruta application itself
+# and only for organization purposes. All other config goes to
+# the umbrella root.
 import Config
 
-config :boruta_ssi,
+config :boruta,
   ecto_repos: [Boruta.Repo]
 
-config :boruta_ssi, Boruta.Cache,
+config :boruta, Boruta.Cache,
   primary: [
     gc_interval: 86_400_000, #=> 1 day
     backend: :shards,
@@ -12,7 +16,7 @@ config :boruta_ssi, Boruta.Cache,
 
 config :phoenix, :json_library, Jason
 
-config :boruta_ssi, Boruta.Oauth,
+config :boruta, Boruta.Oauth,
   repo: Boruta.Repo
 
 import_config "#{config_env()}.exs"
