@@ -29,7 +29,7 @@ defmodule Mix.Tasks.Boruta.Gen.ControllersTest do
   test "compiles files without any errors" do
     Enum.map(@module_paths, fn path ->
       assert [{_module, _} | _t] =
-               :code.priv_dir(:boruta_ssi)
+               :code.priv_dir(:boruta)
                |> Path.join("templates/boruta.gen.controllers")
                |> Path.join(path <> ".eex")
                |> EEx.eval_file(
