@@ -466,12 +466,15 @@ defmodule Boruta.VerifiableCredentials do
     now = :os.system_time(:seconds)
 
     sub = sub |> String.split("#") |> List.first()
-    iss = case client.did do
-      nil ->
-        Config.issuer()
-      did ->
-        did |> String.split("#") |> List.first()
-    end
+
+    iss =
+      case client.did do
+        nil ->
+          Config.issuer()
+
+        did ->
+          did |> String.split("#") |> List.first()
+      end
 
     claims = %{
       "sub" => sub,
@@ -497,7 +500,7 @@ defmodule Boruta.VerifiableCredentials do
           "id" => sub,
           credential_identifier =>
             claims
-            |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+            |> Enum.map(&format_claim/1)
             |> Enum.into(%{})
             |> Map.put("id", client.did)
         },
@@ -561,7 +564,7 @@ defmodule Boruta.VerifiableCredentials do
         # TODO craft ebsi compliant dids
         credential_identifier =>
           claims
-          |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+          |> Enum.map(&format_claim/1)
           |> Enum.into(%{})
           |> Map.put("id", client.did)
       },
@@ -603,15 +606,11 @@ defmodule Boruta.VerifiableCredentials do
           end
       end
 
-    claims_with_salt =
-      Enum.map(claims, fn {name, {value, status, ttl}} ->
-        {{name, value},
-         Status.generate_status_token(client.private_key, ttl, String.to_atom(status))}
-      end)
+    claims_with_salt = Enum.flat_map(claims, &format_sd_claim(&1, client))
 
     disclosures =
       claims_with_salt
-      |> Enum.map(fn {{name, value}, salt} ->
+      |> Enum.map(fn {name, value, salt} ->
         [salt, name, value]
       end)
 
@@ -624,12 +623,14 @@ defmodule Boruta.VerifiableCredentials do
         :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
       end)
 
-    iss = case client.did do
-      nil ->
-        Config.issuer()
-      did ->
-        did |> String.split("#") |> List.first()
-    end
+    iss =
+      case client.did do
+        nil ->
+          Config.issuer()
+
+        did ->
+          did |> String.split("#") |> List.first()
+      end
 
     claims = %{
       "sub" => sub,
@@ -658,30 +659,64 @@ defmodule Boruta.VerifiableCredentials do
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
     do: {:error, "Unkown format."}
 
+  defp format_claim({name, claims}) when is_list(claims) do
+    {name, Enum.map(claims, &format_claim/1) |> Enum.into(%{})}
+  end
+
+  defp format_claim({name, {claim, _status, _ttl}}) do
+    {name, claim}
+  end
+
+  defp format_sd_claim(claims, client, path \\ [])
+
+  defp format_sd_claim({name, claims}, client, path) when is_list(claims) do
+    Enum.flat_map(claims, fn claim -> format_sd_claim(claim, client, path ++ [name]) end)
+  end
+
+  defp format_sd_claim({name, {claim, status, ttl}}, client, path) do
+    name = Enum.join(path ++ [name], ".")
+
+    [
+      {name, claim, Status.generate_status_token(client.private_key, ttl, String.to_atom(status))}
+    ]
+  end
+
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
       credential_configuration[:claims]
-      |> Enum.map(fn
-        %{"name" => name, "pointer" => pointer} = claim ->
-          resource_owner_claim =
-            case get_in(resource_owner.extra_claims, String.split(pointer, ".")) do
-              value when is_binary(value) -> %{"value" => value}
-              claim -> claim
-            end
-
-          {name,
-           {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
-            (claim["expiration"] && String.to_integer(claim["expiration"])) ||
-              @individual_claim_default_expiration}}
-
-        attribute when is_binary(attribute) ->
-          {attribute,
-           {get_in(resource_owner.extra_claims, String.split(attribute, ".")), "valid",
-            @individual_claim_default_expiration}}
-      end)
+      |> Enum.map(fn claim -> extract_credential_claim(claim, resource_owner) end)
       |> Enum.into(%{})
 
     {:ok, claims}
+  end
+
+  defp extract_credential_claim(%{"name" => name, "claims" => claims}, resource_owner)
+       when not is_nil(claims) or claims != [] do
+    value =
+      Enum.map(claims, fn claim ->
+        extract_credential_claim(claim, resource_owner)
+      end)
+
+    {name, value}
+  end
+
+  defp extract_credential_claim(%{"name" => name, "pointer" => pointer} = claim, resource_owner) do
+    resource_owner_claim =
+      case get_in(resource_owner.extra_claims, String.split(pointer, ".")) do
+        value when is_binary(value) -> %{"value" => value}
+        claim -> claim
+      end
+
+    {name,
+     {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
+      (claim["expiration"] && String.to_integer(claim["expiration"])) ||
+        @individual_claim_default_expiration}}
+  end
+
+  defp extract_credential_claim(attribute, resource_owner) when is_binary(attribute) do
+    {attribute,
+     {get_in(resource_owner.extra_claims, String.split(attribute, ".")), "valid",
+      @individual_claim_default_expiration}}
   end
 
   defp extract_key(%{"kid" => did}), do: {:did, did}
