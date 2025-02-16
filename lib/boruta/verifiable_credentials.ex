@@ -659,8 +659,12 @@ defmodule Boruta.VerifiableCredentials do
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
     do: {:error, "Unkown format."}
 
-  defp format_claim({name, claims}) when is_list(claims) do
+  defp format_claim({name, {:claims, claims}}) when is_list(claims) do
     {name, Enum.map(claims, &format_claim/1) |> Enum.into(%{})}
+  end
+
+  defp format_claim({name, {:items, claims}}) when is_list(claims) do
+    {name, Enum.map(claims, fn claim -> [format_claim(claim)] |> Enum.into(%{}) end)}
   end
 
   defp format_claim({name, {claim, _status, _ttl}}) do
@@ -669,7 +673,13 @@ defmodule Boruta.VerifiableCredentials do
 
   defp format_sd_claim(claims, client, path \\ [])
 
-  defp format_sd_claim({name, claims}, client, path) when is_list(claims) do
+  defp format_sd_claim({name, {:items, claims}}, client, path) when is_list(claims) do
+    claims
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {claim, index} -> format_sd_claim(claim, client, path ++ [name, to_string(index)]) end)
+  end
+
+  defp format_sd_claim({name, {:claims, claims}}, client, path) when is_list(claims) do
     Enum.flat_map(claims, fn claim -> format_sd_claim(claim, client, path ++ [name]) end)
   end
 
@@ -697,7 +707,17 @@ defmodule Boruta.VerifiableCredentials do
         extract_credential_claim(claim, resource_owner)
       end)
 
-    {name, value}
+    {name, {:claims, value}}
+  end
+
+  defp extract_credential_claim(%{"name" => name, "items" => claims}, resource_owner)
+       when not is_nil(claims) or claims != [] do
+    value =
+      Enum.map(claims, fn claim ->
+        extract_credential_claim(claim, resource_owner)
+      end)
+
+    {name, {:items, value}}
   end
 
   defp extract_credential_claim(%{"name" => name, "pointer" => pointer} = claim, resource_owner) do

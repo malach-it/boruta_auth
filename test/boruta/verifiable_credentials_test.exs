@@ -247,6 +247,24 @@ defmodule Boruta.VerifiableCredentialsTest do
                 "name" => "nested",
                 "claims" => [
                   %{
+                    "name" => "fullname",
+                    "expiration" => "3600",
+                    "items" => [
+                      %{
+                        "name" => "firstname",
+                        "label" => "firstname",
+                        "pointer" => "firstname",
+                        "expiration" => "3600"
+                      },
+                      %{
+                        "name" => "lastname",
+                        "label" => "lastname",
+                        "pointer" => "lastname",
+                        "expiration" => "3600"
+                      }
+                    ]
+                  },
+                  %{
                     "name" => "firstname",
                     "label" => "firstname",
                     "pointer" => "firstname",
@@ -289,6 +307,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                 "credentialSubject" => %{
                   "credential_identifier" => %{
                     "nested" => %{
+                      "fullname" => [%{"firstname" => "firstname"}, %{"lastname" => "lastname"}],
                       "firstname" => "firstname",
                       "twice" => %{"lastname" => "lastname"}
                     }
@@ -352,6 +371,24 @@ defmodule Boruta.VerifiableCredentialsTest do
                 "name" => "nested",
                 "claims" => [
                   %{
+                    "name" => "fullname",
+                    "expiration" => "3600",
+                    "items" => [
+                      %{
+                        "name" => "firstname",
+                        "label" => "firstname",
+                        "pointer" => "firstname",
+                        "expiration" => "3600"
+                      },
+                      %{
+                        "name" => "lastname",
+                        "label" => "lastname",
+                        "pointer" => "lastname",
+                        "expiration" => "3600"
+                      }
+                    ]
+                  },
+                  %{
                     "name" => "firstname",
                     "label" => "firstname",
                     "pointer" => "firstname",
@@ -395,6 +432,7 @@ defmodule Boruta.VerifiableCredentialsTest do
                   "credentialSubject" => %{
                     "credential_identifier" => %{
                       "nested" => %{
+                        "fullname" => [%{"firstname" => "firstname"}, %{"lastname" => "lastname"}],
                         "firstname" => "firstname",
                         "twice" => %{"lastname" => "lastname"}
                       }
@@ -458,6 +496,24 @@ defmodule Boruta.VerifiableCredentialsTest do
                 "name" => "nested",
                 "claims" => [
                   %{
+                    "name" => "fullname",
+                    "expiration" => "3600",
+                    "items" => [
+                      %{
+                        "name" => "firstname",
+                        "label" => "firstname",
+                        "pointer" => "firstname",
+                        "expiration" => "3600"
+                      },
+                      %{
+                        "name" => "lastname",
+                        "label" => "lastname",
+                        "pointer" => "lastname",
+                        "expiration" => "3600"
+                      }
+                    ]
+                  },
+                  %{
                     "name" => "firstname",
                     "label" => "firstname",
                     "pointer" => "firstname",
@@ -499,10 +555,12 @@ defmodule Boruta.VerifiableCredentialsTest do
       [_credential | claims] = String.split(credential, "~") |> Enum.reject(&(&1 == ""))
 
       assert [
-               [_salt1, "nested.firstname", "firstname"],
-               [_salt2, "nested.twice.lastname", "lastname"]
+               [_salt1, "nested.fullname.0.firstname", "firstname"],
+               [_salt2, "nested.fullname.1.lastname", "lastname"],
+               [_salt3, "nested.firstname", "firstname"],
+               [_salt4, "nested.twice.lastname", "lastname"]
              ] =
-               Enum.map(claims, &Base.decode64!(&1, padding: false)) |> Enum.map(&Jason.decode!/1)
+               Enum.map(claims, &Base.url_decode64!(&1, padding: false)) |> Enum.map(&Jason.decode!/1)
     end
 
     test "issues vc+sd-jwt credential - valid", %{
