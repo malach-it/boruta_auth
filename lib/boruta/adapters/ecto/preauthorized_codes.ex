@@ -20,7 +20,8 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
             } = client,
           resource_owner: resource_owner,
           scope: scope,
-          state: state
+          state: state,
+          redirect_uri: redirect_uri
         } = params
       ) do
     sub = params[:sub]
@@ -35,6 +36,7 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           state: state,
           nonce: params[:nonce],
           scope: scope,
+          redirect_uri: redirect_uri,
           authorization_code_ttl: authorization_code_ttl,
           authorization_details: resource_owner.authorization_details
         }

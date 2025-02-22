@@ -219,6 +219,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert {:authorize_success,
               %CredentialOfferResponse{
                 credential_issuer: "boruta",
+                redirect_uri: ^redirect_uri,
                 tx_code_required: false,
                 credential_configuration_ids: ["credential"],
                 grants: %{
@@ -322,6 +323,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert {:authorize_success,
               %CredentialOfferResponse{
                 credential_issuer: "boruta",
+                redirect_uri: ^redirect_uri,
                 tx_code_required: false,
                 credentials: [
                   %{format: "jwt_vc", types: ["credential", "test"]},
