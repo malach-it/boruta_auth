@@ -228,13 +228,7 @@ defmodule Boruta.VerifiableCredentials do
                    Enum.member?(Scope.split(token.scope), identifier)
 
                "13" ->
-                 types = credential_params["vct"] || credential_params["credential_identifier"]
-
-                 (types &&
-                    Enum.member?(
-                      configuration[:types],
-                      types
-                    )) ||
+                 (identifier == credential_params["credential_identifier"]) ||
                    Enum.member?(Scope.split(token.scope), identifier)
              end
            end),

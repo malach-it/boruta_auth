@@ -36,9 +36,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "firstname" => "firstname"
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc",
             claims: [
@@ -237,9 +236,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "lastname" => "lastname"
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc",
             claims: [
@@ -305,7 +303,7 @@ defmodule Boruta.VerifiableCredentialsTest do
       assert {:ok,
               %{
                 "credentialSubject" => %{
-                  "credential_identifier" => %{
+                  "VerifiableCredential" => %{
                     "nested" => %{
                       "fullname" => [%{"firstname" => "firstname"}, %{"lastname" => "lastname"}],
                       "firstname" => "firstname",
@@ -325,9 +323,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "firstname" => "firstname"
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc_json",
             claims: ["firstname"]
@@ -361,9 +358,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "lastname" => "lastname"
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             time_to_live: 3600,
             format: "jwt_vc_json",
             claims: [
@@ -430,7 +426,7 @@ defmodule Boruta.VerifiableCredentialsTest do
               %{
                 "vc" => %{
                   "credentialSubject" => %{
-                    "credential_identifier" => %{
+                    "VerifiableCredential" => %{
                       "nested" => %{
                         "fullname" => [%{"firstname" => "firstname"}, %{"lastname" => "lastname"}],
                         "firstname" => "firstname",
@@ -451,9 +447,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "firstname" => "firstname"
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: ["firstname"],
             time_to_live: 60
@@ -487,9 +482,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           "lastname" => "lastname"
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: [
               %{
@@ -579,9 +573,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           }
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: [
               %{
@@ -673,9 +666,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           }
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: [
               %{
@@ -736,9 +728,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           }
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: [
               %{
@@ -799,9 +790,8 @@ defmodule Boruta.VerifiableCredentialsTest do
           }
         },
         credential_configuration: %{
-          "credential_identifier" => %{
+          "VerifiableCredential" => %{
             version: "13",
-            types: ["VerifiableCredential"],
             format: "vc+sd-jwt",
             claims: [
               %{
