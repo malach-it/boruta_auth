@@ -695,7 +695,7 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   defp extract_credential_claim(%{"name" => name, "claims" => claims}, resource_owner)
-       when not is_nil(claims) or claims != [] do
+       when not is_nil(claims) and claims != [] do
     value =
       Enum.map(claims, fn claim ->
         extract_credential_claim(claim, resource_owner)
@@ -705,7 +705,7 @@ defmodule Boruta.VerifiableCredentials do
   end
 
   defp extract_credential_claim(%{"name" => name, "items" => claims}, resource_owner)
-       when not is_nil(claims) or claims != [] do
+       when not is_nil(claims) and claims != [] do
     value =
       Enum.map(claims, fn claim ->
         extract_credential_claim(claim, resource_owner)
