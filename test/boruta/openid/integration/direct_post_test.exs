@@ -206,7 +206,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     test "siopv2 - returns an error on replay", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
-      assert {:direct_post_success, _callback_uri} =
+      assert {:direct_post_success, _callback_uri, _token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -376,7 +376,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           ]
         })
 
-      assert {:direct_post_success, _callback_uri} =
+      assert {:direct_post_success, _callback_uri, _token} =
                Openid.direct_post(
                  conn,
                  %{

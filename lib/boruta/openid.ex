@@ -179,7 +179,8 @@ defmodule Boruta.Openid do
                  previous_code: code.value
                },
                refresh_token: false
-             ) do
+             ),
+           {:ok, code} <- CodesAdapter.revoke(code) do
         query =
           %{
             code: code.value,
