@@ -555,7 +555,6 @@ defmodule Boruta.VerifiableCredentials do
       "validFrom" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "credentialSubject" => %{
         "id" => sub,
-        # TODO craft ebsi compliant dids
         credential_identifier =>
           claims
           |> Enum.map(&format_claim/1)
