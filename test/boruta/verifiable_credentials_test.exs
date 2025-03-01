@@ -854,47 +854,95 @@ defmodule Boruta.VerifiableCredentialsTest do
   end
 
   describe "Status.generate_status/3" do
-    test "generate a ten years valid salt" do
+    setup do
       secret = "secret"
-      expiration = 3600 * 24 * 365 * 10
-      :binary.encode_unsigned(expiration) |> :binary.bin_to_list()
+      expiration = 10
+      now = :os.system_time(:seconds)
+      revoked = VerifiableCredentials.Hotp.generate_hotp(
+        secret,
+        div(now, expiration) +
+          VerifiableCredentials.Status.shift(:revoked)
+      )
+      suspended = VerifiableCredentials.Hotp.generate_hotp(
+        revoked,
+        div(now, expiration) +
+          VerifiableCredentials.Status.shift(:suspended)
+      )
+      valid = VerifiableCredentials.Hotp.generate_hotp(
+        suspended,
+        div(now, expiration) +
+          VerifiableCredentials.Status.shift(:valid)
+      )
+
+      {:ok, expiration: expiration, secret: secret, status_list: valid, now: now}
+    end
+
+    test "generate a valid salt", %{
+      expiration: expiration,
+      secret: secret,
+      status_list: status_list,
+      now: now
+    } do
       status = :valid
       salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
 
       assert String.split(salt, "~") |> List.last() ==
                VerifiableCredentials.Hotp.generate_hotp(
-                 secret,
-                 div(:os.system_time(:seconds), expiration) +
-                   VerifiableCredentials.Status.shift(:valid)
+                 status_list,
+                 div(now, expiration) +
+                   VerifiableCredentials.Status.shift(status)
                )
 
-      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :valid
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == status
     end
 
-    test "generate a valid salt" do
-      secret = "secret"
-      expiration = 60
-      status = :valid
+    test "generate a suspended salt", %{
+      expiration: expiration,
+      secret: secret,
+      status_list: status_list,
+      now: now
+    } do
+      status = :suspended
       salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
 
       assert String.split(salt, "~") |> List.last() ==
                VerifiableCredentials.Hotp.generate_hotp(
-                 secret,
-                 div(:os.system_time(:seconds), expiration) +
-                   VerifiableCredentials.Status.shift(:valid)
+                 status_list,
+                 div(now, expiration) +
+                   VerifiableCredentials.Status.shift(status)
                )
 
-      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :valid
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == status
     end
 
-    test "generate a thousand salt" do
+    test "generate a revoked salt", %{
+      expiration: expiration,
+      secret: secret,
+      status_list: status_list,
+      now: now
+    } do
+      status = :revoked
+      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
+
+      assert String.split(salt, "~") |> List.last() ==
+               VerifiableCredentials.Hotp.generate_hotp(
+                 status_list,
+                 div(now, expiration) +
+                   VerifiableCredentials.Status.shift(status)
+               )
+
+      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == status
+    end
+
+    test "generate a thousand salt", %{
+      expiration: expiration,
+      secret: secret
+    } do
       statuses = [:valid, :revoked, :suspended]
-      secret = "secret"
 
       salts =
         Enum.map(1..1_000, fn _ ->
           status = Enum.random(statuses)
-          expiration = Enum.random(1..3600)
 
           assert salt =
                    VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
@@ -907,38 +955,6 @@ defmodule Boruta.VerifiableCredentialsTest do
           assert VerifiableCredentials.Status.verify_status_token(secret, salt) == status
         end)
       end)
-    end
-
-    test "generate a revoked salt" do
-      secret = "secret"
-      expiration = 60
-      status = :revoked
-      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
-
-      assert String.split(salt, "~") |> List.last() ==
-               VerifiableCredentials.Hotp.generate_hotp(
-                 secret,
-                 div(:os.system_time(:seconds), expiration) +
-                   VerifiableCredentials.Status.shift(:revoked)
-               )
-
-      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :revoked
-    end
-
-    test "generate a suspended salt" do
-      secret = "secret"
-      expiration = 60
-      status = :suspended
-      salt = VerifiableCredentials.Status.generate_status_token(secret, expiration, status)
-
-      assert String.split(salt, "~") |> List.last() ==
-               VerifiableCredentials.Hotp.generate_hotp(
-                 secret,
-                 div(:os.system_time(:seconds), expiration) +
-                   VerifiableCredentials.Status.shift(:suspended)
-               )
-
-      assert VerifiableCredentials.Status.verify_status_token(secret, salt) == :suspended
     end
   end
 

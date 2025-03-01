@@ -79,11 +79,7 @@ defmodule Boruta.VerifiableCredentials do
         |> to_string()
         |> Base.url_encode64(padding: false)
 
-      derived_status =
-        Hotp.generate_hotp(
-          secret,
-          div(:os.system_time(:seconds), ttl) + shift(status)
-        )
+      derived_status = derive_status(status, ttl, secret)
 
       "#{status_information}~#{derived_status}"
     end
@@ -100,17 +96,29 @@ defmodule Boruta.VerifiableCredentials do
         |> parse_statuslist()
 
       Enum.reduce_while(@status_table, :expired, fn status, acc ->
-        case hotp ==
-               Hotp.generate_hotp(
-                 secret,
-                 div(:os.system_time(:seconds), ttl) + shift(status)
-               ) do
+        case hotp == derive_status(status, ttl, secret) do
           true -> {:halt, status}
           false -> {:cont, acc}
         end
       end)
     rescue
       _ -> :invalid
+    end
+
+    defp derive_status(status, ttl, secret, status_list \\ @status_table)
+
+    defp derive_status(status, ttl, secret, []) do
+      Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), ttl) + shift(status)
+      )
+    end
+
+    defp derive_status(status, ttl, secret, [current|status_list]) do
+      Hotp.generate_hotp(
+        derive_status(current, ttl, secret, status_list),
+        div(:os.system_time(:seconds), ttl) + shift(status)
+      )
     end
 
     def parse_statuslist(statuslist) do
@@ -680,8 +688,17 @@ defmodule Boruta.VerifiableCredentials do
   defp format_sd_claim({name, {claim, status, ttl}}, client, path) do
     name = Enum.join(path ++ [name], ".")
 
+    # TODO factorize
+    iss = case client.did do
+      nil ->
+        Client.Crypto.kid_from_private_key(client.private_key)
+
+      did ->
+        did <> "#" <> String.replace(did, "did:key:", "")
+    end
+
     [
-      {name, claim, Status.generate_status_token(client.private_key, ttl, String.to_atom(status))}
+      {name, claim, Status.generate_status_token(iss, ttl, String.to_atom(status))}
     ]
   end
 
