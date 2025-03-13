@@ -212,6 +212,8 @@ defmodule Boruta.VerifiablePresentations do
     end
   end
 
+  defp validate_filter(_value, nil), do: :ok
+
   defp validate_filter(_value, _filter), do: {:error, "has an invalid or unknown filter."}
 
   @spec validate_signature(jwt :: String.t()) ::
