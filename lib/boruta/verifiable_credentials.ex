@@ -504,7 +504,7 @@ defmodule Boruta.VerifiableCredentials do
             claims
             |> Enum.map(&format_claim/1)
             |> Enum.into(%{})
-            |> Map.put("id", client.did)
+            |> Map.put("id", "#{sub}##{credential_identifier}")
         },
         "credentialSchema" => %{
           "id" =>
@@ -571,7 +571,7 @@ defmodule Boruta.VerifiableCredentials do
           claims
           |> Enum.map(&format_claim/1)
           |> Enum.into(%{})
-          |> Map.put("id", client.did)
+          |> Map.put("id", "#{sub}##{credential_identifier}")
       },
       "cnf" => %{
         "jwk" => jwk
