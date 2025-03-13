@@ -53,7 +53,7 @@ defmodule Boruta.VerifiablePresentations do
           presentation_definition["input_descriptors"],
           presentation_submission["descriptor_map"]
         ),
-        :ok,
+        {:error, "No credentials presented."},
         fn {descriptor, map}, _acc ->
           credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
 
