@@ -550,6 +550,7 @@ defmodule Boruta.VerifiableCredentials do
       end
 
     credential_id = SecureRandom.uuid()
+    now = :os.system_time(:seconds)
 
     claims = %{
       "@context" => [
@@ -561,9 +562,11 @@ defmodule Boruta.VerifiableCredentials do
       "type" => credential_configuration[:types],
       "issuer" => Config.issuer(),
       "validFrom" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "nbf" => now,
+      "iat" => now,
+      "exp" => now + credential_configuration[:time_to_live],
       "credentialSubject" => %{
         "id" => sub,
-        # TODO craft ebsi compliant dids
         credential_identifier =>
           claims
           |> Enum.map(&format_claim/1)
