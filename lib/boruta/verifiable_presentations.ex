@@ -121,6 +121,15 @@ defmodule Boruta.VerifiablePresentations do
     end
   end
 
+  defp validate_valid_from(%{"validFrom" => valid_from}) do
+    with {:ok, valid_from, _} <- DateTime.from_iso8601(valid_from),
+         true <- DateTime.diff(valid_from, DateTime.utc_now(), :second) <= 0 do
+      :ok
+    else
+      _ -> {:error, "is not yet valid."}
+    end
+  end
+
   defp validate_valid_from(_claims), do: {:error, "is invalid"}
 
   defp validate_status_list(%{"vc" => %{"credentialStatus" => status}}) do
