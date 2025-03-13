@@ -92,6 +92,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                :authentication_failure,
                %Boruta.Oauth.Error{
                  status: :unauthorized,
+                 format: :query,
                  error: :unauthorized,
                  error_description: "id_token or vp_token param missing."
                }
@@ -111,6 +112,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
                 status: :unauthorized,
+                 format: :query,
                 error: :unauthorized,
                 error_description: "{:error, :token_malformed}"
               }} =
@@ -152,6 +154,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
+                 format: :query,
                 error: :invalid_request,
                 status: :bad_request,
                 error_description: "Code subject do not match with provided id_token or vp_token"
@@ -174,6 +177,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                :authentication_failure,
                %Boruta.Oauth.Error{
                  status: :bad_request,
+                 format: :query,
                  error: :invalid_grant,
                  error_description: "Given authorization code is invalid, revoked, or expired."
                }
@@ -205,6 +209,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                :authentication_failure,
                %Boruta.Oauth.Error{
                  status: :bad_request,
+                 format: :query,
                  error: :invalid_grant,
                  error_description: "Given authorization code is invalid, revoked, or expired."
                }
@@ -243,6 +248,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
                 status: :unauthorized,
+                 format: :query,
                 error: :unauthorized,
                 error_description: "{:error, :token_malformed}"
               }} =
@@ -284,6 +290,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
+                 format: :query,
                 error: :invalid_request,
                 status: :bad_request,
                 error_description: "Code subject do not match with provided id_token or vp_token"
@@ -324,6 +331,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                :authentication_failure,
                %Boruta.Oauth.Error{
                  status: :bad_request,
+                 format: :query,
                  error: :invalid_grant,
                  error_description: "Given authorization code is invalid, revoked, or expired."
                }
@@ -375,6 +383,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                :authentication_failure,
                %Boruta.Oauth.Error{
                  status: :bad_request,
+                 format: :query,
                  error: :invalid_grant,
                  error_description: "Given authorization code is invalid, revoked, or expired."
                }

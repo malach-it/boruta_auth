@@ -169,11 +169,11 @@ defmodule Boruta.Openid do
           module.direct_post_success(conn, response)
       else
         {:error, error} ->
-          module.authentication_failure(conn, %{error | redirect_uri: code.redirect_uri, state: code.state})
+          module.authentication_failure(conn, %{error | format: :query, redirect_uri: code.redirect_uri, state: code.state})
       end
     else
       {:error, error} ->
-        module.authentication_failure(conn, error)
+        module.authentication_failure(conn, %{error | format: :query})
 
       nil ->
         module.code_not_found(conn)
