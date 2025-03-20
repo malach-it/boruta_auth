@@ -562,7 +562,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
-  alias Boruta.VerifiableCredentials
+  alias Boruta.Openid.VerifiableCredentials
 
   def preauthorize(
         %CodeRequest{
@@ -681,7 +681,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
-  alias Boruta.VerifiableCredentials
+  alias Boruta.Openid.VerifiableCredentials
 
   def preauthorize(%AuthorizationRequest{
         client_id: client_id,
@@ -757,8 +757,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PresentationRequest
   alias Boruta.Oauth.Token
-  alias Boruta.VerifiableCredentials
-  alias Boruta.VerifiablePresentations
+  alias Boruta.Openid.VerifiableCredentials
+  alias Boruta.Openid.VerifiablePresentations
 
   def preauthorize(
         %PresentationRequest{

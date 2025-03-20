@@ -1,4 +1,4 @@
-defmodule Boruta.VerifiablePresentations do
+defmodule Boruta.Openid.VerifiablePresentations do
   # TODO add typespec definitions for public functions
   @moduledoc false
 

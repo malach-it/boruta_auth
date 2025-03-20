@@ -13,7 +13,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.CredentialResponse
-  alias Boruta.VerifiableCredentials
+  alias Boruta.Openid.VerifiableCredentials
 
   setup :verify_on_exit!
 

@@ -91,6 +91,15 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
+    # TODO create an universal mock adapter
+    @tag :skip
+    test "creates a client with universal key" do
+      assert {:ok, %Client{}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :key_pair_type, %{"type" => "universal"})
+               )
+    end
+
     test "creates a client with supported_grant_types" do
       assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
                Admin.create_client(
@@ -228,44 +237,68 @@ defmodule Boruta.Ecto.AdminTest do
 
     test "creates a client with key pair type" do
       assert {:ok, %Client{public_key: pem_public_key, private_key: pem_private_key}} =
-        Admin.create_client(Map.put(@client_valid_attrs, :key_pair_type, %{
-          "type" => "ec",
-          "curve" => "P-256"
-        }))
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :key_pair_type, %{
+                   "type" => "ec",
+                   "curve" => "P-256"
+                 })
+               )
+
       assert %{"kty" => "EC"} = JOSE.JWK.from_pem(pem_private_key) |> JOSE.JWK.to_map() |> elem(1)
       assert %{"kty" => "EC"} = JOSE.JWK.from_pem(pem_public_key) |> JOSE.JWK.to_map() |> elem(1)
     end
 
     test "returns an error with key pair not matching JWT alg" do
       assert {:error, %Ecto.Changeset{errors: errors}} =
-        Admin.create_client(Map.put(@client_valid_attrs, :key_pair_type, %{
-          "type" => "oct"
-        }))
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   key_pair_type: %{"type" => "rsa"},
+                   signatures_adapter: "Elixir.Universal.Signatures"
+                 })
+               )
+
       assert errors == [
-        {:private_key, {"private_key_type is invalid", []}},
-        {:key_pair_type, {"validation failed: #/type do match required pattern /^ec|rsa/.", []}}
-      ]
+               {:private_key, {"private_key_type is invalid", []}},
+               {:signatures_adapter,
+                {
+                  "is invalid",
+                  [{:validation, :inclusion}, {:enum, ["Elixir.Boruta.Internal.Signatures"]}]
+                }}
+             ]
     end
 
-    test "returns an error with an invalid key pair" do
+    test "returns an error with an invalid key pair type" do
       assert {:error, %Ecto.Changeset{errors: errors}} =
-        Admin.create_client(Map.put(@client_valid_attrs, :key_pair_type, %{
-          "type" => "oct"
-        }))
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :key_pair_type, %{
+                   "type" => "oct"
+                 })
+               )
+
       assert errors == [
-        {:private_key, {"private_key_type is invalid", []}},
-        {:key_pair_type, {"validation failed: #/type do match required pattern /^ec|rsa/.", []}}
-      ]
+               {:private_key, {"private_key_type is invalid", []}},
+               {
+                 :key_pair_type,
+                 {
+                   "validation failed: #/type do match required pattern /^ec|rsa|universal$/.",
+                   []
+                 }
+               },
+               {:signatures_adapter, {"unknown key pair type", []}}
+             ]
     end
 
     test "returns an error with an invalid key pair configuration" do
       assert {:error, %Ecto.Changeset{errors: errors}} =
-        Admin.create_client(Map.put(@client_valid_attrs, :key_pair_type, %{
-          "type" => "ec"
-        }))
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :key_pair_type, %{
+                   "type" => "ec"
+                 })
+               )
+
       assert errors == [
-        {:private_key, {"private_key_type is invalid", []}}
-      ]
+               {:private_key, {"private_key_type is invalid", []}}
+             ]
     end
 
     test "creates a client with default id token signature alg" do
@@ -281,7 +314,7 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "creates a client with id token signature alg" do
-      Enum.map([:RS256,  :RS384,  :RS512,  :HS256,  :HS384,  :HS512] , fn alg ->
+      Enum.map([:RS256, :RS384, :RS512, :HS256, :HS384, :HS512], fn alg ->
         assert {:ok, client} =
                  Admin.create_client(
                    Map.put(@client_valid_attrs, :id_token_signature_alg, Atom.to_string(alg))
@@ -289,7 +322,8 @@ defmodule Boruta.Ecto.AdminTest do
 
         assert client.id_token_signature_alg == Atom.to_string(alg)
       end)
-      Enum.map([:ES256,  :ES384,  :ES512,  :HS256,  :HS384,  :HS512] , fn alg ->
+
+      Enum.map([:ES256, :ES384, :ES512, :HS256, :HS384, :HS512], fn alg ->
         assert {:ok, client} =
                  Admin.create_client(
                    Map.put(@client_valid_attrs, :id_token_signature_alg, Atom.to_string(alg))
@@ -342,12 +376,15 @@ defmodule Boruta.Ecto.AdminTest do
     test "updates the client with an id token signature alg" do
       client = client_fixture()
 
-      ec_client = client_fixture(%{key_pair_type: %{
-        "type" => "ec",
-        "curve" => "P-256"
-      }})
+      ec_client =
+        client_fixture(%{
+          key_pair_type: %{
+            "type" => "ec",
+            "curve" => "P-256"
+          }
+        })
 
-      Enum.map([:RS256,  :RS384,  :RS512,  :HS256,  :HS384,  :HS512] , fn alg ->
+      Enum.map([:RS256, :RS384, :RS512, :HS256, :HS384, :HS512], fn alg ->
         assert {:ok, client} =
                  Admin.update_client(
                    client,
@@ -356,7 +393,8 @@ defmodule Boruta.Ecto.AdminTest do
 
         assert client.id_token_signature_alg == Atom.to_string(alg)
       end)
-      Enum.map([:ES256,  :ES384,  :ES512,  :HS256,  :HS384,  :HS512] , fn alg ->
+
+      Enum.map([:ES256, :ES384, :ES512, :HS256, :HS384, :HS512], fn alg ->
         assert {:ok, client} =
                  Admin.update_client(
                    ec_client,
@@ -386,10 +424,14 @@ defmodule Boruta.Ecto.AdminTest do
       client = client_fixture()
 
       assert {:ok, %Client{key_pair_type: key_pair_type}} =
-        Admin.update_client(client, Map.put(@client_update_attrs, :key_pair_type, %{
-          "type" => "ec",
-          "curve" => "P-256"
-        }))
+               Admin.update_client(
+                 client,
+                 Map.put(@client_update_attrs, :key_pair_type, %{
+                   "type" => "ec",
+                   "curve" => "P-256"
+                 })
+               )
+
       assert key_pair_type == %{"curve" => "P-256", "type" => "ec"}
     end
   end

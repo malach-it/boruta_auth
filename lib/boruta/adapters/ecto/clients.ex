@@ -55,7 +55,7 @@ defmodule Boruta.Ecto.Clients do
     ClientStore.invalidate(client)
   end
 
-  def invalidate_public() do
+  def invalidate_public do
     ClientStore.invalidate_public()
   end
 

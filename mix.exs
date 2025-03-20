@@ -188,7 +188,7 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Validator,
           Boruta.Oauth.TokenGenerator,
           Boruta.Did,
-          Boruta.VerifiableCredentials.Hotp
+          Boruta.Openid.VerifiableCredentials.Hotp
         ],
         Errors: [
           Boruta.Oauth.Error
