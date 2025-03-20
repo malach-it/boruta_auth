@@ -789,7 +789,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          {:ok, resource_owner} <-
            (case client_id do
               "did:" <> _key -> {:ok, resource_owner}
-              _ -> ResourceOwner.authorize(resource_owner: resource_owner)
+              _ -> Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
             end),
          {:ok, scope} <-
            Authorization.Scope.authorize(
