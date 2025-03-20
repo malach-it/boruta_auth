@@ -526,7 +526,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       "issued" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
       "issuanceDate" => DateTime.from_unix!(now) |> DateTime.to_iso8601(),
       "type" => credential_configuration[:types],
-      "issuer" => Did.controller(client.did),
+      "issuer" => Did.controller(client.did) || Config.issuer(),
       "validFrom" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "nbf" => now,
       "iat" => now,
