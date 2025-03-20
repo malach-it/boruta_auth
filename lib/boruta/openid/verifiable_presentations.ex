@@ -52,13 +52,13 @@ defmodule Boruta.Openid.VerifiablePresentations do
              error_formatter: BorutaFormatter
            ),
          {:ok, _jwk, vp_claims} <- validate_signature(vp_token) do
-      Enum.reduce_while(
+      case Enum.reduce_while(
         Enum.zip(
           presentation_definition["input_descriptors"],
           presentation_submission["descriptor_map"]
         ),
-        {:error, "No credentials presented."},
-        fn {descriptor, map}, _acc ->
+        {:ok, nil, %{}},
+        fn {descriptor, map}, {:ok, _sub, claims} ->
           credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
 
           case validate_credential(credential, descriptor, extract_format(map)) do
@@ -66,7 +66,10 @@ defmodule Boruta.Openid.VerifiablePresentations do
             {:error, error} -> {:halt, {:error, map["id"] <> " " <> error}}
           end
         end
-      )
+      ) do
+        {:ok, nil, _claims} -> {:error, "No credentials presented."}
+        result -> result
+      end
     else
       {:error, errors} when is_list(errors) ->
         {:error, Enum.join(errors, ", ")}
