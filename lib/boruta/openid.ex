@@ -201,6 +201,15 @@ defmodule Boruta.Openid do
 
         module.direct_post_success(conn, response, token)
       else
+        {:error, "" <> error} ->
+             module.authentication_failure(conn, %Error{
+               error: :unknown_error,
+               status: :unprocessable_entity,
+               error_description: error,
+               format: :query,
+               redirect_uri: code.redirect_uri,
+               state: code.state
+             })
         {:error, error} ->
           module.authentication_failure(conn, %{
             error
