@@ -11,7 +11,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
             credentials: [],
             grants: %{},
             tx_code: nil,
-            tx_code_required: nil
+            tx_code_required: nil,
+            redirect_uri: nil
 
   alias Boruta.Config
   alias Boruta.Oauth.Client
@@ -25,7 +26,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
             optional(String.t()) => map()
           },
           tx_code: String.t(),
-          tx_code_required: boolean()
+          tx_code_required: boolean(),
+          redirect_uri: String.t()
         }
 
   def from_tokens(
@@ -99,7 +101,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
       grants: %{
         "urn:ietf:params:oauth:grant-type:pre-authorized_code" => grant
       },
-      tx_code_required: preauthorized_code.client.enforce_tx_code
+      tx_code_required: preauthorized_code.client.enforce_tx_code,
+      redirect_uri: preauthorized_code.redirect_uri
     }
   end
 end

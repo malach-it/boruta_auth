@@ -53,7 +53,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
           presentation_definition["input_descriptors"],
           presentation_submission["descriptor_map"]
         ),
-        :ok,
+        {:error, "No credentials presented."},
         fn {descriptor, map}, _acc ->
           credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
 
@@ -113,6 +113,15 @@ defmodule Boruta.Openid.VerifiablePresentations do
   defp validate_expiration(_claims), do: {:error, "Credential exp claim is missing."}
 
   defp validate_valid_from(%{"vc" => %{"validFrom" => valid_from}}) do
+    with {:ok, valid_from, _} <- DateTime.from_iso8601(valid_from),
+         true <- DateTime.diff(valid_from, DateTime.utc_now(), :second) <= 0 do
+      :ok
+    else
+      _ -> {:error, "is not yet valid."}
+    end
+  end
+
+  defp validate_valid_from(%{"validFrom" => valid_from}) do
     with {:ok, valid_from, _} <- DateTime.from_iso8601(valid_from),
          true <- DateTime.diff(valid_from, DateTime.utc_now(), :second) <= 0 do
       :ok
@@ -202,6 +211,8 @@ defmodule Boruta.Openid.VerifiablePresentations do
       false -> {:error, "does not contains #{contains}."}
     end
   end
+
+  defp validate_filter(_value, nil), do: :ok
 
   defp validate_filter(_value, _filter), do: {:error, "has an invalid or unknown filter."}
 

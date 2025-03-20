@@ -39,6 +39,118 @@ defmodule Boruta.Openid.VerifiableCredentials do
     end
   end
 
+  defmodule Status do
+    @moduledoc """
+    Implements status tokens as stated in [this specification draft](https://github.com/malach-it/vc-decentralized-status/blob/main/SPECIFICATION.md) helping to annotate identity information.
+    """
+
+    @status_table [
+      :valid,
+      :suspended,
+      :revoked
+    ]
+
+    @spec shift(status :: atom()) :: shift :: integer()
+    def shift(status) do
+      Atom.to_string(status)
+      |> :binary.decode_unsigned()
+    end
+
+    @spec generate_status_token(secret :: String.t(), ttl :: integer(), status :: atom()) ::
+            status_token :: String.t()
+    def generate_status_token(secret, ttl, status) do
+      iat =
+        :os.system_time(:microsecond)
+        |> :binary.encode_unsigned()
+        |> :binary.bin_to_list()
+        |> :string.right(7, 0)
+
+      padded_ttl =
+        :binary.encode_unsigned(ttl)
+        |> :binary.bin_to_list()
+        |> :string.right(4, 0)
+
+      status_list =
+        iat ++
+          padded_ttl
+
+      status_information =
+        status_list
+        |> to_string()
+        |> Base.url_encode64(padding: false)
+
+      derived_status = derive_status(status, ttl, secret)
+
+      "#{status_information}~#{derived_status}"
+    end
+
+    @spec verify_status_token(secret :: String.t(), status_token :: String.t()) ::
+            status :: atom()
+    def verify_status_token(secret, status_token) do
+      [status_list, hotp] = String.split(status_token, "~")
+
+      %{ttl: ttl} =
+        status_list
+        |> Base.url_decode64!(padding: false)
+        |> to_charlist()
+        |> parse_statuslist()
+
+      Enum.reduce_while(@status_table, :expired, fn status, acc ->
+        case hotp == derive_status(status, ttl, secret) do
+          true -> {:halt, status}
+          false -> {:cont, acc}
+        end
+      end)
+    rescue
+      _ -> :invalid
+    end
+
+    defp derive_status(status, ttl, secret, status_list \\ @status_table)
+
+    defp derive_status(status, ttl, secret, []) do
+      Hotp.generate_hotp(
+        secret,
+        div(:os.system_time(:seconds), ttl) + shift(status)
+      )
+    end
+
+    defp derive_status(status, ttl, secret, [current|status_list]) do
+      Hotp.generate_hotp(
+        derive_status(current, ttl, secret, status_list),
+        div(:os.system_time(:seconds), ttl) + shift(status)
+      )
+    end
+
+    def parse_statuslist(statuslist) do
+      parse_statuslist(statuslist, {0, %{ttl: [], memory: []}})
+    end
+
+    def parse_statuslist([], {_index, result}), do: result
+
+    def parse_statuslist([_char | t], {index, acc}) when index < 7 do
+      parse_statuslist(t, {index + 1, acc})
+    end
+
+    def parse_statuslist([char | t], {index, acc}) when index < 10 do
+      acc = Map.put(acc, :memory, acc[:memory] ++ [char])
+      parse_statuslist(t, {index + 1, acc})
+    end
+
+    def parse_statuslist([char | t], {index, acc}) when index == 10 do
+      acc =
+        acc
+        |> Map.put(
+          :ttl,
+          (acc[:memory] ++ [char])
+          |> :erlang.list_to_binary()
+          |> :binary.decode_unsigned()
+        )
+        |> Map.put(:memory, [])
+
+      parse_statuslist(t, {index + 1, acc})
+    end
+  end
+
   @moduledoc false
 
   alias Boruta.Config
@@ -54,12 +166,6 @@ defmodule Boruta.Openid.VerifiableCredentials do
   # TT5rRw7VCjbapSKSfZEUSekzuBrGZhfwxQTfsNVeUYsX5gH2eJ4LdVt6uctFyJsW76VygayYHiHpwnhGwAombi\
   # RJiimmRTMXUAa49VQ9NWT7PUK2P7VbBy4Bn"
   @individual_claim_default_expiration 3600 * 24 * 365 * 120
-
-  @status_table [
-    :valid,
-    :suspended,
-    :revoked
-  ]
 
   @authorization_details_schema %{
     "type" => "array",
@@ -130,13 +236,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
                    Enum.member?(Scope.split(token.scope), identifier)
 
                "13" ->
-                 types = credential_params["vct"] || credential_params["credential_identifier"]
-
-                 (types &&
-                    Enum.member?(
-                      configuration[:types],
-                      types
-                    )) ||
+                 (identifier == credential_params["credential_identifier"]) ||
                    Enum.member?(Scope.split(token.scope), identifier)
              end
            end),
@@ -374,9 +474,9 @@ defmodule Boruta.Openid.VerifiableCredentials do
           "id" => sub,
           credential_identifier =>
             claims
-            |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+            |> Enum.map(&format_claim/1)
             |> Enum.into(%{})
-            |> Map.put("id", client.did)
+            |> Map.put("id", "#{sub}##{credential_identifier}")
         },
         "credentialSchema" => %{
           "id" =>
@@ -428,13 +528,16 @@ defmodule Boruta.Openid.VerifiableCredentials do
       "type" => credential_configuration[:types],
       "issuer" => Did.controller(client.did),
       "validFrom" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "nbf" => now,
+      "iat" => now,
+      "exp" => now + credential_configuration[:time_to_live],
       "credentialSubject" => %{
         "id" => sub,
         credential_identifier =>
           claims
-          |> Enum.map(fn {name, {claim, _status, _expiration}} -> {name, claim} end)
+          |> Enum.map(&format_claim/1)
           |> Enum.into(%{})
-          |> Map.put("id", client.did)
+          |> Map.put("id", credential_identifier)
       },
       "cnf" => %{
         "jwk" => jwk
@@ -468,14 +571,11 @@ defmodule Boruta.Openid.VerifiableCredentials do
           end
       end
 
-    claims_with_salt =
-      Enum.map(claims, fn {name, {value, status, ttl}} ->
-        {{name, value}, generate_sd_salt(client.private_key, ttl, String.to_atom(status))}
-      end)
+    claims_with_salt = Enum.flat_map(claims, &format_sd_claim(&1, client))
 
     disclosures =
       claims_with_salt
-      |> Enum.map(fn {{name, value}, salt} ->
+      |> Enum.map(fn {name, value, salt} ->
         [salt, name, value]
       end)
 
@@ -518,112 +618,93 @@ defmodule Boruta.Openid.VerifiableCredentials do
   defp generate_credential(_claims, _credential_configuration, _proof, _client, _format),
     do: {:error, "Unkown format."}
 
-  def generate_sd_salt(secret, ttl, status) do
-    iat =
-      :os.system_time(:microsecond)
-      |> :binary.encode_unsigned()
-      |> :binary.bin_to_list()
-      |> :string.right(7, 0)
-
-    padded_ttl =
-      :binary.encode_unsigned(ttl)
-      |> :binary.bin_to_list()
-      |> :string.right(4, 0)
-
-    status_list =
-      iat ++
-        padded_ttl
-
-    salt =
-      status_list
-      |> to_string()
-      |> Base.url_encode64(padding: false)
-
-    hotp =
-      Hotp.generate_hotp(
-        secret,
-        div(:os.system_time(:seconds), ttl) + shift(status)
-      )
-
-    "#{salt}~#{hotp}"
+  defp format_claim({name, {:claims, claims}}) when is_list(claims) do
+    {name, Enum.map(claims, &format_claim/1) |> Enum.into(%{})}
   end
 
-  def verify_salt(secret, salt) do
-    [status_list, hotp] = String.split(salt, "~")
-
-    %{ttl: ttl} =
-      status_list
-      |> Base.url_decode64!(padding: false)
-      |> to_charlist()
-      |> parse_statuslist()
-
-    Enum.reduce_while(@status_table, :expired, fn status, acc ->
-      case hotp ==
-             Hotp.generate_hotp(
-               secret,
-               div(:os.system_time(:seconds), ttl) + shift(status)
-             ) do
-        true -> {:halt, status}
-        false -> {:cont, acc}
-      end
-    end)
-  rescue
-    _ -> :invalid
+  defp format_claim({name, {:items, claims}}) when is_list(claims) do
+    {name, Enum.map(claims, fn claim -> [format_claim(claim)] |> Enum.into(%{}) end)}
   end
 
-  def parse_statuslist(statuslist) do
-    parse_statuslist(statuslist, {0, %{ttl: [], memory: []}})
+  defp format_claim({name, {claim, _status, _ttl}}) do
+    {name, claim}
   end
 
-  def parse_statuslist([], {_index, result}), do: result
+  defp format_sd_claim(claims, client, path \\ [])
 
-  def parse_statuslist([_char | t], {index, acc}) when index < 7 do
-    parse_statuslist(t, {index + 1, acc})
+  defp format_sd_claim({name, {:items, claims}}, client, path) when is_list(claims) do
+    claims
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {claim, index} -> format_sd_claim(claim, client, path ++ [name, to_string(index)]) end)
   end
 
-  def parse_statuslist([char | t], {index, acc}) when index < 10 do
-    acc = Map.put(acc, :memory, acc[:memory] ++ [char])
-    parse_statuslist(t, {index + 1, acc})
+  defp format_sd_claim({name, {:claims, claims}}, client, path) when is_list(claims) do
+    Enum.flat_map(claims, fn claim -> format_sd_claim(claim, client, path ++ [name]) end)
   end
 
-  def parse_statuslist([char | t], {index, acc}) when index == 10 do
-    acc =
-      acc
-      |> Map.put(
-        :ttl,
-        (acc[:memory] ++ [char])
-        |> :erlang.list_to_binary()
-        |> :binary.decode_unsigned()
-      )
-      |> Map.put(:memory, [])
+  defp format_sd_claim({name, {claim, status, ttl}}, client, path) do
+    name = Enum.join(path ++ [name], ".")
 
-    parse_statuslist(t, {index + 1, acc})
+    # TODO factorize
+    iss = case client.did do
+      nil ->
+        Client.Crypto.kid_from_private_key(client.private_key)
+
+      did ->
+        did <> "#" <> String.replace(did, "did:key:", "")
+    end
+
+    [
+      {name, claim, Status.generate_status_token(iss, ttl, String.to_atom(status))}
+    ]
   end
 
   defp extract_credential_claims(resource_owner, credential_configuration) do
     claims =
       credential_configuration[:claims]
-      |> Enum.map(fn
-        %{"name" => name, "pointer" => pointer} = claim ->
-          resource_owner_claim =
-            case get_in(resource_owner.extra_claims, String.split(pointer, ".")) do
-              value when is_binary(value) -> %{"value" => value}
-              claim -> claim
-            end
-
-          {name,
-           {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
-            (claim["expiration"] && String.to_integer(claim["expiration"])) ||
-              @individual_claim_default_expiration}}
-
-        attribute when is_binary(attribute) ->
-          {attribute,
-           {get_in(resource_owner.extra_claims, String.split(attribute, ".")), "valid",
-            @individual_claim_default_expiration}}
-      end)
+      |> Enum.map(fn claim -> extract_credential_claim(claim, resource_owner) end)
       |> Enum.into(%{})
 
     {:ok, claims}
+  end
+
+  defp extract_credential_claim(%{"name" => name, "claims" => claims}, resource_owner)
+       when not is_nil(claims) and claims != [] do
+    value =
+      Enum.map(claims, fn claim ->
+        extract_credential_claim(claim, resource_owner)
+      end)
+
+    {name, {:claims, value}}
+  end
+
+  defp extract_credential_claim(%{"name" => name, "items" => claims}, resource_owner)
+       when not is_nil(claims) and claims != [] do
+    value =
+      Enum.map(claims, fn claim ->
+        extract_credential_claim(claim, resource_owner)
+      end)
+
+    {name, {:items, value}}
+  end
+
+  defp extract_credential_claim(%{"name" => name, "pointer" => pointer} = claim, resource_owner) do
+    resource_owner_claim =
+      case get_in(resource_owner.extra_claims, String.split(pointer, ".")) do
+        value when is_binary(value) -> %{"value" => value}
+        claim -> claim
+      end
+
+    {name,
+     {resource_owner_claim["value"], resource_owner_claim["status"] || "valid",
+      (claim["expiration"] && String.to_integer(claim["expiration"])) ||
+        @individual_claim_default_expiration}}
+  end
+
+  defp extract_credential_claim(attribute, resource_owner) when is_binary(attribute) do
+    {attribute,
+     {get_in(resource_owner.extra_claims, String.split(attribute, ".")), "valid",
+      @individual_claim_default_expiration}}
   end
 
   defp extract_key(%{"kid" => did}), do: {:did, did}
@@ -640,9 +721,4 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
   defp do_validate_headers([error | checks], errors),
     do: do_validate_headers(checks, errors ++ [error])
-
-  def shift(status) do
-    Atom.to_string(status)
-    |> :binary.decode_unsigned()
-  end
 end

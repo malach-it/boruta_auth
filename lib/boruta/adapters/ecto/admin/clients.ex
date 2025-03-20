@@ -74,7 +74,8 @@ defmodule Boruta.Ecto.Admin.Clients do
   """
   def regenerate_client_did(%Client{} = client) do
     with {:ok, client} <- client |> Client.did_changeset() |> repo().update(),
-         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}),
+         :ok <- Clients.invalidate_public() do
       {:ok, client}
     end
   end
@@ -90,7 +91,8 @@ defmodule Boruta.Ecto.Admin.Clients do
   """
   def regenerate_client_secret(%Client{} = client, secret \\ nil) do
     with {:ok, client} <- client |> Client.secret_changeset(secret) |> repo().update(),
-         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}),
+         :ok <- Clients.invalidate_public() do
       {:ok, client}
     end
   end
@@ -118,7 +120,8 @@ defmodule Boruta.Ecto.Admin.Clients do
            client
            |> Client.key_pair_changeset(params)
            |> repo().update(),
-         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}),
+         :ok <- Clients.invalidate_public() do
       {:ok, client}
     end
   end
@@ -137,7 +140,8 @@ defmodule Boruta.Ecto.Admin.Clients do
   """
   def update_client(%Client{} = client, attrs) do
     with {:ok, client} <- client |> Client.update_changeset(attrs) |> repo().update(),
-         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
+         :ok <- Clients.invalidate(%Oauth.Client{id: client.id}),
+         :ok <- Clients.invalidate_public() do
       {:ok, client}
     end
   end
@@ -155,7 +159,8 @@ defmodule Boruta.Ecto.Admin.Clients do
 
   """
   def delete_client(%Client{} = client) do
-    with :ok <- Clients.invalidate(%Oauth.Client{id: client.id}) do
+    with :ok <- Clients.invalidate(%Oauth.Client{id: client.id}),
+         :ok <- Clients.invalidate_public() do
       repo().delete(client)
     end
   end

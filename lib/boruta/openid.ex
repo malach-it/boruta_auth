@@ -149,10 +149,10 @@ defmodule Boruta.Openid do
         ) :: any()
   def direct_post(conn, direct_post_params, module) do
     with {:ok, _claims} <- check_id_token_client(direct_post_params),
-         %Token{value: value} <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
-         {:ok, code} <- Authorization.Code.authorize(%{value: value}) do
-      case maybe_check_presentation(direct_post_params, code.presentation_definition) do
-        :ok ->
+         %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+      with {:ok, code} <- Authorization.Code.authorize(%{value: value}),
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, _code} <- CodesAdapter.revoke(code) do
           query =
             %{
               code: code.value,
@@ -167,12 +167,13 @@ defmodule Boruta.Openid do
             |> URI.to_string()
 
           module.direct_post_success(conn, response)
+      else
         {:error, error} ->
-          module.authentication_failure(conn, %{error | redirect_uri: code.redirect_uri, state: code.state})
+          module.authentication_failure(conn, %{error | format: :query, redirect_uri: code.redirect_uri, state: code.state})
       end
     else
       {:error, error} ->
-        module.authentication_failure(conn, error)
+        module.authentication_failure(conn, %{error | format: :query})
 
       nil ->
         module.code_not_found(conn)

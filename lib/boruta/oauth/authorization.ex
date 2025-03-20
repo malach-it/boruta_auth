@@ -330,15 +330,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
     end
   end
 
-  defp maybe_check_tx_code(tx_code, %Token{client: %Client{enforce_tx_code: true}, tx_code: against_tx_code}) do
+  defp maybe_check_tx_code(tx_code, %Token{
+         client: %Client{enforce_tx_code: true},
+         tx_code: against_tx_code
+       }) do
     case tx_code == against_tx_code do
-      true -> :ok
+      true ->
+        :ok
+
       false ->
-        {:error, %Error{
-          status: :bad_request,
-          error: :invalid_request,
-          error_description: "Given transaction code is invalid."
-        }}
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "Given transaction code is invalid."
+         }}
     end
   end
 
@@ -743,6 +749,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
+  alias Boruta.Oauth.Authorization.ResourceOwner
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
@@ -779,6 +786,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              redirect_uri: redirect_uri,
              grant_type: response_type
            ),
+         {:ok, resource_owner} <-
+           (case client_id do
+              "did:" <> _key -> {:ok, resource_owner}
+              _ -> ResourceOwner.authorize(resource_owner: resource_owner)
+            end),
          {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,

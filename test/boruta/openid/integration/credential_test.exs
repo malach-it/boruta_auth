@@ -132,9 +132,8 @@ defmodule Boruta.OpenidTest.CredentialTest do
          %ResourceOwner{
            sub: sub,
            credential_configuration: %{
-             "UniversityDegree" => %{
+             "VerifiableCredential" => %{
                version: "13",
-               types: ["VerifiableCredential"],
                format: "jwt_vc",
                time_to_live: 3600,
                claims: ["family_name"]
@@ -282,10 +281,9 @@ defmodule Boruta.OpenidTest.CredentialTest do
          %ResourceOwner{
            sub: sub,
            credential_configuration: %{
-             "UniversityDegree" => %{
+             "VerifiableCredential" => %{
                defered: true,
                version: "13",
-               types: ["VerifiableCredential"],
                format: "jwt_vc",
                time_to_live: 3600,
                claims: ["family_name"]
@@ -346,10 +344,9 @@ defmodule Boruta.OpenidTest.CredentialTest do
          %ResourceOwner{
            sub: sub,
            credential_configuration: %{
-             "UniversityDegree" => %{
+             "VerifiableCredential" => %{
                defered: true,
                version: "13",
-               types: ["VerifiableCredential"],
                format: "jwt_vc",
                time_to_live: 3600,
                claims: ["family_name"]
