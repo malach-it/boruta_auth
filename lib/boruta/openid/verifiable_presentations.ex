@@ -102,7 +102,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
 
   def validate_credential(credential, descriptor, "vc+sd-jwt") do
     [credential|disclosures] = String.split(credential, "~")
-    with {:ok, _jwk, %{"_sd" => sd}} <- validate_signature(credential) do
+    with {:ok, _jwk, %{"_sd" => sd, "sub" => sub}} <- validate_signature(credential) do
       claims = Enum.map(disclosures, fn disclosure ->
         with {:ok, json} <- Base.url_decode64(disclosure, padding: false),
              {:ok, [_salt, key, value]} <- Jason.decode(json),
@@ -123,7 +123,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
       |> Enum.into(%{})
 
       with {:ok, filtered_claims} <- validate_constraints(claims, descriptor) do
-        {:ok, claims["sub"], filtered_claims}
+        {:ok, sub, filtered_claims}
       end
     end
   end
