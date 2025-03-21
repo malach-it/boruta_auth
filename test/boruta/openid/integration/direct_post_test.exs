@@ -2,11 +2,25 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   use Boruta.DataCase
 
   import Boruta.Factory
+  import Mox
 
   alias Boruta.ClientsAdapter
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
+
+  setup do
+    stub(Boruta.Support.ResourceOwners, :from_holder, fn %{sub: sub} ->
+      {:ok, %ResourceOwner{sub: sub}}
+    end)
+
+    stub(Boruta.Support.ResourceOwners, :authorized_scopes, fn _resource_owner ->
+      []
+    end)
+
+    :ok
+  end
 
   describe "authenticates with direct post response" do
     setup do
@@ -16,6 +30,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         insert(:token,
           type: "code",
           redirect_uri: "http://redirect.uri",
+          relying_party_redirect_uri: "http://relying.party.redirect.uri",
           state: "state",
           sub:
             "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
@@ -195,7 +210,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     test "siopv2 - returns an error on replay", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
-      assert {:direct_post_success, _callback_uri} =
+      assert {:direct_post_success, _callback_uri, _token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -227,7 +242,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     test "siopv2 - authenticates", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
-      assert {:direct_post_success, callback_uri} =
+      assert {:direct_post_success, callback_uri, token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -237,6 +252,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  ApplicationMock
                )
 
+      assert token.redirect_uri == code.relying_party_redirect_uri
       assert callback_uri =~ ~r/#{code.redirect_uri}/
       assert callback_uri =~ ~r/code=#{code.value}/
       assert callback_uri =~ ~r/state=#{code.state}/
@@ -368,7 +384,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           ]
         })
 
-      assert {:direct_post_success, _callback_uri} =
+      assert {:direct_post_success, _callback_uri, _token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -420,7 +436,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           ]
         })
 
-      assert {:direct_post_success, callback_uri} =
+      assert {:direct_post_success, callback_uri, token} =
                Openid.direct_post(
                  conn,
                  %{
@@ -431,6 +447,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  ApplicationMock
                )
 
+      assert token.redirect_uri == code.relying_party_redirect_uri
       assert callback_uri =~ ~r/#{code.redirect_uri}/
       assert callback_uri =~ ~r/code=#{code.value}/
       assert callback_uri =~ ~r/state=#{code.state}/
