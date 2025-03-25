@@ -118,9 +118,9 @@ defmodule Boruta.Did do
          %{
            "didState" => %{
              "did" => did,
-             "didDocument" => %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}
            }
-         } <- Jason.decode!(body) do
+         } <- Jason.decode!(body),
+         {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} <- resolve(did) do
       {:ok, did, jwk}
     else
       _ ->
