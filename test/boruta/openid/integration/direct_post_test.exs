@@ -123,6 +123,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         VerifiablePresentations.Token.generate_and_sign(
           %{
             "exp" => :os.system_time(:second) + 10,
+            "sub" => "did:key:test",
             "vc" => %{
               "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
               "type" => ["VerifiableAttestation"]
