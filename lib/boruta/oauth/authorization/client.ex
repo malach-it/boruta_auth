@@ -49,10 +49,11 @@ defmodule Boruta.Oauth.Authorization.Client do
   def authorize(
         id: "did:" <> _key,
         source: _source,
-        redirect_uri: _redirect_uri,
+        redirect_uri: redirect_uri,
         grant_type: grant_type
       ) do
     with %Client{} = client <- ClientsAdapter.public!(),
+         true <- Enum.member?(client.redirect_uris, redirect_uri) || {:error, "Invalid redirect_uri."},
          true <- Client.wallet_grant_type_supported?(client, grant_type) do
       {:ok, client}
     else
