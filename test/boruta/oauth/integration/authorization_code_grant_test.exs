@@ -1081,7 +1081,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "scope" => "openid"
                    }
                  },
-                 %ResourceOwner{sub: "did:key:test"},
+                 %ResourceOwner{sub: "sub"},
                  ApplicationMock
                )
 
@@ -1143,7 +1143,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       insert(:scope, name: "vp_token", public: true)
 
       resource_owner = %ResourceOwner{
-        sub: "did:key:test",
+        sub: "sub",
         presentation_configuration: %{
           "vp_token" => %{
             definition: %{"test" => true}
