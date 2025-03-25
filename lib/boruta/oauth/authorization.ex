@@ -976,11 +976,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              scope,
              resource_owner.presentation_configuration
            ),
-         # TODO preform a relying_party_redirect_uri verification
+         # TODO perform public client redirect_uri check
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-               {:ok, ClientsAdapter.public!()}
+                {:ok, ClientsAdapter.public!()}
 
               _ ->
                 Authorization.Client.authorize(
@@ -989,6 +989,24 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                   redirect_uri: redirect_uri,
                   grant_type: response_type
                 )
+            end),
+         {:ok, client} <-
+           (case relying_party_redirect_uri do
+              nil ->
+                {:ok, client}
+
+              relying_party_redirect_uri ->
+                Authorization.Client.authorize(
+                  id: client_id,
+                  source: nil,
+                  redirect_uri: relying_party_redirect_uri,
+                  grant_type: response_type
+                )
+            end),
+         {:ok, resource_owner} <-
+           (case client_id do
+              "did:" <> _key -> {:ok, resource_owner}
+              _ -> Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
             end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
