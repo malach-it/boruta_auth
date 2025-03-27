@@ -8,8 +8,13 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid.VerifiableCredentials
 
+  import Mox
+
   describe "issue_verifiable_credential/4" do
     setup do
+      stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+        {:ok, []}
+      end)
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
           "kid" =>
