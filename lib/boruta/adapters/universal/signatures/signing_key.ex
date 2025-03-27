@@ -20,12 +20,13 @@ defmodule Boruta.Universal.Signatures.SigningKey do
           trust_chain: list(String.t()) | nil
         }
 
-  def encode_and_sign_with_key(%__MODULE__{kid: kid, private_key: key_id}, payload) do
+  def encode_and_sign_with_key(%__MODULE__{kid: kid, private_key: key_id, trust_chain: trust_chain}, payload) do
     header =
       %{
         "typ" => "JWT",
         "alg" => "EdDSA",
-        "kid" => kid
+        "kid" => kid,
+        "trust_chain" => trust_chain
       }
       |> Jason.encode!()
       |> Base.url_encode64(padding: false)
