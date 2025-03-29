@@ -1,4 +1,4 @@
-defmodule Boruta.Oauth.AccessTokens do
+defmodule Boruta.Oauth.AgentTokens do
   @moduledoc """
   Access token context
   """
@@ -22,8 +22,8 @@ defmodule Boruta.Oauth.AccessTokens do
     optional(:state) => String.t(),
     optional(:previous_token) => String.t(),
     optional(:resource_owner) => Boruta.Oauth.ResourceOwner.t(),
-    optional(:authorization_details) => list(map()),
-    optional(:agent_token) => String.t() | nil
+    :bind_data => map(),
+    :bind_configuration => map()
   }, options :: [
     refresh_token: boolean()
   ]) :: token :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
@@ -41,4 +41,9 @@ defmodule Boruta.Oauth.AccessTokens do
   @callback revoke_refresh_token(
     token :: Boruta.Oauth.Token.t()
   ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
+
+  @doc """
+  Extract resource owner claims from an agent token
+  """
+  @callback claims_from_agent_token(token :: Boruta.Oauth.Token.t()) :: {:ok, claims :: map()}
 end

@@ -1,6 +1,6 @@
-defmodule Boruta.Ecto.AccessTokens do
+defmodule Boruta.Ecto.AgentTokens do
   @moduledoc false
-  @behaviour Boruta.Oauth.AccessTokens
+  @behaviour Boruta.Oauth.AgentTokens
 
   import Boruta.Config, only: [repo: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
@@ -12,7 +12,7 @@ defmodule Boruta.Ecto.AccessTokens do
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
 
-  @impl Boruta.Oauth.AccessTokens
+  @impl Boruta.Oauth.AgentTokens
   def get_by(attrs) do
     case get_by(:from_cache, attrs) do
       {:ok, token} -> token
@@ -27,7 +27,7 @@ defmodule Boruta.Ecto.AccessTokens do
            repo().one(
              from t in Token,
                left_join: c in assoc(t, :client),
-               where: t.type == "access_token" and t.value == ^value
+               where: t.type == "agent_token" and t.value == ^value
            ),
          {:ok, token} <- token |> to_oauth_schema() |> TokenStore.put() do
       token
@@ -39,16 +39,16 @@ defmodule Boruta.Ecto.AccessTokens do
            repo().one(
              from t in Token,
                left_join: c in assoc(t, :client),
-               where: t.type == "access_token" and t.refresh_token == ^refresh_token
+               where: t.type == "agent_token" and t.refresh_token == ^refresh_token
            ),
          {:ok, token} <- token |> to_oauth_schema() |> TokenStore.put() do
       token
     end
   end
 
-  @impl Boruta.Oauth.AccessTokens
+  @impl Boruta.Oauth.AgentTokens
   def create(
-        %{client: %Client{id: client_id, access_token_ttl: access_token_ttl}, scope: scope} =
+        %{client: %Client{id: client_id, agent_token_ttl: agent_token_ttl}, scope: scope} =
           params,
         options
       ) do
@@ -58,7 +58,8 @@ defmodule Boruta.Ecto.AccessTokens do
     previous_token = params[:previous_token]
     previous_code = params[:previous_code]
     resource_owner = params[:resource_owner]
-    agent_token = params[:agent_token]
+    bind_data = params[:bind_data]
+    bind_configuration = params[:bind_configuration]
 
     authorization_details =
       params[:authorization_details] || (resource_owner && resource_owner.authorization_details)
@@ -69,11 +70,12 @@ defmodule Boruta.Ecto.AccessTokens do
       redirect_uri: redirect_uri,
       state: state,
       scope: scope,
-      access_token_ttl: access_token_ttl,
+      access_token_ttl: agent_token_ttl,
       previous_token: previous_token,
       previous_code: previous_code,
       authorization_details: authorization_details,
-      agent_token: agent_token
+      bind_data: bind_data,
+      bind_configuration: bind_configuration
     }
 
     changeset =
@@ -94,10 +96,10 @@ defmodule Boruta.Ecto.AccessTokens do
     end
   end
 
-  defp changeset_method(refresh_token: true), do: :changeset_with_refresh_token
-  defp changeset_method(_options), do: :changeset
+  defp changeset_method(refresh_token: true), do: :data_changeset_with_refresh_token
+  defp changeset_method(_options), do: :data_changeset
 
-  @impl Boruta.Oauth.AccessTokens
+  @impl Boruta.Oauth.AgentTokens
   def revoke(%Oauth.Token{client: client, value: value}) do
     with %Token{} = token <- repo().get_by(Token, client_id: client.id, value: value),
          {:ok, token} <-
@@ -111,7 +113,7 @@ defmodule Boruta.Ecto.AccessTokens do
     end
   end
 
-  @impl Boruta.Oauth.AccessTokens
+  @impl Boruta.Oauth.AgentTokens
   def revoke_refresh_token(%Oauth.Token{client: client, value: value}) do
     with %Token{} = token <- repo().get_by(Token, client_id: client.id, value: value),
          {:ok, token} <-
@@ -123,5 +125,10 @@ defmodule Boruta.Ecto.AccessTokens do
       nil -> {:error, "Token not found."}
       error -> error
     end
+  end
+
+  @impl Boruta.Oauth.AgentTokens
+  def claims_from_agent_token(%Oauth.Token{bind_data: bind_data}) do
+    {:ok, bind_data}
   end
 end

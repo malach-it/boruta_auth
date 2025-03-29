@@ -19,6 +19,7 @@ defmodule Boruta.Oauth.Error do
             :invalid_request
             | :invalid_client
             | :invalid_access_token
+            | :invalid_agent_token
             | :invalid_scope
             | :invalid_code
             | :invalid_resource_owner

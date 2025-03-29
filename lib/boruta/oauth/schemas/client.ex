@@ -24,6 +24,7 @@ defmodule Boruta.Oauth.Client do
             redirect_uris: [],
             supported_grant_types: [],
             access_token_ttl: nil,
+            agent_token_ttl: nil,
             id_token_ttl: nil,
             authorization_code_ttl: nil,
             authorization_request_ttl: nil,
@@ -59,6 +60,7 @@ defmodule Boruta.Oauth.Client do
           redirect_uris: list(String.t()),
           supported_grant_types: list(String.t()),
           access_token_ttl: integer(),
+          agent_token_ttl: integer(),
           id_token_ttl: integer(),
           authorization_code_ttl: integer(),
           authorization_request_ttl: integer(),
@@ -85,7 +87,8 @@ defmodule Boruta.Oauth.Client do
   @wallet_grant_types [
     "id_token",
     "vp_token",
-    "authorization_code"
+    "authorization_code",
+    "agent_credentials"
   ]
 
   @grant_types Enum.uniq(
@@ -93,6 +96,7 @@ defmodule Boruta.Oauth.Client do
                    "client_credentials",
                    "password",
                    "authorization_code",
+                   "agent_code",
                    "preauthorized_code",
                    "refresh_token",
                    "implicit",
@@ -109,7 +113,8 @@ defmodule Boruta.Oauth.Client do
 
   @spec grant_type_supported?(client :: t(), grant_type :: String.t()) :: boolean()
   def grant_type_supported?(%__MODULE__{supported_grant_types: supported_grant_types}, "code") do
-    Enum.member?(supported_grant_types, "authorization_code")
+    Enum.member?(supported_grant_types, "authorization_code") ||
+      Enum.member?(supported_grant_types, "agent_code")
   end
 
   def grant_type_supported?(
@@ -179,7 +184,7 @@ defmodule Boruta.Oauth.Client do
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
   def should_check_secret?(_client, grant_type)
-      when grant_type in ["client_credentials", "introspect"],
+      when grant_type in ["client_credentials", "agent_credentials", "introspect"],
       do: true
 
   def should_check_secret?(%__MODULE__{confidential: false}, _grant_type), do: false

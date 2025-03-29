@@ -12,6 +12,7 @@ defmodule Boruta.Ecto.Client do
       token_generator: 0,
       repo: 0,
       access_token_max_ttl: 0,
+      agent_token_max_ttl: 0,
       authorization_code_max_ttl: 0,
       authorization_request_max_ttl: 0,
       id_token_max_ttl: 0,
@@ -36,6 +37,7 @@ defmodule Boruta.Ecto.Client do
           public_refresh_token: boolean(),
           public_revoke: boolean(),
           access_token_ttl: integer(),
+          agent_token_ttl: integer(),
           authorization_code_ttl: integer(),
           refresh_token_ttl: integer(),
           authorized_scopes: Ecto.Association.NotLoaded.t() | list(Scope.t()),
@@ -122,6 +124,7 @@ defmodule Boruta.Ecto.Client do
     field(:public_revoke, :boolean, default: false)
 
     field(:access_token_ttl, :integer)
+    field(:agent_token_ttl, :integer)
     field(:authorization_code_ttl, :integer)
     field(:authorization_request_ttl, :integer)
     field(:id_token_ttl, :integer)
@@ -176,6 +179,7 @@ defmodule Boruta.Ecto.Client do
       :secret,
       :confidential,
       :access_token_ttl,
+      :agent_token_ttl,
       :authorization_code_ttl,
       :authorization_request_ttl,
       :refresh_token_ttl,
@@ -205,6 +209,7 @@ defmodule Boruta.Ecto.Client do
     |> validate_required([:redirect_uris, :key_pair_type])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
+    |> change_agent_token_ttl()
     |> change_authorization_code_ttl()
     |> change_authorization_request_ttl()
     |> change_id_token_ttl()
@@ -239,6 +244,7 @@ defmodule Boruta.Ecto.Client do
       :secret,
       :confidential,
       :access_token_ttl,
+      :agent_token_ttl,
       :authorization_code_ttl,
       :authorization_request_ttl,
       :refresh_token_ttl,
@@ -268,11 +274,13 @@ defmodule Boruta.Ecto.Client do
     |> validate_required([
       :authorization_code_ttl,
       :access_token_ttl,
+      :agent_token_ttl,
       :refresh_token_ttl,
       :id_token_ttl,
       :key_pair_type
     ])
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
+    |> validate_inclusion(:agent_token_ttl, 1..agent_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())
     |> validate_inclusion(:access_token_ttl, 1..authorization_request_max_ttl())
     |> validate_inclusion(:refresh_token_ttl, 1..refresh_token_max_ttl())
@@ -321,6 +329,16 @@ defmodule Boruta.Ecto.Client do
 
       :error ->
         put_change(changeset, :access_token_ttl, access_token_max_ttl())
+    end
+  end
+
+  defp change_agent_token_ttl(changeset) do
+    case fetch_change(changeset, :agent_token_ttl) do
+      {:ok, _agent_token_ttl} ->
+        validate_inclusion(changeset, :agent_token_ttl, 1..agent_token_max_ttl())
+
+      :error ->
+        put_change(changeset, :agent_token_ttl, agent_token_max_ttl())
     end
   end
 
