@@ -279,7 +279,8 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :code_challenge,
       :code_challenge_method,
-      :authorization_details
+      :authorization_details,
+      :presentation_definition
     ])
     |> validate_required([
       :authorization_code_ttl,
