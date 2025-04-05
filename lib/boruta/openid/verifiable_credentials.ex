@@ -336,19 +336,6 @@ defmodule Boruta.Openid.VerifiableCredentials do
     end
   end
 
-  defp verify_jwt({:jwk, jwk}, "EdDSA", jwt) do
-    signer =
-      Joken.Signer.create("ES256", %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
-
-    case Token.verify(jwt, signer) do
-      {:ok, claims} ->
-        {:ok, jwk, claims}
-
-      _ ->
-        {:error, "Bad proof signature"}
-    end
-  end
-
   defp verify_jwt({:jwk, jwk}, alg, jwt) do
     signer = Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
 

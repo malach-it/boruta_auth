@@ -220,9 +220,6 @@ defmodule Boruta.Openid.VerifiablePresentations do
           {:ok, jwk :: map(), claims :: map()} | {:error, reason :: String.t()}
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
-      {:ok, %{"alg" => "EdDSA"} = headers} ->
-        verify_jwt(extract_key(headers), "ES256", jwt)
-
       {:ok, %{"alg" => alg} = headers} ->
         verify_jwt(extract_key(headers), alg, jwt)
 
