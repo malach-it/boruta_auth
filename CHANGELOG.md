@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
+## [unreleased]
+
+### Added
+
+- support OID4VCI tx codes
+- return oauth token in credential issuance response
+- expose previous code in oauth tokens
+- support sd-jwt in presentations
+- accept `JWT` proof `typ`
+- signatures adapters with the implementation of Universal adapter
+- better code errors on direct post requests
+- verifiable credentials nested claims management
+- agent credentials and agent code flows
+
+
+### Changed
+
+- verifiable credentials payloads (sd-jwt, jwt_vc)
+- status tokens refactoring and improvement
+
+### Fixed
+
+- verifiable presentations various improvement and fixes
+- oauth client long dids persistence
+- do not use es256 to verify eddsa jwts
+
 ## [3.0.0-beta.3] - 2024-11-21
 
 ### Changed
