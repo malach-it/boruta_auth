@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support for oid4vci tx codes
 - oauth token is returned in credential responses
 - expose previous code in oauth tokens schema
+- support sd-jwt in presentations
+- accept `JWT` proof `typ`
 - accept JWT typed oid4vci proofs
-- signatures interface and adapters
+- signatures adapters with the implementation of Universal adapter
 - better errors on direct post requests
 - verifiable credentials nested claims management
 - better jwt_vc presentation support
@@ -37,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - revoke public client cache on update
 - presentations with public client
 - empty code challenges
+- verifiable presentations various improvement and fixes
+- oauth client long dids persistence
+- do not use es256 to verify eddsa jwts
+
+### Changed
+
+- verifiable credentials payloads (sd-jwt, jwt_vc)
+- status tokens refactoring and improvement
 
 ### Security
 
