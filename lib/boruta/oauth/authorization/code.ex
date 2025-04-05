@@ -23,6 +23,7 @@ defmodule Boruta.Oauth.Authorization.Code do
             redirect_uri: String.t()
           }
           | %{value: String.t()}
+          | %{value: String.t(), code_verifier: String.t() | nil}
         ) ::
           {:error,
            %Error{
@@ -107,9 +108,15 @@ defmodule Boruta.Oauth.Authorization.Code do
     end
   end
 
-  def authorize(%{value: value}) do
-    with %Token{} = token <-
+  def authorize(%{value: value} = params) do
+    with %Token{client: client} = token <-
            CodesAdapter.get_by(value: value),
+         :ok <-
+           (case {client.pkce, params[:code_verifier]} do
+              {false, _} -> :ok
+              {true, "" <> code_verifier} -> check_code_challenge(token, code_verifier)
+              {true, _} -> {:error, :invalid_code_verifier}
+            end),
          :ok <- Token.ensure_valid(token) do
       {:ok, token}
     else
