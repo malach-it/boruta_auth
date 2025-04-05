@@ -1004,6 +1004,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              resource_owner.presentation_configuration,
              scope
            ) do
+
+      {code_challenge, code_challenge_method} = case resource_owner.code_verifier do
+        nil -> {code_challenge, code_challenge_method}
+        code_verifier -> {code_verifier , "plain"}
+      end
+
       {:ok,
        %AuthorizationSuccess{
          response_types: response_types,

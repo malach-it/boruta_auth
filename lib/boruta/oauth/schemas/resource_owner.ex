@@ -5,6 +5,7 @@ defmodule Boruta.Oauth.ResourceOwner do
 
   @enforce_keys [:sub]
   defstruct sub: nil,
+            code_verifier: nil,
             username: nil,
             last_login_at: nil,
             extra_claims: %{},
@@ -14,6 +15,7 @@ defmodule Boruta.Oauth.ResourceOwner do
 
   @type t :: %__MODULE__{
           sub: String.t(),
+          code_verifier: String.t() | nil,
           username: String.t() | nil,
           last_login_at: DateTime.t() | nil,
           extra_claims: Boruta.Oauth.IdToken.claims(),
