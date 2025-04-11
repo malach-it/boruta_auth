@@ -1920,7 +1920,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    "client_id" => client.id,
                    "code" => code.value,
                    "redirect_uri" => redirect_uri,
-                   "code_verifier" => "bad code challenge"
+                   "code_verifier" => "bad code verifier"
                  }
                },
                ApplicationMock
@@ -1993,7 +1993,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
-    test "returns a token with pkce", %{
+    test "returns a token with pkce (plain code challenge)", %{
       pkce_client: client,
       pkce_code: code,
       resource_owner: resource_owner

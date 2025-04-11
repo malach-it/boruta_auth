@@ -279,7 +279,8 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :code_challenge,
       :code_challenge_method,
-      :authorization_details
+      :authorization_details,
+      :presentation_definition
     ])
     |> validate_required([
       :authorization_code_ttl,
@@ -362,11 +363,17 @@ defmodule Boruta.Ecto.Token do
   end
 
   defp encrypt_code_challenge(changeset) do
-    changeset
-    |> put_change(
-      :code_challenge_hash,
-      changeset |> get_field(:code_challenge, "") |> Oauth.Token.hash()
-    )
+    case get_field(changeset, :code_challenge) do
+      code_challenge when not is_nil(code_challenge) and code_challenge != "" ->
+        changeset
+        |> put_change(
+          :code_challenge_hash,
+          Oauth.Token.hash(code_challenge)
+        )
+
+      _ ->
+        changeset
+    end
   end
 
   defp validate_authorization_details(changeset) do

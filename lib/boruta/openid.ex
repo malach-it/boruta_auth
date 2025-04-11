@@ -138,6 +138,7 @@ defmodule Boruta.Openid do
 
   @type direct_post_params :: %{
           code_id: String.t(),
+          code_verifier: String.t() | nil,
           id_token: nil | String.t(),
           vp_token: nil | String.t(),
           presentation_submission: nil | String.t()
@@ -150,7 +151,11 @@ defmodule Boruta.Openid do
   def direct_post(conn, direct_post_params, module) do
     with {:ok, _claims} <- check_id_token_client(direct_post_params),
          %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
-      with {:ok, code} <- Authorization.Code.authorize(%{value: value}),
+      with {:ok, code} <-
+             Authorization.Code.authorize(%{
+               value: value,
+               code_verifier: direct_post_params[:code_verifier]
+             }),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, _code} <- CodesAdapter.revoke(code) do
           query =
@@ -169,7 +174,12 @@ defmodule Boruta.Openid do
           module.direct_post_success(conn, response)
       else
         {:error, error} ->
-          module.authentication_failure(conn, %{error | format: :query, redirect_uri: code.redirect_uri, state: code.state})
+          module.authentication_failure(conn, %{
+            error
+            | format: :query,
+              redirect_uri: code.redirect_uri,
+              state: code.state
+          })
       end
     else
       {:error, error} ->
