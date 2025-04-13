@@ -59,7 +59,7 @@ It is a work in progress, all feedbacks / feature requests / improvements are we
 
 ## Code of Conduct
 
-This product community follows the code of conduct available [here](https://io.malach.it/code-of-conduct.html)
+This product community follows the code of conduct available [here](CODE_OF_CONDUCT.md)
 
 ## License
 
