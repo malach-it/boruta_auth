@@ -22,7 +22,6 @@ defmodule Boruta.Ecto.Client do
   alias Boruta.Ecto.Scope
   alias Boruta.Oauth
   alias Boruta.Oauth.Client
-  alias Boruta.Universal
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   @type t :: %__MODULE__{
@@ -72,7 +71,7 @@ defmodule Boruta.Ecto.Client do
   @key_pair_type_schema %{
     "type" => "object",
     "properties" => %{
-      "type" => %{"type" => "string", "pattern" => "^ec|rsa|universal$"},
+      "type" => %{"type" => "string", "pattern" => "^ec|rsa$"},
       "modulus_size" => %{"type" => "string"},
       "exponent_size" => %{"type" => "string"},
       "curve" => %{"type" => "string", "pattern" => "^P-256|P-384|P-512$"}
@@ -96,9 +95,6 @@ defmodule Boruta.Ecto.Client do
       "HS256",
       "HS384",
       "HS512"
-    ],
-    "universal" => [
-      "EdDSA"
     ]
   }
 
@@ -372,8 +368,6 @@ defmodule Boruta.Ecto.Client do
     key_pair_type = get_field(changeset, :key_pair_type)
 
     case key_pair_type do
-      %{"type" => "universal"} ->
-        validate_inclusion(changeset, :signatures_adapter, [Atom.to_string(Boruta.Universal.Signatures)])
       %{"type" => type} when type in ["ec", "rsa"] ->
         validate_inclusion(changeset, :signatures_adapter, [Atom.to_string(Boruta.Internal.Signatures)])
       _ ->
@@ -485,9 +479,6 @@ defmodule Boruta.Ecto.Client do
         %{"type" => "ec", "curve" => curve} ->
           JOSE.JWK.generate_key({:ec, curve})
 
-        %{"type" => "universal"} ->
-          "universal"
-
         _ ->
           nil
       end
@@ -495,25 +486,6 @@ defmodule Boruta.Ecto.Client do
     case private_key do
       nil ->
         add_error(changeset, :private_key, "private_key_type is invalid")
-
-      "universal" ->
-        with {:ok, did, jwk} <- Did.create("key"),
-             {:ok, key_id} <- Universal.Signatures.SigningKey.get_key_by_did(did) do
-          "did:key:" <> key = did
-          public_key = JOSE.JWK.from_map(jwk)
-          {_type, public_pem} = JOSE.JWK.to_pem(public_key)
-
-          changeset
-          |> put_change(:private_key, key_id["id"])
-          |> put_change(:public_key, public_pem)
-          |> put_change(:did, "#{did}##{key}")
-          |> put_change(:signatures_adapter, Boruta.Universal.Signatures |> Atom.to_string())
-          |> put_change(:id_token_signature_alg, "EdDSA")
-          |> put_change(:userinfo_signed_response_alg, "EdDSA")
-        else
-          {:error, error} ->
-            add_error(changeset, :private_key, error)
-        end
 
       private_key ->
         public_key = JOSE.JWK.to_public(private_key)

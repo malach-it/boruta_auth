@@ -26,9 +26,9 @@ defmodule Boruta.Config do
       refresh_token: 60 * 60 * 24 * 30
     ],
     ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
-    did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
-    did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
-    universal_did_auth: %{
+    did_resolver_base_url: "http://localhost:8080",
+    did_registrar_base_url: "http://localhost:8081",
+    did_auth: %{
       type: "bearer",
       token: DID_API_KEY
     },
@@ -57,12 +57,9 @@ defmodule Boruta.Config do
               refresh_token: 60 * 60 * 24 * 30
             ],
             ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
-            did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
-            did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
-            signature_credentials_base_url: "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
-            universal_keys_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys",
-            universal_sign_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys/sign",
-            universal_did_auth: %{
+            did_resolver_base_url: "http://localhost:8080",
+            did_registrar_base_url: "http://localhost:8081",
+            did_auth: %{
               type: "bearer",
               token: nil
             },
@@ -198,28 +195,10 @@ defmodule Boruta.Config do
     Keyword.fetch!(oauth_config(), :did_registrar_base_url)
   end
 
-  @spec signature_credentials_base_url() :: String.t()
+  @spec did_auth() :: map()
   @doc false
-  def signature_credentials_base_url do
-    Keyword.fetch!(oauth_config(), :signature_credentials_base_url)
-  end
-
-  @spec universal_keys_base_url() :: String.t()
-  @doc false
-  def universal_keys_base_url do
-    Keyword.fetch!(oauth_config(), :universal_keys_base_url)
-  end
-
-  @spec universal_sign_base_url() :: String.t()
-  @doc false
-  def universal_sign_base_url do
-    Keyword.fetch!(oauth_config(), :universal_sign_base_url)
-  end
-
-  @spec universal_did_auth() :: map()
-  @doc false
-  def universal_did_auth do
-    Keyword.fetch!(oauth_config(), :universal_did_auth)
+  def did_auth do
+    Keyword.fetch!(oauth_config(), :did_auth)
   end
 
   @spec issuer() :: String.t()

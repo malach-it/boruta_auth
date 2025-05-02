@@ -1,12 +1,12 @@
 defmodule Boruta.Did do
   # TODO integration tests
   @moduledoc """
-    Utilities to manipulate dids using an universal resolver or registrar.
+    Utilities to manipulate dids using an did resolver or registrar.
   """
 
   import Boruta.Config,
     only: [
-      universal_did_auth: 0,
+      did_auth: 0,
       ebsi_did_resolver_base_url: 0,
       did_resolver_base_url: 0,
       did_registrar_base_url: 0
@@ -44,7 +44,7 @@ defmodule Boruta.Did do
 
     with {:ok, %Finch.Response{body: body, status: 200}} <-
            Finch.build(:get, resolver_url, [
-             {"Authorization", "Bearer #{universal_did_auth()[:token]}"}
+             {"Authorization", "Bearer #{did_auth()[:token]}"}
            ])
            |> Finch.request(OpenIDHttpClient),
          {:ok, %{"didDocument" => did_document}} <- Jason.decode(body) do
@@ -109,7 +109,7 @@ defmodule Boruta.Did do
              :post,
              did_registrar_base_url() <> "/create?method=#{method}",
              [
-               {"Authorization", "Bearer #{universal_did_auth()[:token]}"},
+               {"Authorization", "Bearer #{did_auth()[:token]}"},
                {"Content-Type", "application/json"}
              ],
              Jason.encode!(payload)

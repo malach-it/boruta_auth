@@ -91,15 +91,6 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
-    # TODO create an universal mock adapter
-    @tag :skip
-    test "creates a client with universal key" do
-      assert {:ok, %Client{}} =
-               Admin.create_client(
-                 Map.put(@client_valid_attrs, :key_pair_type, %{"type" => "universal"})
-               )
-    end
-
     test "creates a client with supported_grant_types" do
       assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
                Admin.create_client(
@@ -253,7 +244,7 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.create_client(
                  Map.merge(@client_valid_attrs, %{
                    key_pair_type: %{"type" => "rsa"},
-                   signatures_adapter: "Elixir.Universal.Signatures"
+                   signatures_adapter: "Elixir.Internal.Signatures"
                  })
                )
 
@@ -280,7 +271,7 @@ defmodule Boruta.Ecto.AdminTest do
                {
                  :key_pair_type,
                  {
-                   "validation failed: #/type do match required pattern /^ec|rsa|universal$/.",
+                   "validation failed: #/type do match required pattern /^ec|rsa$/.",
                    []
                  }
                },
