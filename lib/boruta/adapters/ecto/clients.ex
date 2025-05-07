@@ -7,8 +7,8 @@ defmodule Boruta.Ecto.Clients do
   import Boruta.Config, only: [repo: 0, issuer: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
-  alias Boruta.Ecto
   alias Boruta.Ecto.ClientStore
+  alias Boruta.Ecto.Client
   alias Boruta.Oauth
 
   @impl Boruta.Oauth.Clients
@@ -22,9 +22,12 @@ defmodule Boruta.Ecto.Clients do
   defp get_client(:from_cache, id), do: ClientStore.get_client(id)
 
   defp get_client(:from_database, id) do
-    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
+    with {:ok, id} <- Ecto.UUID.cast(id),
+         %Client{} = client <- repo().get_by(Client, id: id),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put() do
       client
+    else
+      _ -> nil
     end
   end
 
@@ -45,7 +48,7 @@ defmodule Boruta.Ecto.Clients do
   defp public!(:from_cache), do: ClientStore.get_public()
 
   defp public!(:from_database) do
-    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, public_client_id: issuer()),
+    with %Client{} = client <- repo().get_by(Client, public_client_id: issuer()),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put_public() do
       client
     end
@@ -69,7 +72,7 @@ defmodule Boruta.Ecto.Clients do
 
   @impl Boruta.Oauth.Clients
   def list_clients_jwk do
-    clients = repo().all(Ecto.Client)
+    clients = repo().all(Client)
 
     Enum.map(clients, fn client -> {client |> to_oauth_schema(), rsa_key(client)} end)
     |> Enum.uniq_by(fn {_client, %{"kid" => kid}} -> kid end)
@@ -78,8 +81,8 @@ defmodule Boruta.Ecto.Clients do
   @impl Boruta.Openid.Clients
   def create_client(registration_params) do
     with {:ok, client} <-
-           %Ecto.Client{}
-           |> Ecto.Client.create_changeset(registration_params)
+           %Client{}
+           |> Client.create_changeset(registration_params)
            |> repo().insert() do
       client |> to_oauth_schema() |> ClientStore.put()
     end
@@ -87,14 +90,14 @@ defmodule Boruta.Ecto.Clients do
 
   @impl Boruta.Openid.Clients
   def refresh_jwk_from_jwks_uri(client_id) do
-    with %Ecto.Client{jwks_uri: "" <> jwks_uri} = client <-
-           repo().get_by(Ecto.Client, id: client_id),
+    with %Client{jwks_uri: "" <> jwks_uri} = client <-
+           repo().get_by(Client, id: client_id),
          %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
            Finch.build(:get, jwks_uri) |> Finch.request(OpenIDHttpClient),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings),
-         {:ok, %Ecto.Client{jwt_public_key: jwt_public_key}} <-
-           Ecto.Client.update_changeset(client, %{
+         {:ok, %Client{jwt_public_key: jwt_public_key}} <-
+           Client.update_changeset(client, %{
              jwk: jwk,
              token_endpoint_jwt_auth_alg: jwk["alg"]
            })
@@ -107,8 +110,8 @@ defmodule Boruta.Ecto.Clients do
   end
 
   defp authorized_scopes(:from_database, %Oauth.Client{id: id}) do
-    case repo().get_by(Ecto.Client, id: id) do
-      %Ecto.Client{} = client ->
+    case repo().get_by(Client, id: id) do
+      %Client{} = client ->
         {:ok, client} = to_oauth_schema(client) |> ClientStore.put()
         client.authorized_scopes
 
@@ -117,7 +120,7 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
-  defp rsa_key(%Ecto.Client{public_key: public_key, private_key: private_key}) do
+  defp rsa_key(%Client{public_key: public_key, private_key: private_key}) do
     {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
 
     Map.put(jwk, "kid", Oauth.Client.Crypto.kid_from_private_key(private_key))
