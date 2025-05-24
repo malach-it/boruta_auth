@@ -34,6 +34,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
   defstruct response_types: [],
             client: nil,
             redirect_uri: nil,
+            relying_party_redirect_uri: nil,
             resource_owner: nil,
             sub: nil,
             scope: nil,
@@ -57,6 +58,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           access_token: Boruta.Oauth.Token.t() | nil,
           code: Boruta.Oauth.Token.t() | nil,
           redirect_uri: String.t() | nil,
+          relying_party_redirect_uri: String.t() | nil,
           sub: String.t() | nil,
           resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
           scope: String.t(),
@@ -268,15 +270,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              redirect_uri: redirect_uri,
              client: client,
              code_verifier: code_verifier
-           }),
-         {:ok, %ResourceOwner{sub: sub}} <-
-           Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
+           }) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
          code: code,
          redirect_uri: redirect_uri,
-         sub: sub,
+         sub: code.resource_owner.sub,
          scope: code.scope,
          nonce: code.nonce,
          authorization_details: code.authorization_details
@@ -950,6 +950,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PresentationRequest
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
   alias Boruta.Openid.VerifiableCredentials
   alias Boruta.Openid.VerifiablePresentations
@@ -959,6 +960,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           client_id: client_id,
           resource_owner: resource_owner,
           redirect_uri: redirect_uri,
+          relying_party_redirect_uri: relying_party_redirect_uri,
           state: state,
           nonce: nonce,
           scope: scope,
@@ -973,16 +975,30 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              scope,
              resource_owner.presentation_configuration
            ),
+         # TODO perform public client redirect_uri check
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-               {:ok, ClientsAdapter.public!()}
+                {:ok, ClientsAdapter.public!()}
 
               _ ->
                 Authorization.Client.authorize(
                   id: client_id,
                   source: nil,
                   redirect_uri: redirect_uri,
+                  grant_type: response_type
+                )
+            end),
+         {:ok, client} <-
+           (case relying_party_redirect_uri do
+              nil ->
+                {:ok, client}
+
+              relying_party_redirect_uri ->
+                Authorization.Client.authorize(
+                  id: client_id,
+                  source: nil,
+                  redirect_uri: relying_party_redirect_uri,
                   grant_type: response_type
                 )
             end),
@@ -1015,8 +1031,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          response_types: response_types,
          presentation_definition: presentation_definition,
          redirect_uri: redirect_uri,
+         relying_party_redirect_uri: relying_party_redirect_uri,
          client: client,
-         sub: resource_owner.sub,
+         sub: client_id,
          scope: scope,
          state: state,
          nonce: nonce,
@@ -1045,6 +1062,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             response_types: response_types,
             presentation_definition: presentation_definition,
             redirect_uri: redirect_uri,
+            relying_party_redirect_uri: relying_party_redirect_uri,
             client: client,
             sub: sub,
             scope: scope,
@@ -1056,10 +1074,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             response_mode: response_mode
           }} <-
            preauthorize(request) do
+      # TODO create a presentation specific code
       with {:ok, code} <-
              CodesAdapter.create(%{
+               resource_owner: %ResourceOwner{sub: sub},
                client: client,
                redirect_uri: redirect_uri,
+               relying_party_redirect_uri: relying_party_redirect_uri,
                sub: sub,
                scope: scope,
                state: state,

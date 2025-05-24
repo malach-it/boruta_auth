@@ -41,9 +41,19 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
         }}
     end
   end
+
+  def authorize(resource_owner: %ResourceOwner{sub: "did:" <> _key}) do
+    {:error, %Error{
+      status: :unauthorized,
+      error: :invalid_resource_owner,
+      error_description: "Resource owner is invalid."
+    }}
+  end
+
   def authorize(resource_owner: %ResourceOwner{sub: sub} = resource_owner) when not is_nil(sub) do
     {:ok, resource_owner}
   end
+
   def authorize(_) do
     {:error, %Error{
       status: :unauthorized,

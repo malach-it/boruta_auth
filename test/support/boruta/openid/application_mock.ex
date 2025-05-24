@@ -24,7 +24,7 @@ defmodule Boruta.Openid.ApplicationMock do
   def credential_failure(_conn, error), do: {:credential_failure, error}
 
   @impl Boruta.Openid.Application
-  def direct_post_success(_conn, response), do: {:direct_post_success, response}
+  def direct_post_success(_conn, response, token), do: {:direct_post_success, response, token}
 
   @impl Boruta.Openid.Application
   def code_not_found(_conn), do: {:code_not_found}

@@ -204,6 +204,31 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
     end
 
+    test "returns an error with anonymous clients (wallets)", %{client: client} do
+      resource_owner = %ResourceOwner{sub: "did:key:test"}
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_error,
+              %Error{
+                redirect_uri: "https://redirect.uri",
+                error: :invalid_resource_owner,
+                error_description: "Resource owner is invalid.",
+                format: :fragment,
+                status: :unauthorized
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
     test "returns a token", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 
