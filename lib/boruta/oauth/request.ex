@@ -40,7 +40,6 @@ defmodule Boruta.Oauth.Request do
              oauth_request ::
                %Boruta.Oauth.AuthorizationCodeRequest{}
                | %Boruta.Oauth.ClientCredentialsRequest{}
-               | %Boruta.Oauth.AuthorizationCodeRequest{}
                | %Boruta.Oauth.PreauthorizedCodeRequest{}
                | %Boruta.Oauth.TokenRequest{}
                | %Boruta.Oauth.PasswordRequest{}}
