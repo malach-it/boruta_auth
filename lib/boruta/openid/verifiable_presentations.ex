@@ -67,7 +67,8 @@ defmodule Boruta.Openid.VerifiablePresentations do
       {:error, errors} when is_list(errors) ->
         {:error, Enum.join(errors, ", ")}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -226,40 +227,45 @@ defmodule Boruta.Openid.VerifiablePresentations do
       error ->
         {:error, inspect(error)}
     end
-  # rescue
-  #   error ->
-  #     {:error, inspect(error)}
+
+    # rescue
+    #   error ->
+    #     {:error, inspect(error)}
   end
 
   def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
-  defp verify_jwt({:did, did}, alg, jwt) do
+  @spec verify_jwt({:did, String.t()} | {:jwk, String.t()}, alg :: String.t(), jwt :: String.t()) ::
+          {:ok, jwk :: map(), claims :: map()} | {:error, String.t()}
+  def verify_jwt({:did, did}, alg, jwt) do
     with {:ok, did_document} <- Did.resolve(did),
          %{"verificationMethod" => methods} <- did_document do
+      Enum.reduce_while(
+        methods,
+        {:error, "no did verification method found with did #{did}."},
+        fn %{"publicKeyJwk" => jwk}, {:error, errors} ->
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
-        Enum.reduce_while(
-          methods,
-          {:error, "no did verification method found with did #{did}."},
-          fn %{"publicKeyJwk" => jwk}, {:error, errors} ->
-            signer =
-              Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+          case Client.Token.verify(jwt, signer) do
+            {:ok, claims} ->
+              {:halt, {:ok, jwk, claims}}
 
-            case Client.Token.verify(jwt, signer) do
-              {:ok, claims} -> {:halt, {:ok, jwk, claims}}
-              {:error, error} -> {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
-            end
+            {:error, error} ->
+              {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
           end
-        )
-
+        end
+      )
     else
       {:error, error} ->
         {:error, error}
+
       did_document ->
         {:error, "Invalid did document: \"#{inspect(did_document)}\""}
     end
   end
 
-  defp verify_jwt({:jwk, jwk}, alg, jwt) do
+  def verify_jwt({:jwk, jwk}, alg, jwt) do
     signer = Joken.Signer.create(alg, %{"pem" => jwk |> JOSE.JWK.from_map() |> JOSE.JWK.to_pem()})
 
     case Token.verify(jwt, signer) do
@@ -271,7 +277,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
     end
   end
 
-  defp verify_jwt(error, _alg, _jwt), do: error
+  def verify_jwt(error, _alg, _jwt), do: error
 
   defp extract_key(%{"kid" => did}), do: {:did, did}
   defp extract_key(%{"jwk" => jwk}), do: {:jwk, jwk}
