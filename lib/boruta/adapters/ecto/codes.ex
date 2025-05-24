@@ -110,7 +110,8 @@ defmodule Boruta.Ecto.Codes do
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
           authorization_details: authorization_details,
-          presentation_definition: params[:presentation_definition]
+          presentation_definition: params[:presentation_definition],
+          public_client_id: params[:public_client_id]
         }
       ])
 
