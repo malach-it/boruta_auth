@@ -30,6 +30,7 @@ defmodule Boruta.Openid do
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
   alias Boruta.Openid.Credential
@@ -156,23 +157,35 @@ defmodule Boruta.Openid do
                value: value,
                code_verifier: direct_post_params[:code_verifier]
              }),
+           :ok <-
+             maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, _code} <- CodesAdapter.revoke(code) do
-          query =
-            %{
-              code: code.value,
-              state: code.state
-            }
-            |> URI.encode_query()
+        query =
+          %{
+            code: code.value,
+            state: code.state
+          }
+          |> URI.encode_query()
 
-          response = URI.parse(code.redirect_uri)
+        response = URI.parse(code.redirect_uri)
 
-          response =
-            %{response | host: response.host || "", query: query}
-            |> URI.to_string()
+        response =
+          %{response | host: response.host || "", query: query}
+          |> URI.to_string()
 
-          module.direct_post_success(conn, response)
+        module.direct_post_success(conn, response)
       else
+        {:error, "" <> error} ->
+          module.authentication_failure(conn, %Error{
+            error: :unknown_error,
+            status: :unprocessable_entity,
+            error_description: error,
+            format: :query,
+            redirect_uri: code.redirect_uri,
+            state: code.state
+          })
+
         {:error, error} ->
           module.authentication_failure(conn, %{
             error
@@ -228,6 +241,60 @@ defmodule Boruta.Openid do
          error: :unauthorized,
          error_description: "id_token or vp_token param missing."
        }}
+
+  defp maybe_check_public_client_id(_direct_post_params, _public_client_id, %Client{
+         check_public_client_id: false
+       }),
+       do: :ok
+
+  defp maybe_check_public_client_id(
+         %{id_token: id_token},
+         "did:" <> _key = public_client_id,
+         _client
+       ) do
+    with {:ok, %{"alg" => alg}} <- Joken.peek_header(id_token),
+         {:ok, _jwk, _claims} <-
+           VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, id_token) do
+      :ok
+    else
+      {:error, _error} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Authorization client_id do not match vp_token signature."
+         }}
+    end
+  end
+
+  defp maybe_check_public_client_id(
+         %{vp_token: vp_token},
+         "did:" <> _key = public_client_id,
+         _client
+       ) do
+    with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token),
+         {:ok, _jwk, _claims} <-
+           VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, vp_token) do
+      :ok
+    else
+      {:error, _error} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Authorization client_id do not match vp_token signature."
+         }}
+    end
+  end
+
+  defp maybe_check_public_client_id(_direct_post_params, _public_client_id, _client) do
+    {:error,
+     %Error{
+       status: :bad_request,
+       error: :invalid_client,
+       error_description: "Authorization client_id do not match vp_token signature."
+     }}
+  end
 
   defp maybe_check_presentation(
          %{vp_token: vp_token, presentation_submission: presentation_submission},

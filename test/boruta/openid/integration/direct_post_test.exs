@@ -3,46 +3,58 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
   import Boruta.Factory
 
-  alias Boruta.ClientsAdapter
+  alias Boruta.Ecto.Client
   alias Boruta.Oauth
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
+  alias Boruta.Repo
 
   describe "authenticates with direct post response" do
     setup do
-      client = ClientsAdapter.public!()
+      {:ok, client} = Repo.get_by(Client, public_client_id: Boruta.Config.issuer())
+      |> Ecto.Changeset.change(%{check_public_client_id: true})
+      |> Repo.update()
+
+      wallet_did =
+        "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
+
       pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
 
-      code =
-        insert(:token,
-          type: "code",
-          redirect_uri: "http://redirect.uri",
-          state: "state",
-          sub:
-            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
-          presentation_definition: %{
-            "id" => "test",
-            "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
-            "input_descriptors" => [
-              %{
-                "id" => "test",
-                "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
-                "constraints" => %{
-                  "fields" => [
-                    %{
-                      "path" => ["$.vc.type"],
-                      "filter" => %{
-                        "type" => "array",
-                        "contains" => %{"const" => "VerifiableAttestation"}
-                      }
+      code_params = [
+        type: "code",
+        client: client,
+        redirect_uri: "http://redirect.uri",
+        state: "state",
+        sub: wallet_did,
+        presentation_definition: %{
+          "id" => "test",
+          "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+          "input_descriptors" => [
+            %{
+              "id" => "test",
+              "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+              "constraints" => %{
+                "fields" => [
+                  %{
+                    "path" => ["$.vc.type"],
+                    "filter" => %{
+                      "type" => "array",
+                      "contains" => %{"const" => "VerifiableAttestation"}
                     }
-                  ]
-                }
+                  }
+                ]
               }
-            ]
-          }
-        )
+            }
+          ]
+        }
+      ]
+
+      code = insert(:token, [{:public_client_id, wallet_did} | code_params])
+
+      bad_public_client_code = insert(:token, [{:public_client_id, "did:key:test"} | code_params])
+
+      public_client_code = insert(:token, [{:public_client_id, wallet_did} | code_params])
 
       pkce_code =
         insert(:token,
@@ -53,8 +65,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           code_challenge_method: "plain",
           redirect_uri: "http://redirect.uri",
           state: "state",
-          sub:
-            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          sub: wallet_did,
           presentation_definition: %{
             "id" => "test",
             "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
@@ -80,8 +91,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" =>
-            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "kid" => wallet_did,
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -118,7 +128,14 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           signer
         )
 
-      {:ok, client: client, code: code, pkce_code: pkce_code, id_token: id_token, vp_token: vp_token}
+      {:ok,
+       client: client,
+       code: code,
+       pkce_code: pkce_code,
+       public_client_code: public_client_code,
+       bad_public_client_code: bad_public_client_code,
+       id_token: id_token,
+       vp_token: vp_token}
     end
 
     test "returns authentication failure without id_token" do
@@ -148,7 +165,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
                 status: :unauthorized,
-                 format: :query,
+                format: :query,
                 error: :unauthorized,
                 error_description: "{:error, :token_malformed}"
               }} =
@@ -190,7 +207,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
-                 format: :query,
+                format: :query,
                 error: :invalid_request,
                 status: :bad_request,
                 error_description: "Code subject do not match with provided id_token or vp_token"
@@ -260,20 +277,23 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - returns an error with pkce client without code_verifier", %{id_token: id_token, pkce_code: code} do
+    test "siopv2 - returns an error with pkce client without code_verifier", %{
+      id_token: id_token,
+      pkce_code: code
+    } do
       conn = %Plug.Conn{}
 
       assert {
-              :authentication_failure,
-              %Boruta.Oauth.Error{
-                error: :invalid_request,
-                error_description: "Code verifier is invalid.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state",
-                status: :bad_request
-              }
-            } =
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "Code verifier is invalid.",
+                 format: :query,
+                 redirect_uri: "http://redirect.uri",
+                 state: "state",
+                 status: :bad_request
+               }
+             } =
                Openid.direct_post(
                  conn,
                  %{
@@ -284,26 +304,55 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - returns an error with pkce client with bad code_verifier", %{id_token: id_token, pkce_code: code} do
+    test "siopv2 - returns an error with pkce client with bad code_verifier", %{
+      id_token: id_token,
+      pkce_code: code
+    } do
       conn = %Plug.Conn{}
 
       assert {
-              :authentication_failure,
-              %Boruta.Oauth.Error{
-                error: :invalid_request,
-                error_description: "Code verifier is invalid.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state",
-                status: :bad_request
-              }
-            } =
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "Code verifier is invalid.",
+                 format: :query,
+                 redirect_uri: "http://redirect.uri",
+                 state: "state",
+                 status: :bad_request
+               }
+             } =
                Openid.direct_post(
                  conn,
                  %{
                    code_id: code.id,
                    id_token: id_token,
                    code_verifier: "bad code verifier"
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "siopv2 - returns an error with bad public client", %{
+      id_token: id_token,
+      bad_public_client_code: code
+    } do
+      conn = %Plug.Conn{}
+
+      assert {:authentication_failure,
+              %Boruta.Oauth.Error{
+                status: :bad_request,
+                error: :invalid_client,
+                error_description:
+                  "Authorization client_id do not match vp_token signature.",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
                  },
                  ApplicationMock
                )
@@ -327,7 +376,31 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert callback_uri =~ ~r/state=#{code.state}/
     end
 
-    test "siopv2 - authenticates with code verifier (plain code challenge)", %{id_token: id_token, pkce_code: code} do
+    test "siopv2 - authenticates with public client", %{
+      id_token: id_token,
+      public_client_code: code
+    } do
+      conn = %Plug.Conn{}
+
+      assert {:direct_post_success, callback_uri} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+
+      assert callback_uri =~ ~r/#{code.redirect_uri}/
+      assert callback_uri =~ ~r/code=#{code.value}/
+      assert callback_uri =~ ~r/state=#{code.state}/
+    end
+
+    test "siopv2 - authenticates with code verifier (plain code challenge)", %{
+      id_token: id_token,
+      pkce_code: code
+    } do
       conn = %Plug.Conn{}
 
       assert {:direct_post_success, callback_uri} =
@@ -352,7 +425,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
                 status: :unauthorized,
-                 format: :query,
+                format: :query,
                 error: :unauthorized,
                 error_description: "{:error, :token_malformed}"
               }} =
@@ -394,7 +467,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert {:authentication_failure,
               %Boruta.Oauth.Error{
-                 format: :query,
+                format: :query,
                 error: :invalid_request,
                 status: :bad_request,
                 error_description: "Code subject do not match with provided id_token or vp_token"
@@ -503,7 +576,10 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "oid4vp - returns an error with pkce client without code_verifier", %{vp_token: vp_token, pkce_code: code} do
+    test "oid4vp - returns an error with pkce client without code_verifier", %{
+      vp_token: vp_token,
+      pkce_code: code
+    } do
       conn = %Plug.Conn{}
 
       presentation_submission =
@@ -525,16 +601,16 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         })
 
       assert {
-              :authentication_failure,
-              %Boruta.Oauth.Error{
-                error: :invalid_request,
-                error_description: "Code verifier is invalid.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state",
-                status: :bad_request
-              }
-            } =
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "Code verifier is invalid.",
+                 format: :query,
+                 redirect_uri: "http://redirect.uri",
+                 state: "state",
+                 status: :bad_request
+               }
+             } =
                Openid.direct_post(
                  conn,
                  %{
@@ -546,7 +622,10 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "oid4vp - returns an error with pkce client with bad code_verifier", %{vp_token: vp_token, pkce_code: code} do
+    test "oid4vp - returns an error with pkce client with bad code_verifier", %{
+      vp_token: vp_token,
+      pkce_code: code
+    } do
       conn = %Plug.Conn{}
 
       presentation_submission =
@@ -568,16 +647,16 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         })
 
       assert {
-              :authentication_failure,
-              %Boruta.Oauth.Error{
-                error: :invalid_request,
-                error_description: "Code verifier is invalid.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state",
-                status: :bad_request
-              }
-            } =
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 error: :invalid_request,
+                 error_description: "Code verifier is invalid.",
+                 format: :query,
+                 redirect_uri: "http://redirect.uri",
+                 state: "state",
+                 status: :bad_request
+               }
+             } =
                Openid.direct_post(
                  conn,
                  %{
@@ -585,6 +664,51 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                    vp_token: vp_token,
                    presentation_submission: presentation_submission,
                    code_verifier: "bad code verifier"
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - returns an error with bad public client", %{
+      vp_token: vp_token,
+      bad_public_client_code: code
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:authentication_failure,
+              %Boruta.Oauth.Error{
+                status: :bad_request,
+                error: :invalid_client,
+                error_description:
+                  "Authorization client_id do not match vp_token signature.",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
                  },
                  ApplicationMock
                )
@@ -627,7 +751,50 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert callback_uri =~ ~r/state=#{code.state}/
     end
 
-    test "oid4vp - authenticates with code verifier (plain code challenge)", %{vp_token: vp_token, pkce_code: code} do
+    test "oid4vp - authenticates with a public client", %{
+      vp_token: vp_token,
+      public_client_code: code
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, callback_uri} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+
+      assert callback_uri =~ ~r/#{code.redirect_uri}/
+      assert callback_uri =~ ~r/code=#{code.value}/
+      assert callback_uri =~ ~r/state=#{code.state}/
+    end
+
+    test "oid4vp - authenticates with code verifier (plain code challenge)", %{
+      vp_token: vp_token,
+      pkce_code: code
+    } do
       conn = %Plug.Conn{}
 
       presentation_submission =

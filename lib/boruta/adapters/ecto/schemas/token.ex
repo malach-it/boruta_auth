@@ -27,6 +27,7 @@ defmodule Boruta.Ecto.Token do
           redirect_uri: String.t(),
           expires_at: integer(),
           client: Client.t(),
+          public_client_id: String.t(),
           sub: String.t(),
           revoked_at: DateTime.t(),
           refresh_token_revoked_at: DateTime.t(),
@@ -85,6 +86,7 @@ defmodule Boruta.Ecto.Token do
 
     field(:resource_owner, :map, virtual: true)
 
+    field(:public_client_id, :string)
     belongs_to(:client, Client)
     field(:sub, :string)
 
@@ -251,6 +253,7 @@ defmodule Boruta.Ecto.Token do
     |> cast(attrs, [
       :authorization_code_ttl,
       :client_id,
+      :public_client_id,
       :sub,
       :redirect_uri,
       :state,
@@ -272,6 +275,7 @@ defmodule Boruta.Ecto.Token do
     |> cast(attrs, [
       :authorization_code_ttl,
       :client_id,
+      :public_client_id,
       :sub,
       :redirect_uri,
       :state,
