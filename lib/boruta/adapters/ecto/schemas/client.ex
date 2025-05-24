@@ -175,6 +175,7 @@ defmodule Boruta.Ecto.Client do
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
       :id,
+      :public_client_id,
       :name,
       :secret,
       :confidential,
@@ -240,6 +241,7 @@ defmodule Boruta.Ecto.Client do
     client
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, [
+      :public_client_id,
       :name,
       :secret,
       :confidential,

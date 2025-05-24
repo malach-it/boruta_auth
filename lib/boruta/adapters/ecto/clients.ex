@@ -6,6 +6,7 @@ defmodule Boruta.Ecto.Clients do
 
   import Boruta.Config, only: [repo: 0, issuer: 0]
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
+  import Ecto.Query
 
   alias Boruta.Ecto.ClientStore
   alias Boruta.Ecto.Client
@@ -48,7 +49,9 @@ defmodule Boruta.Ecto.Clients do
   defp public!(:from_cache), do: ClientStore.get_public()
 
   defp public!(:from_database) do
-    with %Client{} = client <- repo().get_by(Client, public_client_id: issuer()),
+    issuer = issuer()
+
+    with %Client{} = client <- repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put_public() do
       client
     end
