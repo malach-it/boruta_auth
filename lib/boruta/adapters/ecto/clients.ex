@@ -8,8 +8,8 @@ defmodule Boruta.Ecto.Clients do
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
   import Ecto.Query
 
-  alias Boruta.Ecto.ClientStore
   alias Boruta.Ecto.Client
+  alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
 
   @impl Boruta.Oauth.Clients

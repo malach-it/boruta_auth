@@ -136,7 +136,8 @@ defmodule Boruta.Oauth.Request.Base do
       code_challenge: params["code_challenge"],
       code_challenge_method: params["code_challenge_method"],
       scope: params["scope"],
-      client_metadata: client_metadata
+      client_metadata: client_metadata,
+      response_type: params["response_type"]
     }
 
     request =

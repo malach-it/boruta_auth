@@ -119,6 +119,8 @@ defmodule Boruta.Ecto.Client do
 
     field(:supported_grant_types, {:array, :string}, default: Oauth.Client.grant_types())
 
+    field(:check_public_client_id, :boolean, default: false)
+
     field(:pkce, :boolean, default: false)
     field(:public_refresh_token, :boolean, default: false)
     field(:public_revoke, :boolean, default: false)
@@ -195,6 +197,7 @@ defmodule Boruta.Ecto.Client do
       :jwk,
       :jwks_uri,
       :jwt_public_key,
+      :check_public_client_id,
       :pkce,
       :public_refresh_token,
       :public_revoke,
@@ -261,6 +264,7 @@ defmodule Boruta.Ecto.Client do
       :jwk,
       :jwks_uri,
       :jwt_public_key,
+      :check_public_client_id,
       :pkce,
       :public_refresh_token,
       :public_revoke,

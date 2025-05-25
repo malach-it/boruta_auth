@@ -99,7 +99,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
       credentials: credentials,
       tx_code: preauthorized_code.tx_code,
       grants: %{
-        "urn:ietf:params:oauth:grant-type:pre-authorized_code" => grant
+        "urn:ietf:params:oauth:grant-type:pre-authorized_code" => grant,
+        "authorization_code" => %{}
       },
       tx_code_required: preauthorized_code.client.enforce_tx_code,
       redirect_uri: preauthorized_code.redirect_uri
