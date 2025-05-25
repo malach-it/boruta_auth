@@ -165,7 +165,7 @@ defmodule Boruta.Openid do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
-          code: code.value,
+          code: code,
           redirect_uri: code.redirect_uri,
           state: code.state
         })

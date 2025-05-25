@@ -373,7 +373,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert response.id_token
       assert response.redirect_uri == code.redirect_uri
-      assert response.code == code.value
+      assert response.code.value == code.value
       assert response.state == code.state
     end
 
@@ -395,7 +395,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert response.id_token
       assert response.redirect_uri == code.redirect_uri
-      assert response.code == code.value
+      assert response.code.value == code.value
       assert response.state == code.state
     end
 
@@ -418,7 +418,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert response.id_token
       assert response.redirect_uri == code.redirect_uri
-      assert response.code == code.value
+      assert response.code.value == code.value
       assert response.state == code.state
     end
 
@@ -751,7 +751,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert response.vp_token
       assert response.redirect_uri == code.redirect_uri
-      assert response.code == code.value
+      assert response.code.value == code.value
       assert response.state == code.state
     end
 
@@ -792,7 +792,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert response.vp_token
       assert response.redirect_uri == code.redirect_uri
-      assert response.code == code.value
+      assert response.code.value == code.value
       assert response.state == code.state
     end
 
@@ -834,7 +834,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       assert response.vp_token
       assert response.redirect_uri == code.redirect_uri
-      assert response.code == code.value
+      assert response.code.value == code.value
       assert response.state == code.state
     end
   end
