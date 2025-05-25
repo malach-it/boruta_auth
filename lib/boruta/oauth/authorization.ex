@@ -967,11 +967,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
           authorization_details: authorization_details,
-          client_metadata: client_metadata
+          client_metadata: client_metadata,
+          response_type: response_type
         } = request
       ) do
     with [response_type] = response_types <-
            VerifiablePresentations.response_types(
+             response_type,
              scope,
              resource_owner.presentation_configuration
            ),
