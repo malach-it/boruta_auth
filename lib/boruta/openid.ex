@@ -36,6 +36,7 @@ defmodule Boruta.Openid do
   alias Boruta.Openid.Credential
   alias Boruta.Openid.CredentialResponse
   alias Boruta.Openid.DeferedCredentialResponse
+  alias Boruta.Openid.DirectPostResponse
   alias Boruta.Openid.UserinfoResponse
   alias Boruta.Openid.VerifiableCredentials
   alias Boruta.Openid.VerifiablePresentations
@@ -161,20 +162,13 @@ defmodule Boruta.Openid do
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, _code} <- CodesAdapter.revoke(code) do
-        query =
-          %{
-            code: code.value,
-            state: code.state
-          }
-          |> URI.encode_query()
-
-        response = URI.parse(code.redirect_uri)
-
-        response =
-          %{response | host: response.host || "", query: query}
-          |> URI.to_string()
-
-        module.direct_post_success(conn, response)
+        module.direct_post_success(conn, %DirectPostResponse{
+          id_token: direct_post_params[:id_token],
+          vp_token: direct_post_params[:vp_token],
+          code: code.value,
+          redirect_uri: code.redirect_uri,
+          state: code.state
+        })
       else
         {:error, "" <> error} ->
           module.authentication_failure(conn, %Error{
