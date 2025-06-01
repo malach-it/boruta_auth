@@ -118,6 +118,20 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{secret: ^secret}} = Admin.create_client(%{secret: secret})
     end
 
+    test "creates a client with public_client_id" do
+      public_client_id = "public_client_id"
+
+      assert {:ok, %Client{public_client_id: ^public_client_id}} =
+               Admin.create_client(%{public_client_id: public_client_id})
+    end
+
+    test "creates a client with check_public_client_id" do
+      check_public_client_id = true
+
+      assert {:ok, %Client{check_public_client_id: ^check_public_client_id}} =
+               Admin.create_client(%{check_public_client_id: check_public_client_id})
+    end
+
     test "creates a client with a default confidentiality to false" do
       assert {:ok, %Client{confidential: false}} = Admin.create_client(%{})
     end
@@ -418,6 +432,22 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.update_client(client, %{"authorized_scopes" => [%{"id" => scope.id}]})
 
       assert authorized_scopes == [scope]
+    end
+
+    test "updates the client with public client id" do
+      public_client_id = "public_client_id"
+      client = client_fixture()
+
+      assert {:ok, %Client{public_client_id: ^public_client_id}} =
+               Admin.update_client(client, %{"public_client_id" => public_client_id})
+    end
+
+    test "updates the client with check public client id" do
+      check_public_client_id = true
+      client = client_fixture()
+
+      assert {:ok, %Client{check_public_client_id: ^check_public_client_id}} =
+               Admin.update_client(client, %{"check_public_client_id" => check_public_client_id})
     end
 
     test "updates a client with key pair type" do
