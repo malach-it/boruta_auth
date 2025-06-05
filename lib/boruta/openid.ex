@@ -281,13 +281,18 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_check_public_client_id(_direct_post_params, _public_client_id, _client) do
-    {:error,
-     %Error{
-       status: :bad_request,
-       error: :invalid_client,
-       error_description: "Authorization client_id do not match vp_token signature."
-     }}
+  defp maybe_check_public_client_id(direct_post_params, public_client_id, client) do
+    case public_client_id do
+      "did:" <> _key ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Authorization client_id do not match vp_token signature."
+         }}
+      _client_id ->
+        :ok
+    end
   end
 
   defp maybe_check_presentation(
