@@ -163,40 +163,72 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           {:ok, sub, presentation_claims} <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, _code} <- CodesAdapter.revoke(code),
-           {:ok, resource_owner} <-
-             resource_owners().from_holder(%{
-               presentation_claims: presentation_claims,
-               sub: sub,
-               scope: code.scope
-             }),
-           {:ok, scope} <-
-             Authorization.Scope.authorize(
-               scope: code.scope,
-               against: %{resource_owner: resource_owner}
-             ),
-           {:ok, token} <-
-             AccessTokensAdapter.create(
-               %{
-                 client: code.client,
-                 resource_owner: resource_owner,
-                 redirect_uri: code.relying_party_redirect_uri,
-                 sub: resource_owner.sub,
-                 scope: scope,
-                 state: code.state,
-                 previous_code: code.value
-               },
-               refresh_token: false
-             ) do
-        module.direct_post_success(conn, %DirectPostResponse{
-          id_token: direct_post_params[:id_token],
-          vp_token: direct_post_params[:vp_token],
-          token: token,
-          code: code,
-          redirect_uri: code.redirect_uri,
-          state: code.state
-        })
+           {:ok, sub, presentation_claims} <-
+             maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, _code} <- CodesAdapter.revoke(code) do
+        case direct_post_params[:vp_token] do
+          nil ->
+            module.direct_post_success(conn, %DirectPostResponse{
+              id_token: direct_post_params[:id_token],
+              vp_token: direct_post_params[:vp_token],
+              code: code,
+              redirect_uri: code.redirect_uri,
+              state: code.state
+            })
+
+          _vp_token ->
+            with {:ok, resource_owner} <-
+                   resource_owners().from_holder(%{
+                     presentation_claims: presentation_claims,
+                     sub: sub,
+                     scope: code.scope
+                   }),
+                 {:ok, scope} <-
+                   Authorization.Scope.authorize(
+                     scope: code.scope,
+                     against: %{resource_owner: resource_owner}
+                   ),
+                 {:ok, token} <-
+                   AccessTokensAdapter.create(
+                     %{
+                       client: code.client,
+                       resource_owner: resource_owner,
+                       redirect_uri: code.relying_party_redirect_uri,
+                       sub: resource_owner.sub,
+                       scope: scope,
+                       state: code.state,
+                       previous_code: code.value
+                     },
+                     refresh_token: false
+                   ) do
+              module.direct_post_success(conn, %DirectPostResponse{
+                id_token: direct_post_params[:id_token],
+                vp_token: direct_post_params[:vp_token],
+                token: token,
+                code: code,
+                redirect_uri: code.redirect_uri,
+                state: code.state
+              })
+            else
+              {:error, "" <> error} ->
+                module.authentication_failure(conn, %Error{
+                  error: :unknown_error,
+                  status: :unprocessable_entity,
+                  error_description: error,
+                  format: :query,
+                  redirect_uri: code.redirect_uri,
+                  state: code.state
+                })
+
+              {:error, error} ->
+                module.authentication_failure(conn, %{
+                  error
+                  | format: :query,
+                    redirect_uri: code.redirect_uri,
+                    state: code.state
+                })
+            end
+        end
       else
         {:error, "" <> error} ->
           module.authentication_failure(conn, %Error{
