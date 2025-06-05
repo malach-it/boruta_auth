@@ -990,11 +990,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                   grant_type: response_type
                 )
             end),
-         {:ok, resource_owner} <-
-           (case client_id do
-              "did:" <> _key -> {:ok, resource_owner}
-              _ -> Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
-            end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
          :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
