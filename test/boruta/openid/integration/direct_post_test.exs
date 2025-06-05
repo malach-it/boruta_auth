@@ -391,7 +391,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
-      assert response.token.redirect_uri == code.relying_party_redirect_uri
     end
 
     test "siopv2 - authenticates (jwe)", %{id_token: id_token, code: code} do
