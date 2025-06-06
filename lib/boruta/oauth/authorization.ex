@@ -959,18 +959,19 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
 
   def preauthorize(
         %PresentationRequest{
+          authorization_details: authorization_details,
           client_id: client_id,
-          resource_owner: resource_owner,
-          redirect_uri: redirect_uri,
-          relying_party_redirect_uri: relying_party_redirect_uri,
-          state: state,
-          nonce: nonce,
-          scope: scope,
+          client_metadata: client_metadata,
+          code: code,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
-          authorization_details: authorization_details,
-          client_metadata: client_metadata,
-          response_type: response_type
+          nonce: nonce,
+          redirect_uri: redirect_uri,
+          relying_party_redirect_uri: relying_party_redirect_uri,
+          resource_owner: resource_owner,
+          response_type: response_type,
+          scope: scope,
+          state: state
         } = request
       ) do
     with [response_type] = response_types <-
@@ -1022,20 +1023,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
 
       {:ok,
        %AuthorizationSuccess{
-         response_types: response_types,
-         presentation_definition: presentation_definition,
-         redirect_uri: redirect_uri,
-         public_client_id: client_id,
-         relying_party_redirect_uri: relying_party_redirect_uri,
+         authorization_details: Jason.decode!(authorization_details),
          client: client,
-         sub: client_id,
-         scope: scope,
-         state: state,
-         nonce: nonce,
+         code: code,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
-         authorization_details: Jason.decode!(authorization_details),
-         response_mode: client.response_mode
+         nonce: nonce,
+         presentation_definition: presentation_definition,
+         public_client_id: client_id,
+         redirect_uri: redirect_uri,
+         relying_party_redirect_uri: relying_party_redirect_uri,
+         response_mode: client.response_mode,
+         response_types: response_types,
+         scope: scope,
+         state: state,
+         sub: client_id
        }}
     else
       {:error, :invalid_code_challenge} ->
@@ -1054,20 +1056,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   def token(request) do
     with {:ok,
           %AuthorizationSuccess{
-            response_types: response_types,
-            presentation_definition: presentation_definition,
-            redirect_uri: redirect_uri,
-            public_client_id: public_client_id,
-            relying_party_redirect_uri: relying_party_redirect_uri,
+            authorization_details: authorization_details,
             client: client,
-            sub: sub,
-            scope: scope,
-            state: state,
-            nonce: nonce,
+            code: code,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
-            authorization_details: authorization_details,
-            response_mode: response_mode
+            nonce: nonce,
+            presentation_definition: presentation_definition,
+            public_client_id: public_client_id,
+            redirect_uri: redirect_uri,
+            relying_party_redirect_uri: relying_party_redirect_uri,
+            response_mode: response_mode,
+            response_types: response_types,
+            scope: scope,
+            state: state,
+            sub: sub
           }} <-
            preauthorize(request) do
       # TODO create a presentation specific code
@@ -1078,6 +1081,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                public_client_id: public_client_id,
                redirect_uri: redirect_uri,
                relying_party_redirect_uri: relying_party_redirect_uri,
+               previous_code: code,
                sub: sub,
                scope: scope,
                state: state,

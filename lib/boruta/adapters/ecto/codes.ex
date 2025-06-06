@@ -112,7 +112,8 @@ defmodule Boruta.Ecto.Codes do
           authorization_details: authorization_details,
           presentation_definition: params[:presentation_definition],
           public_client_id: params[:public_client_id],
-          relying_party_redirect_uri: params[:relying_party_redirect_uri]
+          relying_party_redirect_uri: params[:relying_party_redirect_uri],
+          previous_code: params[:previous_code]
         }
       ])
 
