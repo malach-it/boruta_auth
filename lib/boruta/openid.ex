@@ -199,7 +199,7 @@ defmodule Boruta.Openid do
                  {:ok, scope} <-
                    Authorization.Scope.authorize(
                      scope: code.scope,
-                     against: %{resource_owner: resource_owner}
+                     against: %{client: code.client, resource_owner: resource_owner}
                    ),
                  {:ok, token} <-
                    AccessTokensAdapter.create(
