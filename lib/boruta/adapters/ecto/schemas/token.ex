@@ -270,7 +270,8 @@ defmodule Boruta.Ecto.Token do
       :presentation_definition,
       :client_encryption_key,
       :client_encryption_alg,
-      :relying_party_redirect_uri
+      :relying_party_redirect_uri,
+      :previous_code
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -297,7 +298,8 @@ defmodule Boruta.Ecto.Token do
       :presentation_definition,
       :client_encryption_key,
       :client_encryption_alg,
-      :relying_party_redirect_uri
+      :relying_party_redirect_uri,
+      :previous_code
     ])
     |> validate_required([
       :authorization_code_ttl,

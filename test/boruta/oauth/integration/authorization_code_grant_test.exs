@@ -1088,6 +1088,46 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       )
     end
 
+    test "returns a code with siopv2 - previous_code (direct_post)" do
+      redirect_uri = "openid:"
+      code = "code"
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                code: response_code,
+                client: client,
+                client_id: "did:key:test",
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid",
+                issuer: issuer,
+                response_mode: "direct_post",
+                nonce: "nonce"
+              } = response} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid",
+                     "code" => code
+                   }
+                 },
+                 %ResourceOwner{sub: "did:key:test"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert client.public_client_id == Boruta.Config.issuer()
+      assert response_code.previous_code == code
+
+      assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
+               ~r"#{redirect_uri}"
+    end
+
     test "returns a code with siopv2 (post)" do
       redirect_uri = "openid://"
       relying_party_redirect_uri = "https://redirect.uri"

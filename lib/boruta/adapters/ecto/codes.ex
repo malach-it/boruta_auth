@@ -114,7 +114,8 @@ defmodule Boruta.Ecto.Codes do
           public_client_id: params[:public_client_id],
           client_encryption_key: params[:client_encryption_key],
           client_encryption_alg: params[:client_encryption_alg],
-          relying_party_redirect_uri: params[:relying_party_redirect_uri]
+          relying_party_redirect_uri: params[:relying_party_redirect_uri],
+          previous_code: params[:previous_code]
         }
       ])
 
