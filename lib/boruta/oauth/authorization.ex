@@ -995,11 +995,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
               "did:" <> _key -> {:ok, resource_owner}
               _ -> Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
             end),
-         {:ok, scope} <-
-           Authorization.Scope.authorize(
-             scope: scope,
-             against: %{client: client}
-           ),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
          :ok <- VerifiablePresentations.check_client_metadata(client_metadata),

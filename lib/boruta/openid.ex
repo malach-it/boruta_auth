@@ -281,7 +281,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_check_public_client_id(direct_post_params, public_client_id, client) do
+  defp maybe_check_public_client_id(_direct_post_params, public_client_id, _client) do
     case public_client_id do
       "did:" <> _key ->
         {:error,
