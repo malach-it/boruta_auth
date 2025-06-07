@@ -24,6 +24,9 @@ defmodule Boruta.Openid do
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
+  import Boruta.Config, only: [resource_owners: 0]
+
+  alias Boruta.AccessTokensAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.CredentialsAdapter
@@ -160,15 +163,72 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, sub, presentation_claims} <-
+             maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, _code} <- CodesAdapter.revoke(code) do
-        module.direct_post_success(conn, %DirectPostResponse{
-          id_token: direct_post_params[:id_token],
-          vp_token: direct_post_params[:vp_token],
-          code: code,
-          redirect_uri: code.redirect_uri,
-          state: code.state
-        })
+        case direct_post_params[:vp_token] do
+          nil ->
+            module.direct_post_success(conn, %DirectPostResponse{
+              id_token: direct_post_params[:id_token],
+              vp_token: direct_post_params[:vp_token],
+              code: code,
+              redirect_uri: code.redirect_uri,
+              state: code.state
+            })
+
+          _vp_token ->
+            with {:ok, resource_owner} <-
+                   resource_owners().from_holder(%{
+                     presentation_claims: presentation_claims,
+                     sub: sub,
+                     scope: code.scope
+                   }),
+                 {:ok, scope} <-
+                   Authorization.Scope.authorize(
+                     scope: code.scope,
+                     against: %{client: code.client, resource_owner: resource_owner}
+                   ),
+                 {:ok, token} <-
+                   AccessTokensAdapter.create(
+                     %{
+                       client: code.client,
+                       resource_owner: resource_owner,
+                       redirect_uri: code.relying_party_redirect_uri,
+                       sub: resource_owner.sub,
+                       scope: scope,
+                       state: code.state,
+                       previous_code: code.value
+                     },
+                     refresh_token: false
+                   ) do
+              module.direct_post_success(conn, %DirectPostResponse{
+                id_token: direct_post_params[:id_token],
+                vp_token: direct_post_params[:vp_token],
+                token: token,
+                code: code,
+                redirect_uri: code.redirect_uri,
+                state: code.state
+              })
+            else
+              {:error, "" <> error} ->
+                module.authentication_failure(conn, %Error{
+                  error: :unknown_error,
+                  status: :unprocessable_entity,
+                  error_description: error,
+                  format: :query,
+                  redirect_uri: code.redirect_uri,
+                  state: code.state
+                })
+
+              {:error, error} ->
+                module.authentication_failure(conn, %{
+                  error
+                  | format: :query,
+                    redirect_uri: code.redirect_uri,
+                    state: code.state
+                })
+            end
+        end
       else
         {:error, "" <> error} ->
           module.authentication_failure(conn, %Error{
@@ -198,7 +258,7 @@ defmodule Boruta.Openid do
   end
 
   defp check_id_token_client(%{id_token: id_token}) do
-    case VerifiableCredentials.validate_signature(id_token) do
+    case VerifiablePresentations.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
         {:ok, claims}
 
@@ -242,26 +302,6 @@ defmodule Boruta.Openid do
        do: :ok
 
   defp maybe_check_public_client_id(
-         %{id_token: id_token},
-         "did:" <> _key = public_client_id,
-         _client
-       ) do
-    with {:ok, %{"alg" => alg}} <- Joken.peek_header(id_token),
-         {:ok, _jwk, _claims} <-
-           VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, id_token) do
-      :ok
-    else
-      {:error, _error} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_client,
-           error_description: "Authorization client_id do not match vp_token signature."
-         }}
-    end
-  end
-
-  defp maybe_check_public_client_id(
          %{vp_token: vp_token},
          "did:" <> _key = public_client_id,
          _client
@@ -281,6 +321,14 @@ defmodule Boruta.Openid do
     end
   end
 
+  defp maybe_check_public_client_id(
+         %{id_token: _id_token},
+         "did:" <> _key,
+         _client
+       ) do
+    :ok
+  end
+
   defp maybe_check_public_client_id(_direct_post_params, public_client_id, _client) do
     case public_client_id do
       "did:" <> _key ->
@@ -290,6 +338,7 @@ defmodule Boruta.Openid do
            error: :invalid_client,
            error_description: "Authorization client_id do not match vp_token signature."
          }}
+
       _client_id ->
         :ok
     end
@@ -306,8 +355,8 @@ defmodule Boruta.Openid do
                presentation_submission,
                presentation_definition
              ) do
-          :ok ->
-            :ok
+          {:ok, sub, claims} ->
+            {:ok, sub, claims}
 
           {:error, error} ->
             error = %Error{
@@ -345,7 +394,7 @@ defmodule Boruta.Openid do
      }}
   end
 
-  defp maybe_check_presentation(_, _), do: :ok
+  defp maybe_check_presentation(_, _), do: {:ok, nil, %{}}
 
   alias Boruta.Openid.Json.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter

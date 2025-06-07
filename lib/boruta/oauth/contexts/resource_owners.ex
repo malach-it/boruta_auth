@@ -31,5 +31,10 @@ defmodule Boruta.Oauth.ResourceOwners do
   @callback claims(resource_owner :: ResourceOwner.t(), scope :: String.t()) ::
               claims :: Boruta.Oauth.IdToken.claims()
 
+  # TODO documentation
+  @callback from_holder(holder :: map()) ::
+              {:ok, resource_owner :: ResourceOwner.t()}
+              | {:error, reason :: String.t()}
+
   @optional_callbacks claims: 2
 end

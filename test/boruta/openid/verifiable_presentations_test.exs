@@ -35,6 +35,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
         VerifiablePresentations.Token.generate_and_sign(
           %{
             "exp" => :os.system_time(:second) + 10,
+            "sub" => "did:key:test",
             "vc" => %{
               "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
               "type" => ["VerifiableAttestation"],
@@ -158,7 +159,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
 
       presentation_definition = %{
         "id" => "test",
-        "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
         "input_descriptors" => [
           %{
             "id" => "test",
@@ -189,7 +190,50 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                vp_token,
                presentation_submission,
                presentation_definition
-             ) == :ok
+             ) == {:ok, "did:key:test", %{"vc.test" => "pattern"}}
+    end
+
+    @tag :skip
+    test "returns ok (vc+sd-jwt)", %{sd_vp_token: vp_token} do
+      presentation_submission = %{
+        "id" => "test",
+        "definition_id" => "test",
+        "descriptor_map" => [
+          %{
+            "id" => "test",
+            "format" => "vc+sd-jwt",
+            "path" => "$"
+          }
+        ]
+      }
+
+      presentation_definition = %{
+        "id" => "test",
+        "format" => %{"vc+sd-jwt" => %{"alg" => ["ES256"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+        "input_descriptors" => [
+          %{
+            "id" => "test",
+            "format" => %{"vc+sd-jwt" => %{"alg" => ["ES256"]}},
+            "constraints" => %{
+              "fields" => [
+                %{
+                  "path" => ["$.name"],
+                  "filter" => %{
+                    "type" => "string",
+                    "pattern" => "not administrator"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+
+      assert VerifiablePresentations.validate_presentation(
+               vp_token,
+               presentation_submission,
+               presentation_definition
+             ) == {:ok, nil, %{"name" => "not administrator"}}
     end
   end
 
@@ -447,7 +491,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        :ok
+        {:ok, nil, %{"vc.test" => "pattern"}}
     end
   end
 

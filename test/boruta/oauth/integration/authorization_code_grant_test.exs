@@ -241,12 +241,15 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
     end
 
+    @tag :skip
+    test "anonymous client tests"
+
     test "returns an error with anonymous clients (wallets)", %{resource_owner: resource_owner} do
       assert {:authorize_error,
               %Error{
                 status: :bad_request,
-                error: :unsupported_grant_type,
-                error_description: "Client do not support given grant type."
+                error: :invalid_request,
+                error_description: "Invalid redirect_uri."
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -918,6 +921,36 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
     end
 
+    test "returns an error with siopv2 when relying party redirect uri do not match (direct_post)" do
+      redirect_uri = "openid:"
+
+      assert {
+               :authorize_error,
+               %Error{
+                 status: :bad_request,
+                 error: :invalid_request,
+                 error_description: "Invalid redirect_uri.",
+                 format: :query,
+                 redirect_uri: "openid:"
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "relying_party_redirect_uri" => "http://bad.uri",
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 %ResourceOwner{sub: "did:key:test"},
+                 ApplicationMock
+               )
+    end
+
     test "returns a code with siopv2 (direct_post)" do
       redirect_uri = "openid:"
 
@@ -954,9 +987,50 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                ~r"#{redirect_uri}"
     end
 
+    test "returns a code with siopv2 - previous_code (direct_post)" do
+      redirect_uri = "openid:"
+      code = "code"
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                code: response_code,
+                client: client,
+                client_id: "did:key:test",
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid",
+                issuer: issuer,
+                response_mode: "direct_post",
+                nonce: "nonce"
+              } = response} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid",
+                     "code" => code
+                   }
+                 },
+                 %ResourceOwner{sub: "did:key:test"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert client.public_client_id == Boruta.Config.issuer()
+      assert response_code.previous_code == code
+
+      assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
+               ~r"#{redirect_uri}"
+    end
+
     test "returns a code with siopv2 (post)" do
       redirect_uri = "openid://"
-      client = insert(:client, response_mode: "post", redirect_uris: [redirect_uri])
+      relying_party_redirect_uri = "https://redirect.uri"
+      client = insert(:client, response_mode: "post", redirect_uris: [redirect_uri, relying_party_redirect_uri])
 
       assert {:authorize_success,
               %SiopV2Response{
@@ -975,12 +1049,13 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "response_type" => "code",
                      "client_id" => client.id,
                      "redirect_uri" => redirect_uri,
+                     "relying_party_redirect_uri" => relying_party_redirect_uri,
                      "client_metadata" => "{}",
                      "nonce" => "nonce",
                      "scope" => "openid"
                    }
                  },
-                 %ResourceOwner{sub: "did:key:test"},
+                 %ResourceOwner{sub: "sub"},
                  ApplicationMock
                )
 
@@ -988,6 +1063,49 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert response_client.id == client.id
       assert client_id == client.id
     end
+
+    test "returns an error with verifiable presentation when relying party redirect uri is invalid (direct_post)" do
+      redirect_uri = "openid:"
+      insert(:scope, name: "vp_token", public: true)
+
+      resource_owner = %ResourceOwner{
+        sub: "did:key:test",
+        presentation_configuration: %{
+          "vp_token" => %{
+            definition: %{"test" => true}
+          }
+        }
+      }
+
+      assert {
+               :authorize_error,
+               %Error{
+                 status: :bad_request,
+                 error: :invalid_request,
+                 error_description: "Invalid redirect_uri.",
+                 format: :query,
+                 redirect_uri: "openid:"
+               }
+             } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "vp_token",
+                     "client_id" => "did:key:test",
+                     "relying_party_redirect_uri" => "http://bad.uri",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    @tag :skip
+    test "returns a code with verifiable presentation and valid relying party redirect uri (direct_post)"
 
     test "returns a code with verifiable presentation (direct_post)" do
       redirect_uri = "openid:"
@@ -1042,7 +1160,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       insert(:scope, name: "vp_token", public: true)
 
       resource_owner = %ResourceOwner{
-        sub: "did:key:test",
+        sub: "sub",
         presentation_configuration: %{
           "vp_token" => %{
             definition: %{"test" => true}

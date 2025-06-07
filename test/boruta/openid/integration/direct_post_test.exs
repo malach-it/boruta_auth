@@ -2,13 +2,27 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   use Boruta.DataCase
 
   import Boruta.Factory
+  import Mox
 
   alias Boruta.Ecto.Client
   alias Boruta.Oauth
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
   alias Boruta.Repo
+
+  setup do
+    stub(Boruta.Support.ResourceOwners, :from_holder, fn %{sub: sub} ->
+      {:ok, %ResourceOwner{sub: sub}}
+    end)
+
+    stub(Boruta.Support.ResourceOwners, :authorized_scopes, fn _resource_owner ->
+      []
+    end)
+
+    :ok
+  end
 
   describe "authenticates with direct post response" do
     setup do
@@ -25,6 +39,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         type: "code",
         client: client,
         redirect_uri: "http://redirect.uri",
+        relying_party_redirect_uri: "http://relying.party.redirect.uri",
         state: "state",
         sub: wallet_did,
         presentation_definition: %{
@@ -108,6 +123,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         VerifiablePresentations.Token.generate_and_sign(
           %{
             "exp" => :os.system_time(:second) + 10,
+            "sub" => "did:key:test",
             "vc" => %{
               "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
               "type" => ["VerifiableAttestation"]
@@ -332,22 +348,13 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - returns an error with bad public client", %{
+    test "siopv2 - authenticates with bad public client", %{
       id_token: id_token,
       bad_public_client_code: code
     } do
       conn = %Plug.Conn{}
 
-      assert {:authentication_failure,
-              %Boruta.Oauth.Error{
-                status: :bad_request,
-                error: :invalid_client,
-                error_description:
-                  "Authorization client_id do not match vp_token signature.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state"
-              }} =
+      assert {:direct_post_success, _response} =
                Openid.direct_post(
                  conn,
                  %{
@@ -753,6 +760,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.token.redirect_uri == code.relying_party_redirect_uri
     end
 
     test "oid4vp - authenticates with a public client", %{

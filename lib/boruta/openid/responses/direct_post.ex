@@ -6,6 +6,7 @@ defmodule Boruta.Openid.DirectPostResponse do
   defstruct [
     :id_token,
     :vp_token,
+    :token,
     :code,
     :redirect_uri,
     :state
@@ -15,6 +16,7 @@ defmodule Boruta.Openid.DirectPostResponse do
     id_token: String.t() | nil,
     vp_token: String.t() | nil,
     code: Boruta.Oauth.Token.t(),
+    token: Boruta.Oauth.Token.t() | nil,
     redirect_uri: String.t(),
     state: String.t() | nil
   }

@@ -35,6 +35,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             public_client_id: nil,
             client: nil,
             redirect_uri: nil,
+            relying_party_redirect_uri: nil,
             resource_owner: nil,
             sub: nil,
             scope: nil,
@@ -59,6 +60,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           access_token: Boruta.Oauth.Token.t() | nil,
           code: Boruta.Oauth.Token.t() | nil,
           redirect_uri: String.t() | nil,
+          relying_party_redirect_uri: String.t() | nil,
           sub: String.t() | nil,
           resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
           scope: String.t(),
@@ -270,15 +272,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              redirect_uri: redirect_uri,
              client: client,
              code_verifier: code_verifier
-           }),
-         {:ok, %ResourceOwner{sub: sub}} <-
-           Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
+           }) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
          code: code,
          redirect_uri: redirect_uri,
-         sub: sub,
+         sub: code.resource_owner.sub,
          scope: code.scope,
          nonce: code.nonce,
          authorization_details: code.authorization_details
@@ -952,23 +952,26 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PresentationRequest
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Token
   alias Boruta.Openid.VerifiableCredentials
   alias Boruta.Openid.VerifiablePresentations
 
   def preauthorize(
         %PresentationRequest{
+          authorization_details: authorization_details,
           client_id: client_id,
-          resource_owner: resource_owner,
-          redirect_uri: redirect_uri,
-          state: state,
-          nonce: nonce,
-          scope: scope,
+          client_metadata: client_metadata,
+          code: code,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
-          authorization_details: authorization_details,
-          client_metadata: client_metadata,
-          response_type: response_type
+          nonce: nonce,
+          redirect_uri: redirect_uri,
+          relying_party_redirect_uri: relying_party_redirect_uri,
+          resource_owner: resource_owner,
+          response_type: response_type,
+          scope: scope,
+          state: state
         } = request
       ) do
     with [response_type] = response_types <-
@@ -977,10 +980,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              scope,
              resource_owner.presentation_configuration
            ),
+         # TODO perform public client redirect_uri check
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-               {:ok, ClientsAdapter.public!()}
+                {:ok, ClientsAdapter.public!()}
 
               _ ->
                 Authorization.Client.authorize(
@@ -990,10 +994,18 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                   grant_type: response_type
                 )
             end),
-         {:ok, resource_owner} <-
-           (case client_id do
-              "did:" <> _key -> {:ok, resource_owner}
-              _ -> Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
+         {:ok, client} <-
+           (case relying_party_redirect_uri do
+              nil ->
+                {:ok, client}
+
+              relying_party_redirect_uri ->
+                Authorization.Client.authorize(
+                  id: client_id,
+                  source: nil,
+                  redirect_uri: relying_party_redirect_uri,
+                  grant_type: response_type
+                )
             end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
@@ -1011,19 +1023,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
 
       {:ok,
        %AuthorizationSuccess{
-         response_types: response_types,
-         presentation_definition: presentation_definition,
-         redirect_uri: redirect_uri,
-         public_client_id: client_id,
+         authorization_details: Jason.decode!(authorization_details),
          client: client,
-         sub: resource_owner.sub,
-         scope: scope,
-         state: state,
-         nonce: nonce,
+         code: code,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
-         authorization_details: Jason.decode!(authorization_details),
-         response_mode: client.response_mode
+         nonce: nonce,
+         presentation_definition: presentation_definition,
+         public_client_id: client_id,
+         redirect_uri: redirect_uri,
+         relying_party_redirect_uri: relying_party_redirect_uri,
+         response_mode: client.response_mode,
+         response_types: response_types,
+         scope: scope,
+         state: state,
+         sub: client_id
        }}
     else
       {:error, :invalid_code_challenge} ->
@@ -1042,26 +1056,32 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   def token(request) do
     with {:ok,
           %AuthorizationSuccess{
-            response_types: response_types,
-            presentation_definition: presentation_definition,
-            redirect_uri: redirect_uri,
-            public_client_id: public_client_id,
+            authorization_details: authorization_details,
             client: client,
-            sub: sub,
-            scope: scope,
-            state: state,
-            nonce: nonce,
+            code: code,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
-            authorization_details: authorization_details,
-            response_mode: response_mode
+            nonce: nonce,
+            presentation_definition: presentation_definition,
+            public_client_id: public_client_id,
+            redirect_uri: redirect_uri,
+            relying_party_redirect_uri: relying_party_redirect_uri,
+            response_mode: response_mode,
+            response_types: response_types,
+            scope: scope,
+            state: state,
+            sub: sub
           }} <-
            preauthorize(request) do
+      # TODO create a presentation specific code
       with {:ok, code} <-
              CodesAdapter.create(%{
+               resource_owner: %ResourceOwner{sub: sub},
                client: client,
                public_client_id: public_client_id,
                redirect_uri: redirect_uri,
+               relying_party_redirect_uri: relying_party_redirect_uri,
+               previous_code: code,
                sub: sub,
                scope: scope,
                state: state,

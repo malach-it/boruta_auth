@@ -39,7 +39,10 @@ defmodule Boruta.Openid.Application do
   @doc """
   This function will be triggered in case of success invoking `Boruta.Openid.credential/3`
   """
-  @callback credential_created(conn :: Plug.Conn.t(), credential :: Boruta.Openid.CredentialResponse.t()) ::
+  @callback credential_created(
+              conn :: Plug.Conn.t(),
+              credential :: Boruta.Openid.CredentialResponse.t()
+            ) ::
               any()
   @doc """
   This function will be triggered in case of failure invoking `Boruta.Openid.credential/3`
@@ -48,7 +51,7 @@ defmodule Boruta.Openid.Application do
               any()
   @callback direct_post_success(
               conn :: Plug.Conn.t() | map(),
-              response :: any()
+              response :: Boruta.Openid.DirectPostResponse.t()
             ) :: any()
   @callback code_not_found(conn :: Plug.Conn.t()) :: any()
   @callback authentication_failure(conn :: Plug.Conn.t(), error :: Boruta.Oauth.Error.t()) ::

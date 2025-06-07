@@ -25,6 +25,7 @@ defmodule Boruta.Ecto.Token do
           c_nonce: String.t(),
           scope: String.t(),
           redirect_uri: String.t(),
+          relying_party_redirect_uri: String.t() | nil,
           expires_at: integer(),
           client: Client.t(),
           public_client_id: String.t(),
@@ -70,6 +71,7 @@ defmodule Boruta.Ecto.Token do
     field(:c_nonce, :string)
     field(:scope, :string, default: "")
     field(:redirect_uri, :string)
+    field(:relying_party_redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)
     field(:refresh_token_revoked_at, :utc_datetime_usec)
@@ -99,6 +101,7 @@ defmodule Boruta.Ecto.Token do
     |> cast(attrs, [
       :client_id,
       :redirect_uri,
+      :relying_party_redirect_uri,
       :sub,
       :state,
       :nonce,
@@ -260,7 +263,9 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :authorization_details,
-      :presentation_definition
+      :presentation_definition,
+      :relying_party_redirect_uri,
+      :previous_code
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -284,7 +289,9 @@ defmodule Boruta.Ecto.Token do
       :code_challenge,
       :code_challenge_method,
       :authorization_details,
-      :presentation_definition
+      :presentation_definition,
+      :relying_party_redirect_uri,
+      :previous_code
     ])
     |> validate_required([
       :authorization_code_ttl,
