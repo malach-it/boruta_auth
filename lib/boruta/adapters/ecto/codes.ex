@@ -113,7 +113,8 @@ defmodule Boruta.Ecto.Codes do
           presentation_definition: params[:presentation_definition],
           public_client_id: params[:public_client_id],
           client_encryption_key: params[:client_encryption_key],
-          client_encryption_alg: params[:client_encryption_alg]
+          client_encryption_alg: params[:client_encryption_alg],
+          previous_code: params[:previous_code]
         }
       ])
 

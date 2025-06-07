@@ -956,18 +956,18 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
 
   def preauthorize(
         %PresentationRequest{
+          authorization_details: authorization_details,
           client_id: client_id,
-          resource_owner: resource_owner,
-          redirect_uri: redirect_uri,
-          state: state,
-          nonce: nonce,
-          scope: scope,
+          client_metadata: client_metadata,
+          code: code,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
-          authorization_details: authorization_details,
-          client_metadata: client_metadata,
+          nonce: nonce,
+          redirect_uri: redirect_uri,
+          resource_owner: resource_owner,
           response_type: response_type,
-          code: code
+          scope: scope,
+          state: state
         } = request
       ) do
     with [response_type] = response_types <-
@@ -1009,10 +1009,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
 
       {:ok,
        %AuthorizationSuccess{
-         response_types: response_types,
-         presentation_definition: presentation_definition,
-         redirect_uri: redirect_uri,
-         public_client_id: client_id,
+         authorization_details: Jason.decode!(authorization_details),
          client: client,
          sub: resource_owner.sub,
          scope: scope,
@@ -1022,8 +1019,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          previous_code: previous_code,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
-         authorization_details: Jason.decode!(authorization_details),
-         response_mode: client.response_mode
+         response_mode: client.response_mode,
+         presentation_definition: presentation_definition,
+         public_client_id: client_id,
+         redirect_uri: redirect_uri,
+         response_types: response_types,
        }}
     else
       error ->
@@ -1034,20 +1034,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   def token(request) do
     with {:ok,
           %AuthorizationSuccess{
-            response_types: response_types,
-            presentation_definition: presentation_definition,
-            redirect_uri: redirect_uri,
-            public_client_id: public_client_id,
+            authorization_details: authorization_details,
             client: client,
             sub: sub,
             scope: scope,
             state: state,
             nonce: nonce,
-            code: previous_code,
+            code: code,
+            previous_code: previous_code,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
-            authorization_details: authorization_details,
-            response_mode: response_mode
+            presentation_definition: presentation_definition,
+            public_client_id: public_client_id,
+            redirect_uri: redirect_uri,
+            response_mode: response_mode,
+            response_types: response_types
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
@@ -1055,6 +1056,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                client: client,
                public_client_id: public_client_id,
                redirect_uri: redirect_uri,
+               previous_code: code,
                sub: sub,
                scope: scope,
                state: state,
