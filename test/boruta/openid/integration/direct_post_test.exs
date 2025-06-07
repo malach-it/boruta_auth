@@ -333,7 +333,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - returns an error with bad public client", %{
+    test "siopv2 - authenticates with bad public client", %{
       id_token: id_token,
       bad_public_client_code: code
     } do
