@@ -8,6 +8,7 @@ defmodule Boruta.Oauth.PresentationRequest do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
+          code: String.t() | nil,
           resource_owner: Boruta.Oauth.ResourceOwner.t(),
           redirect_uri: String.t(),
           state: String.t(),
@@ -19,12 +20,12 @@ defmodule Boruta.Oauth.PresentationRequest do
           code_challenge_method: String.t(),
           response_type: String.t(),
           client_metadata: String.t(),
-          authorization_details: String.t(),
-          code: String.t()
+          authorization_details: String.t()
         }
 
   @enforce_keys [:client_id, :redirect_uri]
   defstruct client_id: nil,
+            code: nil,
             resource_owner: nil,
             redirect_uri: nil,
             state: "",
@@ -36,6 +37,5 @@ defmodule Boruta.Oauth.PresentationRequest do
             code_challenge: "",
             code_challenge_method: "plain",
             authorization_details: "[]",
-            client_metadata: "{}",
-            code: nil
+            client_metadata: "{}"
 end
