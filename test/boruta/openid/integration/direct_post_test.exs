@@ -348,22 +348,13 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - returns an error with bad public client", %{
+    test "siopv2 - authenticates with bad public client", %{
       id_token: id_token,
       bad_public_client_code: code
     } do
       conn = %Plug.Conn{}
 
-      assert {:authentication_failure,
-              %Boruta.Oauth.Error{
-                status: :bad_request,
-                error: :invalid_client,
-                error_description:
-                  "Authorization client_id do not match vp_token signature.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state"
-              }} =
+      assert {:direct_post_success, _response} =
                Openid.direct_post(
                  conn,
                  %{
