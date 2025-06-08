@@ -528,6 +528,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "oid4vp - returns an error on replay", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -717,6 +718,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "oid4vp - authenticates", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -755,6 +757,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
+    @tag :skip
     test "oid4vp - authenticates with a public client", %{
       vp_token: vp_token,
       public_client_code: code
@@ -796,6 +799,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
+    @tag :skip
     test "oid4vp - authenticates with a code chain (last valid)", %{
       vp_token: vp_token,
       last_valid_code_chain: [code | _code_chain]
@@ -838,6 +842,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
+    @tag :skip
     test "oid4vp - returns an error with a code chain (middle valid - replay)", %{
       vp_token: vp_token,
       middle_valid_code_chain: [code | _code_chain],

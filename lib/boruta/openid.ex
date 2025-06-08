@@ -254,25 +254,44 @@ defmodule Boruta.Openid do
     with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token) do
       case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
         {:ok, _jwk, _claims} ->
-          :ok
+          # TODO case {client.check_public_client_id_in_chain, Enum.find(code_chain, fn
+          case {true, Enum.find(code_chain, fn
+            %Token{revoked_at: nil, sub: sub} -> sub == last.public_client_id
+            _ -> false
+          end)} do
+            {true, nil} ->
+              {:error,
+               %Error{
+                 status: :bad_request,
+                 error: :invalid_client,
+                 error_description: "Could not find client_id in code chain."
+               }}
+
+            {true, _code} ->
+              :ok
+          end
 
         _ ->
           case Enum.any?(code_chain, fn
-            %Token{sub: sub, revoked_at: nil} ->
-              case VerifiablePresentations.verify_jwt({:did, sub}, alg, vp_token) do
-                {:ok, _jwk, _claims} -> true
-                _ -> false
-              end
-            _ -> false
-          end) do
-            true -> :ok
-      false ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_client,
-           error_description: "Authorization client_id do not match vp_token signature."
-         }}
+                 %Token{sub: sub, revoked_at: nil} ->
+                   case VerifiablePresentations.verify_jwt({:did, sub}, alg, vp_token) do
+                     {:ok, _jwk, _claims} -> true
+                     _ -> false
+                   end
+
+                 _ ->
+                   false
+               end) do
+            true ->
+              :ok
+
+            false ->
+              {:error,
+               %Error{
+                 status: :bad_request,
+                 error: :invalid_client,
+                 error_description: "Authorization client_id do not match vp_token signature."
+               }}
           end
       end
     else
