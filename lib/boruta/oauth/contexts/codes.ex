@@ -32,7 +32,7 @@ defmodule Boruta.Oauth.Codes do
   @doc """
   Revokes the given `Boruta.Oauth.Token` code.
   """
-  @callback revoke(token :: Boruta.Oauth.Token.t()) ::
+  @callback revoke(Boruta.Oauth.Token.t() | list(Boruta.Oauth.Token.t())) ::
               {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
   @doc """

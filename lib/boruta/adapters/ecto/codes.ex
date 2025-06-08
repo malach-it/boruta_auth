@@ -39,10 +39,12 @@ defmodule Boruta.Ecto.Codes do
 
   def get_by(id: id) do
     with {:ok, id} <- Ecto.UUID.cast(id),
-     {:ok, token} <- TokenStore.get(id: id) do
-        token
+         {:ok, token} <- TokenStore.get(id: id) do
+      token
     else
-      :error -> nil
+      :error ->
+        nil
+
       {:error, "Not cached."} ->
         with %Token{} = token <-
                repo().one(
@@ -142,6 +144,30 @@ defmodule Boruta.Ecto.Codes do
   end
 
   @impl Boruta.Oauth.Codes
+  def revoke(codes) when is_list(codes) do
+    code_count = Enum.count(codes)
+    code_ids = Enum.map(codes, fn code -> code.id end)
+    now = DateTime.utc_now()
+
+    with {^code_count, _} <-
+           from(t in Token, where: t.id in ^code_ids)
+           |> repo().update_all(set: [revoked_at: now]),
+         :ok <-
+           Enum.reduce(codes, :ok, fn code, acc ->
+             case TokenStore.invalidate(code) do
+               {:ok, _token} ->
+                 acc
+
+               error ->
+                 error
+             end
+           end) do
+      {:ok, Enum.map(codes, fn code -> %{code | revoked_at: now} end)}
+    else
+      _ -> {:error, "Could not revoke code chain."}
+    end
+  end
+
   def revoke(%Oauth.Token{value: value} = code) do
     with %Token{} = token <- repo().get_by(Token, value: value),
          {:ok, token} <-
@@ -170,25 +196,22 @@ defmodule Boruta.Ecto.Codes do
 
   @impl Boruta.Oauth.Codes
   def update_sub(%Oauth.Token{id: id}, sub) do
-    with %Token{} = code <- repo().one(
-        from t in Token,
-          where: t.type in ["code", "preauthorized_code"] and t.id == ^id
-      ),
+    with %Token{} = code <-
+           repo().one(
+             from t in Token,
+               where: t.type in ["code", "preauthorized_code"] and t.id == ^id
+           ),
          {:ok, code} <- Token.sub_changeset(code, sub) |> repo().update(),
          {:ok, code} <- TokenStore.invalidate(code) do
       {:ok, to_oauth_schema(code)}
     else
-      nil ->
+      _ ->
         {:error, "Preauthorized code not found."}
     end
   end
 
   @impl Boruta.Oauth.Codes
   def code_chain(token, acc \\ [])
-
-  def code_chain(_code, {:error, error}) do
-    {:error, error}
-  end
 
   def code_chain(%Oauth.Token{previous_code: nil} = code, acc) do
     Enum.reject([code | acc], &is_nil/1) |> Enum.reverse()
@@ -198,8 +221,9 @@ defmodule Boruta.Ecto.Codes do
     case code_chain(get_by(value: value)) do
       chain when is_list(chain) ->
         [code | acc ++ chain]
-      result ->
-        result
+
+      _ ->
+        acc
     end
   end
 
@@ -207,8 +231,9 @@ defmodule Boruta.Ecto.Codes do
     case code_chain(get_by(value: value)) do
       chain when is_list(chain) ->
         [code | acc ++ chain]
-      result ->
-        result
+
+      _ ->
+        acc
     end
   end
 
