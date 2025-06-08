@@ -160,74 +160,30 @@ defmodule Boruta.Openid do
         ) :: any()
   def direct_post(conn, %{code_id: code_id, response: response}, module)
       when not is_nil(response) do
-    with %Token{value: value} = code <- CodesAdapter.get_by(id: code_id),
+    with %Token{} = code <- CodesAdapter.get_by(id: code_id),
          {:ok, response_claims} <- Client.Crypto.decrypt(response, code.client),
          direct_post_params <- %{
+           code_id: code_id,
            id_token: response_claims["id_token"],
            vp_token: response_claims["vp_token"],
            presentation_submission: response_claims["presentation_submission"]
          } do
-      with {:ok, claims} <- check_id_token_client(direct_post_params),
-           {:ok, code} <-
-             Authorization.Code.authorize(%{
-               value: value,
-               code_verifier: direct_post_params[:code_verifier]
-             }),
-           :ok <-
-             maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, code} <-
-             CodesAdapter.update_client_encryption(code, %{
-               client_encryption_key: claims["client_encryption_key"],
-               client_encryption_alg: claims["client_encryption_alg"]
-             }) do
-        module.direct_post_success(conn, %DirectPostResponse{
-          id_token: direct_post_params[:id_token],
-          vp_token: direct_post_params[:vp_token],
-          code: code,
-          redirect_uri: code.redirect_uri,
-          state: code.state,
-          client_encryption_key: claims["client_encryption_key"],
-          client_encryption_alg: claims["client_encryption_alg"]
-        })
-      else
-        {:error, "" <> error} ->
-          module.authentication_failure(conn, %Error{
-            error: :unknown_error,
-            status: :unprocessable_entity,
-            error_description: error,
-            format: :query,
-            redirect_uri: code.redirect_uri,
-            state: code.state
-          })
-
-        {:error, error} ->
-          module.authentication_failure(conn, %{
-            error
-            | format: :query,
-              redirect_uri: code.redirect_uri,
-              state: code.state
-          })
-      end
-    else
-      {:error, error} ->
-        module.authentication_failure(conn, %{error | format: :query})
-
-      nil ->
-        module.code_not_found(conn)
+      direct_post(conn, direct_post_params, module)
     end
   end
 
   def direct_post(conn, direct_post_params, module) do
-    with {:ok, claims} <- check_id_token_client(direct_post_params),
-         %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+    with {:ok, kid, claims} <- check_id_token_client(direct_post_params),
+         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
+         {:ok, %Token{value: value} = code} <- CodesAdapter.update_sub(code, kid) do
       with {:ok, code} <-
              Authorization.Code.authorize(%{
                value: value,
                code_verifier: direct_post_params[:code_verifier]
              }),
+           [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
            :ok <-
-             maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
+             maybe_check_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
@@ -238,6 +194,7 @@ defmodule Boruta.Openid do
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
           code: code,
+          code_chain: code_chain,
           redirect_uri: code.redirect_uri,
           state: code.state,
           client_encryption_key: claims["client_encryption_key"],
@@ -274,7 +231,8 @@ defmodule Boruta.Openid do
   defp check_id_token_client(%{id_token: id_token}) when not is_nil(id_token) do
     case VerifiableCredentials.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
-        {:ok, claims}
+        {:ok, %{"kid" => kid}} = Joken.peek_header(id_token)
+        {:ok, kid, claims}
 
       {:error, error} ->
         {:error,
@@ -289,7 +247,8 @@ defmodule Boruta.Openid do
   defp check_id_token_client(%{vp_token: vp_token}) when not is_nil(vp_token) do
     case VerifiablePresentations.validate_signature(vp_token) do
       {:ok, _jwk, claims} ->
-        {:ok, claims}
+        {:ok, %{"kid" => kid}} = Joken.peek_header(vp_token)
+        {:ok, kid, claims}
 
       {:error, error} ->
         {:error,
@@ -310,7 +269,7 @@ defmodule Boruta.Openid do
          error_description: "id_token or vp_token param missing."
        }}
 
-  defp maybe_check_public_client_id(_direct_post_params, _public_client_id, %Client{
+  defp maybe_check_public_client_id(_direct_post_params, _code_chain, %Client{
          check_public_client_id: false
        }),
        do: :ok
@@ -337,26 +296,74 @@ defmodule Boruta.Openid do
 
   defp maybe_check_public_client_id(
          %{vp_token: vp_token},
-         "did:" <> _key = public_client_id,
+         [last | code_chain],
          _client
        )
        when not is_nil(vp_token) do
-    with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token),
-         {:ok, _jwk, _claims} <-
-           VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, vp_token) do
-      :ok
-    else
-      {:error, _error} ->
+    with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token) do
+      case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
+        {:ok, _jwk, _claims} ->
+          :ok
+
+        _ ->
+          case Enum.any?(code_chain, fn %Token{sub: sub} ->
+            case VerifiablePresentations.verify_jwt({:did, sub}, alg, vp_token) do
+              {:ok, _jwk, _claims} -> true
+              _ -> false
+            end
+          end) do
+            true -> :ok
+      false ->
         {:error,
          %Error{
            status: :bad_request,
            error: :invalid_client,
            error_description: "Authorization client_id do not match vp_token signature."
          }}
+          end
+      end
+    else
+      false ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Authorization client_id do not match vp_token signature."
+         }}
+
+      {:error, _error} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "VP token is invalid."
+         }}
     end
   end
 
-  defp maybe_check_public_client_id(_direct_post_params, public_client_id, _client) do
+  defp maybe_check_public_client_id(
+         %{id_token: _id_token},
+         [
+           %Token{
+             public_client_id: "did:" <> _key
+           }
+           | _codes
+         ],
+         _client
+       ) do
+    :ok
+  end
+
+  defp maybe_check_public_client_id(
+         _direct_post_params,
+         [
+           %Token{
+             public_client_id: "did:" <> _key = public_client_id
+           }
+           | _codes
+         ],
+         _client
+       ) do
     case public_client_id do
       "did:" <> _key ->
         {:error,

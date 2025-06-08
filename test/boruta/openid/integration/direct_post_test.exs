@@ -1,9 +1,10 @@
 defmodule Boruta.OpenidTest.DirectPostTest do
-  use Boruta.DataCase
+  use Boruta.DataCase, async: false
 
   import Boruta.Factory
 
   alias Boruta.Ecto.Client
+  alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
@@ -12,6 +13,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
   describe "authenticates with direct post response" do
     setup do
+      :ok = ClientStore.invalidate_public()
+
       {:ok, client} =
         Repo.get_by(Client, public_client_id: Boruta.Config.issuer())
         |> Ecto.Changeset.change(%{check_public_client_id: true})
@@ -56,6 +59,32 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       bad_public_client_code = insert(:token, [{:public_client_id, "did:key:test"} | code_params])
 
       public_client_code = insert(:token, [{:public_client_id, wallet_did} | code_params])
+
+      last_valid_code_chain = [
+        insert(
+          :token,
+          [{:public_client_id, wallet_did}, {:previous_code, "last_code_1"}] ++ code_params
+        ),
+        insert(
+          :token,
+          [{:previous_code, "last_code_2"}, {:value, "last_code_1"}] ++
+            code_params
+        ),
+        insert(:token, [{:value, "last_code_2"}] ++ code_params)
+      ]
+
+      middle_valid_code_chain = [
+        insert(
+          :token,
+          [{:public_client_id, "did:key:other"}, {:previous_code, "middle_code_1"}] ++ code_params
+        ),
+        insert(
+          :token,
+          [{:previous_code, "middle_code_2"}, {:value, "middle_code_1"}] ++
+            code_params
+        ),
+        insert(:token, [{:sub, wallet_did}, {:value, "middle_code_2"}] ++ code_params)
+      ]
 
       pkce_code =
         insert(:token,
@@ -135,6 +164,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        pkce_code: pkce_code,
        public_client_code: public_client_code,
        bad_public_client_code: bad_public_client_code,
+       last_valid_code_chain: last_valid_code_chain,
+       middle_valid_code_chain: middle_valid_code_chain,
        id_token: id_token,
        vp_token: vp_token}
     end
@@ -865,6 +896,90 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.vp_token
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
+      assert response.state == code.state
+    end
+
+    test "oid4vp - authenticates with a code chain (last valid)", %{
+      vp_token: vp_token,
+      last_valid_code_chain: [code | _code_chain]
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+
+      assert response.vp_token
+      assert response.redirect_uri == code.redirect_uri
+      assert response.code.value == code.value
+      assert Enum.count(response.code_chain) == 3
+      assert response.state == code.state
+    end
+
+    test "oid4vp - authenticates with a code chain (middle valid)", %{
+      vp_token: vp_token,
+      middle_valid_code_chain: [code | _code_chain]
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+
+      assert response.vp_token
+      assert response.redirect_uri == code.redirect_uri
+      assert response.code.value == code.value
+      assert Enum.count(response.code_chain) == 3
       assert response.state == code.state
     end
 

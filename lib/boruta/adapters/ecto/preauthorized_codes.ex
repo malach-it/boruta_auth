@@ -15,7 +15,6 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
             %Oauth.Client{
               authorization_code_ttl: authorization_code_ttl
             } = client,
-          resource_owner: resource_owner,
           scope: scope,
           state: state,
           redirect_uri: redirect_uri
@@ -24,17 +23,23 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
     sub = params[:sub]
 
     token = %Oauth.Token{
-      id: SecureRandom.uuid(),
-      type: "preauthorized_code",
-      resource_owner: resource_owner,
-      client: client,
-      sub: sub,
-      state: state,
-      nonce: params[:nonce],
       agent_token: params[:agent_token],
-      scope: scope,
+      authorization_details:
+        params[:resource_owner] && params[:resource_owner].authorization_details,
+      client: client,
+      code_challenge: params[:code_challenge],
+      code_challenge_method: params[:code_challenge_method],
+      id: SecureRandom.uuid(),
+      nonce: params[:nonce],
+      presentation_definition: params[:presentation_definition],
+      previous_code: params[:previous_code],
+      public_client_id: params[:public_client_id],
       redirect_uri: redirect_uri,
-      authorization_details: resource_owner.authorization_details
+      resource_owner: params[:resource_owner],
+      scope: scope,
+      state: state,
+      sub: sub,
+      type: "preauthorized_code"
     }
 
     with token <- %{token | tx_code: token_generator().generate(:tx_code, token)},
