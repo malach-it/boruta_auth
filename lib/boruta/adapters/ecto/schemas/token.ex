@@ -198,17 +198,20 @@ defmodule Boruta.Ecto.Token do
   def preauthorized_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :agent_token,
       :authorization_code_ttl,
-      :client_id,
-      :sub,
-      :state,
-      :nonce,
-      :scope,
       :authorization_details,
+      :client_id,
+      :nonce,
+      :presentation_definition,
+      :previous_code,
+      :public_client_id,
       :redirect_uri,
-      :agent_token
+      :scope,
+      :state,
+      :sub
     ])
-    |> validate_required([:authorization_code_ttl, :client_id, :sub])
+    |> validate_required([:authorization_code_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
     |> put_value()
@@ -220,22 +223,24 @@ defmodule Boruta.Ecto.Token do
   def pkce_preauthorized_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :agent_token,
       :authorization_code_ttl,
+      :authorization_details,
       :client_id,
-      :sub,
-      :state,
-      :nonce,
-      :scope,
       :code_challenge,
       :code_challenge_method,
-      :authorization_details,
+      :nonce,
+      :presentation_definition,
+      :previous_code,
+      :public_client_id,
       :redirect_uri,
-      :agent_token
+      :scope,
+      :state,
+      :sub
     ])
     |> validate_required([
       :authorization_code_ttl,
       :client_id,
-      :sub,
       :code_challenge
     ])
     |> foreign_key_constraint(:client_id)
@@ -302,6 +307,11 @@ defmodule Boruta.Ecto.Token do
     |> put_code_expires_at()
     |> put_code_challenge_method()
     |> encrypt_code_challenge()
+  end
+
+  @doc false
+  def sub_changeset(code, sub) do
+    change(code, %{sub: sub, type: "code"})
   end
 
   @doc false
