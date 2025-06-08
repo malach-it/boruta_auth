@@ -167,4 +167,50 @@ defmodule Boruta.Ecto.Codes do
       {:ok, code}
     end
   end
+
+  @impl Boruta.Oauth.Codes
+  def update_sub(%Oauth.Token{id: id}, sub) do
+    with %Token{} = code <- repo().one(
+        from t in Token,
+          where: t.type in ["code", "preauthorized_code"] and t.id == ^id
+      ),
+         {:ok, code} <- Token.sub_changeset(code, sub) |> repo().update(),
+         {:ok, code} <- TokenStore.invalidate(code) do
+      {:ok, to_oauth_schema(code)}
+    else
+      nil ->
+        {:error, "Preauthorized code not found."}
+    end
+  end
+
+  @impl Boruta.Oauth.Codes
+  def code_chain(token, acc \\ [])
+
+  def code_chain(_code, {:error, error}) do
+    {:error, error}
+  end
+
+  def code_chain(%Oauth.Token{previous_code: nil} = code, acc) do
+    Enum.reject([code | acc], &is_nil/1) |> Enum.reverse()
+  end
+
+  def code_chain(%Oauth.Token{type: "preauthorized_code", previous_code: value} = code, acc) do
+    case code_chain(get_by(value: value)) do
+      chain when is_list(chain) ->
+        [code | acc ++ chain]
+      result ->
+        result
+    end
+  end
+
+  def code_chain(%Oauth.Token{type: "code", previous_code: value} = code, acc) do
+    case code_chain(get_by(value: value)) do
+      chain when is_list(chain) ->
+        [code | acc ++ chain]
+      result ->
+        result
+    end
+  end
+
+  def code_chain(nil, _acc), do: {:error, "Previous code not found."}
 end

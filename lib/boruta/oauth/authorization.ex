@@ -708,7 +708,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
          scope: scope,
          state: state,
          resource_owner: resource_owner,
-         agent_token: agent_token
+         agent_token: agent_token,
+         authorization_details: resource_owner.authorization_details
        }}
     else
       error ->
@@ -726,7 +727,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
             scope: scope,
             state: state,
             nonce: nonce,
-            agent_token: agent_token
+            agent_token: agent_token,
+            authorization_details: authorization_details
           }} <-
            preauthorize(request) do
       # TODO create a preauthorized code
@@ -739,7 +741,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                scope: scope,
                state: state,
                nonce: nonce,
-               agent_token: agent_token
+               agent_token: agent_token,
+               authorization_details: authorization_details
              }) do
         {:ok, %{preauthorized_code: preauthorized_code}}
       end
@@ -944,7 +947,7 @@ end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.ClientsAdapter
-  alias Boruta.CodesAdapter
+  alias Boruta.PreauthorizedCodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.CodeRequest
@@ -1052,12 +1055,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
-             CodesAdapter.create(%{
+             PreauthorizedCodesAdapter.create(%{
                client: client,
                public_client_id: public_client_id,
                redirect_uri: redirect_uri,
                previous_code: code,
-               sub: sub,
                scope: scope,
                state: state,
                nonce: nonce,
