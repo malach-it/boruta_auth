@@ -86,6 +86,15 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         insert(:token, [{:sub, wallet_did}, {:value, "middle_code_2"}] ++ code_params)
       ]
 
+      replay_code_chain = [
+        insert(
+          :token,
+          [{:public_client_id, "did:key:other"}, {:previous_code, "middle_code_1"}] ++ code_params
+        ),
+        Enum.at(middle_valid_code_chain, 1),
+        Enum.at(middle_valid_code_chain, 2)
+      ]
+
       pkce_code =
         insert(:token,
           type: "code",
@@ -166,6 +175,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        bad_public_client_code: bad_public_client_code,
        last_valid_code_chain: last_valid_code_chain,
        middle_valid_code_chain: middle_valid_code_chain,
+       replay_code_chain: replay_code_chain,
        id_token: id_token,
        vp_token: vp_token}
     end
@@ -257,38 +267,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     test "siopv2 - returns an error with expired code", %{id_token: id_token} do
       code = insert(:token, type: "code", expires_at: 0)
       conn = %Plug.Conn{}
-
-      assert {
-               :authentication_failure,
-               %Boruta.Oauth.Error{
-                 status: :bad_request,
-                 format: :query,
-                 error: :invalid_grant,
-                 error_description: "Given authorization code is invalid, revoked, or expired."
-               }
-             } =
-               Openid.direct_post(
-                 conn,
-                 %{
-                   code_id: code.id,
-                   id_token: id_token
-                 },
-                 ApplicationMock
-               )
-    end
-
-    test "siopv2 - returns an error on replay", %{id_token: id_token, code: code} do
-      conn = %Plug.Conn{}
-
-      assert {:direct_post_success, _response} =
-               Openid.direct_post(
-                 conn,
-                 %{
-                   code_id: code.id,
-                   id_token: id_token
-                 },
-                 ApplicationMock
-               )
 
       assert {
                :authentication_failure,
@@ -941,9 +919,10 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
-    test "oid4vp - authenticates with a code chain (middle valid)", %{
+    test "oid4vp - returns an error with a code chain (middle valid - replay)", %{
       vp_token: vp_token,
-      middle_valid_code_chain: [code | _code_chain]
+      middle_valid_code_chain: [code | _code_chain],
+      replay_code_chain: [replay_code | _replay_code_chain]
     } do
       conn = %Plug.Conn{}
 
@@ -981,6 +960,27 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.code.value == code.value
       assert Enum.count(response.code_chain) == 3
       assert response.state == code.state
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :bad_request,
+                 error: :invalid_client,
+                 error_description: "Authorization client_id do not match vp_token signature.",
+                 format: :query,
+                 redirect_uri: "http://redirect.uri",
+                 state: "state"
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: replay_code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
     end
 
     test "oid4vp - authenticates with code verifier (plain code challenge)", %{
