@@ -163,7 +163,7 @@ defmodule Boruta.Openid do
            :ok <-
              maybe_check_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, _code} <- CodesAdapter.revoke(code) do
+           {:ok, _codes} <- maybe_revoke_code_chain(direct_post_params, code_chain) do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
@@ -257,11 +257,13 @@ defmodule Boruta.Openid do
           :ok
 
         _ ->
-          case Enum.any?(code_chain, fn %Token{sub: sub} ->
-            case VerifiablePresentations.verify_jwt({:did, sub}, alg, vp_token) do
-              {:ok, _jwk, _claims} -> true
-              _ -> false
-            end
+          case Enum.any?(code_chain, fn
+            %Token{sub: sub, revoked_at: nil} ->
+              case VerifiablePresentations.verify_jwt({:did, sub}, alg, vp_token) do
+                {:ok, _jwk, _claims} -> true
+                _ -> false
+              end
+            _ -> false
           end) do
             true -> :ok
       false ->
@@ -380,6 +382,12 @@ defmodule Boruta.Openid do
   end
 
   defp maybe_check_presentation(_, _), do: :ok
+
+  defp maybe_revoke_code_chain(%{vp_token: _vp_token}, code_chain) do
+    CodesAdapter.revoke(code_chain)
+  end
+
+  defp maybe_revoke_code_chain(%{id_token: _id_token}, code_chain), do: {:ok, code_chain}
 
   alias Boruta.Openid.Json.Schema
   alias ExJsonSchema.Validator.Error.BorutaFormatter
