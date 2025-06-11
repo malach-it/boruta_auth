@@ -9,6 +9,7 @@ defmodule Boruta.Openid.DirectPostResponse do
     :code,
     :code_chain,
     :redirect_uri,
+    :response_types,
     :state
   ]
 
@@ -18,6 +19,7 @@ defmodule Boruta.Openid.DirectPostResponse do
     code: Boruta.Oauth.Token.t(),
     code_chain: list(Boruta.Oauth.Token.t()),
     redirect_uri: String.t(),
+    response_types: String.t(),
     state: String.t() | nil
   }
 end
