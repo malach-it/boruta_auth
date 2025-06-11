@@ -389,7 +389,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
          nonce: code.nonce,
          authorization_details: code.authorization_details,
          bind_data: bind_data,
-         bind_configuration: bind_configuration,
+         bind_configuration: bind_configuration
        }}
     end
   end
@@ -405,7 +405,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
             nonce: nonce,
             authorization_details: authorization_details,
             bind_data: bind_data,
-            bind_configuration: bind_configuration,
+            bind_configuration: bind_configuration
           }} <-
            preauthorize(request),
          {:ok, agent_token} <-
@@ -464,11 +464,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
          :ok <- maybe_check_tx_code(tx_code, code),
          {:ok, %ResourceOwner{sub: sub}} <-
            (case code.agent_token do
-             nil ->
-               Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
-             _ ->
-               {:ok, code.resource_owner}
-           end) do
+              nil ->
+                Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
+
+              _ ->
+                {:ok, code.resource_owner}
+            end) do
       {:ok,
        %AuthorizationSuccess{
          client: code.client,
@@ -658,6 +659,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest do
+  alias Boruta.ClientsAdapter
   alias Boruta.PreauthorizedCodesAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
@@ -678,12 +680,18 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
         grant_type: grant_type
       }) do
     with {:ok, client} <-
-           Authorization.Client.authorize(
-             id: client_id,
-             source: nil,
-             redirect_uri: redirect_uri,
-             grant_type: grant_type
-           ),
+           (case client_id do
+              "did:" <> _key ->
+                {:ok, ClientsAdapter.public!()}
+
+              _ ->
+                Authorization.Client.authorize(
+                  id: client_id,
+                  source: nil,
+                  redirect_uri: redirect_uri,
+                  grant_type: grant_type
+                )
+            end),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            (case agent_token do
               nil ->
@@ -836,6 +844,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
            preauthorize(request) do
       with {:ok, code} <-
              CodesAdapter.create(%{
+               response_type: "code",
                client: client,
                resource_owner: resource_owner,
                redirect_uri: redirect_uri,
@@ -973,7 +982,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           state: state
         } = request
       ) do
-    with [response_type] = response_types <-
+    with response_types <-
            VerifiablePresentations.response_types(
              response_type,
              scope,
@@ -982,14 +991,14 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-               {:ok, ClientsAdapter.public!()}
+                {:ok, ClientsAdapter.public!()}
 
               _ ->
                 Authorization.Client.authorize(
                   id: client_id,
                   source: nil,
                   redirect_uri: redirect_uri,
-                  grant_type: response_type
+                  grant_type: List.first(response_types)
                 )
             end),
          :ok <- Authorization.Nonce.authorize(request),
@@ -1004,11 +1013,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              resource_owner.presentation_configuration,
              scope
            ) do
-
-      {code_challenge, code_challenge_method} = case resource_owner.code_verifier do
-        nil -> {code_challenge, code_challenge_method}
-        code_verifier -> {code_verifier , "plain"}
-      end
+      {code_challenge, code_challenge_method} =
+        case resource_owner.code_verifier do
+          nil -> {code_challenge, code_challenge_method}
+          code_verifier -> {code_verifier, "plain"}
+        end
 
       {:ok,
        %AuthorizationSuccess{
@@ -1056,6 +1065,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            preauthorize(request) do
       with {:ok, code} <-
              PreauthorizedCodesAdapter.create(%{
+               response_type: Enum.join(response_types, " "),
                client: client,
                public_client_id: public_client_id,
                redirect_uri: redirect_uri,
@@ -1070,18 +1080,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                client_encryption_key: previous_code && previous_code.client_encryption_key,
                client_encryption_alg: previous_code && previous_code.client_encryption_alg
              }) do
-        case response_types do
-          ["id_token"] ->
-            {:ok, %{
-              siopv2_code: code,
-              response_mode: response_mode
-            }}
+        case List.first(response_types) do
+          "id_token" ->
+            {:ok, %{siopv2_code: code, response_mode: response_mode}}
 
-          ["vp_token"] ->
-          {:ok, %{
-            vp_code: code,
-            response_mode: response_mode
-          }}
+          "vp_token" ->
+            {:ok, %{vp_code: code, response_mode: response_mode}}
         end
       end
     end
@@ -1129,6 +1133,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
         "code", {:ok, tokens} when tokens == %{} ->
           with {:ok, code} <-
                  CodesAdapter.create(%{
+                   response_type: Enum.join(response_types, " "),
                    client: client,
                    resource_owner: resource_owner,
                    redirect_uri: redirect_uri,
