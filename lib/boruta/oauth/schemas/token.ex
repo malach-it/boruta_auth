@@ -14,6 +14,7 @@ defmodule Boruta.Oauth.Token do
   @enforce_keys [:type]
   defstruct id: nil,
             type: nil,
+            response_type: nil,
             value: nil,
             tx_code: nil,
             authorization_details: nil,
@@ -44,6 +45,7 @@ defmodule Boruta.Oauth.Token do
   @type t :: %__MODULE__{
           id: String.t(),
           type: String.t(),
+          response_type: String.t() | nil,
           value: String.t() | nil,
           tx_code: String.t() | nil,
           authorization_details: list() | nil,
