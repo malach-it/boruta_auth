@@ -18,6 +18,7 @@ defmodule Boruta.Ecto.Token do
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t(),
+          response_type: String.t() | nil,
           tx_code: String.t() | nil,
           authorization_details: list(),
           state: String.t(),
@@ -62,6 +63,7 @@ defmodule Boruta.Ecto.Token do
   schema "oauth_tokens" do
     field(:type, :string)
     field(:value, :string)
+    field(:response_type, :string)
     field(:authorization_details, {:array, :map}, default: [])
     field(:presentation_definition, :map)
     field(:refresh_token, :string)
@@ -202,6 +204,7 @@ defmodule Boruta.Ecto.Token do
   def preauthorized_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
       :agent_token,
       :authorization_code_ttl,
       :authorization_details,
@@ -227,6 +230,7 @@ defmodule Boruta.Ecto.Token do
   def pkce_preauthorized_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
       :agent_token,
       :authorization_code_ttl,
       :authorization_details,
@@ -260,6 +264,7 @@ defmodule Boruta.Ecto.Token do
   def code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
       :authorization_code_ttl,
       :client_id,
       :public_client_id,
@@ -285,6 +290,7 @@ defmodule Boruta.Ecto.Token do
   def pkce_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
       :authorization_code_ttl,
       :client_id,
       :public_client_id,

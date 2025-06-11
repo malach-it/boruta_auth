@@ -102,6 +102,7 @@ defmodule Boruta.Ecto.Codes do
       apply(Token, changeset_method(client), [
         %Token{resource_owner: params[:resource_owner]},
         %{
+          response_type: params[:response_type],
           client_id: client_id,
           sub: sub,
           redirect_uri: redirect_uri,

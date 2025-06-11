@@ -226,10 +226,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "urn:ietf:params:oauth:response-type:pre-authorized_code"},
-        "client_id" => %{
-          "type" => "string",
-          "pattern" => @uuid_pattern
-        },
+        "client_id" => %{"type" => "string"},
         "state" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},

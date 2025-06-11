@@ -128,7 +128,7 @@ defmodule Boruta.Oauth.Request.Base do
   def build_request(
         %{"response_type" => response_type, "client_metadata" => client_metadata} = params
       )
-      when response_type in ["code", "vp_token"] do
+      when response_type in ["code", "id_token", "id_token vp_token", "id_token urn:ietf:params:oauth:response-type:pre-authorized_code", "vp_token"] do
     request = %PresentationRequest{
       client_id: params["client_id"],
       resource_owner: params["resource_owner"],

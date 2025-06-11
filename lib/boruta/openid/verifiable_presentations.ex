@@ -32,6 +32,17 @@ defmodule Boruta.Openid.VerifiablePresentations do
     end
   end
 
+  def response_types("id_token vp_token", scope, presentation_configuration) do
+    case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
+           Enum.member?(Scope.split(scope), presentation_identifier)
+         end) do
+      true -> ["id_token", "vp_token"]
+      false -> ["id_token"]
+    end
+  end
+
+  def response_types("id_token urn:ietf:params:oauth:response-type:pre-authorized_code", _scope, _presentation_configuration), do: ["id_token", "urn:ietf:params:oauth:response-type:pre-authorized_code"]
+
   def presentation_definition(presentation_configuration, scope) do
     case Enum.find(presentation_configuration, fn {identifier, _configuration} ->
            Enum.member?(Scope.split(scope), identifier)

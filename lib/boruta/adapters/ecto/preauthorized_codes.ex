@@ -36,6 +36,7 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
       public_client_id: params[:public_client_id],
       redirect_uri: redirect_uri,
       resource_owner: params[:resource_owner],
+      response_type: params[:response_type],
       scope: scope,
       state: state,
       sub: sub,
