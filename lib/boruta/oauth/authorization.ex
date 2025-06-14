@@ -669,6 +669,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
         client_id: client_id,
         redirect_uri: redirect_uri,
         resource_owner: resource_owner,
+        code: code,
         state: state,
         scope: scope,
         grant_type: grant_type
@@ -706,6 +707,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
        %AuthorizationSuccess{
          client: client,
          redirect_uri: redirect_uri,
+         code: code,
          sub: sub,
          scope: scope,
          state: state,
@@ -733,6 +735,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
             client: client,
             resource_owner: resource_owner,
             redirect_uri: redirect_uri,
+            code: code,
             sub: sub,
             scope: scope,
             state: state,
@@ -747,6 +750,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                client: client,
                resource_owner: resource_owner,
                redirect_uri: redirect_uri,
+               previous_code: code,
                sub: sub,
                scope: scope,
                state: state,

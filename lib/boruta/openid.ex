@@ -74,6 +74,10 @@ defmodule Boruta.Openid do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
          {:ok, credential_params} <- validate_credential_params(credential_params),
+         %Token{} = code <- CodesAdapter.get_by(value: token.previous_code),
+         [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
+         :ok <-
+           maybe_check_public_client_id(credential_params, code_chain, token.client),
          {:ok, credential} <-
            VerifiableCredentials.issue_verifiable_credential(
              token.resource_owner,
@@ -104,6 +108,15 @@ defmodule Boruta.Openid do
       end
     else
       {:error, %Error{} = error} ->
+        module.credential_failure(conn, error)
+
+      nil ->
+        error = %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: "Previous code not found."
+        }
+
         module.credential_failure(conn, error)
 
       {:error, reason} ->
@@ -255,10 +268,11 @@ defmodule Boruta.Openid do
       case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
         {:ok, _jwk, _claims} ->
           # TODO case {client.check_public_client_id_in_chain, Enum.find(code_chain, fn
-          case {true, Enum.find(code_chain, fn
-            %Token{revoked_at: nil, sub: sub} -> sub == last.public_client_id
-            _ -> false
-          end)} do
+          case {true,
+                Enum.find(code_chain, fn
+                  %Token{revoked_at: nil, sub: sub} -> sub == last.public_client_id
+                  _ -> false
+                end)} do
             {true, nil} ->
               {:error,
                %Error{
@@ -303,6 +317,44 @@ defmodule Boruta.Openid do
            error_description: "Authorization client_id do not match vp_token signature."
          }}
 
+      {:error, _error} ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "VP token is invalid."
+         }}
+    end
+  end
+
+  defp maybe_check_public_client_id(
+         %{"proof" => %{"proof_type" => "jwt", "jwt" => jwt}},
+         code_chain,
+         _client
+       ) do
+    with {:ok, %{"alg" => alg}} <- Joken.peek_header(jwt) do
+      case Enum.any?(code_chain, fn
+        %Token{sub: sub, revoked_at: nil} ->
+          case VerifiablePresentations.verify_jwt({:did, sub}, alg, jwt) do
+            {:ok, _jwk, _claims} -> true
+            _ -> false
+          end
+
+        _ ->
+          false
+      end) do
+        true ->
+          :ok
+
+        false ->
+          {:error,
+            %Error{
+              status: :bad_request,
+              error: :invalid_client,
+              error_description: "Authorization client_id do not match vp_token signature."
+            }}
+      end
+    else
       {:error, _error} ->
         {:error,
          %Error{
