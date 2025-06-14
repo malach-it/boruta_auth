@@ -99,6 +99,7 @@ jobs:
         run: mix coveralls.github --trace
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          DID_SERVICES_API_KEY: ${{ secrets.DID_SERVICES_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MIX_ENV: test
           POSTGRES_USER: postgres

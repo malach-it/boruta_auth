@@ -17,6 +17,10 @@ config :boruta, Boruta.Cache,
 config :phoenix, :json_library, Jason
 
 config :boruta, Boruta.Oauth,
-  repo: Boruta.Repo
+  repo: Boruta.Repo,
+  universal_did_auth: %{
+    type: "bearer",
+    token: System.get_env("DID_SERVICES_API_KEY")
+  }
 
 import_config "#{config_env()}.exs"
