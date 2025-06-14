@@ -351,7 +351,7 @@ defmodule Boruta.Openid do
             %Error{
               status: :bad_request,
               error: :invalid_client,
-              error_description: "Authorization client_id do not match vp_token signature."
+              error_description: "Authorization client_id do not match proof signature."
             }}
       end
     else
