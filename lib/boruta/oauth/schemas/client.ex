@@ -89,6 +89,7 @@ defmodule Boruta.Oauth.Client do
   @wallet_grant_types [
     "id_token",
     "vp_token",
+    "preauthorized_code",
     "authorization_code",
     "agent_credentials"
   ]
@@ -99,7 +100,6 @@ defmodule Boruta.Oauth.Client do
                    "password",
                    "authorization_code",
                    "agent_code",
-                   "preauthorized_code",
                    "refresh_token",
                    "implicit",
                    "revoke",
