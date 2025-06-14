@@ -10,6 +10,7 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
   """
   @type t :: %__MODULE__{
           agent_token: String.t() | nil,
+          code: String.t() | nil,
           client_id: String.t(),
           redirect_uri: String.t(),
           state: String.t(),
@@ -22,6 +23,7 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
 
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct agent_token: nil,
+            code: nil,
             client_id: nil,
             redirect_uri: nil,
             state: "",
