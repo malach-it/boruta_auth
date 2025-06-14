@@ -66,7 +66,8 @@ defmodule Boruta.Ecto.Codes do
         token
 
       {:error, "Not cached."} ->
-        with %Token{} = token <-
+        with "" <> value <- value,
+             %Token{} = token <-
                repo().one(
                  from t in Token,
                    where: t.type in ["code", "preauthorized_code"] and t.value == ^value
@@ -76,6 +77,9 @@ defmodule Boruta.Ecto.Codes do
                |> to_oauth_schema()
                |> TokenStore.put() do
           token
+        else
+          {:error, error} -> {:error, error}
+          nil -> {:error, "Code not found."}
         end
     end
   end

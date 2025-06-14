@@ -106,6 +106,7 @@ defmodule Boruta.Oauth.Request.Base do
     {:ok,
      %PreauthorizedCodeRequest{
        agent_token: params["agent_token"],
+       code: params["code"],
        client_id: params["client_id"],
        redirect_uri: params["redirect_uri"],
        resource_owner: params["resource_owner"],
