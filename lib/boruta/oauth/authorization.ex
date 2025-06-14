@@ -1005,6 +1005,14 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                   grant_type: List.first(response_types)
                 )
             end),
+         {:ok, _code} <-
+           (case code do
+              nil ->
+                {:ok, nil}
+
+              code ->
+                Authorization.Code.authorize(%{value: code})
+            end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
          {:ok, previous_code} <- (case code do

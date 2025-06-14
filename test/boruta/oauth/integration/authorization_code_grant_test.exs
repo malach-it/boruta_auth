@@ -1057,7 +1057,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a code with siopv2 - previous_code (direct_post)" do
       redirect_uri = "openid:"
-      code = "code"
+      code = insert(:token, type: "code").value
 
       assert {:authorize_success,
               %SiopV2Response{
