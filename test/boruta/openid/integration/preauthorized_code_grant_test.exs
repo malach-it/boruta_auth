@@ -108,7 +108,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                   error: :invalid_resource_owner,
                   error_description: "Resource owner is invalid.",
                   status: :unauthorized,
-                  format: :fragment,
+                  format: :query,
                   redirect_uri: redirect_uri
                 }}
     end
@@ -123,7 +123,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     #                %Boruta.Oauth.Error{
     #                  error: :unknown_error,
     #                  error_description: "\"Could not create code : sub is invalid\"",
-    #                  format: :fragment,
+    #                  format: :query,
     #                  redirect_uri: "https://redirect.uri",
     #                  state: nil,
     #                  status: :internal_server_error
@@ -168,7 +168,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  format: :fragment,
+                  format: :query,
                   redirect_uri: "https://redirect.uri",
                   status: :bad_request
                 }}
@@ -193,7 +193,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
               %Boruta.Oauth.Error{
                 error: :invalid_agent_token,
                 error_description: "Agent token is invalid",
-                format: :fragment,
+                format: :query,
                 redirect_uri: "https://redirect.uri",
                 status: :unauthorized
               }} =
@@ -233,7 +233,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 %Error{
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
-                  format: :fragment,
+                  format: :query,
                   redirect_uri: redirect_uri,
                   status: :bad_request
                 }}
@@ -260,7 +260,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 redirect_uri: "https://redirect.uri",
                 error: :invalid_grant,
                 error_description: "Given authorization code is invalid, revoked, or expired.",
-                format: :fragment,
+                format: :query,
                 status: :bad_request
               }
             } =
@@ -300,7 +300,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 redirect_uri: "https://redirect.uri",
                 error: :invalid_grant,
                 error_description: "Given authorization code is invalid, revoked, or expired.",
-                format: :fragment,
+                format: :query,
                 status: :bad_request
               }
             } =
