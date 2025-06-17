@@ -653,6 +653,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest do
+  alias Boruta.CodesAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.PreauthorizedCodesAdapter
   alias Boruta.Oauth.Authorization
@@ -669,7 +670,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
         client_id: client_id,
         redirect_uri: redirect_uri,
         resource_owner: resource_owner,
-        code: code,
+        code: previous_code,
         state: state,
         scope: scope,
         grant_type: grant_type
@@ -687,17 +688,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                   grant_type: grant_type
                 )
             end),
-         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
-           (case agent_token do
-              nil ->
-                Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
-
-              agent_token ->
-                Authorization.AgentToken.authorize(
-                  agent_token: agent_token,
-                  resource_owner: resource_owner
-                )
+         {:ok, code} <-
+           (case previous_code do
+              nil -> {:ok, nil}
+              previous_code -> Authorization.Code.authorize(%{value: previous_code})
             end),
+         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
+           Authorization.AgentToken.authorize(
+             agent_token: (code && code.agent_token) || agent_token,
+             resource_owner: resource_owner
+           ),
          {:ok, scope} <-
            Authorization.Scope.authorize(
              scope: scope,
@@ -707,7 +707,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
        %AuthorizationSuccess{
          client: client,
          redirect_uri: redirect_uri,
-         code: code,
+         code: previous_code,
          sub: sub,
          scope: scope,
          state: state,
