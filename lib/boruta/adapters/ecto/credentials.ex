@@ -9,7 +9,8 @@ defmodule Boruta.Ecto.Credentials do
 
   @impl Boruta.Openid.Credentials
   def get_by(access_token: access_token) do
-    with %Ecto.Credential{} = credential <- repo().get_by(Ecto.Credential, access_token: access_token) do
+    with %Ecto.Credential{} = credential <-
+           repo().get_by(Ecto.Credential, access_token: access_token) do
       to_oauth_schema(credential)
     end
   end

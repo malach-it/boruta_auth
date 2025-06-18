@@ -195,8 +195,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 format: :fragment,
                 redirect_uri: "https://redirect.uri",
                 status: :unauthorized
-              }
-            } =
+              }} =
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
@@ -285,7 +284,9 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       client: client,
       resource_owner: resource_owner
     } do
-      agent_token = insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+      agent_token =
+        insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+
       redirect_uri = List.first(client.redirect_uris)
 
       resource_owner = %{
@@ -322,7 +323,10 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                )
 
       assert preauthorized_code
-      assert %Ecto.Token{agent_token: agent_token} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
+      assert %Ecto.Token{agent_token: agent_token} =
+               Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
       assert agent_token
     end
 
@@ -744,7 +748,9 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
           ]
         )
 
-      agent_token = insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+      agent_token =
+        insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+
       agent_code =
         insert(
           :token,

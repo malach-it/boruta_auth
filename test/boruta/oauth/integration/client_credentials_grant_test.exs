@@ -135,10 +135,12 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     end
 
     test "returns an error when dpop is signed with symetric alg", %{dpop_client: client} do
-      signer = Joken.Signer.create("HS512", "secret", %{
-        "jwk" => :jwk,
-        "typ" => "dpop+jwt"
-      })
+      signer =
+        Joken.Signer.create("HS512", "secret", %{
+          "jwk" => :jwk,
+          "typ" => "dpop+jwt"
+        })
+
       {:ok, dpop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert {:token_error,
@@ -161,10 +163,12 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
     end
 
     test "returns an error when dpop signature is malformed", %{dpop_client: client} do
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => :jwk,
-        "typ" => "dpop+jwt"
-      })
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => :jwk,
+          "typ" => "dpop+jwt"
+        })
+
       {:ok, dpop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert {:token_error,
@@ -188,10 +192,13 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns an error when dpop signature is invalid", %{dpop_client: client} do
       {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => jwk,
-        "typ" => "dpop+jwt"
-      })
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
       {:ok, dpop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert {:token_error,
@@ -215,10 +222,13 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns an error when dpop claims are missing", %{dpop_client: client} do
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => jwk,
-        "typ" => "dpop+jwt"
-      })
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
       {:ok, dpop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert {:token_error,
@@ -242,14 +252,21 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns an error when dpop method is invalid", %{dpop_client: client} do
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => jwk,
-        "typ" => "dpop+jwt"
-      })
-      {:ok, dpop, _claims} = Token.encode_and_sign(%{
-        "htu" => "htu",
-        "htm" => "GET"
-      }, signer)
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
+      {:ok, dpop, _claims} =
+        Token.encode_and_sign(
+          %{
+            "htu" => "htu",
+            "htm" => "GET"
+          },
+          signer
+        )
 
       assert {:token_error,
               %Error{
@@ -273,14 +290,21 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns an error when dpop url is invalid", %{dpop_client: client} do
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => jwk,
-        "typ" => "dpop+jwt"
-      })
-      {:ok, dpop, _claims} = Token.encode_and_sign(%{
-        "htu" => "htu",
-        "htm" => "POST"
-      }, signer)
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
+      {:ok, dpop, _claims} =
+        Token.encode_and_sign(
+          %{
+            "htu" => "htu",
+            "htm" => "POST"
+          },
+          signer
+        )
 
       assert {:token_error,
               %Error{
@@ -305,14 +329,21 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
 
     test "returns a token when dpop is valid", %{dpop_client: client} do
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
-        "jwk" => jwk,
-        "typ" => "dpop+jwt"
-      })
-      {:ok, dpop, _claims} = Token.encode_and_sign(%{
-        "htu" => "http://host/pa/th",
-        "htm" => "POST"
-      }, signer)
+
+      signer =
+        Joken.Signer.create("RS512", %{"pem" => valid_private_key()}, %{
+          "jwk" => jwk,
+          "typ" => "dpop+jwt"
+        })
+
+      {:ok, dpop, _claims} =
+        Token.encode_and_sign(
+          %{
+            "htu" => "http://host/pa/th",
+            "htm" => "POST"
+          },
+          signer
+        )
 
       assert {:token_success,
               %TokenResponse{
@@ -371,23 +402,23 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
       given_scope = "public"
 
       assert {:token_success,
-       %TokenResponse{
-         token_type: token_type,
-         access_token: access_token,
-         expires_in: expires_in,
-         refresh_token: refresh_token
-       }} =
-        Oauth.token(
-          %Plug.Conn{
-            body_params: %{
-              "grant_type" => "client_credentials",
-              "client_id" => client.id,
-              "client_secret" => client.secret,
-              "scope" => given_scope
-            }
-          },
-          ApplicationMock
-        )
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "client_credentials",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "scope" => given_scope
+                   }
+                 },
+                 ApplicationMock
+               )
 
       assert token_type == "bearer"
       assert access_token
@@ -400,23 +431,23 @@ defmodule Boruta.OauthTest.ClientCredentialsGrantTest do
       ScopeStore.put_public([%Scope{name: "public"}])
 
       assert {:token_success,
-       %TokenResponse{
-         token_type: token_type,
-         access_token: access_token,
-         expires_in: expires_in,
-         refresh_token: refresh_token
-       }} =
-        Oauth.token(
-          %Plug.Conn{
-            body_params: %{
-              "grant_type" => "client_credentials",
-              "client_id" => client.id,
-              "client_secret" => client.secret,
-              "scope" => given_scope
-            }
-          },
-          ApplicationMock
-        )
+              %TokenResponse{
+                token_type: token_type,
+                access_token: access_token,
+                expires_in: expires_in,
+                refresh_token: refresh_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "client_credentials",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "scope" => given_scope
+                   }
+                 },
+                 ApplicationMock
+               )
 
       assert token_type == "bearer"
       assert access_token

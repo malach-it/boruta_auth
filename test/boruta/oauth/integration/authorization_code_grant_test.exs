@@ -2657,7 +2657,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       refute Repo.get_by(Ecto.Token, value: agent_token).revoked_at
     end
 
-    test "returns a token with bind data", %{client: client, code: code, resource_owner: resource_owner} do
+    test "returns a token with bind data", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 

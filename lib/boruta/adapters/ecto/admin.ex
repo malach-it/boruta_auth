@@ -11,7 +11,10 @@ defmodule Boruta.Ecto.Admin do
   defdelegate regenerate_client_did(client), to: Boruta.Ecto.Admin.Clients
   defdelegate regenerate_client_secret(client, secret), to: Boruta.Ecto.Admin.Clients
   defdelegate regenerate_client_key_pair(client), to: Boruta.Ecto.Admin.Clients
-  defdelegate regenerate_client_key_pair(client, public_key, private_key), to: Boruta.Ecto.Admin.Clients
+
+  defdelegate regenerate_client_key_pair(client, public_key, private_key),
+    to: Boruta.Ecto.Admin.Clients
+
   defdelegate delete_client(client), to: Boruta.Ecto.Admin.Clients
 
   defdelegate list_scopes, to: Boruta.Ecto.Admin.Scopes

@@ -9,7 +9,8 @@ config :boruta,
 
 config :boruta, Boruta.Cache,
   primary: [
-    gc_interval: 86_400_000, #=> 1 day
+    # 1 day
+    gc_interval: 86_400_000,
     backend: :shards,
     partitions: 2
   ]

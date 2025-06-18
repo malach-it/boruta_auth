@@ -549,7 +549,8 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                [_salt3, "nested.firstname", "firstname"],
                [_salt4, "nested.twice.lastname", "lastname"]
              ] =
-               Enum.map(claims, &Base.url_decode64!(&1, padding: false)) |> Enum.map(&Jason.decode!/1)
+               Enum.map(claims, &Base.url_decode64!(&1, padding: false))
+               |> Enum.map(&Jason.decode!/1)
     end
 
     test "issues vc+sd-jwt credential - valid", %{
@@ -591,6 +592,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       }
 
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -634,7 +636,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -678,7 +682,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -722,7 +728,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -773,21 +781,27 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       secret = "secret"
       expiration = 10
       now = :os.system_time(:seconds)
-      revoked = VerifiableCredentials.Hotp.generate_hotp(
-        secret,
-        div(now, expiration) +
-          VerifiableCredentials.Status.shift(:revoked)
-      )
-      suspended = VerifiableCredentials.Hotp.generate_hotp(
-        revoked,
-        div(now, expiration) +
-          VerifiableCredentials.Status.shift(:suspended)
-      )
-      valid = VerifiableCredentials.Hotp.generate_hotp(
-        suspended,
-        div(now, expiration) +
-          VerifiableCredentials.Status.shift(:valid)
-      )
+
+      revoked =
+        VerifiableCredentials.Hotp.generate_hotp(
+          secret,
+          div(now, expiration) +
+            VerifiableCredentials.Status.shift(:revoked)
+        )
+
+      suspended =
+        VerifiableCredentials.Hotp.generate_hotp(
+          revoked,
+          div(now, expiration) +
+            VerifiableCredentials.Status.shift(:suspended)
+        )
+
+      valid =
+        VerifiableCredentials.Hotp.generate_hotp(
+          suspended,
+          div(now, expiration) +
+            VerifiableCredentials.Status.shift(:valid)
+        )
 
       {:ok, expiration: expiration, secret: secret, status_list: valid, now: now}
     end

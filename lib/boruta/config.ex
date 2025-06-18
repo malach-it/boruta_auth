@@ -50,7 +50,7 @@ defmodule Boruta.Config do
               resource_owners: nil,
               scopes: Boruta.Ecto.Scopes,
               requests: Boruta.Ecto.Requests,
-              credentials: Boruta.Ecto.Credentials,
+              credentials: Boruta.Ecto.Credentials
             ],
             max_ttl: [
               authorization_request: 300,
@@ -63,7 +63,8 @@ defmodule Boruta.Config do
             ebsi_did_resolver_base_url: "https://api-conformance.ebsi.eu/did-registry/v5",
             did_resolver_base_url: "https://api.godiddy.com/1.0.0/universal-resolver",
             did_registrar_base_url: "https://api.godiddy.com/1.0.0/universal-registrar",
-            signature_credentials_base_url: "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
+            signature_credentials_base_url:
+              "https://api.godiddy.com/1.0.0/universal-issuer/credentials/issue",
             universal_keys_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys",
             universal_sign_base_url: "https://api.godiddy.com/0.1.0/wallet-service/keys/sign",
             universal_did_auth: %{
@@ -247,16 +248,16 @@ defmodule Boruta.Config do
   @spec oauth_config() :: keyword()
   @doc false
   defp oauth_config do
-      Keyword.merge(
-        @defaults,
-        Application.get_env(:boruta, Boruta.Oauth) || [],
-        fn _, a, b ->
-          if Keyword.keyword?(a) && Keyword.keyword?(b) do
-            Keyword.merge(a, b)
-          else
-            b
-          end
+    Keyword.merge(
+      @defaults,
+      Application.get_env(:boruta, Boruta.Oauth) || [],
+      fn _, a, b ->
+        if Keyword.keyword?(a) && Keyword.keyword?(b) do
+          Keyword.merge(a, b)
+        else
+          b
         end
-      )
+      end
+    )
   end
 end

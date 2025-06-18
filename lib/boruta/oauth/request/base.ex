@@ -125,7 +125,10 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def build_request(%{"response_type" => response_type, "client_metadata" => client_metadata} = params) when response_type in ["code", "vp_token"] do
+  def build_request(
+        %{"response_type" => response_type, "client_metadata" => client_metadata} = params
+      )
+      when response_type in ["code", "vp_token"] do
     request = %PresentationRequest{
       client_id: params["client_id"],
       resource_owner: params["resource_owner"],
@@ -391,6 +394,7 @@ defmodule Boruta.Oauth.Request.Base do
     else
       {:ok, _payload} ->
         {:error, "Either alg header missing or cnf claim missing in client assertion."}
+
       _ ->
         {:error, "Could not decode client assertion JWT."}
     end

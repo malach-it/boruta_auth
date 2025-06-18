@@ -61,6 +61,7 @@ defmodule Boruta.Openid.SiopV2Response do
         ) :: deeplink :: String.t() | {:error, reason :: String.t()}
   def redirect_to_deeplink(%__MODULE__{} = response, redirect_uri_url_fn) do
     redirect_uri = redirect_uri_url_fn.(response.code.id)
+
     claims = %{
       iss: issuer(),
       aud: response.client_id,

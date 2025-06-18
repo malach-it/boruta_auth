@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Boruta.Gen.ControllersTest do
   use ExUnit.Case
 
-  if Application.spec(:phoenix, :vsn) < '1.7' do
+  if Application.spec(:phoenix, :vsn) < ~c"1.7" do
     @module_paths [
       "controllers/oauth/authorize_controller.ex",
       "controllers/openid/authorize_controller.ex",

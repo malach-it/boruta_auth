@@ -669,7 +669,11 @@ defmodule Boruta.Oauth.RequestTest do
           "request" => "bad_jwt"
         })
 
-      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Unsigned request jwt param is malformed."
+              }} =
                Request.token_request(conn)
     end
 
@@ -701,7 +705,11 @@ defmodule Boruta.Oauth.RequestTest do
           "request" => "bad_jwt"
         })
 
-      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Unsigned request jwt param is malformed."
+              }} =
                Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
 

@@ -4,29 +4,27 @@ defmodule Boruta.Oauth.IntrospectResponse do
   """
 
   @type t :: %__MODULE__{
-    active: boolean(),
-    client_id: String.t(),
-    username: String.t(),
-    scope: String.t(),
-    sub: String.t(),
-    iss: String.t(),
-    exp: integer(),
-    iat: integer(),
-    private_key: String.t()
-  }
+          active: boolean(),
+          client_id: String.t(),
+          username: String.t(),
+          scope: String.t(),
+          sub: String.t(),
+          iss: String.t(),
+          exp: integer(),
+          iat: integer(),
+          private_key: String.t()
+        }
 
   @enforce_keys [:active]
-  defstruct [
-    active: nil,
-    client_id: nil,
-    username: nil,
-    scope: nil,
-    sub: nil,
-    iss: "boruta",
-    exp: nil,
-    iat: nil,
-    private_key: nil
-  ]
+  defstruct active: nil,
+            client_id: nil,
+            username: nil,
+            scope: nil,
+            sub: nil,
+            iss: "boruta",
+            exp: nil,
+            iat: nil,
+            private_key: nil
 
   alias Boruta.Config
   alias Boruta.Oauth.Client
@@ -36,17 +34,18 @@ defmodule Boruta.Oauth.IntrospectResponse do
 
   @spec from_token(token :: Token.t()) :: introspect_response :: t()
   def from_token(%Token{
-    client: %Client{id: id, private_key: private_key},
-    sub: sub,
-    resource_owner: resource_owner,
-    expires_at: expires_at,
-    scope: scope,
-    inserted_at: inserted_at
-  }) do
-    username = case resource_owner do
-      %ResourceOwner{username: username} -> username
-      nil -> nil
-    end
+        client: %Client{id: id, private_key: private_key},
+        sub: sub,
+        resource_owner: resource_owner,
+        expires_at: expires_at,
+        scope: scope,
+        inserted_at: inserted_at
+      }) do
+    username =
+      case resource_owner do
+        %ResourceOwner{username: username} -> username
+        nil -> nil
+      end
 
     %IntrospectResponse{
       active: true,
@@ -61,6 +60,7 @@ defmodule Boruta.Oauth.IntrospectResponse do
     }
   end
 
-  @spec from_error(error :: Boruta.Oauth.Error.t()) :: introspect_response :: %IntrospectResponse{active: false}
+  @spec from_error(error :: Boruta.Oauth.Error.t()) ::
+          introspect_response :: %IntrospectResponse{active: false}
   def from_error(_), do: %IntrospectResponse{active: false}
 end

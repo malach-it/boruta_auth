@@ -12,7 +12,7 @@ defmodule Boruta.Openid.Json.Schema do
           "type" => "object",
           "properties" => %{
             "proof_type" => %{"type" => "string", "pattern" => "^jwt$"},
-            "jwt" => %{"type" => "string"},
+            "jwt" => %{"type" => "string"}
           },
           "required" => ["proof_type", "jwt"]
         },

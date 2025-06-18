@@ -31,6 +31,7 @@ defmodule Boruta.Ecto.Admin.Tokens do
           {number_of_deleted_tokens :: integer(), nil}
   def delete_inactive_tokens(until \\ DateTime.utc_now()) do
     until = DateTime.to_unix(until)
+
     from(t in Token, as: :parent)
     |> where([t], t.expires_at < ^until)
     |> where(

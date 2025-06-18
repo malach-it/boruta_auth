@@ -15,10 +15,11 @@ defmodule Boruta.Ecto.Scopes do
     case ScopeStore.get(:public) do
       {:ok, scopes} ->
         scopes
+
       {:error, _reason} ->
         repo().all(
           from s in Ecto.Scope,
-          where: s.public == true
+            where: s.public == true
         )
         |> Enum.map(&to_oauth_schema/1)
         |> ScopeStore.put_public()
@@ -29,6 +30,7 @@ defmodule Boruta.Ecto.Scopes do
     case ScopeStore.get(:all) do
       {:ok, scopes} ->
         scopes
+
       {:error, _reason} ->
         repo().all(Ecto.Scope)
         |> Enum.map(&to_oauth_schema/1)

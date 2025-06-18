@@ -5,14 +5,14 @@ defmodule Boruta.Openid.DeferedCredentialResponse do
 
   @enforce_keys [:acceptance_token]
   defstruct acceptance_token: nil,
-    c_nonce: nil,
-    c_nonce_expires_in: nil
+            c_nonce: nil,
+            c_nonce_expires_in: nil
 
   @type t :: %__MODULE__{
-    acceptance_token: String.t(),
-    c_nonce: String.t(),
-    c_nonce_expires_in: String.t()
-  }
+          acceptance_token: String.t(),
+          c_nonce: String.t(),
+          c_nonce_expires_in: String.t()
+        }
 
   def from_credential(_credential, token) do
     %__MODULE__{

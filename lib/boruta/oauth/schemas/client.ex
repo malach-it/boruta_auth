@@ -289,6 +289,7 @@ defmodule Boruta.Oauth.Client do
     end
 
     @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
-    def userinfo_signature_type(client), do: Client.signatures_adapter(client).userinfo_signature_type(client)
+    def userinfo_signature_type(client),
+      do: Client.signatures_adapter(client).userinfo_signature_type(client)
   end
 end

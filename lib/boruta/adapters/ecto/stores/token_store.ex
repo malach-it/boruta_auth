@@ -31,9 +31,8 @@ defmodule Boruta.Ecto.TokenStore do
 
   @spec put(token :: Boruta.Oauth.Token.t()) ::
           {:ok, token :: Boruta.Oauth.Token.t()}
-  def put(
-        %Token{type: type, client: %Client{access_token_ttl: access_token_ttl}} = token
-      ) when type in ["access_token", "agent_token"] do
+  def put(%Token{type: type, client: %Client{access_token_ttl: access_token_ttl}} = token)
+      when type in ["access_token", "agent_token"] do
     with :ok <-
            cache_backend().put({Token, :value, token.value}, token, ttl: access_token_ttl * 1000),
          :ok <-
@@ -49,7 +48,8 @@ defmodule Boruta.Ecto.TokenStore do
   def put(
         %Token{type: type, client: %Client{authorization_code_ttl: authorization_code_ttl}} =
           token
-      ) when type in ["code", "preauthorized_code"] do
+      )
+      when type in ["code", "preauthorized_code"] do
     with :ok <-
            cache_backend().put({Token, :value, token.value}, token,
              ttl: authorization_code_ttl * 1000

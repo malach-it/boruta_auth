@@ -66,12 +66,18 @@ defmodule Boruta.Oauth.Application do
   @doc """
   This function will be triggered in case of failure invoking `Boruta.Oauth.pushed_authorization_request/2`
   """
-  @callback request_stored(conn :: Plug.Conn.t(), response :: Boruta.Oauth.PushedAuthorizationResponse.t()) :: any()
+  @callback request_stored(
+              conn :: Plug.Conn.t(),
+              response :: Boruta.Oauth.PushedAuthorizationResponse.t()
+            ) :: any()
 
   @doc """
   This function will be triggered in case of failure invoking `Boruta.Oauth.pushed_authorization_request/2`
   """
-  @callback pushed_authorization_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
+  @callback pushed_authorization_error(
+              conn :: Plug.Conn.t(),
+              oauth_error :: Boruta.Oauth.Error.t()
+            ) ::
               any()
 
   @optional_callbacks preauthorize_success: 2, preauthorize_error: 2

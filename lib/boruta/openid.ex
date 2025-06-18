@@ -290,6 +290,7 @@ defmodule Boruta.Openid do
            error: :invalid_client,
            error_description: "Authorization client_id do not match vp_token signature."
          }}
+
       _client_id ->
         :ok
     end

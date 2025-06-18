@@ -117,7 +117,7 @@ defmodule Boruta.Did do
            |> Finch.request(OpenIDHttpClient),
          %{
            "didState" => %{
-             "did" => did,
+             "did" => did
            }
          } <- Jason.decode!(body),
          {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} <- resolve(did) do

@@ -17,7 +17,7 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
           scope: String.t(),
           resource_owner: struct(),
           response_type: String.t(),
-          grant_type: String.t(),
+          grant_type: String.t()
         }
 
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]

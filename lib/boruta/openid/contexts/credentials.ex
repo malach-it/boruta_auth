@@ -6,9 +6,7 @@ defmodule Boruta.Openid.Credentials do
   @doc """
   Stores a credential for later use (eg. defered flow)
   """
-  @callback get_by(
-              [access_token: access_token :: String.t()]
-            ) ::
+  @callback get_by(access_token: access_token :: String.t()) ::
               credential :: Boruta.Openid.Credential.t() | nil
 
   @doc """

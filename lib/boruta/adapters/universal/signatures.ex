@@ -15,7 +15,7 @@ defmodule Boruta.Universal.Signatures do
   alias Boruta.Universal.Signatures.SigningKey
 
   @signature_algorithms [
-    EdDSA: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16],
+    EdDSA: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16]
   ]
 
   @spec signature_algorithms() :: list(atom())
@@ -48,9 +48,8 @@ defmodule Boruta.Universal.Signatures do
       ) do
     with {:ok, key} <- get_signing_key(client, :id_token),
          {:ok, token} <- SigningKey.encode_and_sign_with_key(key, payload) do
-        token
-
-      else
+      token
+    else
       {:error, error} ->
         {:error, "Could not sign the given payload with client credentials: #{inspect(error)}"}
     end
@@ -98,9 +97,9 @@ defmodule Boruta.Universal.Signatures do
         %Client{} = client,
         _format
       ) do
-        with {:ok, key} <- get_signing_key(client, :verifiable_credential),
-             {:ok, credential} <- SigningKey.encode_and_sign_with_key(key, credential) do
-        credential
+    with {:ok, key} <- get_signing_key(client, :verifiable_credential),
+         {:ok, credential} <- SigningKey.encode_and_sign_with_key(key, credential) do
+      credential
     end
   end
 

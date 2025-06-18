@@ -12,10 +12,10 @@ defmodule Boruta.Openid.DirectPostResponse do
   ]
 
   @type t :: %__MODULE__{
-    id_token: String.t() | nil,
-    vp_token: String.t() | nil,
-    code: Boruta.Oauth.Token.t(),
-    redirect_uri: String.t(),
-    state: String.t() | nil
-  }
+          id_token: String.t() | nil,
+          vp_token: String.t() | nil,
+          code: Boruta.Oauth.Token.t(),
+          redirect_uri: String.t(),
+          state: String.t() | nil
+        }
 end

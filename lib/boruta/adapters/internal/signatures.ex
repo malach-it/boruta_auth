@@ -166,7 +166,9 @@ defmodule Boruta.Internal.Signatures do
        type: :internal,
        private_key: client.private_key,
        secret: client.secret,
-       kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key)
+       kid:
+         client.did || client.id_token_kid ||
+           Client.Crypto.kid_from_private_key(client.private_key)
      }}
   end
 
@@ -186,7 +188,9 @@ defmodule Boruta.Internal.Signatures do
        type: :internal,
        private_key: client.private_key,
        secret: client.secret,
-       kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key)
+       kid:
+         client.did || client.id_token_kid ||
+           Client.Crypto.kid_from_private_key(client.private_key)
      }}
   end
 end

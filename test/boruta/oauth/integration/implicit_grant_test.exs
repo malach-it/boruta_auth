@@ -189,7 +189,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
               %Boruta.Oauth.Error{
                 status: :unauthorized,
                 error: :invalid_client,
-                error_description: "Invalid client_id or redirect_uri.",
+                error_description: "Invalid client_id or redirect_uri."
               }} =
                Oauth.authorize(
                  %Plug.Conn{

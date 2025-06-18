@@ -383,7 +383,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
          nonce: code.nonce,
          authorization_details: code.authorization_details,
          bind_data: bind_data,
-         bind_configuration: bind_configuration,
+         bind_configuration: bind_configuration
        }}
     end
   end
@@ -399,7 +399,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
             nonce: nonce,
             authorization_details: authorization_details,
             bind_data: bind_data,
-            bind_configuration: bind_configuration,
+            bind_configuration: bind_configuration
           }} <-
            preauthorize(request),
          {:ok, agent_token} <-
@@ -458,11 +458,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
          :ok <- maybe_check_tx_code(tx_code, code),
          {:ok, %ResourceOwner{sub: sub}} <-
            (case code.agent_token do
-             nil ->
-               Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
-             _ ->
-               {:ok, code.resource_owner}
-           end) do
+              nil ->
+                Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
+
+              _ ->
+                {:ok, code.resource_owner}
+            end) do
       {:ok,
        %AuthorizationSuccess{
          client: code.client,
@@ -980,7 +981,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-               {:ok, ClientsAdapter.public!()}
+                {:ok, ClientsAdapter.public!()}
 
               _ ->
                 Authorization.Client.authorize(
@@ -998,11 +999,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              resource_owner.presentation_configuration,
              scope
            ) do
-
-      {code_challenge, code_challenge_method} = case resource_owner.code_verifier do
-        nil -> {code_challenge, code_challenge_method}
-        code_verifier -> {code_verifier , "plain"}
-      end
+      {code_challenge, code_challenge_method} =
+        case resource_owner.code_verifier do
+          nil -> {code_challenge, code_challenge_method}
+          code_verifier -> {code_verifier, "plain"}
+        end
 
       {:ok,
        %AuthorizationSuccess{
