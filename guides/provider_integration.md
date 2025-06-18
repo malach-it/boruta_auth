@@ -146,7 +146,7 @@ Lastly, you’ll need to set up the redirect logic in the OAuth authorize contro
 
 ...
   defp redirect_to_login(conn) do
-    redirect(conn, to: Routes.user_session_path(conn, :new))
+    redirect(conn, to: ~p"/users/log_in")
   end
 ```
 
@@ -165,7 +165,7 @@ To set up OpenID Connect flows, you need to tweak `phx.gen.auth` in order to red
     conn
     |> renew_session()
     |> delete_resp_cookie(@remember_me_cookie)
-    |> redirect(to: Routes.user_session_path(conn, :new))
+    |> redirect(to: ~p"/users/log_in")
   end
 ```
 
@@ -175,7 +175,7 @@ And set redirections in the OpenID authorize controller
 
 ...
   defp redirect_to_login(conn) do
-    redirect(conn, to: Routes.user_session_path(conn, :new))
+    redirect(conn, to: ~p"/users/log_in")
   end
 
   defp log_out_user(conn) do
