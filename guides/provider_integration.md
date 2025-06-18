@@ -3,17 +3,19 @@ Boruta provides as its core all authorization business rules in order to handle 
 
 ## 1. Bootstrap the application
 
-We will start by botsrapping a Phoenix web application with authentication capabilities provided by `phx.gen.auth` since OAuth and OpenID Connect specifications do not provide any recommendations about how to authenticate users. Instead, it provides all protocols required to authorize them to secure an HTTP service, with relative identity information in destination to the client brought by OpenID Connect core. Here we go, first bootstrapping the application:
+We will start by bootstrapping a Phoenix web application with authentication capabilities provided by `phx.gen.auth`.
+While OAuth and OpenID Connect specifications do not define how users should be authenticated, they do provide the necessary protocols to authorize them and secure HTTP services. OpenID Connect extends OAuth by providing identity information to the client.
+Let's get started by bootstrapping the application:
 ```sh
 ~> mix phx.new boruta_example
 ```
-Then the authentication
+Next, generate authentication logic:
 ```sh
 ~> mix phx.gen.auth Accounts User users
 ```
-We have now a web application in which we can log in. If you want to know more about those, have a look at [phx.new](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.New.html) and [phx.gen.auth](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Gen.Auth.html) documentations.
+We now have a web application with basic login functionality. If you want to know more about those, have a look at [phx.new](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.New.html) and [phx.gen.auth](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Gen.Auth.html) documentations.
 
-In order to run the newly created application, you have to set up dependencies and the database. You'll find the development database configuration in `config/dev.exs` file, fill it with valid PostgreSQL credentials, you would be able to run
+In order to run the newly created application, you have to set up dependencies and the database. You'll find the development database configuration in the `config/dev.exs` file, fill it with valid PostgreSQL credentials, you would be able to run
 ```sh
 ~> mix do deps.get, ecto.setup
 ```
@@ -27,7 +29,7 @@ Once the application is up, we can go on to the authorization part. First, you c
 
   def deps do
   ...
-      {:boruta, "~> 2.0"}
+      {:boruta, "~> 2.3.4"}
   ...
   end
 ```
@@ -68,7 +70,7 @@ As described in `boruta.gen.controllers` mix task output, you need to expose con
   end
 ```
 
-And give mandatory boruta configuration
+Then, provide the required Boruta configuration:
 ```elixir
 # config/config.exs
 
@@ -80,7 +82,7 @@ Here client credentials flow should be up. For user flows you need further confi
 
 ## 4. User flows
 
-In order to have user flows operational, you need to implement `Boruta.Oauth.ResourceOwners` context as described in [Boruta README](https://github.com/malach-it/boruta_auth/blob/master/README.md). Here it would look like
+In order to have user flows operational, you need to implement `Boruta.Oauth.ResourceOwners` context as described in [Boruta README](https://github.com/malach-it/boruta_auth/blob/master/README.md). Here's what it might look like:
 ```elixir
 # lib/boruta_example/resource_owners.ex
 
@@ -137,7 +139,7 @@ config :boruta, Boruta.Oauth,
   ]
 ```
 
-Last, you'll have to setup is the redirection in the OAuth authorize controller
+Lastly, you’ll need to set up the redirect logic in the OAuth authorize controller:
 
 ```elixir
 # lib/boruta_example_web/controllers/oauth/authorize_controller.ex
@@ -152,7 +154,8 @@ Here all OAuth flows should be up and running!
 
 ## 5. OpenID Connect
 
-In order to setup OpenID Connect flows, you need to tweak `phx.gen.auth` in order to redirect to login after logging out
+To set up OpenID Connect flows, you need to tweak `phx.gen.auth` in order to redirect to login after logging out
+
 ```elixir
 # lib/boruta_example_web/controllers/user_auth.ex:80
 
