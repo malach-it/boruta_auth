@@ -1,0 +1,13 @@
+version: 2
+
+updates:
+  - package-ecosystem: "mix"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "patatoid"
+    target-branch: "master"
+    rebase-strategy: "auto"
+    commit-message:
+      prefix: "deps"
