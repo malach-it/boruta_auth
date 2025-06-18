@@ -232,6 +232,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
 
       {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
       jwk = Map.put(jwk, "alg", "RS512")
+
       Bypass.expect_once(bypass, "GET", "/jwks", fn conn ->
         Plug.Conn.resp(conn, 200, Jason.encode!(%{"keys" => [jwk]}))
       end)
@@ -282,13 +283,12 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
   describe "Boruta.Oauth.Request.Base.fetch_client_authentication/1" do
     test "retruns an error with client assertion, bad jwt" do
       assert Request.Base.fetch_client_authentication(%{
-        body_params: %{
-          "client_assertion_type" =>
-            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => "bad jwt"
-        }
-      }) == {:error, "Could not decode client assertion JWT."}
-
+               body_params: %{
+                 "client_assertion_type" =>
+                   "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+                 "client_assertion" => "bad jwt"
+               }
+             }) == {:error, "Could not decode client assertion JWT."}
     end
 
     test "retruns an error with client assertion, claim missing" do
@@ -297,68 +297,88 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert Request.Base.fetch_client_authentication(%{
-        body_params: %{
-          "client_assertion_type" =>
-            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => "#{client_attestation}~#{client_pop}"
-        }
-      }) == {:error, "Either alg header missing or cnf claim missing in client assertion."}
-
+               body_params: %{
+                 "client_assertion_type" =>
+                   "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+                 "client_assertion" => "#{client_attestation}~#{client_pop}"
+               }
+             }) == {:error, "Either alg header missing or cnf claim missing in client assertion."}
     end
 
     test "retruns an error with client assertion, bad signature" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
-      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{
-        "iss" => "issuer",
-        "cnf" => %{"jwk" => :bad_signature}
-      }, signer)
+
+      {:ok, client_attestation, _claims} =
+        Token.encode_and_sign(
+          %{
+            "iss" => "issuer",
+            "cnf" => %{"jwk" => :bad_signature}
+          },
+          signer
+        )
+
       {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert Request.Base.fetch_client_authentication(%{
-        body_params: %{
-          "client_assertion_type" =>
-            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => "#{client_attestation}~#{client_pop}"
-        }
-      }) == {:error, "Could not verify client assertion."}
-
+               body_params: %{
+                 "client_assertion_type" =>
+                   "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+                 "client_assertion" => "#{client_attestation}~#{client_pop}"
+               }
+             }) == {:error, "Could not verify client assertion."}
     end
 
     test "retruns an error with client assertion, bad key" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
       {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
-      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{
-        "iss" => "issuer",
-        "cnf" => %{"jwk" => jwk}
-      }, signer)
+
+      {:ok, client_attestation, _claims} =
+        Token.encode_and_sign(
+          %{
+            "iss" => "issuer",
+            "cnf" => %{"jwk" => jwk}
+          },
+          signer
+        )
+
       {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
       assert Request.Base.fetch_client_authentication(%{
-        body_params: %{
-          "client_assertion_type" =>
-            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => "#{client_attestation}~#{client_pop}"
-        }
-      }) == {:error, "Invalid client assertion signature: :signature_error"}
-
+               body_params: %{
+                 "client_assertion_type" =>
+                   "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+                 "client_assertion" => "#{client_attestation}~#{client_pop}"
+               }
+             }) == {:error, "Invalid client assertion signature: :signature_error"}
     end
 
     test "authenticates" do
       signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
       {_, jwk} = JOSE.JWK.from_pem(valid_public_key()) |> JOSE.JWK.to_map()
-      {:ok, client_attestation, _claims} = Token.encode_and_sign(%{
-        "iss" => "issuer",
-        "cnf" => %{"jwk" => jwk}
-      }, signer)
+
+      {:ok, client_attestation, _claims} =
+        Token.encode_and_sign(
+          %{
+            "iss" => "issuer",
+            "cnf" => %{"jwk" => jwk}
+          },
+          signer
+        )
+
       {:ok, client_pop, _claims} = Token.encode_and_sign(%{}, signer)
 
-      assert {:ok, %{"client_authentication" => %{"type" => "jwt", "value" => value}, "client_id" => "issuer"}} = Request.Base.fetch_client_authentication(%{
-        body_params: %{
-          "client_assertion_type" =>
-            "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
-          "client_assertion" => "#{client_attestation}~#{client_pop}"
-        }
-      })
+      assert {:ok,
+              %{
+                "client_authentication" => %{"type" => "jwt", "value" => value},
+                "client_id" => "issuer"
+              }} =
+               Request.Base.fetch_client_authentication(%{
+                 body_params: %{
+                   "client_assertion_type" =>
+                     "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation",
+                   "client_assertion" => "#{client_attestation}~#{client_pop}"
+                 }
+               })
 
       assert value
     end

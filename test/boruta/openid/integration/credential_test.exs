@@ -69,7 +69,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                   status: :bad_request,
                   error: :invalid_request,
                   error_description:
-                  "Request body validation failed. Required properties format, proof are missing at #."
+                    "Request body validation failed. Required properties format, proof are missing at #."
                 }}
     end
 
@@ -124,7 +124,12 @@ defmodule Boruta.OpenidTest.CredentialTest do
         "jwt" => token
       }
 
-      credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
+      credential_params = %{
+        "format" => "jwt_vc",
+        "proof" => proof,
+        "credential_identifier" => "VerifiableCredential"
+      }
+
       sub = SecureRandom.uuid()
 
       expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
@@ -156,10 +161,10 @@ defmodule Boruta.OpenidTest.CredentialTest do
         |> put_req_header("authorization", "Bearer #{access_token}")
 
       assert {:credential_created,
-                %CredentialResponse{
-                  format: "jwt_vc",
-                  credential: credential
-                }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+              %CredentialResponse{
+                format: "jwt_vc",
+                credential: credential
+              }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
 
       # TODO validate credential body
       assert credential
@@ -218,7 +223,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
                   status: :bad_request,
                   error: :invalid_request,
                   error_description:
-                  "Request body validation failed. Required properties format, proof are missing at #."
+                    "Request body validation failed. Required properties format, proof are missing at #."
                 }}
     end
 
@@ -273,7 +278,12 @@ defmodule Boruta.OpenidTest.CredentialTest do
         "jwt" => token
       }
 
-      credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
+      credential_params = %{
+        "format" => "jwt_vc",
+        "proof" => proof,
+        "credential_identifier" => "VerifiableCredential"
+      }
+
       sub = SecureRandom.uuid()
 
       expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
@@ -306,9 +316,9 @@ defmodule Boruta.OpenidTest.CredentialTest do
         |> put_req_header("authorization", "Bearer #{access_token}")
 
       assert {:credential_created,
-                %DeferedCredentialResponse{
-                  acceptance_token: acceptance_token,
-                }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+              %DeferedCredentialResponse{
+                acceptance_token: acceptance_token
+              }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
 
       assert acceptance_token
     end
@@ -336,7 +346,12 @@ defmodule Boruta.OpenidTest.CredentialTest do
         "jwt" => token
       }
 
-      credential_params = %{"format" => "jwt_vc", "proof" => proof, "credential_identifier" => "VerifiableCredential"}
+      credential_params = %{
+        "format" => "jwt_vc",
+        "proof" => proof,
+        "credential_identifier" => "VerifiableCredential"
+      }
+
       sub = SecureRandom.uuid()
 
       expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
@@ -369,18 +384,18 @@ defmodule Boruta.OpenidTest.CredentialTest do
         |> put_req_header("authorization", "Bearer #{access_token}")
 
       assert {:credential_created,
-                %DeferedCredentialResponse{
-                  acceptance_token: acceptance_token,
-                }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+              %DeferedCredentialResponse{
+                acceptance_token: acceptance_token
+              }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
 
       conn =
         %Plug.Conn{}
         |> put_req_header("authorization", "Bearer #{acceptance_token}")
 
       assert {:credential_created,
-                %CredentialResponse{
-                  credential: credential
-                }} = Openid.defered_credential(conn, ApplicationMock)
+              %CredentialResponse{
+                credential: credential
+              }} = Openid.defered_credential(conn, ApplicationMock)
 
       # TODO validate credential body
       assert credential

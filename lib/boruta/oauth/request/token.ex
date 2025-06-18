@@ -54,6 +54,7 @@ defmodule Boruta.Oauth.Request.Token do
     else
       {"dpop", _dpop} ->
         {:error, "More than one DPoP header present in the request."}
+
       _ ->
         {:ok, nil}
     end

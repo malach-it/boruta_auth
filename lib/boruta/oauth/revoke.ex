@@ -16,9 +16,7 @@ defmodule Boruta.Oauth.Revoke do
       })
       :ok
   """
-  @spec token(
-          request :: RevokeRequest.t()
-        ) ::
+  @spec token(request :: RevokeRequest.t()) ::
           :ok
           | {:error, error :: Boruta.Oauth.Error.t()}
           | {:error, error :: String.t()}

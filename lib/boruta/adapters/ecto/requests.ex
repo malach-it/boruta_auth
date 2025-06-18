@@ -12,7 +12,9 @@ defmodule Boruta.Ecto.Requests do
     case Ecto.UUID.cast(request_id) do
       {:ok, id} ->
         repo().get(AuthorizationRequest, id) |> to_oauth_schema()
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 

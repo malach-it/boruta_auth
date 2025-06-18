@@ -12,9 +12,10 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
   describe "authenticates with direct post response" do
     setup do
-      {:ok, client} = Repo.get_by(Client, public_client_id: Boruta.Config.issuer())
-      |> Ecto.Changeset.change(%{check_public_client_id: true})
-      |> Repo.update()
+      {:ok, client} =
+        Repo.get_by(Client, public_client_id: Boruta.Config.issuer())
+        |> Ecto.Changeset.change(%{check_public_client_id: true})
+        |> Repo.update()
 
       wallet_did =
         "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
@@ -342,8 +343,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
               %Boruta.Oauth.Error{
                 status: :bad_request,
                 error: :invalid_client,
-                error_description:
-                  "Authorization client_id do not match vp_token signature.",
+                error_description: "Authorization client_id do not match vp_token signature.",
                 format: :query,
                 redirect_uri: "http://redirect.uri",
                 state: "state"
@@ -700,8 +700,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
               %Boruta.Oauth.Error{
                 status: :bad_request,
                 error: :invalid_client,
-                error_description:
-                  "Authorization client_id do not match vp_token signature.",
+                error_description: "Authorization client_id do not match vp_token signature.",
                 format: :query,
                 redirect_uri: "http://redirect.uri",
                 state: "state"

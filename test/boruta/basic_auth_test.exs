@@ -9,7 +9,8 @@ defmodule Boruta.BasicAuthTest do
     test "returns an error if bad authorization header is given" do
       bad_authorization_header = "bad authorization header"
 
-      assert BasicAuth.decode(bad_authorization_header) == {:error, "`bad authorization header` is not a valid Basic authorization header."}
+      assert BasicAuth.decode(bad_authorization_header) ==
+               {:error, "`bad authorization header` is not a valid Basic authorization header."}
     end
 
     test "returns an error if credentials are not in base64" do

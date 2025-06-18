@@ -114,7 +114,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       )
     end
 
-    defp derive_status(status, ttl, secret, [current|status_list]) do
+    defp derive_status(status, ttl, secret, [current | status_list]) do
       Hotp.generate_hotp(
         derive_status(current, ttl, secret, status_list),
         div(:os.system_time(:seconds), ttl) + shift(status)
@@ -236,7 +236,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
                    Enum.member?(Scope.split(token.scope), identifier)
 
                "13" ->
-                 (identifier == credential_params["credential_identifier"]) ||
+                 identifier == credential_params["credential_identifier"] ||
                    Enum.member?(Scope.split(token.scope), identifier)
              end
            end),
@@ -622,7 +622,9 @@ defmodule Boruta.Openid.VerifiableCredentials do
   defp format_sd_claim({name, {:items, claims}}, client, path) when is_list(claims) do
     claims
     |> Enum.with_index()
-    |> Enum.flat_map(fn {claim, index} -> format_sd_claim(claim, client, path ++ [name, to_string(index)]) end)
+    |> Enum.flat_map(fn {claim, index} ->
+      format_sd_claim(claim, client, path ++ [name, to_string(index)])
+    end)
   end
 
   defp format_sd_claim({name, {:claims, claims}}, client, path) when is_list(claims) do
@@ -633,13 +635,14 @@ defmodule Boruta.Openid.VerifiableCredentials do
     name = Enum.join(path ++ [name], ".")
 
     # TODO factorize
-    iss = case client.did do
-      nil ->
-        Client.Crypto.kid_from_private_key(client.private_key)
+    iss =
+      case client.did do
+        nil ->
+          Client.Crypto.kid_from_private_key(client.private_key)
 
-      did ->
-        did <> "#" <> String.replace(did, "did:key:", "")
-    end
+        did ->
+          did <> "#" <> String.replace(did, "did:key:", "")
+      end
 
     [
       {name, claim, Status.generate_status_token(iss, ttl, String.to_atom(status))}

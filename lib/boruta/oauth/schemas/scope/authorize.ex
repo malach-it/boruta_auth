@@ -10,7 +10,8 @@ defimpl Boruta.Oauth.Scope.Authorize, for: List do
   alias Boruta.Oauth.ResourceOwner
 
   def authorized_scopes(authorized_scopes, scopes, _public_scopes) do
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- scopes -- authorized_scopes
   end
 end
 
@@ -23,7 +24,8 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.ResourceOwner do
     authorized_scopes =
       Enum.map(resource_owners().authorized_scopes(resource_owner), fn e -> e.name end)
 
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- scopes -- authorized_scopes
   end
 end
 
@@ -35,7 +37,8 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.Client do
   def authorized_scopes(client, scope, public_scopes)
 
   def authorized_scopes(%Client{authorize_scope: false}, scopes, public_scopes) do
-    scopes -- (scopes -- public_scopes) # intersection
+    # intersection
+    scopes -- scopes -- public_scopes
   end
 
   def authorized_scopes(%Client{authorize_scope: true} = client, scopes, _public_scopes) do
@@ -45,7 +48,8 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.Client do
         fn %Scope{name: name} -> name end
       )
 
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- scopes -- authorized_scopes
   end
 end
 
@@ -56,6 +60,7 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.Token do
   def authorized_scopes(%Token{scope: token_scope}, scopes, _public_scopes) do
     authorized_scopes = Scope.split(token_scope)
 
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- scopes -- authorized_scopes
   end
 end

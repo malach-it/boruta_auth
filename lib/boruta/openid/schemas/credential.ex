@@ -4,10 +4,10 @@ defmodule Boruta.Openid.Credential do
   """
 
   defstruct id: nil,
-    credential: nil,
-    format: nil,
-    defered: nil,
-    access_token: nil
+            credential: nil,
+            format: nil,
+            defered: nil,
+            access_token: nil
 
   @type t :: %__MODULE__{
           id: String.t(),

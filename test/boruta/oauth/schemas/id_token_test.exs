@@ -56,6 +56,7 @@ defmodule Boruta.Oauth.IdTokenTest do
     auth_time = DateTime.to_unix(last_login_at)
 
     client_id = client.id
+
     assert %{
              "aud" => ^client_id,
              "iat" => _iat,
@@ -104,6 +105,7 @@ defmodule Boruta.Oauth.IdTokenTest do
     auth_time = DateTime.to_unix(last_login_at)
 
     client_id = client.id
+
     assert %{
              "aud" => ^client_id,
              "iat" => _iat,
@@ -374,6 +376,7 @@ defmodule Boruta.Oauth.IdTokenTest do
       auth_time = DateTime.to_unix(last_login_at)
 
       client_id = client.id
+
       assert %{
                "aud" => ^client_id,
                "iat" => _iat,
@@ -518,14 +521,17 @@ defmodule Boruta.Oauth.IdTokenTest do
       client = %{build_client() | id_token_signature_alg: "HS512"}
       inserted_at = DateTime.utc_now()
       last_login_at = DateTime.utc_now()
-      resource_owner = %{resource_owner | last_login_at: last_login_at,
-            extra_claims: %{
-               "term" => true,
-               "hide" => %{"display" => false, "hide" => true},
-               "value" => %{"value" => true},
-               "display" => %{"value" => true, "display" => []},
-               "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
-             }
+
+      resource_owner = %{
+        resource_owner
+        | last_login_at: last_login_at,
+          extra_claims: %{
+            "term" => true,
+            "hide" => %{"display" => false, "hide" => true},
+            "value" => %{"value" => true},
+            "display" => %{"value" => true, "display" => []},
+            "status" => %{"value" => true, "display" => ["status"], "status" => "suspended"}
+          }
       }
 
       code = %Token{
@@ -575,10 +581,10 @@ defmodule Boruta.Oauth.IdTokenTest do
                "c_hash" => c_hash,
                "auth_time" => ^auth_time,
                "resource_owner_claim" => "claim",
-                   "display" => true,
-                   "status" => %{"status" => "suspended", "value" => true},
-                   "term" => true,
-                   "value" => true
+               "display" => true,
+               "status" => %{"status" => "suspended", "value" => true},
+               "term" => true,
+               "value" => true
              } = claims
 
       assert at_hash == "7CyD7ey2AwTRVOvbhb369hqSvRQuccT3sloVuctfPAo"
@@ -603,9 +609,9 @@ defmodule Boruta.Oauth.IdTokenTest do
       }
 
       assert IdToken.format_claims(claims) == %{
-        "boolean" => true,
-        "string" => "true"
-      }
+               "boolean" => true,
+               "string" => "true"
+             }
     end
 
     test "returns claims with claims definition and empty display" do
@@ -615,9 +621,9 @@ defmodule Boruta.Oauth.IdTokenTest do
       }
 
       assert IdToken.format_claims(claims) == %{
-        "boolean" => true,
-        "string" => "true"
-      }
+               "boolean" => true,
+               "string" => "true"
+             }
     end
 
     test "returns claims with claims definition and display" do
@@ -627,16 +633,15 @@ defmodule Boruta.Oauth.IdTokenTest do
       }
 
       assert IdToken.format_claims(claims) == %{
-        "boolean" => %{"value" => true, "status" => "suspended"},
-        "string" => %{"value" => "true", "status" => "valid"}
-      }
-
+               "boolean" => %{"value" => true, "status" => "suspended"},
+               "string" => %{"value" => "true", "status" => "valid"}
+             }
     end
 
     test "returns claims without hidden values" do
       claims = %{
         "hide" => %{"display" => false, "hide" => true},
-        "hide_value" => %{"display" => false, "hide" => true},
+        "hide_value" => %{"display" => false, "hide" => true}
       }
 
       assert IdToken.format_claims(claims) == %{}

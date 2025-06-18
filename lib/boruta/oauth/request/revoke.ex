@@ -26,10 +26,12 @@ defmodule Boruta.Oauth.Request.Revoke do
           | {:ok, request :: RevokeRequest.t()}
   def request(%{body_params: body_params} = request) do
     with {:ok, client_authentication_params} <- fetch_client_authentication(request),
-         {:ok, params} <- Validator.validate(:revoke,
-           body_params
-           |> Enum.into(client_authentication_params)
-         ) do
+         {:ok, params} <-
+           Validator.validate(
+             :revoke,
+             body_params
+             |> Enum.into(client_authentication_params)
+           ) do
       build_request(params)
     else
       {:error, error_description} ->

@@ -48,7 +48,7 @@ defmodule Boruta.Oauth.RequestsTest do
   test "Boruta.Oauth.ClientCredentialsRequest" do
     assert %ClientCredentialsRequest{
       client_id: "client_id",
-      client_authentication: %{type: "basic", value: "client_secret"},
+      client_authentication: %{type: "basic", value: "client_secret"}
     }
   end
 
@@ -57,7 +57,7 @@ defmodule Boruta.Oauth.RequestsTest do
       client_id: "client_id",
       client_authentication: %{type: "basic", value: "client_secret"},
       username: "username",
-      password: "password",
+      password: "password"
     }
   end
 

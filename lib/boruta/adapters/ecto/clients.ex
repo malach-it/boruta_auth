@@ -51,7 +51,8 @@ defmodule Boruta.Ecto.Clients do
   defp public!(:from_database) do
     issuer = issuer()
 
-    with %Client{} = client <- repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
+    with %Client{} = client <-
+           repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put_public() do
       client
     end

@@ -33,9 +33,13 @@ defmodule Boruta.Oauth.ResourceOwner do
               types: list(String.t()),
               format: list(String.t()),
               time_to_live: integer(),
-              claims: list(String.t() | %{
-                String.t() => String.t()
-              })
+              claims:
+                list(
+                  String.t()
+                  | %{
+                      String.t() => String.t()
+                    }
+                )
             }
           }
         }

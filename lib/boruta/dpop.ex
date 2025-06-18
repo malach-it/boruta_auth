@@ -83,12 +83,15 @@ defmodule Boruta.Dpop do
        }}
   end
 
-  defp validate_request(%{method: method, host: host, request_path: request_path}, %{"htm" => htm, "htu" => htu}) do
+  defp validate_request(%{method: method, host: host, request_path: request_path}, %{
+         "htm" => htm,
+         "htu" => htu
+       }) do
     case method == htm do
       true ->
         with true <- Regex.match?(~r/#{host}/, htu),
              true <- Regex.match?(~r/#{request_path}/, htu) do
-            :ok
+          :ok
         else
           false ->
             {:error, "DPoP allowed URL does not match request."}

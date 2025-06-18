@@ -196,16 +196,16 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
                  }
                },
                ApplicationMock
-             ) == {:pushed_authorization_error,
-               %Boruta.Oauth.Error{
-                 error: :invalid_request,
-                 error_description: "Code challenge is invalid.",
-                 format: :json,
-                 redirect_uri: "https://redirect.uri",
-                 status: :bad_request,
-                 state: given_state
-               }
-             }
+             ) ==
+               {:pushed_authorization_error,
+                %Boruta.Oauth.Error{
+                  error: :invalid_request,
+                  error_description: "Code challenge is invalid.",
+                  format: :json,
+                  redirect_uri: "https://redirect.uri",
+                  status: :bad_request,
+                  state: given_state
+                }}
     end
 
     test "stores the request", %{
@@ -232,7 +232,9 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
                  ApplicationMock
                )
 
-      assert [_, request_id] = Regex.run(~r/urn\:ietf\:params\:oauth\:request_uri\:(.+)/, request_uri)
+      assert [_, request_id] =
+               Regex.run(~r/urn\:ietf\:params\:oauth\:request_uri\:(.+)/, request_uri)
+
       request = Repo.get(AuthorizationRequest, request_id)
       assert request.client_id
       assert expires_in

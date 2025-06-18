@@ -459,8 +459,7 @@ defmodule Boruta.OauthTest.RefreshTokenTest do
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)
 
-      assert {:token_success,
-              %TokenResponse{}} =
+      assert {:token_success, %TokenResponse{}} =
                Oauth.token(
                  %Plug.Conn{
                    body_params: %{
