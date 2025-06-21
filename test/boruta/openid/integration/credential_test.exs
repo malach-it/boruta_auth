@@ -1,6 +1,5 @@
 defmodule Boruta.OpenidTest.CredentialTest do
-  alias Boruta.Openid.DeferedCredentialResponse
-  use Boruta.DataCase
+  use Boruta.DataCase, async: false
 
   import Boruta.Factory
   import Plug.Conn
@@ -15,6 +14,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.CredentialResponse
+  alias Boruta.Openid.DeferedCredentialResponse
   alias Boruta.Openid.VerifiableCredentials
 
   setup :verify_on_exit!
@@ -204,6 +204,85 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       # TODO validate credential body
       assert credential
+    end
+
+    test "returns aan error with invalid code chain", %{public_client: client} do
+      {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk,
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, token, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
+
+      proof = %{
+        "proof_type" => "jwt",
+        "jwt" => token
+      }
+
+      credential_params = %{
+        "format" => "jwt_vc",
+        "proof" => proof,
+        "credential_identifier" => "VerifiableCredential"
+      }
+
+      sub = SecureRandom.uuid()
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
+        {:ok,
+         %ResourceOwner{
+           sub: sub,
+           credential_configuration: %{
+             "VerifiableCredential" => %{
+               version: "13",
+               format: "jwt_vc",
+               time_to_live: 3600,
+               claims: ["family_name"]
+             }
+           },
+           extra_claims: %{
+             "family_name" => "family_name"
+           }
+         }}
+      end)
+
+      invalid_code_chain = [
+        insert(
+          :token,
+          [{:type, "code"}, {:previous_code, "invalid_code_2"}, {:value, "invalid_code_1"}]
+        ),
+        insert(:token,
+          [{:type, "code"}, {:sub, "did:key:invalid"}, {:value, "invalid_code_2"}]
+        )
+      ]
+
+      %Token{value: access_token} = insert(:token,
+        client: client,
+        sub: sub,
+        authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}],
+        previous_code: List.first(invalid_code_chain).value
+      )
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {
+               :credential_failure,
+               %Boruta.Oauth.Error{
+                 error: :invalid_client,
+                 error_description: "Could not verify given token in code chain.",
+                 status: :bad_request
+               }
+             } = Openid.credential(conn, credential_params, %{}, ApplicationMock)
     end
 
     test "returns a credential with a public client", %{public_client: client} do

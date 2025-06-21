@@ -736,7 +736,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
               %Boruta.Oauth.Error{
                 status: :bad_request,
                 error: :invalid_client,
-                error_description: "Authorization client_id do not match vp_token signature.",
+                error_description: "Could not verify given token in code chain.",
                 format: :query,
                 redirect_uri: "http://redirect.uri",
                 state: "state"

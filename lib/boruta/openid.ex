@@ -84,7 +84,7 @@ defmodule Boruta.Openid do
          %Token{} = code <- CodesAdapter.get_by(value: token.previous_code),
          [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
          :ok <-
-           maybe_check_public_client_id(credential_params, code_chain, token.client),
+           maybe_verify_public_client_id(credential_params, code_chain, token.client),
          {:ok, credential} <-
            VerifiableCredentials.issue_verifiable_credential(
              token.resource_owner,
@@ -196,7 +196,7 @@ defmodule Boruta.Openid do
              }),
            [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
            :ok <-
-             maybe_check_public_client_id(direct_post_params, code_chain, code.client),
+             maybe_verify_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
@@ -283,12 +283,12 @@ defmodule Boruta.Openid do
          error_description: "id_token or vp_token param missing."
        }}
 
-  defp maybe_check_public_client_id(_direct_post_params, _code_chain, %Client{
+  defp maybe_verify_public_client_id(_direct_post_params, _code_chain, %Client{
          check_public_client_id: false
        }),
        do: :ok
 
-  defp maybe_check_public_client_id(
+  defp maybe_verify_public_client_id(
          %{id_token: id_token},
          "did:" <> _key = public_client_id,
          _client
@@ -308,7 +308,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_check_public_client_id(
+  defp maybe_verify_public_client_id(
          %{vp_token: vp_token},
          [last | code_chain],
          _client
@@ -317,46 +317,9 @@ defmodule Boruta.Openid do
     with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token) do
       case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
         {:ok, _jwk, _claims} ->
-          # TODO case {client.check_public_client_id_in_chain, Enum.find(code_chain, fn
-          case {true,
-                Enum.find(code_chain, fn
-                  %Token{revoked_at: nil, sub: sub} -> sub == last.public_client_id
-                  _ -> false
-                end)} do
-            {true, nil} ->
-              {:error,
-               %Error{
-                 status: :bad_request,
-                 error: :invalid_client,
-                 error_description: "Could not find client_id in code chain."
-               }}
-
-            {true, _code} ->
-              :ok
-          end
-
+          check_public_client_id_in_chain(code_chain, last.public_client_id)
         _ ->
-          case Enum.any?(code_chain, fn
-                 %Token{sub: sub, revoked_at: nil} ->
-                   case VerifiablePresentations.verify_jwt({:did, sub}, alg, vp_token) do
-                     {:ok, _jwk, _claims} -> true
-                     _ -> false
-                   end
-
-                 _ ->
-                   false
-               end) do
-            true ->
-              :ok
-
-            false ->
-              {:error,
-               %Error{
-                 status: :bad_request,
-                 error: :invalid_client,
-                 error_description: "Authorization client_id do not match vp_token signature."
-               }}
-          end
+          verify_token_against_chain(code_chain, vp_token, alg)
       end
     else
       false ->
@@ -377,33 +340,13 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_check_public_client_id(
+  defp maybe_verify_public_client_id(
          %{"proof" => %{"proof_type" => "jwt", "jwt" => jwt}},
          code_chain,
          _client
        ) do
     with {:ok, %{"alg" => alg}} <- Joken.peek_header(jwt) do
-      case Enum.any?(code_chain, fn
-        %Token{sub: sub, revoked_at: nil} ->
-          case VerifiablePresentations.verify_jwt({:did, sub}, alg, jwt) do
-            {:ok, _jwk, _claims} -> true
-            _ -> false
-          end
-
-        _ ->
-          false
-      end) do
-        true ->
-          :ok
-
-        false ->
-          {:error,
-            %Error{
-              status: :bad_request,
-              error: :invalid_client,
-              error_description: "Authorization client_id do not match proof signature."
-            }}
-      end
+      verify_token_against_chain(code_chain, jwt, alg)
     else
       {:error, _error} ->
         {:error,
@@ -415,7 +358,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_check_public_client_id(
+  defp maybe_verify_public_client_id(
          %{id_token: _id_token},
          [
            %Token{
@@ -428,11 +371,11 @@ defmodule Boruta.Openid do
     :ok
   end
 
-  defp maybe_check_public_client_id(
+  defp maybe_verify_public_client_id(
          _direct_post_params,
          [
            %Token{
-             public_client_id: "did:" <> _key = public_client_id
+             public_client_id: public_client_id
            }
            | _codes
          ],
@@ -449,6 +392,48 @@ defmodule Boruta.Openid do
 
       _client_id ->
         :ok
+    end
+  end
+
+  def check_public_client_id_in_chain(code_chain, public_client_id) do
+    case Enum.find(code_chain, fn
+        %Token{revoked_at: nil, sub: sub} -> sub == public_client_id
+        _ -> false
+      end) do
+      nil ->
+        {:error,
+          %Error{
+            status: :bad_request,
+            error: :invalid_client,
+            error_description: "Could not find client_id in code chain."
+          }}
+
+      _code ->
+        :ok
+    end
+  end
+
+  def verify_token_against_chain(code_chain, token, alg) do
+    case Enum.any?(code_chain, fn
+      %Token{sub: sub, revoked_at: nil} ->
+        case VerifiablePresentations.verify_jwt({:did, sub}, alg, token) do
+          {:ok, _jwk, _claims} -> true
+          _ -> false
+        end
+
+      _ ->
+        false
+    end) do
+      true ->
+        :ok
+
+      false ->
+        {:error,
+          %Error{
+            status: :bad_request,
+            error: :invalid_client,
+            error_description: "Could not verify given token in code chain."
+          }}
     end
   end
 
