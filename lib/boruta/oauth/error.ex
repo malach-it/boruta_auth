@@ -134,7 +134,7 @@ defmodule Boruta.Oauth.Error do
         redirect_uri: redirect_uri,
         state: state
       }) do
-    %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
+    %{error | format: :query, redirect_uri: redirect_uri, state: state}
   end
 
   defp response_mode(%HybridRequest{response_mode: "query"}), do: :query

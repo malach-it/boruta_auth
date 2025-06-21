@@ -72,6 +72,8 @@ defmodule Boruta.Oauth.Validator do
              "vp_token",
              "id_token",
              "id_token token",
+             "id_token urn:ietf:params:oauth:response-type:pre-authorized_code",
+             "id_token vp_token",
              "code",
              "code id_token",
              "code token",
@@ -102,7 +104,7 @@ defmodule Boruta.Oauth.Validator do
 
   def validate(:authorize, %{"response_type" => _}) do
     {:error,
-     "Invalid response_type param, may be one of `code` for Authorization Code request, `code id_token`, `code token`, `code id_token token` for Hybrid requests, or `token`, `id_token token` for Implicit requests."}
+     "Invalid response_type param."}
   end
 
   def validate(:introspect, params) do
@@ -138,6 +140,8 @@ defmodule Boruta.Oauth.Validator do
   defp validate_multiple_response_types(%{"response_type" => response_types} = params) do
     response_types
     |> String.split(" ")
+    # TODO validate custom preauthorized code requests
+    |> Enum.reject(fn response_type -> response_type == "urn:ietf:params:oauth:response-type:pre-authorized_code" end)
     |> Enum.reduce_while(:ok, fn response_type, _acc ->
       case ExJsonSchema.Validator.validate(
              apply(Schema, String.to_atom(response_type), []),
