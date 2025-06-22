@@ -46,7 +46,8 @@ defmodule Boruta.Oauth.Client do
             logo_uri: nil,
             response_mode: nil,
             metadata: %{},
-            signatures_adapter: nil
+            signatures_adapter: nil,
+            metadata_policies: []
 
   @type t :: %__MODULE__{
           id: any(),
@@ -83,7 +84,8 @@ defmodule Boruta.Oauth.Client do
           logo_uri: String.t() | nil,
           response_mode: String.t(),
           metadata: map(),
-          signatures_adapter: String.t()
+          signatures_adapter: String.t(),
+          metadata_policies: list(map())
         }
 
   @wallet_grant_types [
