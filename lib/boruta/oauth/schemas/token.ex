@@ -39,7 +39,8 @@ defmodule Boruta.Oauth.Token do
             previous_code: nil,
             bind_data: nil,
             bind_configuration: nil,
-            agent_token: nil
+            agent_token: nil,
+            metadata_policy: %{}
 
   # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
@@ -70,7 +71,8 @@ defmodule Boruta.Oauth.Token do
           previous_code: String.t() | nil,
           bind_data: String.t() | nil,
           bind_configuration: String.t() | nil,
-          agent_token: String.t() | nil
+          agent_token: String.t() | nil,
+          metadata_policy: map()
         }
 
   @doc """
