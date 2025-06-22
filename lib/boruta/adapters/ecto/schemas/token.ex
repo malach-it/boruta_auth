@@ -85,7 +85,6 @@ defmodule Boruta.Ecto.Token do
     field(:agent_token, :string)
     field(:bind_data, :map)
     field(:bind_configuration, :map)
-    field(:metadata_policy, :map)
 
     field(:resource_owner, :map, virtual: true)
 
@@ -317,8 +316,8 @@ defmodule Boruta.Ecto.Token do
   end
 
   @doc false
-  def sub_changeset(code, sub, metadata_policy) do
-    change(code, %{sub: sub, type: "code", metadata_policy: metadata_policy})
+  def sub_changeset(code, sub) do
+    change(code, %{sub: sub, type: "code"})
   end
 
   @doc false
