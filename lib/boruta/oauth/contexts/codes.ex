@@ -52,11 +52,7 @@ defmodule Boruta.Oauth.Codes do
   @doc """
   Updates given `Boruta.Oauth.Token` code sub value. The resulting token is of type "code".
   """
-  @callback update_sub(
-              preauthorized_code :: Boruta.Oauth.Token.t(),
-              sub :: String.t(),
-              metadata_policy :: map()
-            ) ::
+  @callback update_sub(preauthorized_code :: Boruta.Oauth.Token.t(), sub :: String.t()) ::
               {:ok, preauthorized_code :: Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
   @doc """

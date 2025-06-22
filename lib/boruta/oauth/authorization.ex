@@ -1077,6 +1077,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            preauthorize(request) do
       with {:ok, code} <-
              PreauthorizedCodesAdapter.create(%{
+               sub: sub,
                response_type: Enum.join(response_types, " "),
                client: client,
                public_client_id: public_client_id,
