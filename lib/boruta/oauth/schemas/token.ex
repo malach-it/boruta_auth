@@ -41,7 +41,8 @@ defmodule Boruta.Oauth.Token do
             bind_configuration: nil,
             agent_token: nil,
             client_encryption_key: nil,
-            client_encryption_alg: nil
+            client_encryption_alg: nil,
+            metadata_policy: %{}
 
   # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
@@ -74,7 +75,8 @@ defmodule Boruta.Oauth.Token do
           bind_configuration: String.t() | nil,
           agent_token: String.t() | nil,
           client_encryption_key: String.t() | nil,
-          client_encryption_alg: String.t() | nil
+          client_encryption_alg: String.t() | nil,
+          metadata_policy: map()
         }
 
   @doc """

@@ -200,13 +200,13 @@ defmodule Boruta.Ecto.Codes do
   end
 
   @impl Boruta.Oauth.Codes
-  def update_sub(%Oauth.Token{id: id}, sub) do
+  def update_sub(%Oauth.Token{id: id}, sub, metadata_policy) do
     with %Token{} = code <-
            repo().one(
              from t in Token,
                where: t.type in ["code", "preauthorized_code"] and t.id == ^id
            ),
-         {:ok, code} <- Token.sub_changeset(code, sub) |> repo().update(),
+         {:ok, code} <- Token.sub_changeset(code, sub, metadata_policy) |> repo().update(),
          {:ok, code} <- TokenStore.invalidate(code) do
       {:ok, to_oauth_schema(code)}
     else
