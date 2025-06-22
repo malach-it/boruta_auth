@@ -17,7 +17,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       {:ok, client} =
         Repo.get_by(Client, public_client_id: Boruta.Config.issuer())
-        |> Ecto.Changeset.change(%{check_public_client_id: true})
+        |> Ecto.Changeset.change(%{check_public_client_id: false})
         |> Repo.update()
 
       wallet_did =
@@ -93,6 +93,23 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         ),
         Enum.at(middle_valid_code_chain, 1),
         Enum.at(middle_valid_code_chain, 2)
+      ]
+
+      policy_code_chain = [
+        insert(
+          :token,
+          [{:public_client_id, wallet_did}, {:previous_code, "policy_code_1"}] ++ code_params
+        ),
+        insert(
+          :token,
+          [
+            {:previous_code, "policy_code_2"},
+            {:value, "policy_code_1"},
+            {:metadata_policy, %{"client_id" => %{"one_of" => ["did:key:test"]}}}
+          ] ++
+            code_params
+        ),
+        insert(:token, [{:value, "policy_code_2"}] ++ code_params)
       ]
 
       pkce_code =
@@ -176,6 +193,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        last_valid_code_chain: last_valid_code_chain,
        middle_valid_code_chain: middle_valid_code_chain,
        replay_code_chain: replay_code_chain,
+       policy_code_chain: policy_code_chain,
        id_token: id_token,
        vp_token: vp_token}
     end
@@ -562,7 +580,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    @tag :skip
     test "oid4vp - returns an error on replay", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -708,6 +725,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "oid4vp - returns an error with bad public client", %{
       vp_token: vp_token,
       bad_public_client_code: code
@@ -752,7 +770,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    @tag :skip
     test "oid4vp - authenticates", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -838,7 +855,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
-    @tag :skip
     test "oid4vp - authenticates with a public client", %{
       vp_token: vp_token,
       public_client_code: code
@@ -921,6 +937,52 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.code.value == code.value
       assert Enum.count(response.code_chain) == 3
       assert response.state == code.state
+    end
+
+    test "oid4vp - returns an error with a code chain (policy invalid)", %{
+      vp_token: vp_token,
+      policy_code_chain: [code | _code_chain]
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :unauthorized,
+                 error: :unauthorized,
+                 error_description: "Metadata policies check fail.",
+                 format: :query,
+                 redirect_uri: "http://redirect.uri",
+                 state: "state"
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
     end
 
     @tag :skip
