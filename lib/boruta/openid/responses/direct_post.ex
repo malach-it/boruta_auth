@@ -12,7 +12,8 @@ defmodule Boruta.Openid.DirectPostResponse do
     :client_encryption_key,
     :client_encryption_alg,
     :response_types,
-    :state
+    :state,
+    :error
   ]
 
   @type t :: %__MODULE__{
@@ -24,6 +25,7 @@ defmodule Boruta.Openid.DirectPostResponse do
     client_encryption_key: map() | nil,
     client_encryption_alg: String.t() | nil,
     response_types: String.t(),
-    state: String.t() | nil
+    state: String.t() | nil,
+    error: Boruta.Oauth.Error.t() | nil
   }
 end
