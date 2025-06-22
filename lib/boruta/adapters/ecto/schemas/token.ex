@@ -325,8 +325,8 @@ defmodule Boruta.Ecto.Token do
   end
 
   @doc false
-  def sub_changeset(code, sub) do
-    change(code, %{sub: sub, type: "code"})
+  def sub_changeset(code, sub, metadata_policy) do
+    change(code, %{sub: sub, type: "code", metadata_policy: metadata_policy})
   end
 
   @doc false

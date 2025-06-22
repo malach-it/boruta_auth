@@ -60,47 +60,47 @@ defmodule Boruta.Openid do
     end
   end
 
-  def register_provider(
-        conn,
-        %SiopRegistrationRequest{
-          client_id: client_id,
-          client_authentication: client_authentication,
-          grant_type: grant_type,
-          preauthorized_code: preauthorized_code,
-          metadata_policy: metadata_policy,
-          proof: proof
-        },
-        module
-      ) do
-    with {:ok, client} <-
-           (case client_id do
-              "did:" <> _key ->
-                {:ok, %{ClientsAdapter.public!() | public_client_id: client_id}}
+  # def register_provider(
+  #       conn,
+  #       %SiopRegistrationRequest{
+  #         client_id: client_id,
+  #         client_authentication: client_authentication,
+  #         grant_type: grant_type,
+  #         preauthorized_code: preauthorized_code,
+  #         metadata_policy: metadata_policy,
+  #         proof: proof
+  #       },
+  #       module
+  #     ) do
+  #   with {:ok, client} <-
+  #          (case client_id do
+  #             "did:" <> _key ->
+  #               {:ok, %{ClientsAdapter.public!() | public_client_id: client_id}}
 
-              _ ->
-                Authorization.Client.authorize(
-                  id: client_id,
-                  source: client_authentication,
-                  grant_type: grant_type
-                )
-            end),
-         {:ok, code} <-
-           (case preauthorized_code do
-              nil -> {:ok, nil}
-              preauthorized_code -> Authorization.Code.authorize(value: preauthorized_code)
-            end),
-         [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
-         :ok <-
-           maybe_verify_public_client_id(proof, code_chain, code.client),
-         {:ok, metadata_policy} <- parse_metadata_policy(metadata_policy),
-         {:ok, client} <-
-           ClientsAdapter.store_netadata_policy(metadata_policy, code_chain, client) do
-      module.policy_registered(conn, client)
-    else
-      {:error, error} ->
-        module.policy_unregistered(conn, error)
-    end
-  end
+  #             _ ->
+  #               Authorization.Client.authorize(
+  #                 id: client_id,
+  #                 source: client_authentication,
+  #                 grant_type: grant_type
+  #               )
+  #           end),
+  #        {:ok, code} <-
+  #          (case preauthorized_code do
+  #             nil -> {:ok, nil}
+  #             preauthorized_code -> Authorization.Code.authorize(value: preauthorized_code)
+  #           end),
+  #        [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
+  #        :ok <-
+  #          maybe_verify_public_client_id(proof, code_chain, code.client),
+  #        {:ok, metadata_policy} <- parse_metadata_policy(metadata_policy),
+  #        {:ok, client} <-
+  #          ClientsAdapter.store_netadata_policy(metadata_policy, code_chain, client) do
+  #     module.policy_registered(conn, client)
+  #   else
+  #     {:error, error} ->
+  #       module.policy_unregistered(conn, error)
+  #   end
+  # end
 
   def register_client(conn, registration_params, module) do
     case registration_params
@@ -208,7 +208,8 @@ defmodule Boruta.Openid do
           code_verifier: String.t() | nil,
           id_token: nil | String.t(),
           vp_token: nil | String.t(),
-          presentation_submission: nil | String.t()
+          presentation_submission: nil | String.t(),
+          metadata_policy: map()
         }
   @spec direct_post(
           conn :: Plug.Conn.t(),
@@ -231,9 +232,11 @@ defmodule Boruta.Openid do
 
   def direct_post(conn, direct_post_params, module) do
     with {:ok, kid, claims} <- check_id_token_client(direct_post_params),
-         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
-         {:ok, %Token{value: value} = code} <- CodesAdapter.update_sub(code, kid) do
-      with {:ok, code} <-
+         %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
+      with {:ok, metadata_policy} <- Jason.decode(direct_post_params[:metadata_policy] || "{}"),
+           {:ok, %Token{value: value}} <-
+             CodesAdapter.update_sub(code, kid, metadata_policy),
+           {:ok, code} <-
              Authorization.Code.authorize(%{
                value: value,
                code_verifier: direct_post_params[:code_verifier]
@@ -241,6 +244,8 @@ defmodule Boruta.Openid do
            [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
            :ok <-
              maybe_verify_public_client_id(direct_post_params, code_chain, code.client),
+           :ok <-
+             check_client_metadata_policy(code_chain),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
@@ -269,12 +274,20 @@ defmodule Boruta.Openid do
             state: code.state
           })
 
-        {:error, error} ->
+        {:error, %Error{} = error} ->
           module.authentication_failure(conn, %{
             error
             | format: :query,
               redirect_uri: code.redirect_uri,
               state: code.state
+          })
+
+        {:error, error} ->
+          module.authentication_failure(conn, %Error{
+            error: :unknown_error,
+            status: :unprocessable_entity,
+            error_description: inspect(error),
+            format: :query
           })
       end
     else
@@ -401,6 +414,7 @@ defmodule Boruta.Openid do
       case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
         {:ok, _jwk, _claims} ->
           check_public_client_id_in_chain(code_chain, last.public_client_id)
+
         _ ->
           verify_token_against_chain(code_chain, vp_token, alg)
       end
@@ -480,16 +494,16 @@ defmodule Boruta.Openid do
 
   def check_public_client_id_in_chain(code_chain, public_client_id) do
     case Enum.find(code_chain, fn
-        %Token{revoked_at: nil, sub: sub} -> sub == public_client_id
-        _ -> false
-      end) do
+           %Token{revoked_at: nil, sub: sub} -> sub == public_client_id
+           _ -> false
+         end) do
       nil ->
         {:error,
-          %Error{
-            status: :bad_request,
-            error: :invalid_client,
-            error_description: "Could not find client_id in code chain."
-          }}
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Could not find client_id in code chain."
+         }}
 
       _code ->
         :ok
@@ -498,25 +512,25 @@ defmodule Boruta.Openid do
 
   def verify_token_against_chain(code_chain, token, alg) do
     case Enum.any?(code_chain, fn
-      %Token{sub: sub, revoked_at: nil} ->
-        case VerifiablePresentations.verify_jwt({:did, sub}, alg, token) do
-          {:ok, _jwk, _claims} -> true
-          _ -> false
-        end
+           %Token{sub: sub, revoked_at: nil} ->
+             case VerifiablePresentations.verify_jwt({:did, sub}, alg, token) do
+               {:ok, _jwk, _claims} -> true
+               _ -> false
+             end
 
-      _ ->
-        false
-    end) do
+           _ ->
+             false
+         end) do
       true ->
         :ok
 
       false ->
         {:error,
-          %Error{
-            status: :bad_request,
-            error: :invalid_client,
-            error_description: "Could not verify given token in code chain."
-          }}
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Could not verify given token in code chain."
+         }}
     end
   end
 
