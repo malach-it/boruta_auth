@@ -17,7 +17,9 @@ end
 
 defmodule Boruta.Openid do
   @moduledoc """
-  Openid requests entrypoint, provides additional artifacts to OAuth Provided Openid Connect and Openid 4 verifiable credentials specifications
+  Openid requests entrypoint, provides additional artifacts to OAuth as stated in [Openid Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html),
+  [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) and
+  [OpenID for Verifiable Presentations](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)
 
   > __Note__: this module follows inverted hexagonal architecture, its functions will invoke callbacks of the given module argument and return its result.
   >
@@ -55,6 +57,48 @@ defmodule Boruta.Openid do
     else
       {:error, error} ->
         module.unauthorized(conn, error)
+    end
+  end
+
+  def register_provider(
+        conn,
+        %SiopRegistrationRequest{
+          client_id: client_id,
+          client_authentication: client_authentication,
+          grant_type: grant_type,
+          preauthorized_code: preauthorized_code,
+          metadata_policy: metadata_policy,
+          proof: proof
+        },
+        module
+      ) do
+    with {:ok, client} <-
+           (case client_id do
+              "did:" <> _key ->
+                {:ok, %{ClientsAdapter.public!() | public_client_id: client_id}}
+
+              _ ->
+                Authorization.Client.authorize(
+                  id: client_id,
+                  source: client_authentication,
+                  grant_type: grant_type
+                )
+            end),
+         {:ok, code} <-
+           (case preauthorized_code do
+              nil -> {:ok, nil}
+              preauthorized_code -> Authorization.Code.authorize(value: preauthorized_code)
+            end),
+         [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
+         :ok <-
+           maybe_verify_public_client_id(proof, code_chain, code.client),
+         {:ok, metadata_policy} <- parse_metadata_policy(metadata_policy),
+         {:ok, client} <-
+           ClientsAdapter.store_netadata_policy(metadata_policy, code_chain, client) do
+      module.policy_registered(conn, client)
+    else
+      {:error, error} ->
+        module.policy_unregistered(conn, error)
     end
   end
 
