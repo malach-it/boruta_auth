@@ -12,6 +12,6 @@ defmodule Boruta.CodesAdapter do
   def update_client_encryption(code, params), do: codes().update_client_encryption(code, params)
   def revoke(code), do: codes().revoke(code)
   def revoke_previous_token(code), do: codes().revoke_previous_token(code)
-  def update_sub(code, sub), do: codes().update_sub(code, sub)
+  def update_sub(code, sub, metadata_policy), do: codes().update_sub(code, sub, metadata_policy)
   def code_chain(code), do: codes().code_chain(code)
 end
