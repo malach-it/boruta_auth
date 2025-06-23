@@ -80,7 +80,7 @@ defmodule Boruta.Openid do
          [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
          :ok <-
            maybe_verify_public_client_id(credential_params, code_chain, token.client),
-         :ok <- check_client_metadata_policy(code_chain, %{}),
+         :ok <- check_client_metadata_policy(code_chain, credential_params),
          {:ok, credential} <-
            VerifiableCredentials.issue_verifiable_credential(
              token.resource_owner,
@@ -204,6 +204,7 @@ defmodule Boruta.Openid do
             redirect_uri: code.redirect_uri,
             state: code.state
           })
+
         {:error, "" <> error} ->
           module.authentication_failure(conn, %Error{
             error: :unknown_error,
@@ -239,50 +240,68 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_client_metadata_policy(code_chain, direct_post_params) when is_list(code_chain) do
+  defp check_client_metadata_policy(code_chain, params) when is_list(code_chain) do
     case code_chain
-    |> Enum.reverse()
-    |> Enum.reduce_while([], fn current, acc ->
-      acc = acc ++ [current]
+         |> Enum.reverse()
+         |> Enum.reduce_while([], fn current, acc ->
+           acc = acc ++ [current]
 
-      case do_check_client_metadata_policy(code_chain -- acc, current.metadata_policy |> dbg) do
-        :ok ->
-          {:cont, acc}
+           case do_check_client_metadata_policy(
+                  params,
+                  current.metadata_policy
+                ) do
+             :ok ->
+               {:cont, acc}
 
-        {:error, error} ->
-          {:halt,
-           {:error,
-            %Error{
-              status: :unauthorized,
-              error: :unauthorized,
-              error_description: error
-            }}}
-      end
-    end) do
+             {:error, error} ->
+               {:halt,
+                {:error,
+                 %Error{
+                   status: :unauthorized,
+                   error: :unauthorized,
+                   error_description: error
+                 }}}
+           end
+         end) do
       {:error, error} ->
-        case direct_post_params[:id_token] do
-          nil ->
-            {:error, error}
+        {:error, error}
 
-          _id_token ->
-            {:continue, code_chain, error}
-        end
-      [_h | _t] -> :ok
-      [] -> :ok
+      [_h | _t] ->
+        :ok
+
+      [] ->
+        :ok
     end
   end
 
   defp do_check_client_metadata_policy([], _policy), do: :ok
 
-  defp do_check_client_metadata_policy(code_chain, %{"client_id" => %{"one_of" => client_ids}}) do
-    case Enum.all?(code_chain, fn %Token{sub: sub} ->
-           Enum.member?(client_ids, sub)
-         end) do
-      true ->
-        :ok
+  defp do_check_client_metadata_policy(%{"proof" => %{"proof_type" => "jwt", "jwt" => jwt}}, %{
+         "client_id" => %{"one_of" => client_ids}
+       }) do
+    with {:ok, %{"kid" => kid}} <- Joken.peek_header(jwt),
+         true <- Enum.member?(client_ids, kid) do
+      :ok
+    else
+      _error ->
+        {:error, "Metadata policies check failed."}
+    end
+  end
 
-      false ->
-        {:error, "Metadata policies check fail."}
+  defp do_check_client_metadata_policy(%{id_token: _jwt}, _policy) do
+    :ok
+    # TODO continue in case invalid id_token
+  end
+
+  defp do_check_client_metadata_policy(%{vp_token: jwt}, %{
+         "client_id" => %{"one_of" => client_ids}
+       }) do
+    with {:ok, %{"kid" => kid}} <- Joken.peek_header(jwt),
+         true <- Enum.member?(client_ids, kid) do
+      :ok
+    else
+      _error ->
+        {:error, "Metadata policies check failed."}
     end
   end
 
