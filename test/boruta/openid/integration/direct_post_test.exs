@@ -95,6 +95,23 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         Enum.at(middle_valid_code_chain, 2)
       ]
 
+      invalid_policy_code_chain = [
+        insert(
+          :token,
+          [{:public_client_id, wallet_did}, {:previous_code, "invalid_policy_code_1"}] ++ code_params
+        ),
+        insert(
+          :token,
+          [
+            {:previous_code, "invalid_policy_code_2"},
+            {:value, "invalid_policy_code_1"},
+            {:metadata_policy, %{"client_id" => %{"one_of" => ["did:key:test"]}}}
+          ] ++
+            code_params
+        ),
+        insert(:token, [{:value, "invalid_policy_code_2"}] ++ code_params)
+      ]
+
       policy_code_chain = [
         insert(
           :token,
@@ -105,7 +122,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           [
             {:previous_code, "policy_code_2"},
             {:value, "policy_code_1"},
-            {:metadata_policy, %{"client_id" => %{"one_of" => ["did:key:test"]}}}
+            {:metadata_policy, %{"client_id" => %{"one_of" => [wallet_did]}}}
           ] ++
             code_params
         ),
@@ -193,6 +210,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        last_valid_code_chain: last_valid_code_chain,
        middle_valid_code_chain: middle_valid_code_chain,
        replay_code_chain: replay_code_chain,
+       invalid_policy_code_chain: invalid_policy_code_chain,
        policy_code_chain: policy_code_chain,
        id_token: id_token,
        vp_token: vp_token}
@@ -860,7 +878,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
     test "oid4vp - returns an error with a code chain (policy invalid)", %{
       vp_token: vp_token,
-      policy_code_chain: [code | _code_chain]
+      invalid_policy_code_chain: [code | _code_chain]
     } do
       conn = %Plug.Conn{}
 
@@ -887,12 +905,48 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                %Boruta.Oauth.Error{
                  status: :unauthorized,
                  error: :unauthorized,
-                 error_description: "Metadata policies check fail.",
+                 error_description: "Metadata policies check failed.",
                  format: :query,
                  redirect_uri: "http://redirect.uri",
                  state: "state"
                }
              } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - authenticates with a code chain (policy)", %{
+      vp_token: vp_token,
+      policy_code_chain: [code | _code_chain]
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, _response} =
                Openid.direct_post(
                  conn,
                  %{
