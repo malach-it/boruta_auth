@@ -19,6 +19,10 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.ResourceOwner do
 
   alias Boruta.Oauth.ResourceOwner
 
+  def authorized_scopes(%ResourceOwner{sub: "did:" <> _key}, scopes, public_scopes) do
+    scopes -- (scopes -- public_scopes) # intersection
+  end
+
   def authorized_scopes(%ResourceOwner{} = resource_owner, scopes, _public_scopes) do
     authorized_scopes =
       Enum.map(resource_owners().authorized_scopes(resource_owner), fn e -> e.name end)
