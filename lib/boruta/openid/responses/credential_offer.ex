@@ -12,7 +12,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
             grants: %{},
             tx_code: nil,
             tx_code_required: nil,
-            redirect_uri: nil
+            redirect_uri: nil,
+            code: nil
 
   alias Boruta.Config
   alias Boruta.Oauth.Client
@@ -27,7 +28,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
           },
           tx_code: String.t(),
           tx_code_required: boolean(),
-          redirect_uri: String.t()
+          redirect_uri: String.t(),
+          code: Boruta.Oauth.Token.t()
         }
 
   def from_tokens(
@@ -103,7 +105,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
         "authorization_code" => %{}
       },
       tx_code_required: preauthorized_code.client.enforce_tx_code,
-      redirect_uri: preauthorized_code.redirect_uri
+      redirect_uri: preauthorized_code.redirect_uri,
+      code: preauthorized_code
     }
   end
 end
