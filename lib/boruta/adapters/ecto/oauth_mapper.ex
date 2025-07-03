@@ -11,7 +11,6 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
   alias Boruta.Oauth
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Ecto
-  alias Boruta.Ecto.Clients
   alias Boruta.Ecto.AgentTokens
   alias Boruta.Ecto.OauthMapper
 
