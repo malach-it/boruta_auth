@@ -6,18 +6,17 @@ defprotocol Boruta.Ecto.OauthMapper do
 end
 
 defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
-  import Boruta.Config, only: [repo: 0, resource_owners: 0]
+  import Boruta.Config, only: [repo: 0, resource_owners: 0, clients: 0]
 
   alias Boruta.Oauth
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Ecto
-  alias Boruta.Ecto.Clients
   alias Boruta.Ecto.AgentTokens
   alias Boruta.Ecto.OauthMapper
 
   def to_oauth_schema(%Ecto.Token{} = token) do
     client =
-      case Clients.get_client(token.client_id) do
+      case clients().get_client(token.client_id) do
         %Oauth.Client{} = client -> client
         _ -> nil
       end
