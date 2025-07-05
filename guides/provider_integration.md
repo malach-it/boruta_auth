@@ -74,7 +74,7 @@ And give mandatory boruta configuration
 
 config :boruta, Boruta.Oauth,
   repo: BorutaExample.Repo,
-  issuer: "https://example.com"
+  issuer: "http://localhost:4000"
 ```
 Here client credentials flow should be up. For user flows you need further configuration and implement `Boruta.Oauth.ResourceOwners` context.
 
@@ -88,20 +88,20 @@ defmodule BorutaExample.ResourceOwners do
   @behaviour Boruta.Oauth.ResourceOwners
 
   alias Boruta.Oauth.ResourceOwner
-  alias MyApp.Accounts.User
-  alias MyApp.Repo
+  alias BorutaExample.Accounts.User
+  alias BorutaExample.Repo
 
   @impl Boruta.Oauth.ResourceOwners
   def get_by(username: username) do
-    with %User{id: id, email: email, last_login_at: last_login_at} <- Repo.get_by(User, email: username) do
-      {:ok, %ResourceOwner{sub: to_string(id), username: email, last_login_at: last_login_at}}
+    with %User{id: id, email: email} <- Repo.get_by(User, email: username) do
+      {:ok, %ResourceOwner{sub: to_string(id), username: email}}
     else
       _ -> {:error, "User not found."}
     end
   end
   def get_by(sub: sub) do
-    with %User{id: id, email: email, last_login_at: last_login_at} <- Repo.get_by(User, id: sub) do
-      {:ok, %ResourceOwner{sub: to_string(id), username: email, last_login_at: last_login_at}}
+    with %User{id: id, email: email} <- Repo.get_by(User, id: sub) do
+      {:ok, %ResourceOwner{sub: to_string(id), username: email}}
     else
       _ -> {:error, "User not found."}
     end
@@ -202,10 +202,24 @@ end
     user |> User.login_changeset() |> Repo.update!()
   end
 
+# lib/boruta_example_web/controllers/user_auth.ex:27
+
 ...
   def log_in_user(conn, user, params \\ %{}) do
     token = Accounts.generate_user_session_token(user)
     Accounts.update_last_login_at(user)
+    ...
+
+# lib/boruta_example_web/controllers/user_auth.ex:115
+
+...
+  def redirect_if_user_is_authenticated(conn, _opts) do
+    user_return_to = get_session(conn, :user_return_to) |> dbg
+
+    if conn.assigns[:current_user] do
+      conn
+      |> redirect(to: user_return_to || signed_in_path(conn))
+      |> halt()
     ...
 
 # lib/boruta_example/accounts/user.ex
@@ -218,9 +232,34 @@ end
     timestamps()
   end
 ...
-   def login_changeset(user) do
-     change(user, last_login_at: DateTime.utc_now())
-   end
+  def login_changeset(user) do
+    change(user, last_login_at: DateTime.utc_now())
+  end
+
+
+# lib/boruta_example/resource_owners.ex
+  ...
+  def get_by(username: username) do
+    with %User{id: id, email: email, last_login_at: last_login_at} <- Repo.get_by(User, email: username) do
+      {:ok, %ResourceOwner{sub: to_string(id), username: email, last_login_at: last_login_at}}
+    else
+      _ -> {:error, "User not found."}
+    end
+  end
+  def get_by(sub: sub) do
+    with %User{id: id, email: email, last_login_at: last_login_at} <- Repo.get_by(User, id: sub) do
+      {:ok, %ResourceOwner{sub: to_string(id), username: email, last_login_at: last_login_at}}
+    else
+      _ -> {:error, "User not found."}
+    end
+  end
+  ...
+```
+
+Run the command
+
+```
+mix ecto.migrate
 ```
 
 Here we are! You have a basic OpenID Connect provider. You can now create a client as described [here](https://hexdocs.pm/boruta/create_client.html) and start using it.

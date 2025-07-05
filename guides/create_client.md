@@ -22,6 +22,7 @@ public_key = JOSE.JWK.to_public(private_key)
   refresh_token_ttl: 60 * 60 * 24 * 30, # one month
   id_token_ttl: 60 * 60 * 24, # one day
   id_token_signature_alg: "RS256", # ID token signature algorithm, defaults to "RS512"
+  token_endpoint_jwt_auth_alg: "RS256",
   userinfo_signed_response_alg: "RS256", # userinfo signature algorithm, defaults to nil (no signature)
   redirect_uris: ["http://redirect.uri"], # OAuth client redirect_uris
   authorize_scope: true, # take following authorized_scopes into account (skip public scopes)
