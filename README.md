@@ -1,6 +1,6 @@
 [![downloads](https://img.shields.io/hexpm/dt/boruta)](https://hex.pm/packages/boruta)
 ![continuous integration](https://github.com/malach-it/boruta_auth/actions/workflows/elixir.yml/badge.svg)
-[![coverage Status](https://coveralls.io/repos/malach-it/boruta_auth/badge.svg?branch=master)](https://coveralls.io/r/malach-it/boruta_auth?branch=master)
+[![coverage Status](https://coveralls.io/repos/malach-it/boruta_auth/badge.svg?branch=v2-3)](https://coveralls.io/r/malach-it/boruta_auth?branch=v2-3)
 
 ![Logo](https://github.com/malach-it/boruta_auth/raw/master/images/logo-yellow.png)
 
