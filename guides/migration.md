@@ -1,4 +1,4 @@
-# Migration from 1.X
+# Migration from 1.X to 2.X
 
 Version 2 of Boruta brings OpenID Connect, several changes were made in order to stick to the specification:
 

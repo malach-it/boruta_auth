@@ -17,9 +17,9 @@ end
 
 defmodule Boruta.Openid do
   @moduledoc """
-  Openid requests entrypoint, provides additional artifacts to OAuth as stated in [Openid Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html).
+  Openid requests entrypoint, provides additional artifacts to OAuth Provided Openid Connect and Openid 4 verifiable credentials specifications
 
-  > __Note__: this module follows inverted heaxagonal architecture, its functions will invoke callbacks of the given module argument and return its result.
+  > __Note__: this module follows inverted hexagonal architecture, its functions will invoke callbacks of the given module argument and return its result.
   >
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """

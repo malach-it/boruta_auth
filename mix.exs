@@ -78,6 +78,7 @@ defmodule Boruta.MixProject do
         "guides/pkce.md",
         "guides/confidential_clients.md",
         "guides/migration.md",
+        "guides/migration-v3.md",
         "CHANGELOG.md"
       ],
       groups_for_modules: [
@@ -104,7 +105,8 @@ defmodule Boruta.MixProject do
           Boruta.Openid.DeferedCredentialResponse,
           Boruta.Openid.SiopV2Response,
           Boruta.Oauth.IntrospectResponse,
-          Boruta.Openid.VerifiablePresentationResponse
+          Boruta.Openid.VerifiablePresentationResponse,
+          Boruta.Openid.DirectPostResponse
         ],
         Admin: [
           Boruta.Ecto.Admin.Tokens,
@@ -120,7 +122,9 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Authorization.Nonce,
           Boruta.Oauth.Authorization.ResourceOwner,
           Boruta.Oauth.Authorization.Scope,
+          Boruta.Oauth.Authorization.AgentToken,
           Boruta.Oauth.AuthorizationSuccess,
+          Boruta.Oauth.Authorization.Data,
           Boruta.Dpop
         ],
         Introspection: [
@@ -137,7 +141,8 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.Requests,
           Boruta.Oauth.Scopes,
           Boruta.Openid.PreauthorizedCodes,
-          Boruta.Openid.Credentials
+          Boruta.Openid.Credentials,
+          Boruta.Oauth.AgentTokens
         ],
         Schemas: [
           Boruta.Oauth.Token,
@@ -161,12 +166,15 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.RevokeRequest,
           Boruta.Oauth.TokenRequest,
           Boruta.Oauth.PresentationRequest,
+          Boruta.Oauth.AgentCodeRequest,
+          Boruta.Oauth.AgentCredentialsRequest,
           Boruta.Oauth.Request
         ],
         "Ecto Adapter": [
           Boruta.Cache,
           Boruta.Cache.Primary,
           Boruta.AccessTokensAdapter,
+          Boruta.AgentTokensAdapter,
           Boruta.CodesAdapter,
           Boruta.ClientsAdapter,
           Boruta.ScopesAdapter,
@@ -180,6 +188,13 @@ defmodule Boruta.MixProject do
           Boruta.Ecto.Scope,
           Boruta.Ecto.AuthorizationRequest,
           Boruta.Ecto.Credential
+        ],
+        Signatures: [
+          Boruta.Oauth.Signatures,
+          Boruta.Openid.Signatures
+        ],
+        Status: [
+          Boruta.Openid.VerifiableCredentials.Status
         ],
         Utilities: [
           Boruta.Cache,
