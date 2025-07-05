@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
+## [2.3.5] - 2025-07-05
+
+### Fixed
+
+- use clients context from dependency injection to resolve token structures
+
+
 ## [2.3.4] - 2024-06-10
 
 ### Fixed
