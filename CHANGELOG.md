@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) according to OAuth / OpenID connect specifications, changes may break in order to comply with those.
 
+## [3.0.0-beta.4] - 2025-07-05
+
+### Added
+
+- support for oid4vci tx codes
+- oauth token is returned in credential responses
+- expose previous code in oauth tokens schema
+- accept JWT typed oid4vci proofs
+- signatures interface and adapters
+- better errors on direct post requests
+- verifiable credentials nested claims management
+- better jwt_vc presentation support
+- agent_credentials and agent_code flows
+- check presentation against public client id
+- better direct post success responses
+- authorization code grant in credential issuance
+
+
+### Fixed
+
+- support for EdDSA signature algorithm
+- sd jwt credentials claims
+- clients did storage
+- revoke public client cache on update
+- presentations with public client
+- empty code challenges
+
+### Security
+
+- revoke code on direct post success
+- status tokens chains
+- validate presentation resource owner if not public
+
 ## [3.0.0-beta.3] - 2024-11-21
 
 ### Changed
