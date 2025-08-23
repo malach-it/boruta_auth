@@ -112,4 +112,15 @@ defmodule Boruta.Openid.CredentialOfferResponse do
       code: preauthorized_code
     }
   end
+
+  @spec redirect_to_deeplink(
+          response :: t()
+        ) :: deeplink :: String.t() | {:error, reason :: String.t()}
+  def redirect_to_deeplink(%__MODULE__{} = response) do
+    "#{response.redirect_uri}?credential_offer=#{response
+      |> Map.from_struct()
+      |> Map.take([:credential_configuration_ids, :client_id, :credential_issuer, :grants])
+      |> Jason.encode!()
+      |> URI.encode_www_form()}"
+  end
 end
