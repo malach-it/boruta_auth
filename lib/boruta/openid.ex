@@ -87,11 +87,11 @@ defmodule Boruta.Openid do
            ) do
       case credential do
         %{defered: true} ->
-          case CredentialsAdapter.create_credential(credential, token) do
-            {:ok, credential} ->
-              response = DeferedCredentialResponse.from_credential(credential, token)
-              module.credential_created(conn, response)
-
+          with {:ok, credential} <- CredentialsAdapter.create_credential(credential, token),
+               {:ok, _codes} <- maybe_revoke_code_chain(%{credential: credential}, code_chain) do
+            response = DeferedCredentialResponse.from_credential(credential, token)
+            module.credential_created(conn, response)
+          else
             {:error, error} ->
               error = %Error{
                 status: :internal_server_error,
@@ -268,6 +268,7 @@ defmodule Boruta.Openid do
       case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
         {:ok, _jwk, _claims} ->
           check_public_client_id_in_chain(code_chain, last.public_client_id)
+
         _ ->
           verify_token_against_chain(code_chain, vp_token, alg)
       end
@@ -347,16 +348,16 @@ defmodule Boruta.Openid do
 
   def check_public_client_id_in_chain(code_chain, public_client_id) do
     case Enum.find(code_chain, fn
-        %Token{revoked_at: nil, sub: sub} -> sub == public_client_id
-        _ -> false
-      end) do
+           %Token{revoked_at: nil, sub: sub} -> sub == public_client_id
+           _ -> false
+         end) do
       nil ->
         {:error,
-          %Error{
-            status: :bad_request,
-            error: :invalid_client,
-            error_description: "Could not find client_id in code chain."
-          }}
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Could not find client_id in code chain."
+         }}
 
       _code ->
         :ok
@@ -365,25 +366,25 @@ defmodule Boruta.Openid do
 
   def verify_token_against_chain(code_chain, token, alg) do
     case Enum.any?(code_chain, fn
-      %Token{sub: sub, revoked_at: nil} ->
-        case VerifiablePresentations.verify_jwt({:did, sub}, alg, token) do
-          {:ok, _jwk, _claims} -> true
-          _ -> false
-        end
+           %Token{sub: sub, revoked_at: nil} ->
+             case VerifiablePresentations.verify_jwt({:did, sub}, alg, token) do
+               {:ok, _jwk, _claims} -> true
+               _ -> false
+             end
 
-      _ ->
-        false
-    end) do
+           _ ->
+             false
+         end) do
       true ->
         :ok
 
       false ->
         {:error,
-          %Error{
-            status: :bad_request,
-            error: :invalid_client,
-            error_description: "Could not verify given token in code chain."
-          }}
+         %Error{
+           status: :bad_request,
+           error: :invalid_client,
+           error_description: "Could not verify given token in code chain."
+         }}
     end
   end
 
@@ -438,6 +439,10 @@ defmodule Boruta.Openid do
   end
 
   defp maybe_check_presentation(_, _), do: :ok
+
+  defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
+    CodesAdapter.revoke(code_chain)
+  end
 
   defp maybe_revoke_code_chain(%{vp_token: _vp_token}, code_chain) do
     CodesAdapter.revoke(code_chain)
