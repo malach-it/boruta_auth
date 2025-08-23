@@ -39,10 +39,12 @@ defmodule Boruta.Ecto.Codes do
 
   def get_by(id: id) do
     with {:ok, id} <- Ecto.UUID.cast(id),
-     {:ok, token} <- TokenStore.get(id: id) do
-        token
+         {:ok, token} <- TokenStore.get(id: id) do
+      token
     else
-      :error -> nil
+      :error ->
+        nil
+
       {:error, "Not cached."} ->
         with %Token{} = token <-
                repo().one(
@@ -64,7 +66,8 @@ defmodule Boruta.Ecto.Codes do
         token
 
       {:error, "Not cached."} ->
-        with %Token{} = token <-
+        with "" <> value <- value,
+             %Token{} = token <-
                repo().one(
                  from t in Token,
                    where: t.type in ["code", "preauthorized_code"] and t.value == ^value
@@ -74,6 +77,9 @@ defmodule Boruta.Ecto.Codes do
                |> to_oauth_schema()
                |> TokenStore.put() do
           token
+        else
+          {:error, error} -> {:error, error}
+          nil -> {:error, "Code not found."}
         end
     end
   end
@@ -100,6 +106,7 @@ defmodule Boruta.Ecto.Codes do
       apply(Token, changeset_method(client), [
         %Token{resource_owner: params[:resource_owner]},
         %{
+          response_type: params[:response_type],
           client_id: client_id,
           sub: sub,
           redirect_uri: redirect_uri,
@@ -111,7 +118,8 @@ defmodule Boruta.Ecto.Codes do
           code_challenge_method: code_challenge_method,
           authorization_details: authorization_details,
           presentation_definition: params[:presentation_definition],
-          public_client_id: params[:public_client_id]
+          public_client_id: params[:public_client_id],
+          previous_code: params[:previous_code]
         }
       ])
 
@@ -130,6 +138,30 @@ defmodule Boruta.Ecto.Codes do
   defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_code_changeset
 
   @impl Boruta.Oauth.Codes
+  def revoke(codes) when is_list(codes) do
+    code_count = Enum.count(codes)
+    code_ids = Enum.map(codes, fn code -> code.id end)
+    now = DateTime.utc_now()
+
+    with {^code_count, _} <-
+           from(t in Token, where: t.id in ^code_ids)
+           |> repo().update_all(set: [revoked_at: now]),
+         :ok <-
+           Enum.reduce(codes, :ok, fn code, acc ->
+             case TokenStore.invalidate(code) do
+               {:ok, _token} ->
+                 acc
+
+               error ->
+                 error
+             end
+           end) do
+      {:ok, Enum.map(codes, fn code -> %{code | revoked_at: now} end)}
+    else
+      _ -> {:error, "Could not revoke code chain."}
+    end
+  end
+
   def revoke(%Oauth.Token{value: value} = code) do
     with %Token{} = token <- repo().get_by(Token, value: value),
          {:ok, token} <-
@@ -155,4 +187,49 @@ defmodule Boruta.Ecto.Codes do
       {:ok, code}
     end
   end
+
+  @impl Boruta.Oauth.Codes
+  def update_sub(%Oauth.Token{id: id}, sub, metadata_policy) do
+    with %Token{} = code <-
+           repo().one(
+             from t in Token,
+               where: t.type in ["code", "preauthorized_code"] and t.id == ^id
+           ),
+         {:ok, code} <- Token.sub_changeset(code, sub, metadata_policy) |> repo().update(),
+         {:ok, code} <- TokenStore.invalidate(code) do
+      {:ok, to_oauth_schema(code)}
+    else
+      _ ->
+        {:error, "Preauthorized code not found."}
+    end
+  end
+
+  @impl Boruta.Oauth.Codes
+  def code_chain(token, acc \\ [])
+
+  def code_chain(%Oauth.Token{previous_code: nil} = code, acc) do
+    Enum.reject([code | acc], &is_nil/1) |> Enum.reverse()
+  end
+
+  def code_chain(%Oauth.Token{type: "preauthorized_code", previous_code: value} = code, acc) do
+    case code_chain(get_by(value: value)) do
+      chain when is_list(chain) ->
+        [code | acc ++ chain]
+
+      _ ->
+        acc
+    end
+  end
+
+  def code_chain(%Oauth.Token{type: "code", previous_code: value} = code, acc) do
+    case code_chain(get_by(value: value)) do
+      chain when is_list(chain) ->
+        [code | acc ++ chain]
+
+      _ ->
+        acc
+    end
+  end
+
+  def code_chain(nil, _acc), do: {:error, "Previous code not found."}
 end
