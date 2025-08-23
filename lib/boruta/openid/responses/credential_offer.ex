@@ -5,6 +5,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
   @enforce_keys [:credential_issuer]
   defstruct credential_issuer: nil,
+            client_id: nil,
             # draft 13
             credential_configuration_ids: [],
             # draft 11
@@ -21,6 +22,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
   @type t :: %__MODULE__{
           credential_issuer: String.t(),
+          client_id: String.t(),
           credential_configuration_ids: list(String.t()),
           credentials: list(String.t()),
           grants: %{
@@ -97,6 +99,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
     %__MODULE__{
       credential_issuer: Config.issuer(),
+      client_id: preauthorized_code.public_client_id || Config.issuer(),
       credential_configuration_ids: credential_configuration_ids,
       credentials: credentials,
       tx_code: preauthorized_code.tx_code,
