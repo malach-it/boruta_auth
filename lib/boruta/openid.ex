@@ -87,7 +87,8 @@ defmodule Boruta.Openid do
              credential_params,
              token,
              default_credential_configuration
-           ) do
+           ),
+         {:ok, _codes} <- maybe_revoke_code_chain(%{credential: credential}, code_chain) do
       case credential do
         %{defered: true} ->
           case CredentialsAdapter.create_credential(credential, token) do
@@ -533,6 +534,10 @@ defmodule Boruta.Openid do
   end
 
   defp maybe_check_presentation(_, _), do: :ok
+
+  defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
+    CodesAdapter.revoke(code_chain)
+  end
 
   defp maybe_revoke_code_chain(%{vp_token: _vp_token}, code_chain) do
     CodesAdapter.revoke(code_chain)
