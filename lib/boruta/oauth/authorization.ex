@@ -713,7 +713,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
        %AuthorizationSuccess{
          client: client,
          redirect_uri: redirect_uri,
-         code: previous_code,
+         code: code,
          sub: sub,
          scope: scope,
          state: state,
@@ -745,10 +745,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
       # TODO create a preauthorized code
       with {:ok, preauthorized_code} <-
              PreauthorizedCodesAdapter.create(%{
+               public_client_id: code && code.sub,
                client: client,
                resource_owner: resource_owner,
                redirect_uri: redirect_uri,
-               previous_code: code,
+               previous_code: code && code.value,
                sub: sub,
                scope: scope,
                state: state,
