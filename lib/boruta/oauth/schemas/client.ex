@@ -158,7 +158,7 @@ defmodule Boruta.Oauth.Client do
            redirect_uri_regex =
              client_redirect_uri
              |> Regex.escape()
-             |> String.replace("\\*", "([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9])")
+             |> replace_wildcards()
 
            redirect_uri_regex =
              "^#{redirect_uri_regex}$"
@@ -169,6 +169,15 @@ defmodule Boruta.Oauth.Client do
       true -> :ok
       false -> {:error, "Client redirect_uri do not match."}
     end
+  end
+
+  # Replace wildcard patterns with appropriate regex patterns
+  # ** matches RFC 3986 path segments (unreserved + percent-encoded + sub-delims + : @)
+  # * matches DNS-safe labels (3-63 chars, alphanumeric + hyphens)
+  defp replace_wildcards(escaped_uri) do
+    escaped_uri
+    |> String.replace("\\*\\*", "(?:[A-Za-z0-9._~!$&'()*+,;=:@-]|%[0-9A-Fa-f]{2})+")
+    |> String.replace("\\*", "([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9])")
   end
 
   @spec should_check_secret?(client :: t(), grant_type :: String.t()) :: boolean()

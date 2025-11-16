@@ -189,7 +189,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
               %Boruta.Oauth.Error{
                 status: :unauthorized,
                 error: :invalid_client,
-                error_description: "Invalid client_id or redirect_uri.",
+                error_description: "Invalid client_id or redirect_uri."
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -266,6 +266,39 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       resource_owner: resource_owner
     } do
       redirect_uri = "https://wildcard-redirect-uri.uri"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                access_token: value,
+                expires_in: expires_in,
+                redirect_uri: ^redirect_uri
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :token
+      assert value
+      assert expires_in
+    end
+
+    test "returns a token with a path wildcard (**) for long slugs" do
+      client = insert(:client, redirect_uris: ["https://example.com/tenant/**"])
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+
+      # Test with a very long slug exceeding 63 characters
+      long_slug = String.duplicate("a", 100)
+      redirect_uri = "https://example.com/tenant/#{long_slug}"
 
       assert {:authorize_success,
               %AuthorizeResponse{

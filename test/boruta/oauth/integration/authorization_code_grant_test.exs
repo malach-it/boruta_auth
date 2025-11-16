@@ -345,6 +345,38 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert expires_in
     end
 
+    test "returns a code with a path wildcard (**) for long slugs" do
+      client = insert(:client, redirect_uris: ["https://example.com/property/**"])
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+
+      # Test with a long slug exceeding 63 characters
+      long_slug = "extra-mega-super-long-slug-exceeding-by-far-the-sixty-three-character-limit"
+      redirect_uri = "https://example.com/property/#{long_slug}"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: value,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :code
+      assert value
+      assert expires_in
+    end
+
     test "nonce is stored in code", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -2657,7 +2689,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       refute Repo.get_by(Ecto.Token, value: agent_token).revoked_at
     end
 
-    test "returns a token with bind data", %{client: client, code: code, resource_owner: resource_owner} do
+    test "returns a token with bind data", %{
+      client: client,
+      code: code,
+      resource_owner: resource_owner
+    } do
       ResourceOwners
       |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 

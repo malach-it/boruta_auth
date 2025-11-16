@@ -751,6 +751,51 @@ defmodule Boruta.OauthTest.HybridGrantTest do
              } = claims
     end
 
+    test "returns a code, token and id_token with path wildcard (**) for long slugs" do
+      client = insert(:client, redirect_uris: ["https://example.com/oauth/**"])
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+
+      ResourceOwners
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+      |> expect(:claims, fn _sub, _scope -> %{"email" => resource_owner.username} end)
+
+      # Test with a long slug exceeding 63 characters
+      long_slug =
+        "very-long-property-identifier-that-definitely-exceeds-sixty-three-characters-limit"
+
+      redirect_uri = "https://example.com/oauth/#{long_slug}"
+      nonce = "nonce"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: type,
+                code: code,
+                id_token: id_token,
+                access_token: access_token,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code id_token token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert type == :hybrid
+      assert code
+      assert id_token
+      assert access_token
+      assert expires_in
+    end
+
     test "returns a code with public scope", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
