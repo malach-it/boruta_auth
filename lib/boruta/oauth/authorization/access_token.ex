@@ -24,7 +24,7 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
              :error_description => String.t(),
              :format => nil,
              :redirect_uri => nil,
-             :status => :unauthorized
+             :status => :bad_request
            }}
           | {:ok, %Token{}}
   def authorize(value: value) do
