@@ -16,7 +16,7 @@ jobs:
       matrix:
         container:
           - elixir:1.14.5-otp-25
-          - elixir:1.19.3-otp-28
+          - elixir:1.18.4-otp-25
     container:
       image: ${{ matrix.container }}
 
@@ -61,7 +61,7 @@ jobs:
       matrix:
         container:
           - elixir:1.14.5-otp-25
-          - elixir:1.19.3-otp-28
+          - elixir:1.18.4-otp-25
     container:
       image: ${{ matrix.container }}
 
