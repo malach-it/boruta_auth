@@ -705,14 +705,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
          agent_token: agent_token
        }}
     else
-      {:error, :invalid_code_challenge} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_request,
-           error_description: "Code challenge is invalid."
-         }}
-
       error ->
         error
     end
@@ -1021,14 +1013,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          response_mode: client.response_mode
        }}
     else
-      {:error, :invalid_code_challenge} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_request,
-           error_description: "Code challenge is invalid."
-         }}
-
       error ->
         error
     end

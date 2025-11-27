@@ -12,7 +12,14 @@ jobs:
   static_code_analysis:
     name: Static Code Analysis
     runs-on: ubuntu-22.04
-    container: elixir:1.14.5-otp-25
+    strategy:
+      matrix:
+        container:
+          - elixir:1.14.5-otp-25
+          - elixir:1.18.4-otp-25
+    container:
+      image: ${{ matrix.container }}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.11.0
@@ -24,17 +31,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Retrieve Cached Dependencies
-        uses: actions/cache@v3
-        id: mix-cache
-        with:
-          path: |
-            deps
-            _build
-          key: ${{ runner.os }}-${{ hashFiles('mix.lock') }}
-
             # - name: Check Code Format
             #   run: mix format --check-formatted
+
+      - name: Copy mix lockfile
+        run: |
+          cp mix.lock.test mix.lock
 
       - name: Elixir prerequisites
         run: |
@@ -54,9 +56,14 @@ jobs:
   unit_tests:
     name: Unit Tests
     runs-on: ubuntu-22.04
-    container: elixir:1.14.5-otp-25
     strategy:
       fail-fast: false
+      matrix:
+        container:
+          - elixir:1.14.5-otp-25
+          - elixir:1.18.4-otp-25
+    container:
+      image: ${{ matrix.container }}
 
     services:
       postgres:
@@ -80,14 +87,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Retrieve Cached Dependencies
-        uses: actions/cache@v3
-        id: mix-cache
-        with:
-          path: |
-            deps
-            _build
-          key: ${{ runner.os }}-${{ hashFiles('mix.lock') }}
+      - name: Copy mix lockfile
+        run: |
+          cp mix.lock.test mix.lock
 
       - name: Elixir prerequisites
         run: |
