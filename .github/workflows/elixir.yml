@@ -44,6 +44,10 @@ jobs:
             # - name: Check Code Format
             #   run: mix format --check-formatted
 
+      - name: Copy mix lockfile
+        run: |
+          cp mix.lock.test mix.lock
+
       - name: Elixir prerequisites
         run: |
           mix local.rebar --force
@@ -93,14 +97,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Retrieve Cached Dependencies
-        uses: actions/cache@v3
-        id: mix-cache
-        with:
-          path: |
-            deps
-            _build
-          key: ${{ runner.os }}-${{ hashFiles('mix.lock') }}
+      - name: Copy mix lockfile
+        run: |
+          cp mix.lock.test mix.lock
 
       - name: Elixir prerequisites
         run: |
