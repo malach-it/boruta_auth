@@ -173,7 +173,8 @@ defmodule Boruta.Oauth.Request.Base do
       prompt: params["prompt"],
       code_challenge: params["code_challenge"],
       code_challenge_method: params["code_challenge_method"],
-      scope: params["scope"]
+      scope: params["scope"],
+      response_mode: params["response_mode"]
     }
 
     request =
@@ -230,6 +231,7 @@ defmodule Boruta.Oauth.Request.Base do
            redirect_uri: params["redirect_uri"],
            resource_owner: params["resource_owner"],
            response_types: response_types,
+           response_mode: params["response_mode"],
            scope: params["scope"],
            state: params["state"]
          }}

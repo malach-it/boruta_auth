@@ -34,6 +34,7 @@ defmodule Boruta.Oauth do
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.FormPostResponse
   alias Boruta.Oauth.Introspect
   alias Boruta.Oauth.IntrospectResponse
   alias Boruta.Oauth.PushedAuthorizationResponse
@@ -110,6 +111,8 @@ defmodule Boruta.Oauth do
   Process an authorize request as stated in [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749) and [OpenID Connect Core 1.0 incorporating errata set 1](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth).
 
   Triggers `authorize_success` in case of success and `authorize_error` in case of failure from the given `module`. Those functions are described in `Boruta.Oauth.Application` behaviour.
+
+  When `response_mode=form_post` is requested, triggers `form_post_success` callback instead of `authorize_success`.
   """
   @spec authorize(
           conn :: Plug.Conn.t() | map(),
@@ -122,6 +125,23 @@ defmodule Boruta.Oauth do
     with {:ok, request} <- Request.authorize_request(conn, resource_owner),
          {:ok, tokens} <- Authorization.token(request) do
       case AuthorizeResponse.from_tokens(tokens, request) do
+        %AuthorizeResponse{response_mode: "form_post"} = response ->
+          form_post_response = %FormPostResponse{
+            redirect_uri: response.redirect_uri,
+            access_token: response.access_token,
+            code: response.code,
+            expires_in: response.expires_in,
+            id_token: response.id_token,
+            state: response.state,
+            token_type: response.token_type,
+            type: response.type
+          }
+
+          module.form_post_success(
+            conn,
+            form_post_response
+          )
+
         %AuthorizeResponse{} = response ->
           module.authorize_success(
             conn,
@@ -167,7 +187,12 @@ defmodule Boruta.Oauth do
   defp formatted_authorize_error(conn, resource_owner, module, error) do
     case Request.authorize_request(conn, resource_owner) do
       {:ok, request} ->
-        module.authorize_error(conn, Error.with_format(error, request))
+        formatted_error = Error.with_format(error, request)
+
+        case formatted_error.format do
+          :form_post -> module.form_post_error(conn, formatted_error)
+          _ -> module.authorize_error(conn, formatted_error)
+        end
 
       _ ->
         module.authorize_error(conn, error)

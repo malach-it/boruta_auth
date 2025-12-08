@@ -20,6 +20,7 @@ defmodule Boruta.Oauth.CodeRequest do
           code_challenge: String.t(),
           code_challenge_method: String.t(),
           response_types: String.t(),
+          response_mode: String.t() | nil,
           authorization_details: String.t()
         }
 
@@ -36,6 +37,7 @@ defmodule Boruta.Oauth.CodeRequest do
             code_challenge: "",
             code_challenge_method: "plain",
             response_types: [],
+            response_mode: nil,
             authorization_details: "[]"
 
   alias Boruta.Oauth.Scope
