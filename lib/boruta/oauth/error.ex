@@ -26,7 +26,7 @@ defmodule Boruta.Oauth.Error do
             | :login_required
             | :unknown_error,
           error_description: String.t(),
-          format: :query | :fragment | :json | nil,
+          format: :query | :fragment | :form_post | :json | nil,
           redirect_uri: String.t() | nil,
           state: String.t() | nil
         }
@@ -64,11 +64,12 @@ defmodule Boruta.Oauth.Error do
           prompt: "none"
         } = request
       ) do
+    format = response_mode(request) || :fragment
     %{
       error
       | error: :login_required,
         error_description: "User is not logged in.",
-        format: response_mode(request),
+        format: format,
         redirect_uri: redirect_uri,
         state: state
     }
@@ -78,12 +79,13 @@ defmodule Boruta.Oauth.Error do
         redirect_uri: redirect_uri,
         state: state,
         prompt: "none"
-      }) do
+      } = request) do
+    format = response_mode(request) || :query
     %{
       error
       | error: :login_required,
         error_description: "User is not logged in.",
-        format: :query,
+        format: format,
         redirect_uri: redirect_uri,
         state: state
     }
@@ -93,19 +95,21 @@ defmodule Boruta.Oauth.Error do
         redirect_uri: redirect_uri,
         state: state,
         prompt: "none"
-      }) do
+      } = request) do
+    format = response_mode(request) || :fragment
     %{
       error
       | error: :login_required,
         error_description: "User is not logged in.",
-        format: :fragment,
+        format: format,
         redirect_uri: redirect_uri,
         state: state
     }
   end
 
-  def with_format(%Error{} = error, %CodeRequest{redirect_uri: redirect_uri, state: state}) do
-    %{error | format: :query, redirect_uri: redirect_uri, state: state}
+  def with_format(%Error{} = error, %CodeRequest{redirect_uri: redirect_uri, state: state} = request) do
+    format = response_mode(request) || :query
+    %{error | format: format, redirect_uri: redirect_uri, state: state}
   end
 
   def with_format(%Error{} = error, %AuthorizationRequest{
@@ -123,11 +127,13 @@ defmodule Boruta.Oauth.Error do
         %Error{} = error,
         %HybridRequest{redirect_uri: redirect_uri, state: state} = request
       ) do
-    %{error | format: response_mode(request), redirect_uri: redirect_uri, state: state}
+    format = response_mode(request) || :fragment
+    %{error | format: format, redirect_uri: redirect_uri, state: state}
   end
 
-  def with_format(%Error{} = error, %TokenRequest{redirect_uri: redirect_uri, state: state}) do
-    %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
+  def with_format(%Error{} = error, %TokenRequest{redirect_uri: redirect_uri, state: state} = request) do
+    format = response_mode(request) || :fragment
+    %{error | format: format, redirect_uri: redirect_uri, state: state}
   end
 
   def with_format(%Error{} = error, %PreauthorizedCodeRequest{
@@ -137,10 +143,12 @@ defmodule Boruta.Oauth.Error do
     %{error | format: :fragment, redirect_uri: redirect_uri, state: state}
   end
 
-  defp response_mode(%HybridRequest{response_mode: "query"}), do: :query
-  defp response_mode(%HybridRequest{response_mode: "fragment"}), do: :fragment
-  # fallback to fragment since it is the hybrid default response mode
-  defp response_mode(%HybridRequest{response_mode: nil}), do: :fragment
+  defp response_mode(%{response_mode: "query"}), do: :query
+  defp response_mode(%{response_mode: "fragment"}), do: :fragment
+  defp response_mode(%{response_mode: "form_post"}), do: :form_post
+  # fallback to nil to use default behavior
+  defp response_mode(%{response_mode: nil}), do: nil
+  defp response_mode(_), do: nil
 
   @doc """
   Returns the URL to be redirected according to error format.

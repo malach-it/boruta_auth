@@ -74,5 +74,27 @@ defmodule Boruta.Oauth.Application do
   @callback pushed_authorization_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
               any()
 
-  @optional_callbacks preauthorize_success: 2, preauthorize_error: 2
+  @doc """
+  This function will be triggered when `response_mode=form_post` is requested and authorization succeeds.
+
+  The application layer is responsible for rendering an HTML page with a self-submitting form
+  that POSTs the authorization response parameters to the client's redirect_uri.
+
+  See `Boruta.Oauth.FormPostResponse` for details on the response structure and example HTML template.
+  """
+  @callback form_post_success(
+              conn :: Plug.Conn.t(),
+              form_post_response :: Boruta.Oauth.FormPostResponse.t()
+            ) :: any()
+
+  @doc """
+  This function will be triggered when `response_mode=form_post` is requested and authorization fails.
+
+  The application layer is responsible for rendering an HTML page with a self-submitting form
+  that POSTs the error parameters to the client's redirect_uri.
+  """
+  @callback form_post_error(conn :: Plug.Conn.t(), oauth_error :: Boruta.Oauth.Error.t()) ::
+              any()
+
+  @optional_callbacks preauthorize_success: 2, preauthorize_error: 2, form_post_success: 2, form_post_error: 2
 end

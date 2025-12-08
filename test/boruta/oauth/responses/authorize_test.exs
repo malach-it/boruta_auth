@@ -118,5 +118,31 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
       assert AuthorizeResponse.redirect_to_url(response) ==
                "http://redirect.uri?code=value&state=state&foo=bar"
     end
+
+    test "returns query params according to `response_mode` for code requests" do
+      response = %AuthorizeResponse{
+        type: :code,
+        code: "value",
+        state: "state",
+        redirect_uri: "http://redirect.uri",
+        response_mode: "query"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri?code=value&state=state"
+    end
+
+    test "returns fragment according to `response_mode` for token requests" do
+      response = %AuthorizeResponse{
+        type: :token,
+        access_token: "value",
+        expires_in: 10,
+        redirect_uri: "http://redirect.uri",
+        response_mode: "fragment"
+      }
+
+      assert AuthorizeResponse.redirect_to_url(response) ==
+               "http://redirect.uri#access_token=value&expires_in=10"
+    end
   end
 end
