@@ -14,6 +14,7 @@ defmodule Boruta.Oauth.Token do
   @enforce_keys [:type]
   defstruct id: nil,
             type: nil,
+            response_type: nil,
             value: nil,
             tx_code: nil,
             authorization_details: nil,
@@ -38,12 +39,14 @@ defmodule Boruta.Oauth.Token do
             previous_code: nil,
             bind_data: nil,
             bind_configuration: nil,
-            agent_token: nil
+            agent_token: nil,
+            metadata_policy: %{}
 
   # TODO manage nil attribute values and watch for aftereffects of them
   @type t :: %__MODULE__{
           id: String.t(),
           type: String.t(),
+          response_type: String.t() | nil,
           value: String.t() | nil,
           tx_code: String.t() | nil,
           authorization_details: list() | nil,
@@ -68,7 +71,8 @@ defmodule Boruta.Oauth.Token do
           previous_code: String.t() | nil,
           bind_data: String.t() | nil,
           bind_configuration: String.t() | nil,
-          agent_token: String.t() | nil
+          agent_token: String.t() | nil,
+          metadata_policy: map()
         }
 
   @doc """

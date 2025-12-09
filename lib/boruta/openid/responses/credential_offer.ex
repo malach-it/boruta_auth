@@ -5,6 +5,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
   @enforce_keys [:credential_issuer]
   defstruct credential_issuer: nil,
+            client_id: nil,
             # draft 13
             credential_configuration_ids: [],
             # draft 11
@@ -12,7 +13,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
             grants: %{},
             tx_code: nil,
             tx_code_required: nil,
-            redirect_uri: nil
+            redirect_uri: nil,
+            code: nil
 
   alias Boruta.Config
   alias Boruta.Oauth.Client
@@ -20,6 +22,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
   @type t :: %__MODULE__{
           credential_issuer: String.t(),
+          client_id: String.t(),
           credential_configuration_ids: list(String.t()),
           credentials: list(String.t()),
           grants: %{
@@ -27,7 +30,8 @@ defmodule Boruta.Openid.CredentialOfferResponse do
           },
           tx_code: String.t(),
           tx_code_required: boolean(),
-          redirect_uri: String.t()
+          redirect_uri: String.t(),
+          code: Boruta.Oauth.Token.t()
         }
 
   def from_tokens(
@@ -95,6 +99,7 @@ defmodule Boruta.Openid.CredentialOfferResponse do
 
     %__MODULE__{
       credential_issuer: Config.issuer(),
+      client_id: preauthorized_code.public_client_id || Config.issuer(),
       credential_configuration_ids: credential_configuration_ids,
       credentials: credentials,
       tx_code: preauthorized_code.tx_code,
@@ -103,7 +108,19 @@ defmodule Boruta.Openid.CredentialOfferResponse do
         "authorization_code" => %{}
       },
       tx_code_required: preauthorized_code.client.enforce_tx_code,
-      redirect_uri: preauthorized_code.redirect_uri
+      redirect_uri: preauthorized_code.redirect_uri,
+      code: preauthorized_code
     }
+  end
+
+  @spec redirect_to_deeplink(
+          response :: t()
+        ) :: deeplink :: String.t() | {:error, reason :: String.t()}
+  def redirect_to_deeplink(%__MODULE__{} = response) do
+    "#{response.redirect_uri}?credential_offer=#{response
+      |> Map.from_struct()
+      |> Map.take([:credential_configuration_ids, :client_id, :credential_issuer, :grants])
+      |> Jason.encode!()
+      |> URI.encode_www_form()}"
   end
 end
