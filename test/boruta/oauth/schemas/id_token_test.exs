@@ -586,6 +586,80 @@ defmodule Boruta.Oauth.IdTokenTest do
     end
   end
 
+  describe "nonce handling" do
+    test "does not include nonce claim when nonce is nil", %{resource_owner: resource_owner} do
+      client = build_client()
+      inserted_at = DateTime.utc_now()
+
+      base_token = %Token{
+        type: "base_token",
+        sub: "sub",
+        resource_owner: resource_owner,
+        client: client,
+        value: "token",
+        inserted_at: inserted_at,
+        scope: "scope"
+      }
+
+      # Pass nil as nonce (simulating when no nonce was sent in auth request)
+      assert %{value: value, type: "id_token"} = IdToken.generate(%{base_token: base_token}, nil)
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+      assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
+
+      # nonce claim should NOT be present
+      refute Map.has_key?(claims, "nonce")
+    end
+
+    test "does not include nonce claim when nonce is empty string", %{resource_owner: resource_owner} do
+      client = build_client()
+      inserted_at = DateTime.utc_now()
+
+      base_token = %Token{
+        type: "base_token",
+        sub: "sub",
+        resource_owner: resource_owner,
+        client: client,
+        value: "token",
+        inserted_at: inserted_at,
+        scope: "scope"
+      }
+
+      # Pass empty string as nonce (simulating when no nonce was sent in auth request)
+      assert %{value: value, type: "id_token"} = IdToken.generate(%{base_token: base_token}, "")
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+      assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
+
+      # nonce claim should NOT be present
+      refute Map.has_key?(claims, "nonce")
+    end
+
+    test "includes nonce claim when nonce is provided", %{resource_owner: resource_owner} do
+      client = build_client()
+      inserted_at = DateTime.utc_now()
+
+      base_token = %Token{
+        type: "base_token",
+        sub: "sub",
+        resource_owner: resource_owner,
+        client: client,
+        value: "token",
+        inserted_at: inserted_at,
+        scope: "scope"
+      }
+
+      nonce = "test-nonce-value"
+      assert %{value: value, type: "id_token"} = IdToken.generate(%{base_token: base_token}, nonce)
+
+      signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
+      assert {:ok, claims} = Client.Token.verify_and_validate(value, signer)
+
+      # nonce claim should be present with the provided value
+      assert claims["nonce"] == nonce
+    end
+  end
+
   describe "format_claims/1" do
     test "returns claims with json values" do
       claims = %{

@@ -92,8 +92,15 @@ defmodule Boruta.Oauth.IdToken do
     |> Map.put("iat", iat)
     |> Map.put("auth_time", auth_time)
     |> Map.put("exp", iat + client.id_token_ttl)
-    |> Map.put("nonce", nonce)
+    |> maybe_put_nonce(nonce)
   end
+
+  # Only include nonce claim in id_token if it was provided in the authorization request.
+  # Per OIDC Core spec section 2, the nonce claim is optional and should only be present
+  # if a nonce was sent in the authentication request. Including an empty nonce causes
+  # validation failures with some OIDC relying parties (e.g., AWS ALB).
+  defp maybe_put_nonce(claims, nonce) when nonce in [nil, ""], do: claims
+  defp maybe_put_nonce(claims, nonce), do: Map.put(claims, "nonce", nonce)
 
   @doc """
   Format claims according to either a claim value or a claim definition.
