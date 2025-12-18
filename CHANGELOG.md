@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - path wildcard (`**`) for redirect_uris
+- `form_post` response mode support per [OAuth 2.0 Form Post Response Mode](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
+- `response_mode` parameter support for code and token (implicit) flows
+- `FormPostResponse` struct with params helper for rendering HTML forms
+- `form_post_success/2` and `form_post_error/2` callbacks in `AuthorizeApplication` behaviour
 
 ## [3.0.0-beta.4] - 2025-07-05
 
