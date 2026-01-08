@@ -11,6 +11,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Openid.CredentialOfferResponse
+  alias Boruta.Repo
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
@@ -107,7 +108,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                   error: :invalid_resource_owner,
                   error_description: "Resource owner is invalid.",
                   status: :unauthorized,
-                  format: :fragment,
+                  format: :query,
                   redirect_uri: redirect_uri
                 }}
     end
@@ -122,7 +123,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     #                %Boruta.Oauth.Error{
     #                  error: :unknown_error,
     #                  error_description: "\"Could not create code : sub is invalid\"",
-    #                  format: :fragment,
+    #                  format: :query,
     #                  redirect_uri: "https://redirect.uri",
     #                  state: nil,
     #                  status: :internal_server_error
@@ -167,7 +168,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 %Error{
                   error: :invalid_scope,
                   error_description: "Given scopes are unknown or unauthorized.",
-                  format: :fragment,
+                  format: :query,
                   redirect_uri: "https://redirect.uri",
                   status: :bad_request
                 }}
@@ -192,11 +193,10 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
               %Boruta.Oauth.Error{
                 error: :invalid_agent_token,
                 error_description: "Agent token is invalid",
-                format: :fragment,
+                format: :query,
                 redirect_uri: "https://redirect.uri",
                 status: :unauthorized
-              }
-            } =
+              }} =
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
@@ -233,10 +233,89 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                 %Error{
                   error: :unsupported_grant_type,
                   error_description: "Client do not support given grant type.",
-                  format: :fragment,
+                  format: :query,
                   redirect_uri: redirect_uri,
                   status: :bad_request
                 }}
+    end
+
+    test "returns an error with a bad code", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_configuration_id" => "credential"
+            }
+          ]
+      }
+
+      assert {
+              :authorize_error,
+              %Boruta.Oauth.Error{
+                redirect_uri: "https://redirect.uri",
+                error: :invalid_grant,
+                error_description: "Given authorization code is invalid, revoked, or expired.",
+                format: :query,
+                status: :bad_request
+              }
+            } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "code" => "bad code"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with a revoked code", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+      code = insert(:token, type: "code", revoked_at: DateTime.utc_now())
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_configuration_id" => "credential"
+            }
+          ]
+      }
+
+      assert {
+              :authorize_error,
+              %Boruta.Oauth.Error{
+                redirect_uri: "https://redirect.uri",
+                error: :invalid_grant,
+                error_description: "Given authorization code is invalid, revoked, or expired.",
+                format: :query,
+                status: :bad_request
+              }
+            } =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "code" => code.value
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns a credential offer response (draft 13)", %{
@@ -281,11 +360,60 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert preauthorized_code
     end
 
+    test "returns a credential offer response with a code (draft 13)", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+      code = insert(:token, type: "code")
+
+      resource_owner = %{
+        resource_owner
+        | authorization_details: [
+            %{
+              "credential_configuration_id" => "credential"
+            }
+          ]
+      }
+
+      assert {:authorize_success,
+              %CredentialOfferResponse{
+                credential_issuer: "boruta",
+                redirect_uri: ^redirect_uri,
+                tx_code_required: false,
+                credential_configuration_ids: ["credential"],
+                grants: %{
+                  "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
+                    "pre-authorized_code" => preauthorized_code
+                  }
+                }
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "code" => code.value
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert preauthorized_code
+
+      assert Repo.get_by(Ecto.Token, type: "preauthorized_code", value: preauthorized_code).previous_code ==
+               code.value
+    end
+
     test "returns a credential offer response (agent_token)", %{
       client: client,
       resource_owner: resource_owner
     } do
-      agent_token = insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+      agent_token =
+        insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+
       redirect_uri = List.first(client.redirect_uris)
 
       resource_owner = %{
@@ -322,7 +450,10 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                )
 
       assert preauthorized_code
-      assert %Ecto.Token{agent_token: agent_token} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
+      assert %Ecto.Token{agent_token: agent_token} =
+               Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
       assert agent_token
     end
 
@@ -744,7 +875,9 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
           ]
         )
 
-      agent_token = insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+      agent_token =
+        insert(:token, type: "agent_token", bind_data: %{test: true}, bind_configuration: %{})
+
       agent_code =
         insert(
           :token,
