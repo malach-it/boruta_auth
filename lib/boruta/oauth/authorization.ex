@@ -240,6 +240,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.Client
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
@@ -317,9 +318,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
           {:ok, %{token: access_token}}
 
         {_, true} ->
-          id_token = IdToken.generate(%{token: access_token}, nonce)
-
-          {:ok, %{token: access_token, id_token: id_token}}
+              case IdToken.generate(%{token: access_token}, nonce) do
+                {:ok, id_token} ->
+                  {:ok, %{token: access_token, id_token: id_token}}
+                {:error, error} ->
+                  {:error, %Error{
+                    status: :internal_server_error,
+                    error: :unknown_error,
+                    error_description: error
+                  }}
+              end
 
         {_, false} ->
           {:ok, %{token: access_token}}
@@ -436,6 +444,7 @@ end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeRequest do
   alias Boruta.Oauth.Client
+  alias Boruta.Oauth.Error
   alias Boruta.AccessTokensAdapter
   alias Boruta.CodesAdapter
   alias Boruta.Oauth.Authorization
@@ -503,9 +512,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
          {:ok, _code} <- CodesAdapter.revoke(code) do
       case String.match?(scope, ~r/#{Scope.openid().name}/) do
         true ->
-          id_token = IdToken.generate(%{token: access_token}, nonce)
-
-          {:ok, %{preauthorized_token: access_token, id_token: id_token}}
+          case IdToken.generate(%{token: access_token}, nonce) do
+            {:ok, id_token} ->
+              {:ok, %{preauthorized_token: access_token, id_token: id_token}}
+            {:error, error} ->
+              {:error, %Error{
+                status: :internal_server_error,
+                error: :unknown_error,
+                error_description: error
+              }}
+          end
 
         false ->
           {:ok, %{preauthorized_token: access_token}}
@@ -538,6 +554,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
   alias Boruta.AccessTokensAdapter
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Error
   alias Boruta.Oauth.IdToken
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
@@ -614,8 +631,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                 inserted_at: DateTime.utc_now()
               }
 
-              id_token = IdToken.generate(%{base_token: base_token}, nonce)
-              {:ok, %{id_token: id_token}}
+              with {:ok, id_token} <- IdToken.generate(%{base_token: base_token}, nonce) do
+                {:ok, %{id_token: id_token}}
+              end
 
             false ->
               {:ok, %{}}
@@ -624,8 +642,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
         "id_token", {:ok, tokens} ->
           case String.match?(scope, ~r/#{Scope.openid().name}/) do
             true ->
-              id_token = IdToken.generate(tokens, nonce)
-              {:ok, Map.put(tokens, :id_token, id_token)}
+              case IdToken.generate(tokens, nonce) do
+                {:ok, id_token} ->
+                  {:ok, Map.put(tokens, :id_token, id_token)}
+                {:error, error} ->
+                  {:error, %Error{
+                    status: :internal_server_error,
+                    error: :unknown_error,
+                    error_description: error
+                  }}
+              end
 
             false ->
               {:ok, tokens}
@@ -646,6 +672,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                  ) do
             {:ok, Map.put(tokens, :token, access_token)}
           end
+        _, {:error, error} ->
+          {:error,
+           %Error{
+             status: :internal_server_error,
+             error: :unknown_error,
+             error_description: "An error occurred during token creation: #{inspect(error)}."
+           }}
       end)
     end
   end
@@ -1120,9 +1153,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
         "id_token", {:ok, tokens} ->
           case String.match?(scope, ~r/#{Scope.openid().name}/) do
             true ->
-              id_token = IdToken.generate(tokens, nonce)
-
-              {:ok, Map.put(tokens, :id_token, id_token)}
+              with {:ok, id_token} <- IdToken.generate(tokens, nonce) do
+                {:ok, Map.put(tokens, :id_token, id_token)}
+              end
 
             false ->
               {:ok, tokens}

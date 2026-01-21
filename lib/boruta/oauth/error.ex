@@ -14,7 +14,7 @@ defmodule Boruta.Oauth.Error do
   alias Boruta.Oauth.TokenRequest
 
   @type t :: %__MODULE__{
-          status: :internal_server_error | :bad_request | :unauthorized,
+          status: :internal_server_error | :bad_request | :unauthorized | :not_found,
           error:
             :invalid_request
             | :invalid_client
@@ -24,6 +24,7 @@ defmodule Boruta.Oauth.Error do
             | :invalid_code
             | :invalid_resource_owner
             | :login_required
+            | :not_found
             | :unknown_error,
           error_description: String.t(),
           format: :query | :fragment | :json | nil,
