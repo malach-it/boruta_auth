@@ -950,7 +950,62 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
     end
 
-    test "returns a code with siopv2 (direct_post)" do
+    test "returns a code with siopv2 (direct_post - jwe)" do
+      secret = "12345678901234567890123456789012"
+      client_private_key = JOSE.JWK.generate_key({:ec, :secp256r1})
+      client_public_key = JOSE.JWK.to_public(client_private_key)
+      redirect_uri = "openid:"
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                client: client,
+                client_id: "did:key:test",
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                scope: "openid",
+                issuer: issuer,
+                response_mode: "direct_post",
+                nonce: "nonce"
+              } = response} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri,
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid",
+                     "client_encryption_key" => client_public_key |> JOSE.JWK.to_map() |> elem(1),
+                     "client_encryption_alg" => "ECDH-ES"
+                   }
+                 },
+                 %ResourceOwner{sub: "did:key:test"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+      assert client.public_client_id == Boruta.Config.issuer()
+
+      assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
+               ~r"#{redirect_uri}"
+
+      [_all, jwe] = Regex.run(~r/request=([^&]+)/, SiopV2Response.redirect_to_deeplink(response, fn code -> code end))
+
+      assert %{
+        "aud" => "did:key:test",
+        "authorization_server_encryption_key" => %{},
+        "client_id" => "boruta",
+        "iss" => "boruta",
+        "nonce" => "nonce",
+        "response_mode" => "direct_post",
+        "response_type" => "id_token",
+        "scope" => "openid"
+      } = JOSE.JWE.block_decrypt(client_private_key, jwe) |> elem(0) |> Jason.decode!()
+    end
+
+    test "returns a code with siopv2 (direct_post - jwt)" do
+      secret = "12345678901234567890123456789012"
       redirect_uri = "openid:"
 
       assert {:authorize_success,
@@ -984,6 +1039,22 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
                ~r"#{redirect_uri}"
+
+      [_all, jwt] = Regex.run(~r/request=([^&]+)/, SiopV2Response.redirect_to_deeplink(response, fn code -> code end))
+
+      assert {:ok, %{
+        "aud" => "did:key:test",
+        "authorization_server_encryption_key" => %{},
+        "client_id" => "boruta",
+        "iss" => "boruta",
+        "nonce" => "nonce",
+        "response_mode" => "direct_post",
+        "response_type" => "id_token",
+        "scope" => "openid"
+      }} = Oauth.Client.Crypto.verify_id_token_signature(
+        jwt,
+        JOSE.JWK.from_pem(client.private_key) |> JOSE.JWK.to_map()
+      )
     end
 
     test "returns a code with siopv2 (post)" do
