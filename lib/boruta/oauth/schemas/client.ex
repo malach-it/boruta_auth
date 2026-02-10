@@ -328,7 +328,7 @@ defmodule Boruta.Oauth.Client do
     def decrypt(encrypted, client) do
       private_key = JOSE.JWK.from_pem(client.private_key)
 
-      with {decrypted, _} <- JOSE.JWE.block_decrypt(private_key, encrypted),
+      with {"" <> decrypted, _} <- JOSE.JWE.block_decrypt(private_key, encrypted),
            {:ok, claims} <- Jason.decode(decrypted) do
         {:ok, claims}
       else

@@ -39,7 +39,9 @@ defmodule Boruta.Openid.SiopV2Response do
           issuer: String.t(),
           client: Boruta.Oauth.Client.t(),
           response_mode: String.t(),
-          nonce: String.t()
+          nonce: String.t(),
+          client_encryption_key: map(),
+          client_encryption_alg: String.t()
         }
 
   def from_tokens(
@@ -85,7 +87,7 @@ defmodule Boruta.Openid.SiopV2Response do
       scope: "openid",
       nonce: response.nonce,
       authorization_server_encryption_key:
-        JOSE.JWK.from_pem(response.client.private_key)
+        JOSE.JWK.from_pem(response.client.public_key)
         |> JOSE.JWK.to_map()
         |> elem(1),
       direct_post_encryption_alg: "ECDH-ES"
