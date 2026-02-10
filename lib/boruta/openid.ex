@@ -206,7 +206,7 @@ defmodule Boruta.Openid do
   end
 
   def direct_post(conn, direct_post_params, module) do
-    with {:ok, _claims} <- check_id_token_client(direct_post_params),
+    with {:ok, claims} <- check_id_token_client(direct_post_params),
          %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
       with {:ok, code} <-
              Authorization.Code.authorize(%{
@@ -223,8 +223,8 @@ defmodule Boruta.Openid do
           code: code,
           redirect_uri: code.redirect_uri,
           state: code.state,
-          client_encryption_key: code.client_encryption_key,
-          client_encryption_alg: code.client_encryption_alg
+          client_encryption_key: claims["client_encryption_key"],
+          client_encryption_alg: claims["client_encryption_alg"]
         })
       else
         {:error, "" <> error} ->
