@@ -46,7 +46,8 @@ defmodule Boruta.Oauth.Client do
             logo_uri: nil,
             response_mode: nil,
             metadata: %{},
-            signatures_adapter: nil
+            signatures_adapter: nil,
+            key_pair_type: nil
 
   @type t :: %__MODULE__{
           id: any(),
@@ -83,7 +84,8 @@ defmodule Boruta.Oauth.Client do
           logo_uri: String.t() | nil,
           response_mode: String.t(),
           metadata: map(),
-          signatures_adapter: String.t()
+          signatures_adapter: String.t(),
+          key_pair_type: map()
         }
 
   @wallet_grant_types [
@@ -300,6 +302,11 @@ defmodule Boruta.Oauth.Client do
     @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
     def userinfo_signature_type(client),
       do: Client.signatures_adapter(client).userinfo_signature_type(client)
+
+    @spec encryption_alg(client :: Client.t()) :: encryption_alg :: String.t()
+    def encryption_alg(%Client{key_pair_type: %{"type" => "ec"}}), do: "ECDH-ES"
+
+    def encryption_alg(%Client{key_pair_type: %{"type" => "rsa"}}), do: "RSA-OAEP"
 
     @spec encrypt(
             claims :: map(),
