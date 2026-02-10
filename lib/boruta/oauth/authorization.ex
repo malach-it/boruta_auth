@@ -1058,7 +1058,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                code_challenge: code_challenge,
                code_challenge_method: code_challenge_method,
                authorization_details: authorization_details,
-               presentation_definition: presentation_definition
+               presentation_definition: presentation_definition,
+               client_encryption_key: client_encryption_key,
+               client_encryption_alg: client_encryption_alg
              }) do
         case response_types do
           ["id_token"] ->
