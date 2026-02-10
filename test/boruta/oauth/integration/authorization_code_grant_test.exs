@@ -951,7 +951,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with siopv2 (direct_post - jwe)" do
-      secret = "12345678901234567890123456789012"
       client_private_key = JOSE.JWK.generate_key({:ec, :secp256r1})
       client_public_key = JOSE.JWK.to_public(client_private_key)
       redirect_uri = "openid:"
@@ -1005,7 +1004,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with siopv2 (direct_post - jwt)" do
-      secret = "12345678901234567890123456789012"
       redirect_uri = "openid:"
 
       assert {:authorize_success,
