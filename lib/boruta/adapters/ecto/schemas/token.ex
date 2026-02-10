@@ -35,7 +35,9 @@ defmodule Boruta.Ecto.Token do
           previous_code: String.t() | nil,
           agent_token: String.t() | nil,
           bind_data: map() | nil,
-          bind_configuration: map() | nil
+          bind_configuration: map() | nil,
+          client_encryption_key: String.t() | nil,
+          client_encryption_alg: String.t() | nil
         }
 
   @authorization_details_schema %{
@@ -83,6 +85,8 @@ defmodule Boruta.Ecto.Token do
     field(:agent_token, :string)
     field(:bind_data, :map)
     field(:bind_configuration, :map)
+    field(:client_encryption_key, :map)
+    field(:client_encryption_alg, :string)
 
     field(:resource_owner, :map, virtual: true)
 

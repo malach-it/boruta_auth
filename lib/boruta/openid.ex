@@ -222,7 +222,9 @@ defmodule Boruta.Openid do
           vp_token: direct_post_params[:vp_token],
           code: code,
           redirect_uri: code.redirect_uri,
-          state: code.state
+          state: code.state,
+          client_encryption_key: code.client_encryption_key,
+          client_encryption_alg: code.client_encryption_alg
         })
       else
         {:error, "" <> error} ->
