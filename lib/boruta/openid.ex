@@ -264,7 +264,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_id_token_client(%{id_token: id_token}) do
+  defp check_id_token_client(%{id_token: id_token}) when not is_nil(id_token) do
     case VerifiableCredentials.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
         {:ok, claims}
