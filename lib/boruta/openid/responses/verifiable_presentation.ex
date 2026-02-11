@@ -87,7 +87,7 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
         JOSE.JWK.from_pem(response.client.public_key)
         |> JOSE.JWK.to_map()
         |> elem(1),
-      direct_post_encryption_alg: "ECDH-ES"
+      direct_post_encryption_alg: Client.Crypto.encryption_alg(response.client)
     }
 
     case {response.client_encryption_key, response.client_encryption_alg} do
