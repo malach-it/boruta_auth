@@ -324,6 +324,15 @@ defmodule Boruta.Ecto.Token do
     change(token, revoked_at: now)
   end
 
+  @doc false
+  def client_encryption_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :client_encryption_key,
+      :client_encryption_alg
+    ])
+  end
+
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
     put_change(
       changeset,
