@@ -158,7 +158,7 @@ defmodule Boruta.Openid do
          direct_post_params <- %{
            id_token: response_claims["id_token"],
            vp_token: response_claims["vp_token"],
-           presentation_submission: response_claims["presentation_submission"],
+           presentation_submission: response_claims["presentation_submission"]
          } do
       with {:ok, claims} <- check_id_token_client(direct_post_params),
            {:ok, code} <-
@@ -168,7 +168,12 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, code} <-
+             CodesAdapter.update_client_encryption(code, %{
+               client_encryption_key: claims["client_encryption_key"],
+               client_encryption_alg: claims["client_encryption_alg"]
+             }) do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
@@ -216,7 +221,12 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           {:ok, code} <-
+             CodesAdapter.update_client_encryption(code, %{
+               client_encryption_key: claims["client_encryption_key"],
+               client_encryption_alg: claims["client_encryption_alg"]
+             }) do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
@@ -322,7 +332,8 @@ defmodule Boruta.Openid do
          %{vp_token: vp_token},
          "did:" <> _key = public_client_id,
          _client
-       ) when not is_nil(vp_token) do
+       )
+       when not is_nil(vp_token) do
     with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token),
          {:ok, _jwk, _claims} <-
            VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, vp_token) do
@@ -356,7 +367,8 @@ defmodule Boruta.Openid do
   defp maybe_check_presentation(
          %{vp_token: vp_token, presentation_submission: presentation_submission},
          presentation_definition
-       ) when not is_nil(vp_token) do
+       )
+       when not is_nil(vp_token) do
     case Jason.decode(presentation_submission) do
       {:ok, presentation_submission} ->
         case VerifiablePresentations.validate_presentation(
@@ -393,7 +405,8 @@ defmodule Boruta.Openid do
   defp maybe_check_presentation(
          %{vp_token: vp_token},
          _presentation_definition
-       ) when not is_nil(vp_token) do
+       )
+       when not is_nil(vp_token) do
     {:error,
      %Error{
        status: :bad_request,
