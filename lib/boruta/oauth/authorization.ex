@@ -1075,7 +1075,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           {:ok, %{
             vp_code: code,
             response_mode: response_mode,
-            client_encryption_key: client_encryption_key
+            client_encryption_key: client_encryption_key,
+            client_encryption_alg: client_encryption_alg
           }}
         end
       end
