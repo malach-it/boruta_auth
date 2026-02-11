@@ -160,7 +160,7 @@ defmodule Boruta.Openid do
            vp_token: response_claims["vp_token"],
            presentation_submission: response_claims["presentation_submission"],
          } do
-      with {:ok, _claims} <- check_id_token_client(direct_post_params),
+      with {:ok, claims} <- check_id_token_client(direct_post_params),
            {:ok, code} <-
              Authorization.Code.authorize(%{
                value: value,
@@ -175,7 +175,9 @@ defmodule Boruta.Openid do
           vp_token: direct_post_params[:vp_token],
           code: code,
           redirect_uri: code.redirect_uri,
-          state: code.state
+          state: code.state,
+          client_encryption_key: claims["client_encryption_key"],
+          client_encryption_alg: claims["client_encryption_alg"]
         })
       else
         {:error, "" <> error} ->
