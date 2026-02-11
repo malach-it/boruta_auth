@@ -168,8 +168,7 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, _code} <- CodesAdapter.revoke(code) do
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
@@ -217,8 +216,7 @@ defmodule Boruta.Openid do
              }),
            :ok <-
              maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, _code} <- CodesAdapter.revoke(code) do
+           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition) do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
           vp_token: direct_post_params[:vp_token],
