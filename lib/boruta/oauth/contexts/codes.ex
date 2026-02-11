@@ -40,6 +40,14 @@ defmodule Boruta.Oauth.Codes do
   ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
   @doc """
+  Updates code client encryption
+  """
+  @callback update_client_encryption(
+    token :: Boruta.Oauth.Token.t(),
+    params :: map()
+  ) :: {:ok, Boruta.Oauth.Token.t()} | {:error, reason :: term()}
+
+  @doc """
   Revokes the the previouly issued token given `Boruta.Oauth.Token` code.
   """
   @callback revoke_previous_token(

@@ -132,13 +132,22 @@ defmodule Boruta.Ecto.Codes do
   defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_code_changeset
 
   @impl Boruta.Oauth.Codes
+  def update_client_encryption(%Oauth.Token{value: value} = code, params) do
+    with %Token{} = token <- repo().get_by(Token, value: value),
+         {:ok, token} <- Token.client_encryption_changeset(token, params) |> repo().update(),
+         {:ok, _token} <- TokenStore.invalidate(code) do
+      {:ok, to_oauth_schema(token)}
+    end
+  end
+
+  @impl Boruta.Oauth.Codes
   def revoke(%Oauth.Token{value: value} = code) do
     with %Token{} = token <- repo().get_by(Token, value: value),
          {:ok, token} <-
            Token.revoke_changeset(token)
            |> repo().update(),
          {:ok, _token} <- TokenStore.invalidate(code) do
-      {:ok, token}
+      {:ok, to_oauth_schema(token)}
     else
       nil ->
         {:error, "Code not found."}
