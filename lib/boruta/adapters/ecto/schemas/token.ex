@@ -35,7 +35,9 @@ defmodule Boruta.Ecto.Token do
           previous_code: String.t() | nil,
           agent_token: String.t() | nil,
           bind_data: map() | nil,
-          bind_configuration: map() | nil
+          bind_configuration: map() | nil,
+          client_encryption_key: String.t() | nil,
+          client_encryption_alg: String.t() | nil
         }
 
   @authorization_details_schema %{
@@ -83,6 +85,8 @@ defmodule Boruta.Ecto.Token do
     field(:agent_token, :string)
     field(:bind_data, :map)
     field(:bind_configuration, :map)
+    field(:client_encryption_key, :map)
+    field(:client_encryption_alg, :string)
 
     field(:resource_owner, :map, virtual: true)
 
@@ -260,7 +264,9 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :authorization_details,
-      :presentation_definition
+      :presentation_definition,
+      :client_encryption_key,
+      :client_encryption_alg
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -284,7 +290,9 @@ defmodule Boruta.Ecto.Token do
       :code_challenge,
       :code_challenge_method,
       :authorization_details,
-      :presentation_definition
+      :presentation_definition,
+      :client_encryption_key,
+      :client_encryption_alg
     ])
     |> validate_required([
       :authorization_code_ttl,
@@ -314,6 +322,15 @@ defmodule Boruta.Ecto.Token do
     now = DateTime.utc_now()
 
     change(token, revoked_at: now)
+  end
+
+  @doc false
+  def client_encryption_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :client_encryption_key,
+      :client_encryption_alg
+    ])
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
