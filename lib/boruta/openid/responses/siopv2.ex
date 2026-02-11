@@ -47,9 +47,7 @@ defmodule Boruta.Openid.SiopV2Response do
   def from_tokens(
         %{
           siopv2_code: code,
-          response_mode: response_mode,
-          client_encryption_key: client_encryption_key,
-          client_encryption_alg: client_encryption_alg
+          response_mode: response_mode
         },
         request
       ) do
@@ -62,8 +60,8 @@ defmodule Boruta.Openid.SiopV2Response do
       client: code.client,
       response_mode: response_mode,
       nonce: code.nonce,
-      client_encryption_key: client_encryption_key,
-      client_encryption_alg: client_encryption_alg
+      client_encryption_key: code.client_encryption_key,
+      client_encryption_alg: code.client_encryption_alg
     }
   end
 

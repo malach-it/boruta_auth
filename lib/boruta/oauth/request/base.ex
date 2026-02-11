@@ -138,8 +138,7 @@ defmodule Boruta.Oauth.Request.Base do
       scope: params["scope"],
       client_metadata: client_metadata,
       response_type: params["response_type"],
-      client_encryption_key: params["client_encryption_key"],
-      client_encryption_alg: params["client_encryption_alg"]
+      code: params["code"]
     }
 
     request =

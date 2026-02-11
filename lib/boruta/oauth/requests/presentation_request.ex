@@ -20,8 +20,7 @@ defmodule Boruta.Oauth.PresentationRequest do
           response_type: String.t(),
           client_metadata: String.t(),
           authorization_details: String.t(),
-          client_encryption_key: String.t(),
-          client_encryption_alg: String.t()
+          code: String.t()
         }
 
   @enforce_keys [:client_id, :redirect_uri]
@@ -38,6 +37,5 @@ defmodule Boruta.Oauth.PresentationRequest do
             code_challenge_method: "plain",
             authorization_details: "[]",
             client_metadata: "{}",
-            client_encryption_key: nil,
-            client_encryption_alg: nil
+            code: nil
 end

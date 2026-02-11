@@ -314,7 +314,7 @@ defmodule Boruta.Oauth.Client do
             client_encryption_alg :: String.t()
           ) :: encrypted :: String.t()
     def encrypt(claims, client_encryption_key, client_encryption_alg) do
-      sk = JOSE.JWK.generate_key({:ec, :secp256r1})
+      sk = JOSE.JWK.generate_key({:ec, "P-256"})
 
       with {:ok, payload} <- Jason.encode(claims) do
         jwe = %{
