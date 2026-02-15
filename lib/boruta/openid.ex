@@ -312,7 +312,7 @@ defmodule Boruta.Openid do
          %{id_token: id_token},
          "did:" <> _key = public_client_id,
          _client
-       ) do
+       ) when not is_nil(id_token) do
     with {:ok, %{"alg" => alg}} <- Joken.peek_header(id_token),
          {:ok, _jwk, _claims} <-
            VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, id_token) do
