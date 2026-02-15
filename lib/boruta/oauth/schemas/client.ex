@@ -46,7 +46,8 @@ defmodule Boruta.Oauth.Client do
             logo_uri: nil,
             response_mode: nil,
             metadata: %{},
-            signatures_adapter: nil
+            signatures_adapter: nil,
+            key_pair_type: nil
 
   @type t :: %__MODULE__{
           id: any(),
@@ -83,7 +84,8 @@ defmodule Boruta.Oauth.Client do
           logo_uri: String.t() | nil,
           response_mode: String.t(),
           metadata: map(),
-          signatures_adapter: String.t()
+          signatures_adapter: String.t(),
+          key_pair_type: map()
         }
 
   @wallet_grant_types [
@@ -298,6 +300,48 @@ defmodule Boruta.Oauth.Client do
     end
 
     @spec userinfo_signature_type(Client.t()) :: userinfo_token_signature_type :: atom()
-    def userinfo_signature_type(client), do: Client.signatures_adapter(client).userinfo_signature_type(client)
+    def userinfo_signature_type(client),
+      do: Client.signatures_adapter(client).userinfo_signature_type(client)
+
+    @spec encryption_alg(client :: Client.t()) :: encryption_alg :: String.t()
+    def encryption_alg(%Client{key_pair_type: %{"type" => "ec"}}), do: "ECDH-ES"
+
+    def encryption_alg(%Client{key_pair_type: %{"type" => "rsa"}}), do: "RSA-OAEP"
+
+    @spec encrypt(
+            claims :: map(),
+            client_encryption_key :: map(),
+            client_encryption_alg :: String.t()
+          ) :: encrypted :: String.t()
+    def encrypt(claims, client_encryption_key, client_encryption_alg) do
+      sk = JOSE.JWK.generate_key({:ec, "P-256"})
+
+      with {:ok, payload} <- Jason.encode(claims) do
+        jwe = %{
+          "enc" => "A256GCM",
+          "alg" => client_encryption_alg
+        }
+
+        pk = JOSE.JWK.from_map(client_encryption_key)
+
+        JOSE.JWE.block_encrypt({pk, sk}, payload, jwe)
+        |> JOSE.JWE.compact()
+        |> elem(1)
+      end
+    end
+
+    @spec decrypt(encrypted :: String.t(), client :: Client.t()) ::
+            {:ok, String.t()} | {:error, reason :: String.t()}
+    def decrypt(encrypted, client) do
+      private_key = JOSE.JWK.from_pem(client.private_key)
+
+      with {"" <> decrypted, _} <- JOSE.JWE.block_decrypt(private_key, encrypted),
+           {:ok, claims} <- Jason.decode(decrypted) do
+        {:ok, claims}
+      else
+        {:error, _} ->
+          {:error, "Could not decrypt the given payload."}
+      end
+    end
   end
 end
