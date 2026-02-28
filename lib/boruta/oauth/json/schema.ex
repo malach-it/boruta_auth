@@ -163,12 +163,12 @@ defmodule Boruta.Oauth.Json.Schema do
           "type" => "string",
           "pattern" => @uuid_pattern
         },
+        "encrypted_request" => %{"type" => "string"},
         "state" => %{"type" => "string"},
         "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "prompt" => %{"type" => "string"}
       },
-      "required" => ["response_type", "client_id", "redirect_uri"]
     }
     |> Schema.resolve()
   end

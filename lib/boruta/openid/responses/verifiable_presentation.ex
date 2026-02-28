@@ -28,7 +28,9 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
             client: nil,
             response_mode: nil,
             nonce: nil,
-            presentation_definition: nil
+            presentation_definition: nil,
+            client_encryption_key: nil,
+            client_encryption_alg: nil
 
   @type t :: %__MODULE__{
           client_id: String.t(),
@@ -40,7 +42,9 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
           client: Boruta.Oauth.Client.t(),
           response_mode: String.t(),
           nonce: String.t(),
-          presentation_definition: map()
+          presentation_definition: map(),
+          client_encryption_key: map() | nil,
+          client_encryption_alg: String.t() | nil
         }
 
   def from_tokens(%{vp_code: code, response_mode: response_mode}, request) do
@@ -53,7 +57,9 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
       client: code.client,
       response_mode: response_mode,
       nonce: code.nonce,
-      presentation_definition: code.presentation_definition
+      presentation_definition: code.presentation_definition,
+      client_encryption_key: code.client_encryption_key,
+      client_encryption_alg: code.client_encryption_alg
     }
   end
 
@@ -76,25 +82,58 @@ defmodule Boruta.Openid.VerifiablePresentationResponse do
       redirect_uri: redirect_uri,
       scope: "openid",
       nonce: response.nonce,
-      presentation_definition: response.presentation_definition
+      presentation_definition: response.presentation_definition,
+      authorization_server_encryption_key:
+        JOSE.JWK.from_pem(response.client.public_key)
+        |> JOSE.JWK.to_map()
+        |> elem(1),
+      direct_post_encryption_alg: Client.Crypto.encryption_alg(response.client)
     }
 
-    with "" <> request <- Client.Crypto.id_token_sign(claims, response.client) do
-      query =
-        %{
-          client_id: response.client_id,
-          response_type: response.response_type,
-          response_mode: response.response_mode,
-          scope: "openid",
-          redirect_uri: redirect_uri,
-          request: request
-        }
-        |> URI.encode_query()
+    case {response.client_encryption_key, response.client_encryption_alg} do
+      {client_encryption_key, client_encryption_alg}
+      when is_nil(client_encryption_key) or is_nil(client_encryption_alg) ->
+        with "" <> request <- Client.Crypto.id_token_sign(claims, response.client) do
+          query =
+            %{
+              client_id: response.client_id,
+              response_type: response.response_type,
+              response_mode: response.response_mode,
+              scope: "openid",
+              redirect_uri: redirect_uri,
+              request: request
+            }
+            |> URI.encode_query()
 
-      uri = URI.parse(response.redirect_uri)
-      uri = %{uri | host: uri.host || "", query: query}
+          uri = URI.parse(response.redirect_uri)
+          uri = %{uri | host: uri.host || "", query: query}
 
-      URI.to_string(uri)
+          URI.to_string(uri)
+        end
+
+      {client_encryption_key, client_encryption_alg} ->
+        with "" <> request <-
+               Client.Crypto.encrypt(
+                 claims,
+                 client_encryption_key,
+                 client_encryption_alg
+               ) do
+          query =
+            %{
+              client_id: response.client_id,
+              response_type: response.response_type,
+              response_mode: response.response_mode,
+              scope: "openid",
+              redirect_uri: redirect_uri,
+              request: request
+            }
+            |> URI.encode_query()
+
+          uri = URI.parse(response.redirect_uri)
+          uri = %{uri | host: uri.host || "", query: query}
+
+          URI.to_string(uri)
+        end
     end
   end
 end
