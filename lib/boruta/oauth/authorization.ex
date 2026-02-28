@@ -43,6 +43,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             nonce: nil,
             access_token: nil,
             code: nil,
+            previous_code: nil,
             code_challenge: nil,
             code_challenge_method: nil,
             authorization_details: nil,
@@ -61,6 +62,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           public_client_id: String.t(),
           access_token: Boruta.Oauth.Token.t() | nil,
           code: Boruta.Oauth.Token.t() | nil,
+          previous_code: Boruta.Oauth.Token.t() | nil,
           redirect_uri: String.t() | nil,
           relying_party_redirect_uri: String.t() | nil,
           sub: String.t() | nil,
@@ -967,8 +969,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           resource_owner: resource_owner,
           response_type: response_type,
           scope: scope,
-          state: state,
-          code: code
+          state: state
         } = request
       ) do
     with [response_type] = response_types <-
@@ -1044,7 +1045,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          scope: scope,
          state: state,
          sub: client_id,
-         code: previous_code
+         previous_code: previous_code
        }}
     else
       error ->
@@ -1070,7 +1071,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             scope: scope,
             state: state,
             sub: sub,
-            code: previous_code
+            previous_code: previous_code
           }} <-
            preauthorize(request) do
       # TODO create a presentation specific code

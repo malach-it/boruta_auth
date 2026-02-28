@@ -163,6 +163,12 @@ defmodule Boruta.Openid do
            vp_token: response_claims["vp_token"],
            presentation_submission: response_claims["presentation_submission"]
          } do
+      direct_post(conn, direct_post_params, module)
+    end
+  end
+
+  def direct_post(conn, direct_post_params, module) do
+    with %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
       with {:ok, claims} <- check_id_token_client(direct_post_params),
            {:ok, code} <-
              Authorization.Code.authorize(%{

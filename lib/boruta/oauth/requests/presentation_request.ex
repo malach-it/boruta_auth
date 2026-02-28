@@ -40,6 +40,5 @@ defmodule Boruta.Oauth.PresentationRequest do
             code_challenge: "",
             code_challenge_method: "plain",
             authorization_details: "[]",
-            client_metadata: "{}",
-            code: nil
+            client_metadata: "{}"
 end
