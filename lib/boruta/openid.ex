@@ -73,6 +73,13 @@ defmodule Boruta.Openid do
   def credential(conn, credential_params, default_credential_configuration, module) do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
+         {:ok, credential_params} <- (case credential_params["encrypted_request"] do
+           nil -> {:ok, credential_params}
+           encrypted_request ->
+             with {:ok, params} <- Client.Crypto.decrypt(encrypted_request, token.client) do
+               {:ok, Map.merge(credential_params, params)}
+             end
+         end),
          {:ok, credential_params} <- validate_credential_params(credential_params),
          {:ok, credential} <-
            VerifiableCredentials.issue_verifiable_credential(
