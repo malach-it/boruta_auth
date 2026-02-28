@@ -28,7 +28,8 @@ defmodule Boruta.Oauth.Error do
           error_description: String.t(),
           format: :query | :fragment | :json | nil,
           redirect_uri: String.t() | nil,
-          state: String.t() | nil
+          state: String.t() | nil,
+          code: String.t() | nil
         }
 
   @enforce_keys [:status, :error, :error_description]
@@ -37,7 +38,8 @@ defmodule Boruta.Oauth.Error do
             error_description: nil,
             format: nil,
             redirect_uri: nil,
-            state: nil
+            state: nil,
+            code: nil
 
   @doc """
   Returns the OAuth error augmented with the format according to request type.
