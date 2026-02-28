@@ -250,7 +250,8 @@ defmodule Boruta.Openid do
             error_description: error,
             format: :query,
             redirect_uri: code.redirect_uri,
-            state: code.state
+            state: code.state,
+            code: code.value
           })
 
         {:error, error} ->
@@ -258,7 +259,8 @@ defmodule Boruta.Openid do
             error
             | format: :query,
               redirect_uri: code.redirect_uri,
-              state: code.state
+              state: code.state,
+              code: code.value
           })
       end
     else
