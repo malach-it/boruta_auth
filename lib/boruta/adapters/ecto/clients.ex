@@ -123,9 +123,14 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
-  defp rsa_key(%Client{public_key: public_key, private_key: private_key}) do
+  defp rsa_key(%Client{
+    public_key: public_key,
+    private_key: private_key,
+    id_token_signature_alg: id_token_signature_alg
+  }) do
     {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
 
     Map.put(jwk, "kid", Oauth.Client.Crypto.kid_from_private_key(private_key))
+    |> Map.put("alg", id_token_signature_alg)
   end
 end
