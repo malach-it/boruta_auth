@@ -587,11 +587,12 @@ defmodule Boruta.Openid do
 
   defp maybe_check_presentation(_, _), do: :ok
 
-  defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
+
+  defp maybe_revoke_code_chain(%{credential: credential}, code_chain) when not is_nil(credential) do
     CodesAdapter.revoke(code_chain)
   end
 
-  defp maybe_revoke_code_chain(%{vp_token: _vp_token}, code_chain) do
+  defp maybe_revoke_code_chain(%{vp_token: vp_token}, code_chain) when not is_nil(vp_token) do
     CodesAdapter.revoke(code_chain)
   end
 
