@@ -976,7 +976,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           authorization_details: authorization_details,
           client_id: client_id,
           client_metadata: client_metadata,
-          code: code,
+          code: previous_code,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
           nonce: nonce,
@@ -1006,17 +1006,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                   grant_type: List.first(response_types)
                 )
             end),
-         {:ok, _code} <-
-           (case code do
-              nil ->
-                {:ok, nil}
-
-              code ->
-                Authorization.Code.authorize(%{value: code})
-            end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
-         {:ok, previous_code} <- (case code do
+         {:ok, code} <- (case previous_code do
            nil -> {:ok, nil}
            value -> Authorization.Code.authorize(%{value: value})
          end),
@@ -1041,7 +1033,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          state: state,
          nonce: nonce,
          code: code,
-         previous_code: previous_code,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
          response_mode: client.response_mode,
@@ -1066,7 +1057,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             state: state,
             nonce: nonce,
             code: code,
-            previous_code: previous_code,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
             presentation_definition: presentation_definition,
@@ -1083,7 +1073,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                client: client,
                public_client_id: public_client_id,
                redirect_uri: redirect_uri,
-               previous_code: code,
+               previous_code: code && code.value,
                scope: scope,
                state: state,
                nonce: nonce,
@@ -1091,8 +1081,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                code_challenge_method: code_challenge_method,
                authorization_details: authorization_details,
                presentation_definition: presentation_definition,
-               client_encryption_key: previous_code && previous_code.client_encryption_key,
-               client_encryption_alg: previous_code && previous_code.client_encryption_alg
+               client_encryption_key: code && code.client_encryption_key,
+               client_encryption_alg: code && code.client_encryption_alg
              }) do
         case List.first(response_types) do
           "id_token" ->
