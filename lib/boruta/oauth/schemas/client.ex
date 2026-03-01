@@ -326,9 +326,13 @@ defmodule Boruta.Oauth.Client do
 
         pk = JOSE.JWK.from_map(client_encryption_key)
 
-        JOSE.JWE.block_encrypt({pk, sk}, payload, jwe)
-        |> JOSE.JWE.compact()
-        |> elem(1)
+        try do
+          JOSE.JWE.block_encrypt({pk, sk}, payload, jwe)
+          |> JOSE.JWE.compact()
+          |> elem(1)
+        rescue
+          _ -> ""
+        end
       end
     end
 
@@ -337,11 +341,16 @@ defmodule Boruta.Oauth.Client do
     def decrypt(encrypted, client) do
       private_key = JOSE.JWK.from_pem(client.private_key)
 
-      with {"" <> decrypted, _} <- JOSE.JWE.block_decrypt(private_key, encrypted),
-           {:ok, claims} <- Jason.decode(decrypted) do
-        {:ok, claims}
-      else
-        {:error, _} ->
+      try do
+        with {"" <> decrypted, _} <- JOSE.JWE.block_decrypt(private_key, encrypted),
+             {:ok, claims} <- Jason.decode(decrypted) do
+          {:ok, claims}
+        else
+          {:error, _} ->
+            {:error, "Could not decrypt the given payload."}
+        end
+      rescue
+      _ ->
           {:error, "Could not decrypt the given payload."}
       end
     end
