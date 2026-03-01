@@ -34,7 +34,8 @@ defmodule Boruta.Oauth.TokenResponse do
         }
 
   @spec from_token(%{
-          (type :: :token | :agent_token | :preauthorized_token) => token :: Boruta.Oauth.Token.t() | String.t()
+          (type :: :token | :agent_token | :preauthorized_token) =>
+            token :: Boruta.Oauth.Token.t() | String.t()
         }) :: t()
   def from_token(
         %{
@@ -101,20 +102,27 @@ defmodule Boruta.Oauth.TokenResponse do
       ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
-    encrypted_response = with "" <> previous_code <- token.previous_code,
-      %Token{} = token <- CodesAdapter.get_by(value: previous_code) do
-      Client.Crypto.encrypt(%{
-        access_token: value,
-        token_type: "bearer",
-        expires_in: expires_in,
-        refresh_token: refresh_token,
-        id_token: params[:id_token] && params[:id_token].value,
-        c_nonce: c_nonce,
-        authorization_details: token.authorization_details
-      }, token.client_encryption_key, token.client_encryption_alg)
-    else
-      _ -> nil
-    end
+
+    encrypted_response =
+      with "" <> previous_code <- token.previous_code,
+           %Token{client_encryption_key: "" <> _, client_encryption_alg: "" <> _} = token <-
+             CodesAdapter.get_by(value: previous_code) do
+        Client.Crypto.encrypt(
+          %{
+            access_token: value,
+            token_type: "bearer",
+            expires_in: expires_in,
+            refresh_token: refresh_token,
+            id_token: params[:id_token] && params[:id_token].value,
+            c_nonce: c_nonce,
+            authorization_details: token.authorization_details
+          },
+          token.client_encryption_key,
+          token.client_encryption_alg
+        )
+      else
+        _ -> nil
+      end
 
     %TokenResponse{
       token: token,

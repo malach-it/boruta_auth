@@ -21,8 +21,10 @@ defmodule Boruta.Openid.CredentialResponse do
   }
 
   def from_credential(credential, token) do
-    encrypted_response = with "" <> previous_code <- token.previous_code,
-      %Token{} = token <- CodesAdapter.get_by(value: previous_code) do
+    encrypted_response =
+      with "" <> previous_code <- token.previous_code,
+           %Token{client_encryption_key: "" <> _, client_encryption_alg: "" <> _} = token <-
+             CodesAdapter.get_by(value: previous_code) do
       Client.Crypto.encrypt(%{
         format: credential.format,
         credential: credential.credential,
