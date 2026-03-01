@@ -3,6 +3,8 @@ defmodule Boruta.Oauth.TokenResponse do
   Response returned in case of access token request success. Provides utilities and mandatory data needed to respond to the token part of client credentials, resource owner password, code and hybrid flows.
   """
 
+  alias Boruta.CodesAdapter
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Token
   alias Boruta.Oauth.TokenResponse
 
@@ -15,7 +17,8 @@ defmodule Boruta.Oauth.TokenResponse do
             id_token: nil,
             c_nonce: nil,
             token: nil,
-            authorization_details: nil
+            authorization_details: nil,
+            encrypted_response: nil
 
   @type t :: %__MODULE__{
           token_type: String.t(),
@@ -26,7 +29,8 @@ defmodule Boruta.Oauth.TokenResponse do
           expires_in: integer() | nil,
           refresh_token: String.t() | nil,
           token: Token.t(),
-          authorization_details: map() | nil
+          authorization_details: map() | nil,
+          encrypted_response: String.t() | nil
         }
 
   @spec from_token(%{
@@ -97,6 +101,20 @@ defmodule Boruta.Oauth.TokenResponse do
       ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
+    encrypted_response = with "" <> previous_code <- token.previous_code,
+      %Token{} = token <- CodesAdapter.get_by(value: previous_code) do
+      Client.Crypto.encrypt(%{
+        access_token: value,
+        token_type: "bearer",
+        expires_in: expires_in,
+        refresh_token: refresh_token,
+        id_token: params[:id_token] && params[:id_token].value,
+        c_nonce: c_nonce,
+        authorization_details: token.authorization_details
+      }, token.client_encryption_key, token.client_encryption_alg)
+    else
+      _ -> nil
+    end
 
     %TokenResponse{
       token: token,
@@ -106,7 +124,8 @@ defmodule Boruta.Oauth.TokenResponse do
       refresh_token: refresh_token,
       id_token: params[:id_token] && params[:id_token].value,
       c_nonce: c_nonce,
-      authorization_details: token.authorization_details
+      authorization_details: token.authorization_details,
+      encrypted_response: encrypted_response
     }
   end
 end

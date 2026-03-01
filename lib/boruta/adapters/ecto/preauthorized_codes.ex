@@ -44,7 +44,9 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           response_type: params[:response_type],
           scope: scope,
           state: state,
-          sub: sub
+          sub: sub,
+          client_encryption_key: params[:client_encryption_key],
+          client_encryption_alg: params[:client_encryption_alg]
         }
       ])
 

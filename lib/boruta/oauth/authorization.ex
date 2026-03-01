@@ -755,7 +755,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                state: state,
                nonce: nonce,
                agent_token: agent_token,
-               authorization_details: authorization_details
+               authorization_details: authorization_details,
+               client_encryption_key: code && code.client_encryption_key,
+               client_encryption_alg: code && code.client_encryption_alg
              }) do
         {:ok, %{preauthorized_code: preauthorized_code}}
       end
