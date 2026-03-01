@@ -163,7 +163,7 @@ defmodule Boruta.Openid do
   end
 
   @type direct_post_params :: %{
-          response: String.t() | nil,
+          encrypted_response: String.t() | nil,
           code_id: String.t(),
           code_verifier: String.t() | nil,
           id_token: nil | String.t(),
@@ -176,10 +176,10 @@ defmodule Boruta.Openid do
           direct_post_params :: direct_post_params(),
           module :: atom()
         ) :: any()
-  def direct_post(conn, %{code_id: code_id, response: response}, module)
-      when not is_nil(response) do
+  def direct_post(conn, %{code_id: code_id, encrypted_response: encrypted_response}, module)
+      when not is_nil(encrypted_response) do
     with %Token{} = code <- CodesAdapter.get_by(id: code_id),
-         {:ok, response_claims} <- Client.Crypto.decrypt(response, code.client),
+         {:ok, response_claims} <- Client.Crypto.decrypt(encrypted_response, code.client),
          direct_post_params <- %{
            code_id: code_id,
            id_token: response_claims["id_token"],
