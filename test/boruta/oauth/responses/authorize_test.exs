@@ -3,6 +3,16 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
 
   alias Boruta.Oauth.AuthorizeResponse
 
+  defp assert_url_query(url, expected_query) do
+    uri = URI.parse(url)
+    assert URI.decode_query(uri.query || "") == expected_query
+  end
+
+  defp assert_url_fragment(url, expected_fragment) do
+    uri = URI.parse(url)
+    assert URI.decode_query(uri.fragment || "") == expected_fragment
+  end
+
   describe "redirect_to_url/1" do
     test "returns an url with access_token type" do
       response = %AuthorizeResponse{
@@ -12,8 +22,10 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri#access_token=value&expires_in=10"
+      assert_url_fragment(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "value",
+        "expires_in" => "10"
+      })
     end
 
     test "returns a fragment according to `response_mode` for hybrid requests" do
@@ -26,8 +38,11 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         response_mode: "fragment"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri#access_token=value&code=value&expires_in=10"
+      assert_url_fragment(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "value",
+        "code" => "value",
+        "expires_in" => "10"
+      })
     end
 
     test "returns query params according to `response_mode` for hybrid requests" do
@@ -40,8 +55,11 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         response_mode: "query"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri?access_token=value&code=value&expires_in=10"
+      assert_url_query(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "value",
+        "code" => "value",
+        "expires_in" => "10"
+      })
     end
 
     test "returns an url with access_token type and a state" do
@@ -53,8 +71,11 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri#access_token=value&expires_in=10&state=state"
+      assert_url_fragment(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "value",
+        "expires_in" => "10",
+        "state" => "state"
+      })
     end
 
     test "returns an url with hybrid type" do
@@ -66,8 +87,11 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri#access_token=access_token&expires_in=10&id_token=id_token"
+      assert_url_fragment(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "access_token",
+        "expires_in" => "10",
+        "id_token" => "id_token"
+      })
     end
 
     test "returns an url with hybrid type, a state and a token_type" do
@@ -81,8 +105,13 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         token_type: "token_type"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri#access_token=access_token&expires_in=10&id_token=id_token&state=state&token_type=token_type"
+      assert_url_fragment(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "access_token",
+        "expires_in" => "10",
+        "id_token" => "id_token",
+        "state" => "state",
+        "token_type" => "token_type"
+      })
     end
 
     test "returns an url with code type" do
@@ -92,7 +121,7 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) == "http://redirect.uri?code=value"
+      assert_url_query(AuthorizeResponse.redirect_to_url(response), %{"code" => "value"})
     end
 
     test "returns an url with code type and a state" do
@@ -103,8 +132,10 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri?code=value&state=state"
+      assert_url_query(AuthorizeResponse.redirect_to_url(response), %{
+        "code" => "value",
+        "state" => "state"
+      })
     end
 
     test "returns an url with a query in redirect_uri" do
@@ -115,8 +146,11 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         redirect_uri: "http://redirect.uri?foo=bar"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri?code=value&state=state&foo=bar"
+      assert_url_query(AuthorizeResponse.redirect_to_url(response), %{
+        "code" => "value",
+        "state" => "state",
+        "foo" => "bar"
+      })
     end
 
     test "returns query params according to `response_mode` for code requests" do
@@ -128,8 +162,10 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         response_mode: "query"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri?code=value&state=state"
+      assert_url_query(AuthorizeResponse.redirect_to_url(response), %{
+        "code" => "value",
+        "state" => "state"
+      })
     end
 
     test "returns fragment according to `response_mode` for token requests" do
@@ -141,8 +177,10 @@ defmodule Boruta.Oauth.AuthorizeResponseTest do
         response_mode: "fragment"
       }
 
-      assert AuthorizeResponse.redirect_to_url(response) ==
-               "http://redirect.uri#access_token=value&expires_in=10"
+      assert_url_fragment(AuthorizeResponse.redirect_to_url(response), %{
+        "access_token" => "value",
+        "expires_in" => "10"
+      })
     end
   end
 end

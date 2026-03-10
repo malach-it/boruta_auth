@@ -7,6 +7,16 @@ defmodule Boruta.Oauth.ErrorTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.TokenRequest
 
+  defp assert_url_query(url, expected_query) do
+    uri = URI.parse(url)
+    assert URI.decode_query(uri.query || "") == expected_query
+  end
+
+  defp assert_url_fragment(url, expected_fragment) do
+    uri = URI.parse(url)
+    assert URI.decode_query(uri.fragment || "") == expected_fragment
+  end
+
   describe "with_format/2" do
     test "returns error with nil format when client is invalid" do
       assert %Error{format: nil, redirect_uri: nil} =
@@ -132,8 +142,10 @@ defmodule Boruta.Oauth.ErrorTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert Error.redirect_to_url(error) ==
-               "http://redirect.uri#error=error&error_description=Error+description"
+      assert_url_fragment(Error.redirect_to_url(error), %{
+        "error" => "error",
+        "error_description" => "Error description"
+      })
     end
 
     test "returns an url with query" do
@@ -145,8 +157,10 @@ defmodule Boruta.Oauth.ErrorTest do
         redirect_uri: "http://redirect.uri"
       }
 
-      assert Error.redirect_to_url(error) ==
-               "http://redirect.uri?error=error&error_description=Error+description"
+      assert_url_query(Error.redirect_to_url(error), %{
+        "error" => "error",
+        "error_description" => "Error description"
+      })
     end
 
     test "returns an url with fragment with a state" do
@@ -159,8 +173,11 @@ defmodule Boruta.Oauth.ErrorTest do
         state: "state"
       }
 
-      assert Error.redirect_to_url(error) ==
-               "http://redirect.uri#error=error&error_description=Error+description&state=state"
+      assert_url_fragment(Error.redirect_to_url(error), %{
+        "error" => "error",
+        "error_description" => "Error description",
+        "state" => "state"
+      })
     end
 
     test "returns an url with query with a state" do
@@ -173,8 +190,11 @@ defmodule Boruta.Oauth.ErrorTest do
         state: "state"
       }
 
-      assert Error.redirect_to_url(error) ==
-               "http://redirect.uri?error=error&error_description=Error+description&state=state"
+      assert_url_query(Error.redirect_to_url(error), %{
+        "error" => "error",
+        "error_description" => "Error description",
+        "state" => "state"
+      })
     end
   end
 end

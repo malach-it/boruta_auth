@@ -1,5 +1,5 @@
 defmodule Boruta.Openid.UserinfoResponseTest do
-  use ExUnit.Case, assync: true
+  use ExUnit.Case, async: true
 
   alias Boruta.Oauth.Client
   alias Boruta.Openid.UserinfoResponse

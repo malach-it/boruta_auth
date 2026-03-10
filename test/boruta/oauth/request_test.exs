@@ -1,7 +1,7 @@
 defmodule Boruta.Oauth.RequestTest do
   use ExUnit.Case
 
-  use Plug.Test
+  import Plug.Test
 
   defmodule Token do
     @moduledoc false
