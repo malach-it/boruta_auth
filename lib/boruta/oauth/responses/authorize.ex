@@ -74,11 +74,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
         false -> :code
       end
 
-    response_mode =
-      case request.__struct__ do
-        HybridRequest -> request.response_mode
-        _ -> nil
-      end
+    response_mode = Map.get(request, :response_mode)
 
     %AuthorizeResponse{
       type: type,
@@ -104,7 +100,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             state: state
           }
         } = params,
-        _request
+        request
       ) do
     {:ok, expires_at} = DateTime.from_unix(expires_at)
     expires_in = DateTime.diff(expires_at, DateTime.utc_now())
@@ -116,7 +112,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       id_token: params[:id_token] && params[:id_token].value,
       expires_in: expires_in,
       state: state,
-      token_type: "bearer"
+      token_type: "bearer",
+      response_mode: Map.get(request, :response_mode)
     }
   end
 
@@ -128,13 +125,14 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             state: state
           }
         },
-        _request
+        request
       ) do
     %AuthorizeResponse{
       type: :token,
       redirect_uri: redirect_uri,
       id_token: id_token,
-      state: state
+      state: state,
+      response_mode: Map.get(request, :response_mode)
     }
   end
 

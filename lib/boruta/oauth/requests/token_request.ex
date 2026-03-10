@@ -16,7 +16,8 @@ defmodule Boruta.Oauth.TokenRequest do
           scope: String.t(),
           resource_owner: struct(),
           grant_type: String.t(),
-          nonce: String.t()
+          nonce: String.t(),
+          response_mode: String.t() | nil
         }
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct client_id: nil,
@@ -27,6 +28,7 @@ defmodule Boruta.Oauth.TokenRequest do
             grant_type: "implicit",
             nonce: nil,
             response_types: [],
+            response_mode: nil,
             prompt: ""
 
   alias Boruta.Oauth.Scope
