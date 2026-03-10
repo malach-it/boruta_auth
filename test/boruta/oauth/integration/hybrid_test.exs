@@ -80,7 +80,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 %Error{
                   error: :invalid_request,
                   error_description:
-                    "Query params validation failed. #/response_mode do match required pattern /^(query|fragment)$/.",
+                    "Query params validation failed. #/response_mode do match required pattern /^(query|fragment|form_post)$/.",
                   status: :bad_request
                 }}
     end
