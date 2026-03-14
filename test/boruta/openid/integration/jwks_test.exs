@@ -13,12 +13,13 @@ defmodule Boruta.OpenidTest.JwksTest do
     end
 
     test "list all clients jwk keys" do
-      _client_1 = insert(:client, public_key: public_key_fixture())
+      _client_1 = insert(:client, public_key: public_key_fixture(), id_token_signature_alg: "RS256")
       _client_2 = insert(:client, public_key: public_key_fixture())
 
       assert {:jwk_list, jwk_keys} = Openid.jwks(%Plug.Conn{}, ApplicationMock)
 
       assert Enum.member?(jwk_keys, %{
+               "alg" => "RS256",
                "kid" => "Ac9ufCpgwReXGJ6LI",
                "e" => "AQAB",
                "kty" => "RSA",

@@ -3,6 +3,8 @@ defmodule Boruta.Oauth.Request.Token do
 
   import Boruta.Oauth.Request.Base
 
+  alias Boruta.ClientsAdapter
+  alias Boruta.Oauth
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.Error
@@ -23,14 +25,15 @@ defmodule Boruta.Oauth.Request.Token do
                AuthorizationCodeRequest.t()
                | ClientCredentialsRequest.t()
                | PasswordRequest.t()}
-  def request(%{body_params: body_params} = request) do
-    with {:ok, unsigned_params} <- fetch_unsigned_request(request),
+  def request(request) do
+    with {:ok, request} <- decrypt_request(request),
+         {:ok, unsigned_params} <- fetch_unsigned_request(request),
          {:ok, client_authentication_params} <- fetch_client_authentication(request),
          {:ok, dpop} <- fetch_dpop(request),
          {:ok, params} <-
            Validator.validate(
              :token,
-             body_params
+             request.body_params
              |> Map.put("dpop", %{dpop: dpop, request: request})
              |> Enum.into(unsigned_params)
              |> Enum.into(client_authentication_params)
@@ -46,6 +49,22 @@ defmodule Boruta.Oauth.Request.Token do
          }}
     end
   end
+
+  def decrypt_request(
+    %{
+      body_params: %{"client_id" => client_id, "encrypted_request" => encrypted_request} = params
+    } = request
+  ) when is_binary(encrypted_request) do
+    with %Oauth.Client{} = client <- ClientsAdapter.get_client(client_id),
+         {:ok, request_params} <- Oauth.Client.Crypto.decrypt(encrypted_request, client) do
+      {:ok, Map.put(request, :body_params, Map.merge(params, request_params))}
+    else
+      _ ->
+        {:ok, request}
+    end
+  end
+
+  def decrypt_request(params), do: {:ok, params}
 
   defp fetch_dpop(%{req_headers: req_headers}) do
     with {"dpop", dpop} <- List.keyfind(req_headers, "dpop", 0),
