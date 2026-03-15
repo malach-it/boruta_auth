@@ -51,7 +51,8 @@ defmodule Boruta.Ecto.Clients do
   defp public!(:from_database) do
     issuer = issuer()
 
-    with %Client{} = client <- repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
+    with %Client{} = client <-
+           repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put_public() do
       client
     end
@@ -123,9 +124,15 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
-  defp rsa_key(%Client{public_key: public_key, private_key: private_key}) do
+  defp rsa_key(%Client{
+         public_key: public_key,
+         private_key: private_key,
+         id_token_signature_alg: id_token_signature_alg
+       }) do
     {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
 
-    Map.put(jwk, "kid", Oauth.Client.Crypto.kid_from_private_key(private_key))
+    jwk
+    |> Map.put("kid", Oauth.Client.Crypto.kid_from_private_key(private_key))
+    |> Map.put("alg", id_token_signature_alg)
   end
 end
