@@ -73,13 +73,16 @@ defmodule Boruta.Openid do
   def credential(conn, credential_params, default_credential_configuration, module) do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
-         {:ok, credential_params} <- (case credential_params["encrypted_request"] do
-           nil -> {:ok, credential_params}
-           encrypted_request ->
-             with {:ok, params} <- Client.Crypto.decrypt(encrypted_request, token.client) do
-               {:ok, Map.merge(credential_params, params)}
-             end
-         end),
+         {:ok, credential_params} <-
+           (case credential_params["encrypted_request"] do
+              nil ->
+                {:ok, credential_params}
+
+              encrypted_request ->
+                with {:ok, params} <- Client.Crypto.decrypt(encrypted_request, token.client) do
+                  {:ok, Map.merge(credential_params, params)}
+                end
+            end),
          {:ok, credential_params} <- validate_credential_params(credential_params),
          {:ok, credential} <-
            VerifiableCredentials.issue_verifiable_credential(
@@ -146,7 +149,7 @@ defmodule Boruta.Openid do
   end
 
   @type direct_post_params :: %{
-          response: String.t() | nil,
+          encrypted_response: String.t() | nil,
           code_id: String.t(),
           code_verifier: String.t() | nil,
           id_token: nil | String.t(),
@@ -158,16 +161,31 @@ defmodule Boruta.Openid do
           direct_post_params :: direct_post_params(),
           module :: atom()
         ) :: any()
-  def direct_post(conn, %{code_id: code_id, response: response}, module)
-      when not is_nil(response) do
-    with %Token{value: value} = code <- CodesAdapter.get_by(id: code_id),
-         {:ok, response_claims} <- Client.Crypto.decrypt(response, code.client),
+  def direct_post(conn, %{code_id: code_id, encrypted_response: encrypted_response}, module)
+      when not is_nil(encrypted_response) do
+    with %Token{} = code <- CodesAdapter.get_by(id: code_id),
+         {:ok, response_claims} <- Client.Crypto.decrypt(encrypted_response, code.client),
          direct_post_params <- %{
+           code_id: code_id,
+           response_decrypted: true,
            id_token: response_claims["id_token"],
            vp_token: response_claims["vp_token"],
            presentation_submission: response_claims["presentation_submission"]
          } do
-      with {:ok, claims} <- check_id_token_client(direct_post_params),
+      direct_post(conn, direct_post_params, module)
+    else
+      {:error, error} ->
+        module.authentication_failure(conn, %{error | format: :query})
+
+      nil ->
+        module.code_not_found(conn)
+    end
+  end
+
+  def direct_post(conn, direct_post_params, module) do
+      with %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]),
+         {:ok, claims} <- check_id_token_client(direct_post_params) do
+      with :ok <- maybe_check_response_encryption(direct_post_params, code.client),
            {:ok, code} <-
              Authorization.Code.authorize(%{
                value: value,
@@ -218,56 +236,25 @@ defmodule Boruta.Openid do
     end
   end
 
-  def direct_post(conn, direct_post_params, module) do
-    with {:ok, claims} <- check_id_token_client(direct_post_params),
-         %Token{value: value} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
-      with {:ok, code} <-
-             Authorization.Code.authorize(%{
-               value: value,
-               code_verifier: direct_post_params[:code_verifier]
-             }),
-           :ok <-
-             maybe_check_public_client_id(direct_post_params, code.public_client_id, code.client),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, code} <-
-             CodesAdapter.update_client_encryption(code, %{
-               client_encryption_key: claims["client_encryption_key"],
-               client_encryption_alg: claims["client_encryption_alg"]
-             }) do
-        module.direct_post_success(conn, %DirectPostResponse{
-          id_token: direct_post_params[:id_token],
-          vp_token: direct_post_params[:vp_token],
-          code: code,
-          redirect_uri: code.redirect_uri,
-          state: code.state,
-          client_encryption_key: claims["client_encryption_key"],
-          client_encryption_alg: claims["client_encryption_alg"]
-        })
-      else
-        {:error, "" <> error} ->
-          module.authentication_failure(conn, %Error{
-            error: :unknown_error,
-            status: :unprocessable_entity,
-            error_description: error,
-            format: :query,
-            redirect_uri: code.redirect_uri,
-            state: code.state
-          })
+  defp maybe_check_response_encryption(
+         _direct_post_params,
+         %Client{enforce_encryption: false}
+       ),
+       do: :ok
 
-        {:error, error} ->
-          module.authentication_failure(conn, %{
-            error
-            | format: :query,
-              redirect_uri: code.redirect_uri,
-              state: code.state
-          })
-      end
-    else
-      {:error, error} ->
-        module.authentication_failure(conn, %{error | format: :query})
+  defp maybe_check_response_encryption(direct_post_params, %Client{enforce_encryption: true}) do
+    case direct_post_params[:response_decrypted] do
+      true ->
+        :ok
 
-      nil ->
-        module.code_not_found(conn)
+      _ ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_request,
+           error_description: "Direct post response must be encrypted."
+         }}
+
     end
   end
 
@@ -319,7 +306,8 @@ defmodule Boruta.Openid do
          %{id_token: id_token},
          "did:" <> _key = public_client_id,
          _client
-       ) when not is_nil(id_token) do
+       )
+       when not is_nil(id_token) do
     with {:ok, %{"alg" => alg}} <- Joken.peek_header(id_token),
          {:ok, _jwk, _claims} <-
            VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, id_token) do
