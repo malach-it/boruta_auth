@@ -167,7 +167,7 @@ defmodule Boruta.Openid do
   end
 
   @type direct_post_params :: %{
-          response: String.t() | nil,
+          encrypted_response: String.t() | nil,
           code_id: String.t(),
           code_verifier: String.t() | nil,
           id_token: nil | String.t(),
@@ -268,8 +268,6 @@ defmodule Boruta.Openid do
       {:error, error} ->
         module.authentication_failure(conn, %{error | format: :query})
 
-      nil ->
-        module.code_not_found(conn)
     end
   end
 

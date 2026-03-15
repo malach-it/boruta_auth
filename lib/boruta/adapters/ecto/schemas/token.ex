@@ -224,6 +224,8 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :requested_scope,
       :state,
+      :client_encryption_key,
+      :client_encryption_alg,
       :sub
     ])
     |> validate_required([:authorization_code_ttl, :client_id])
@@ -253,6 +255,8 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :requested_scope,
       :state,
+      :client_encryption_key,
+      :client_encryption_alg,
       :sub
     ])
     |> validate_required([

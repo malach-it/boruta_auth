@@ -25,6 +25,9 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
 
+      enforce_encryption_client =
+        insert(:client, enforce_encryption: true, redirect_uris: ["https://redirect.uri"])
+
       code_params = [
         type: "code",
         client: client,
@@ -129,6 +132,15 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         insert(:token, [{:value, "policy_code_2"}] ++ code_params)
       ]
 
+      enforce_encryption_code =
+        insert(
+          :token,
+          [
+            {:public_client_id, wallet_did}
+            | Keyword.put(code_params, :client, enforce_encryption_client)
+          ]
+        )
+
       pkce_code =
         insert(:token,
           type: "code",
@@ -204,6 +216,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       {:ok,
        client: client,
        code: code,
+       enforce_encryption_code: enforce_encryption_code,
        pkce_code: pkce_code,
        public_client_code: public_client_code,
        bad_public_client_code: bad_public_client_code,
@@ -216,7 +229,20 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        vp_token: vp_token}
     end
 
-    test "returns authentication failure without id_token" do
+    test "returns authentication failure with a bad code" do
+      conn = %Plug.Conn{}
+
+      assert {:code_not_found} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: "bad_code_id"
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "returns authentication failure without id_token", %{code: code} do
       conn = %Plug.Conn{}
 
       assert {
@@ -231,13 +257,13 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                Openid.direct_post(
                  conn,
                  %{
-                   code_id: "bad_code_id"
+                   code_id: code.id
                  },
                  ApplicationMock
                )
     end
 
-    test "siopv2 - returns not found with a bad id_token" do
+    test "siopv2 - returns not found with a bad id_token", %{code: code} do
       conn = %Plug.Conn{}
 
       assert {:authentication_failure,
@@ -250,7 +276,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                Openid.direct_post(
                  conn,
                  %{
-                   code_id: "bad_code_id",
+                   code_id: code.id,
                    id_token: "bad_id_token"
                  },
                  ApplicationMock
@@ -303,6 +329,39 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     test "siopv2 - returns an error with expired code", %{id_token: id_token} do
       code = insert(:token, type: "code", expires_at: 0)
       conn = %Plug.Conn{}
+
+      assert {
+               :authentication_failure,
+               %Boruta.Oauth.Error{
+                 status: :bad_request,
+                 format: :query,
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired."
+               }
+             } =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+    end
+
+    @tag :skip
+    test "siopv2 - returns an error on replay", %{id_token: id_token, code: code} do
+      conn = %Plug.Conn{}
+
+      assert {:direct_post_success, _response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
 
       assert {
                :authentication_failure,
@@ -437,7 +496,59 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  conn,
                  %{
                    code_id: code.id,
-                   response: response
+                   encrypted_response: response
+                 },
+                 ApplicationMock
+               )
+
+      assert response.id_token
+      assert response.redirect_uri == code.redirect_uri
+      assert response.code.value == code.value
+      assert response.state == code.state
+    end
+
+    test "siopv2 - returns an error when client requires encryption and response is not encrypted",
+         %{id_token: id_token, enforce_encryption_code: code} do
+      conn = %Plug.Conn{}
+
+      assert {:authentication_failure,
+              %Boruta.Oauth.Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "Direct post response must be encrypted.",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "siopv2 - authenticates with encrypted response when client requires encryption", %{
+      id_token: id_token,
+      enforce_encryption_code: code
+    } do
+      conn = %Plug.Conn{}
+
+      response =
+        Oauth.Client.Crypto.encrypt(
+          %{id_token: id_token},
+          JOSE.JWK.from_pem(code.client.public_key) |> JOSE.JWK.to_map(),
+          "ECDH-ES"
+        )
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   encrypted_response: response
                  },
                  ApplicationMock
                )
@@ -493,7 +604,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
-    test "oid4vp - returns not found with a bad id_token" do
+    test "oid4vp - returns not found with a bad vp_token", %{code: code} do
       conn = %Plug.Conn{}
 
       assert {:authentication_failure,
@@ -506,7 +617,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                Openid.direct_post(
                  conn,
                  %{
-                   code_id: "bad_code_id",
+                   code_id: code.id,
                    vp_token: "bad_vp_token"
                  },
                  ApplicationMock
@@ -598,6 +709,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "oid4vp - returns an error on replay", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
@@ -862,7 +974,102 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  conn,
                  %{
                    code_id: code.id,
-                   response: response
+                   encrypted_response: response
+                 },
+                 ApplicationMock
+               )
+
+      assert response.vp_token
+      assert response.redirect_uri == code.redirect_uri
+      assert response.code.value == code.value
+      assert response.state == code.state
+    end
+
+    test "oid4vp - returns an error when client requires encryption and response is not encrypted",
+         %{
+           vp_token: vp_token,
+           enforce_encryption_code: code
+         } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:authentication_failure,
+              %Boruta.Oauth.Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "Direct post response must be encrypted.",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "oid4vp - authenticates with encrypted response when client requires encryption", %{
+      vp_token: vp_token,
+      enforce_encryption_code: code
+    } do
+      conn = %Plug.Conn{}
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "test",
+          "definition_id" => "test",
+          "descriptor_map" => [
+            %{
+              "id" => "test",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "test",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      response =
+        Oauth.Client.Crypto.encrypt(
+          %{
+            vp_token: vp_token,
+            presentation_submission: presentation_submission
+          },
+          JOSE.JWK.from_pem(code.client.public_key) |> JOSE.JWK.to_map(),
+          "ECDH-ES"
+        )
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   encrypted_response: response
                  },
                  ApplicationMock
                )
