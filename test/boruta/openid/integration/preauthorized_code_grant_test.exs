@@ -403,8 +403,10 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
       assert preauthorized_code
 
-      assert Repo.get_by(Ecto.Token, type: "preauthorized_code", value: preauthorized_code).previous_code ==
-               code.value
+
+      previous_code = code.value
+      assert {:ok, %Oauth.Token{previous_code: ^previous_code}} =
+               Ecto.TokenStore.get(value: preauthorized_code)
     end
 
     test "returns a credential offer response (agent_token)", %{
@@ -1090,7 +1092,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
     test "returns a token", %{code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
 
       assert {:token_success,
               %TokenResponse{
@@ -1151,7 +1153,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
     test "returns a token with tx code", %{tx_code_code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
 
       assert {:token_success,
               %TokenResponse{

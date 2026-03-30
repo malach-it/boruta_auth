@@ -384,26 +384,6 @@ defmodule Boruta.Openid do
        do: :ok
 
   defp maybe_verify_public_client_id(
-         %{id_token: id_token},
-         "did:" <> _key = public_client_id,
-         _client
-       ) when not is_nil(id_token) do
-    with {:ok, %{"alg" => alg}} <- Joken.peek_header(id_token),
-         {:ok, _jwk, _claims} <-
-           VerifiablePresentations.verify_jwt({:did, public_client_id}, alg, id_token) do
-      :ok
-    else
-      {:error, _error} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_client,
-           error_description: "Authorization client_id do not match vp_token signature."
-         }}
-    end
-  end
-
-  defp maybe_verify_public_client_id(
          %{vp_token: vp_token},
          [last | code_chain],
          _client
