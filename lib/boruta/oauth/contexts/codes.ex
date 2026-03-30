@@ -30,7 +30,7 @@ defmodule Boruta.Oauth.Codes do
     :authorization_details => list(map()) | nil,
     :presentation_definition => map() | nil,
     optional(:resource_owner) => Boruta.Oauth.ResourceOwner.t()
-  }) :: code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
+  }) :: {:ok, code :: Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
   @doc """
   Revokes the given `Boruta.Oauth.Token` code.

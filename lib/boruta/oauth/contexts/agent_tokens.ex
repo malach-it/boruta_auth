@@ -26,7 +26,7 @@ defmodule Boruta.Oauth.AgentTokens do
     :bind_configuration => map()
   }, options :: [
     refresh_token: boolean()
-  ]) :: token :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
+  ]) :: {:ok, token :: Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
   @doc """
   Revokes the given `Boruta.Oauth.Token`.

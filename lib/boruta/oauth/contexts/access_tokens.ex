@@ -26,7 +26,7 @@ defmodule Boruta.Oauth.AccessTokens do
     optional(:agent_token) => String.t() | nil
   }, options :: [
     refresh_token: boolean()
-  ]) :: token :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
+  ]) :: {:ok, token :: Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
   @doc """
   Revokes the given `Boruta.Oauth.Token`.

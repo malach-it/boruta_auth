@@ -23,8 +23,8 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
       ) do
     sub = params[:sub]
 
-    # TODO store resource owner credentials
     token = %Oauth.Token{
+      id: SecureRandom.uuid(),
       type: "preauthorized_code",
       resource_owner: resource_owner,
       client: client,

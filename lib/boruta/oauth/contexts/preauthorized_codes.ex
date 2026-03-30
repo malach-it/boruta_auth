@@ -11,5 +11,5 @@ defmodule Boruta.Openid.PreauthorizedCodes do
     :state => String.t(),
     :resource_owner => Boruta.Oauth.ResourceOwner.t(),
     :agent_token => String.t() | nil
-  }) :: preauthorized_code :: Boruta.Oauth.Token.t() | {:error, reason :: term()}
+  }) :: {:ok, preauthorized_code :: Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 end
