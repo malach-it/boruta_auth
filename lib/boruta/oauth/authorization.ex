@@ -1037,6 +1037,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          authorization_details: Jason.decode!(authorization_details),
          client: client,
          sub: resource_owner.sub,
+         resource_owner: resource_owner,
          scope: scope,
          state: state,
          nonce: nonce,
@@ -1062,6 +1063,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             authorization_details: authorization_details,
             client: client,
             sub: sub,
+            resource_owner: resource_owner,
             scope: scope,
             state: state,
             nonce: nonce,
@@ -1079,6 +1081,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
       with {:ok, code} <-
              PreauthorizedCodesAdapter.create(%{
                sub: sub,
+               resource_owner: resource_owner,
                response_type: Enum.join(response_types, " "),
                client: client,
                public_client_id: public_client_id,
