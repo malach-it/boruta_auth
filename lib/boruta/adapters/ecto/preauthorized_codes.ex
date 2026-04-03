@@ -2,9 +2,11 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
   @moduledoc false
   @behaviour Boruta.Openid.PreauthorizedCodes
 
-  import Boruta.Config, only: [token_generator: 0]
+  import Boruta.Config, only: [repo: 0]
+  import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
   alias Boruta.Ecto.Errors
+  alias Boruta.Ecto.Token
   alias Boruta.Ecto.TokenStore
   alias Boruta.Oauth
 
@@ -13,8 +15,10 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
         %{
           client:
             %Oauth.Client{
+              id: client_id,
               authorization_code_ttl: authorization_code_ttl
             } = client,
+          resource_owner: resource_owner,
           scope: scope,
           state: state,
           redirect_uri: redirect_uri
@@ -22,31 +26,31 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
       ) do
     sub = params[:sub]
 
-    token = %Oauth.Token{
-      agent_token: params[:agent_token],
-      authorization_details:
-        params[:resource_owner] && params[:resource_owner].authorization_details,
-      client: client,
-      code_challenge: params[:code_challenge],
-      code_challenge_method: params[:code_challenge_method],
-      id: SecureRandom.uuid(),
-      nonce: params[:nonce],
-      presentation_definition: params[:presentation_definition],
-      previous_code: params[:previous_code],
-      public_client_id: params[:public_client_id],
-      redirect_uri: redirect_uri,
-      resource_owner: params[:resource_owner],
-      response_type: params[:response_type],
-      scope: scope,
-      state: state,
-      sub: sub,
-      type: "preauthorized_code"
-    }
+    # TODO store resource owner credentials
+    changeset =
+      apply(Token, changeset_method(client), [
+        %Token{resource_owner: resource_owner},
+        %{
+          agent_token: params[:agent_token],
+          authorization_code_ttl: authorization_code_ttl,
+          authorization_details: resource_owner.authorization_details,
+          client_id: client_id,
+          code_challenge: params[:code_challenge],
+          code_challenge_method: params[:code_challenge_method],
+          nonce: params[:nonce],
+          presentation_definition: params[:presentation_definition],
+          previous_code: params[:previous_code],
+          public_client_id: params[:public_client_id],
+          redirect_uri: redirect_uri,
+          response_type: params[:response_type],
+          scope: scope,
+          state: state,
+          sub: sub,
+        }
+      ])
 
-    with token <- %{token | tx_code: token_generator().generate(:tx_code, token)},
-         token <- %{token | expires_at: :os.system_time(:seconds) + authorization_code_ttl},
-         token <- %{token | value: token_generator().generate(:preauthorized_code, token)},
-         {:ok, token} <- TokenStore.put(token) do
+    with {:ok, token} <- repo().insert(changeset),
+         {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
       {:ok, token}
     else
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -55,4 +59,7 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
         {:error, "Could not create code : #{error_message}"}
     end
   end
+
+  defp changeset_method(%Oauth.Client{pkce: false}), do: :preauthorized_code_changeset
+  defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_preauthorized_code_changeset
 end

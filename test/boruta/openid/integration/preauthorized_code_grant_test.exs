@@ -407,6 +407,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       previous_code = code.value
       assert {:ok, %Oauth.Token{previous_code: ^previous_code}} =
                Ecto.TokenStore.get(value: preauthorized_code)
+      assert %Ecto.Token{previous_code: ^previous_code} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
     end
 
     test "returns a credential offer response (agent_token)", %{
@@ -452,10 +453,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                )
 
       assert preauthorized_code
-
-      assert {:ok, %Oauth.Token{agent_token: agent_token}} =
-               Ecto.TokenStore.get(value: preauthorized_code)
-
+      assert %Ecto.Token{agent_token: agent_token} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
       assert agent_token
     end
 
@@ -503,10 +501,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
       assert preauthorized_code
       assert tx_code
-
-      assert {:ok, %Oauth.Token{tx_code: tx_code}} =
-               Ecto.TokenStore.get(value: preauthorized_code)
-
+      assert [%Ecto.Token{tx_code: tx_code}] = Repo.all(Boruta.Ecto.Token)
       assert String.length(tx_code) == 4
     end
 
