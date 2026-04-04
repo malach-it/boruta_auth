@@ -42,6 +42,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   def response_types("id_token urn:ietf:params:oauth:response-type:pre-authorized_code", _scope, _presentation_configuration), do: ["id_token", "urn:ietf:params:oauth:response-type:pre-authorized_code"]
+  def response_types("vp_token urn:ietf:params:oauth:response-type:pre-authorized_code", _scope, _presentation_configuration), do: ["vp_token", "urn:ietf:params:oauth:response-type:pre-authorized_code"]
 
   def presentation_definition(presentation_configuration, scope) do
     case Enum.find(presentation_configuration, fn {identifier, _configuration} ->

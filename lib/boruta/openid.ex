@@ -571,9 +571,7 @@ defmodule Boruta.Openid do
     CodesAdapter.revoke(code_chain)
   end
 
-  defp maybe_revoke_code_chain(%{vp_token: _vp_token}, code_chain) do
-    CodesAdapter.revoke(code_chain)
-  end
+  defp maybe_revoke_code_chain(%{vp_token: _vp_token}, code_chain), do: {:ok, code_chain}
 
   defp maybe_revoke_code_chain(%{id_token: _id_token}, code_chain), do: {:ok, code_chain}
 

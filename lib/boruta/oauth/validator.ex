@@ -73,6 +73,7 @@ defmodule Boruta.Oauth.Validator do
              "id_token",
              "id_token token",
              "id_token urn:ietf:params:oauth:response-type:pre-authorized_code",
+             "vp_token urn:ietf:params:oauth:response-type:pre-authorized_code",
              "id_token vp_token",
              "code",
              "code id_token",
