@@ -8,7 +8,9 @@ defmodule Boruta.Openid.DirectPostResponse do
     :vp_token,
     :code,
     :redirect_uri,
-    :state
+    :state,
+    :client_encryption_key,
+    :client_encryption_alg
   ]
 
   @type t :: %__MODULE__{
@@ -16,6 +18,8 @@ defmodule Boruta.Openid.DirectPostResponse do
     vp_token: String.t() | nil,
     code: Boruta.Oauth.Token.t(),
     redirect_uri: String.t(),
-    state: String.t() | nil
+    state: String.t() | nil,
+    client_encryption_key: map() | nil,
+    client_encryption_alg: String.t() | nil
   }
 end

@@ -132,6 +132,17 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.create_client(%{check_public_client_id: check_public_client_id})
     end
 
+    test "creates a client with enforce_encryption" do
+      enforce_encryption = true
+
+      assert {:ok, %Client{enforce_encryption: ^enforce_encryption}} =
+               Admin.create_client(%{enforce_encryption: enforce_encryption})
+    end
+
+    test "creates a client with a default enforce_encryption to false" do
+      assert {:ok, %Client{enforce_encryption: false}} = Admin.create_client(%{})
+    end
+
     test "creates a client with a default confidentiality to false" do
       assert {:ok, %Client{confidential: false}} = Admin.create_client(%{})
     end
@@ -448,6 +459,14 @@ defmodule Boruta.Ecto.AdminTest do
 
       assert {:ok, %Client{check_public_client_id: ^check_public_client_id}} =
                Admin.update_client(client, %{"check_public_client_id" => check_public_client_id})
+    end
+
+    test "updates the client with enforce_encryption" do
+      enforce_encryption = true
+      client = client_fixture()
+
+      assert {:ok, %Client{enforce_encryption: ^enforce_encryption}} =
+               Admin.update_client(client, %{"enforce_encryption" => enforce_encryption})
     end
 
     test "updates a client with key pair type" do

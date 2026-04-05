@@ -50,7 +50,9 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             response_mode: nil,
             agent_token: nil,
             bind_data: nil,
-            bind_configuration: nil
+            bind_configuration: nil,
+            client_encryption_key: nil,
+            client_encryption_alg: nil
 
   @type t :: %__MODULE__{
           response_types: list(String.t()),
@@ -72,7 +74,9 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           response_mode: String.t() | nil,
           agent_token: String.t() | nil,
           bind_data: map(),
-          bind_configuration: map()
+          bind_configuration: map(),
+          client_encryption_key: String.t() | nil,
+          client_encryption_alg: String.t() | nil
         }
 end
 
@@ -960,7 +964,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           code_challenge_method: code_challenge_method,
           authorization_details: authorization_details,
           client_metadata: client_metadata,
-          response_type: response_type
+          response_type: response_type,
+          code: code
         } = request
       ) do
     with [response_type] = response_types <-
@@ -984,6 +989,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
+         {:ok, previous_code} <- (case code do
+           nil -> {:ok, nil}
+           value -> Authorization.Code.authorize(%{value: value})
+         end),
          :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
          presentation_definition <-
            VerifiablePresentations.presentation_definition(
@@ -1010,7 +1019,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
          authorization_details: Jason.decode!(authorization_details),
-         response_mode: client.response_mode
+         response_mode: client.response_mode,
+         code: previous_code
        }}
     else
       error ->
@@ -1033,7 +1043,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
             authorization_details: authorization_details,
-            response_mode: response_mode
+            response_mode: response_mode,
+            code: previous_code
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
@@ -1048,14 +1059,22 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                code_challenge: code_challenge,
                code_challenge_method: code_challenge_method,
                authorization_details: authorization_details,
-               presentation_definition: presentation_definition
+               presentation_definition: presentation_definition,
+               client_encryption_key: previous_code && previous_code.client_encryption_key,
+               client_encryption_alg: previous_code && previous_code.client_encryption_alg
              }) do
         case response_types do
           ["id_token"] ->
-            {:ok, %{siopv2_code: code, response_mode: response_mode}}
+            {:ok, %{
+              siopv2_code: code,
+              response_mode: response_mode
+            }}
 
           ["vp_token"] ->
-            {:ok, %{vp_code: code, response_mode: response_mode}}
+          {:ok, %{
+            vp_code: code,
+            response_mode: response_mode
+          }}
         end
       end
     end
