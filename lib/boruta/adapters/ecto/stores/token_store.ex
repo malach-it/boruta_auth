@@ -10,22 +10,25 @@ defmodule Boruta.Ecto.TokenStore do
           {:ok, token :: Boruta.Oauth.Token.t()} | {:error, reason :: String.t()}
   def get(value: value) do
     case cache_backend().get({Token, :value, value}) do
-      nil -> {:error, "Not cached."}
-      %Token{} = token -> {:ok, token}
+      {:ok, nil} -> {:error, "Not cached."}
+      {:ok, %Token{} = token} -> {:ok, token}
+      {:error, _} -> {:error, "Not cached."}
     end
   end
 
   def get(id: id) do
     case cache_backend().get({Token, :id, id}) do
-      nil -> {:error, "Not cached."}
-      %Token{} = token -> {:ok, token}
+      {:ok, nil} -> {:error, "Not cached."}
+      {:ok, %Token{} = token} -> {:ok, token}
+      {:error, _} -> {:error, "Not cached."}
     end
   end
 
   def get(refresh_token: refresh_token) do
     case cache_backend().get({Token, :refresh_token, refresh_token}) do
-      nil -> {:error, "Not cached."}
-      %Token{} = token -> {:ok, token}
+      {:ok, nil} -> {:error, "Not cached."}
+      {:ok, %Token{} = token} -> {:ok, token}
+      {:error, _} -> {:error, "Not cached."}
     end
   end
 

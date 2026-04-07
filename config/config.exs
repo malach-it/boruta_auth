@@ -10,8 +10,7 @@ config :boruta,
 config :boruta, Boruta.Cache,
   primary: [
     gc_interval: 86_400_000, #=> 1 day
-    backend: :shards,
-    partitions: 2
+    backend: :ets
   ]
 
 config :phoenix, :json_library, Jason

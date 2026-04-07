@@ -42,7 +42,7 @@ defmodule Boruta.MixProject do
   defp deps do
     [
       {:bypass, "~> 2.1", only: :test},
-      {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7.17", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ecto_sql, ">= 3.5.2"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
@@ -55,13 +55,13 @@ defmodule Boruta.MixProject do
       {:joken, "~> 2.0"},
       {:jose, "~> 1.11"},
       {:mox, "~> 0.5", only: :test},
-      {:nebulex, "~> 2.0"},
+      {:nebulex, "~> 3.0"},
+      {:nebulex_distributed, "~> 3.0"},
       {:phoenix, "~> 1.0"},
       {:plug, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
       {:puid, "~> 1.0"},
-      {:secure_random, "~> 0.5"},
-      {:shards, "~> 1.0"}
+      {:secure_random, "~> 0.5"}
     ]
   end
 
