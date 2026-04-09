@@ -27,7 +27,14 @@ defmodule Boruta.Oauth.Validator do
   @spec validate(action :: :token | :authorize | :introspect | :revoke, params :: map()) ::
           {:ok, params :: map()} | {:error, message :: String.t()}
   def validate(:token, %{"grant_type" => grant_type} = params)
-      when grant_type in ["password", "client_credentials", "agent_credentials", "agent_code", "authorization_code", "refresh_token"] do
+      when grant_type in [
+             "password",
+             "client_credentials",
+             "agent_credentials",
+             "agent_code",
+             "authorization_code",
+             "refresh_token"
+           ] do
     case ExJsonSchema.Validator.validate(
            apply(Schema, String.to_atom(grant_type), []),
            params,
@@ -41,7 +48,10 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:token, %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params) do
+  def validate(
+        :token,
+        %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params
+      ) do
     case ExJsonSchema.Validator.validate(
            Schema.preauthorization_code(),
            params,
@@ -66,20 +76,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => response_types} = params)
-      when response_types in [
-             "token",
-             "vp_token",
-             "id_token",
-             "id_token token",
-             "id_token urn:ietf:params:oauth:response-type:pre-authorized_code",
-             "vp_token urn:ietf:params:oauth:response-type:pre-authorized_code",
-             "id_token vp_token",
-             "code",
-             "code id_token",
-             "code token",
-             "code id_token token"
-           ] do
+  def validate(:authorize, %{"response_type" => "token"} = params) do
     case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
@@ -89,7 +86,40 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params) do
+  def validate(:authorize, %{"response_type" => "vp_token" <> _rest} = params) do
+    case validate_multiple_response_types(params) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Query params validation failed. " <> Enum.join(errors, " ")}
+    end
+  end
+
+  def validate(:authorize, %{"response_type" => "id_token" <> _rest} = params) do
+    case validate_multiple_response_types(params) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Query params validation failed. " <> Enum.join(errors, " ")}
+    end
+  end
+
+  def validate(:authorize, %{"response_type" => "code" <> _rest} = params) do
+    case validate_multiple_response_types(params) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Query params validation failed. " <> Enum.join(errors, " ")}
+    end
+  end
+
+  def validate(
+        :authorize,
+        %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params
+      ) do
     case ExJsonSchema.Validator.validate(
            Schema.preauthorized_code(),
            params,
@@ -103,10 +133,16 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => _}) do
-    {:error,
-     "Invalid response_type param."}
+  def validate(:authorize, %{"response_type" => _response_types} = params) do
+    case validate_multiple_response_types(params) do
+      :ok ->
+        {:ok, params}
+
+      {:error, errors} ->
+        {:error, "Query params validation failed. " <> Enum.join(errors, " ")}
+    end
   end
+
 
   def validate(:introspect, params) do
     case ExJsonSchema.Validator.validate(Schema.introspect(), params,
@@ -121,7 +157,9 @@ defmodule Boruta.Oauth.Validator do
   end
 
   def validate(:revoke, params) do
-    case ExJsonSchema.Validator.validate(Schema.revoke(), params, error_formatter: BorutaFormatter) do
+    case ExJsonSchema.Validator.validate(Schema.revoke(), params,
+           error_formatter: BorutaFormatter
+         ) do
       :ok ->
         {:ok, params}
 
@@ -142,7 +180,9 @@ defmodule Boruta.Oauth.Validator do
     response_types
     |> String.split(" ")
     # TODO validate custom preauthorized code requests
-    |> Enum.reject(fn response_type -> response_type == "urn:ietf:params:oauth:response-type:pre-authorized_code" end)
+    |> Enum.reject(fn response_type ->
+      response_type == "urn:ietf:params:oauth:response-type:pre-authorized_code"
+    end)
     |> Enum.reduce_while(:ok, fn response_type, _acc ->
       case ExJsonSchema.Validator.validate(
              apply(Schema, String.to_atom(response_type), []),
