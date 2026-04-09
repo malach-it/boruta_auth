@@ -75,13 +75,16 @@ defmodule Boruta.Openid do
   def credential(conn, credential_params, default_credential_configuration, module) do
     with {:ok, access_token} <- BearerToken.extract_token(conn),
          {:ok, token} <- AccessToken.authorize(value: access_token),
-         {:ok, credential_params} <- (case credential_params["encrypted_request"] do
-           nil -> {:ok, credential_params}
-           encrypted_request ->
-             with {:ok, params} <- Client.Crypto.decrypt(encrypted_request, token.client) do
-               {:ok, Map.merge(credential_params, params)}
-             end
-         end),
+         {:ok, credential_params} <-
+           (case credential_params["encrypted_request"] do
+              nil ->
+                {:ok, credential_params}
+
+              encrypted_request ->
+                with {:ok, params} <- Client.Crypto.decrypt(encrypted_request, token.client) do
+                  {:ok, Map.merge(credential_params, params)}
+                end
+            end),
          {:ok, credential_params} <- validate_credential_params(credential_params),
          %Token{} = code <- CodesAdapter.get_by(value: token.previous_code),
          [_h | _t] = code_chain <- CodesAdapter.code_chain(code),
@@ -270,7 +273,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_client_metadata_policy(code_chain, params) when is_list(code_chain) do
+  defp check_client_metadata_policy([_current | code_chain], params) when is_list(code_chain) do
     case code_chain
          |> Enum.reverse()
          |> Enum.reduce_while([], fn current, acc ->
@@ -278,7 +281,8 @@ defmodule Boruta.Openid do
 
            case do_check_client_metadata_policy(
                   params,
-                  current.metadata_policy
+                  current.metadata_policy,
+                  code_chain
                 ) do
              :ok ->
                {:cont, acc}
@@ -304,43 +308,81 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp do_check_client_metadata_policy([], _policy), do: :ok
+  defp do_check_client_metadata_policy([], _policy, _code_chain), do: :ok
 
-  defp do_check_client_metadata_policy(%{"proof" => %{"proof_type" => "jwt", "jwt" => jwt}}, %{
-         "client_id" => %{"one_of" => client_ids}
-       }) do
-    with {:ok, %{"kid" => kid}} <- Joken.peek_header(jwt),
-         true <- Enum.member?(client_ids, kid) do
-      :ok
+  defp do_check_client_metadata_policy(
+         params,
+         %{
+           "client_id" => %{"one_of" => client_ids} = client_id_constraints
+         } = constraints,
+         code_chain
+       ) do
+    with {:ok, chain_client_ids} <- metadata_policy_client_ids(params, code_chain),
+         true <- Enum.any?(chain_client_ids, &Enum.member?(client_ids, &1)) do
+      do_check_client_metadata_policy(
+        params,
+        Map.put(constraints, "client_id", Map.delete(client_id_constraints, "one_of")),
+        code_chain
+      )
     else
       _error ->
         {:error, "Metadata policies check failed."}
     end
   end
 
-  defp do_check_client_metadata_policy(%{id_token: _jwt}, _policy) do
-    :ok
-    # TODO continue in case invalid id_token
-  end
-
-  defp do_check_client_metadata_policy(%{vp_token: jwt}, %{
-         "client_id" => %{"one_of" => client_ids}
-       }) do
-    with {:ok, %{"kid" => kid}} <- Joken.peek_header(jwt),
-         true <- Enum.member?(client_ids, kid) do
-      :ok
+  defp do_check_client_metadata_policy(
+         params,
+         %{
+           "client_id" => %{"superset_of" => client_ids} = client_id_constraints
+         } = constraints,
+         code_chain
+       ) do
+    with {:ok, chain_client_ids} <- metadata_policy_client_ids(params, code_chain),
+         true <- Enum.all?(client_ids, &Enum.member?(chain_client_ids, &1)) do
+      do_check_client_metadata_policy(
+        params,
+        Map.put(constraints, "client_id", Map.delete(client_id_constraints, "superset_of")),
+        code_chain
+      )
     else
       _error ->
         {:error, "Metadata policies check failed."}
     end
   end
 
-  defp do_check_client_metadata_policy(_code, %{}), do: :ok
+  defp do_check_client_metadata_policy(_params, _constraints, _code_chain), do: :ok
 
-  defp check_id_token_client(%{id_token: id_token}) when not is_nil(id_token) do
-    case VerifiableCredentials.validate_signature(id_token) do
+  defp metadata_policy_client_ids(params, code_chain) do
+    with {:ok, kid} <- metadata_policy_kid(params) do
+      {:ok, [kid | Enum.map(code_chain, & &1.sub)]}
+    end
+  end
+
+  defp metadata_policy_kid(params) do
+    with {:ok, jwt} <- metadata_policy_jwt(params),
+         {:ok, %{"kid" => kid}} <- Joken.peek_header(jwt) do
+      {:ok, kid}
+    end
+  end
+
+  defp metadata_policy_jwt(%{"proof" => %{"proof_type" => "jwt", "jwt" => jwt}})
+       when is_binary(jwt),
+       do: {:ok, jwt}
+
+  defp metadata_policy_jwt(%{proof: %{"proof_type" => "jwt", "jwt" => jwt}})
+       when is_binary(jwt),
+       do: {:ok, jwt}
+
+  defp metadata_policy_jwt(%{"id_token" => jwt}) when is_binary(jwt), do: {:ok, jwt}
+  defp metadata_policy_jwt(%{id_token: jwt}) when is_binary(jwt), do: {:ok, jwt}
+  defp metadata_policy_jwt(%{"vp_token" => jwt}) when is_binary(jwt), do: {:ok, jwt}
+  defp metadata_policy_jwt(%{vp_token: jwt}) when is_binary(jwt), do: {:ok, jwt}
+  defp metadata_policy_jwt(_), do: {:error, :jwt_not_found}
+
+  defp check_id_token_client(%{vp_token: vp_token}) when not is_nil(vp_token) do
+    case VerifiablePresentations.validate_signature(vp_token) do
       {:ok, _jwk, claims} ->
-        {:ok, %{"kid" => kid}} = Joken.peek_header(id_token)
+        {:ok, %{"kid" => kid}} = Joken.peek_header(vp_token)
         {:ok, kid, claims}
 
       {:error, error} ->
@@ -353,10 +395,10 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp check_id_token_client(%{vp_token: vp_token}) when not is_nil(vp_token) do
-    case VerifiablePresentations.validate_signature(vp_token) do
+  defp check_id_token_client(%{id_token: id_token}) when not is_nil(id_token) do
+    case VerifiableCredentials.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
-        {:ok, %{"kid" => kid}} = Joken.peek_header(vp_token)
+        {:ok, %{"kid" => kid}} = Joken.peek_header(id_token)
         {:ok, kid, claims}
 
       {:error, error} ->
