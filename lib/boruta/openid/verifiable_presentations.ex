@@ -19,16 +19,22 @@ defmodule Boruta.Openid.VerifiablePresentations do
   # TODO perform client metadata checks
   def check_client_metadata(_client_metadata), do: :ok
 
-  def response_types("code", _scope, _presentation_configuration), do: ["id_token"]
+  def response_types(response_type, scope, presentation_configuration) do
+    response_types = String.split(response_type, " ")
 
-  def response_types("id_token", _scope, _presentation_configuration), do: ["id_token"]
-
-  def response_types("vp_token", scope, presentation_configuration) do
-    case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
-           Enum.member?(Scope.split(scope), presentation_identifier)
-         end) do
-      true -> ["vp_token"]
-      false -> ["id_token"]
+    case response_types do
+      ["code" | _rest] ->
+        response_types
+      ["id_token" | _rest] ->
+        response_types
+      ["vp_token" | rest] ->
+        case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
+               Enum.member?(Scope.split(scope), presentation_identifier)
+             end) do
+          true -> String.split(response_type, " ")
+          false -> ["id_token" | rest]
+        end
+      _ -> []
     end
   end
 

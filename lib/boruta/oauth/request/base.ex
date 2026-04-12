@@ -106,6 +106,7 @@ defmodule Boruta.Oauth.Request.Base do
     {:ok,
      %PreauthorizedCodeRequest{
        agent_token: params["agent_token"],
+       code: params["code"],
        client_id: params["client_id"],
        redirect_uri: params["redirect_uri"],
        resource_owner: params["resource_owner"],
@@ -125,28 +126,22 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def build_request(%{"response_type" => response_type, "client_metadata" => client_metadata} = params) when response_type in ["code", "vp_token"] do
-    request = %PresentationRequest{
-      client_id: params["client_id"],
-      resource_owner: params["resource_owner"],
-      redirect_uri: params["redirect_uri"],
-      state: params["state"],
-      nonce: params["nonce"],
-      prompt: params["prompt"],
-      code_challenge: params["code_challenge"],
-      code_challenge_method: params["code_challenge_method"],
-      scope: params["scope"],
-      client_metadata: client_metadata,
-      response_type: params["response_type"]
-    }
+  def build_request(
+    %{"response_type" => "code" <> _rest, "client_metadata" => _client_metadata} = params
+  ) do
+    presentation_request(params)
+  end
 
-    request =
-      case params["authorization_details"] do
-        nil -> request
-        authorization_details -> %{request | authorization_details: authorization_details}
-      end
+  def build_request(
+    %{"response_type" => "id_token" <> _rest, "client_metadata" => _client_metadata} = params
+  ) do
+    presentation_request(params)
+  end
 
-    {:ok, request}
+  def build_request(
+    %{"response_type" => "vp_token" <> _rest, "client_metadata" => _client_metadata} = params
+  ) do
+    presentation_request(params)
   end
 
   def build_request(%{"response_type" => "code", "method" => "POST"} = params) do
@@ -249,7 +244,34 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request" => request}}) do
+  defp presentation_request(
+        %{"response_type" => response_type, "client_metadata" => client_metadata} = params
+  ) do
+    request = %PresentationRequest{
+      client_id: params["client_id"],
+      resource_owner: params["resource_owner"],
+      redirect_uri: params["redirect_uri"],
+      state: params["state"],
+      nonce: params["nonce"],
+      prompt: params["prompt"],
+      code_challenge: params["code_challenge"],
+      code_challenge_method: params["code_challenge_method"],
+      code: params["code"],
+      scope: params["scope"],
+      client_metadata: client_metadata,
+      response_type: response_type
+    }
+
+    request =
+      case params["authorization_details"] do
+        nil -> request
+        authorization_details -> %{request | authorization_details: authorization_details}
+      end
+
+    {:ok, request}
+  end
+
+  def fetch_unsigned_request(%{query_params: %{"request" => request}}) when is_binary(request) do
     case Joken.peek_claims(request) do
       {:ok, params} ->
         {:ok, params}
@@ -393,6 +415,7 @@ defmodule Boruta.Oauth.Request.Base do
     else
       {:ok, _payload} ->
         {:error, "Either alg header missing or cnf claim missing in client assertion."}
+
       _ ->
         {:error, "Could not decode client assertion JWT."}
     end

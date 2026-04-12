@@ -50,7 +50,8 @@ defmodule Boruta.Ecto.Client do
           public_key: String.t(),
           private_key: String.t(),
           response_mode: String.t(),
-          signatures_adapter: String.t()
+          signatures_adapter: String.t(),
+          key_pair_type: map()
         }
 
   @token_endpoint_auth_methods [
@@ -208,7 +209,7 @@ defmodule Boruta.Ecto.Client do
       :metadata,
       :response_mode,
       :signatures_adapter,
-      :key_pair_type,
+      :key_pair_type
     ])
     |> validate_required([:redirect_uris, :key_pair_type])
     |> unique_constraint(:id, name: :clients_pkey)
@@ -397,9 +398,15 @@ defmodule Boruta.Ecto.Client do
 
     case key_pair_type do
       %{"type" => "universal"} ->
-        validate_inclusion(changeset, :signatures_adapter, [Atom.to_string(Boruta.Universal.Signatures)])
+        validate_inclusion(changeset, :signatures_adapter, [
+          Atom.to_string(Boruta.Universal.Signatures)
+        ])
+
       %{"type" => type} when type in ["ec", "rsa"] ->
-        validate_inclusion(changeset, :signatures_adapter, [Atom.to_string(Boruta.Internal.Signatures)])
+        validate_inclusion(changeset, :signatures_adapter, [
+          Atom.to_string(Boruta.Internal.Signatures)
+        ])
+
       _ ->
         add_error(changeset, :signatures_adapter, "unknown key pair type")
     end

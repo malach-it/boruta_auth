@@ -55,6 +55,10 @@ defmodule Boruta.Ecto.TokenStore do
              ttl: authorization_code_ttl * 1000
            ),
          :ok <-
+           cache_backend().put({Token, :id, token.id}, token,
+             ttl: authorization_code_ttl * 1000
+           ),
+         :ok <-
            cache_backend().put({Token, :refresh_token, token.refresh_token}, token,
              ttl: authorization_code_ttl * 1000
            ) do
@@ -63,7 +67,7 @@ defmodule Boruta.Ecto.TokenStore do
   end
 
   @spec invalidate(token :: Boruta.Oauth.Token.t()) ::
-          {:ok, token :: Boruta.Oauth.Token.t()}
+          {:ok, token :: Boruta.Oauth.Token.t()} | {:error, term()}
   def invalidate(token) do
     with :ok <- cache_backend().delete({Token, :value, token.value}),
          :ok <- cache_backend().delete({Token, :refresh_token, token.refresh_token}) do
