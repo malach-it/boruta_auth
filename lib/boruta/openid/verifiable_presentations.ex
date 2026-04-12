@@ -32,7 +32,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
                Enum.member?(Scope.split(scope), presentation_identifier)
              end) do
           true -> String.split(response_type, " ")
-          false -> ["id_token" | String.split(rest, " ")]
+          false -> ["id_token" | rest]
         end
       _ -> []
     end
