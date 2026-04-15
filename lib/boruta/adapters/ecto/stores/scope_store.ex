@@ -8,8 +8,8 @@ defmodule Boruta.Ecto.ScopeStore do
   @spec get(:public | :all) :: {:ok, list(Scope.t())} | {:error, String.t()}
   def get(target) do
     case cache_backend().get({Scope, target}) do
-      nil -> {:error, "Scopes not cached."}
-      scopes -> {:ok, scopes}
+      {:ok, nil} -> {:error, "Scopes not cached."}
+      {:ok, scopes} -> {:ok, scopes}
     end
   end
 

@@ -9,8 +9,8 @@ defmodule Boruta.Ecto.ClientStore do
           {:ok, token :: Boruta.Oauth.Client.t()} | {:error, reason :: String.t()}
   def get_client(id) do
     case get_by_id(id) do
-      %Client{} = client -> {:ok, client}
-      nil -> {:error, "Client not cached."}
+      {:ok, nil} -> {:error, "Client not cached."}
+      {:ok, %Client{} = client} -> {:ok, client}
     end
   end
 
@@ -20,8 +20,8 @@ defmodule Boruta.Ecto.ClientStore do
 
   def authorized_scopes(%Client{id: id}) do
     case get_by_id(id) do
-      nil -> {:error, "Client not cached."}
-      %Client{} = client -> {:ok, client.authorized_scopes}
+      {:ok, nil} -> {:error, "Client not cached."}
+      {:ok, %Client{} = client} -> {:ok, client.authorized_scopes}
     end
   end
 
