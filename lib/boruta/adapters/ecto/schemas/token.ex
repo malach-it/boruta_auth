@@ -113,7 +113,7 @@ defmodule Boruta.Ecto.Token do
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
     |> validate_authorization_details()
-    |> put_value()
+    |> put_value(:access_token)
     |> put_c_nonce()
     |> put_expires_at()
   end
@@ -137,7 +137,7 @@ defmodule Boruta.Ecto.Token do
     |> validate_required([:access_token_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "access_token")
-    |> put_value()
+    |> put_value(:access_token)
     |> put_c_nonce()
     |> put_refresh_token()
     |> put_expires_at()
@@ -163,7 +163,7 @@ defmodule Boruta.Ecto.Token do
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "agent_token")
     |> validate_authorization_details()
-    |> put_value()
+    |> put_value(:agent_token)
     |> put_c_nonce()
     |> put_expires_at()
   end
@@ -188,7 +188,7 @@ defmodule Boruta.Ecto.Token do
     |> validate_required([:access_token_ttl, :client_id, :bind_data, :bind_configuration])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "agent_token")
-    |> put_value()
+    |> put_value(:agent_token)
     |> put_c_nonce()
     |> put_refresh_token()
     |> put_expires_at()
@@ -211,7 +211,7 @@ defmodule Boruta.Ecto.Token do
     |> validate_required([:authorization_code_ttl, :client_id, :sub])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
-    |> put_value()
+    |> put_value(:preauthorized_code)
     |> put_tx_code()
     |> put_code_expires_at()
   end
@@ -240,7 +240,7 @@ defmodule Boruta.Ecto.Token do
     ])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
-    |> put_value()
+    |> put_value(:preauthorized_code)
     |> put_tx_code()
     |> put_code_expires_at()
     |> put_code_challenge_method()
@@ -265,7 +265,7 @@ defmodule Boruta.Ecto.Token do
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "code")
-    |> put_value()
+    |> put_value(:code)
     |> put_code_expires_at()
   end
 
@@ -295,7 +295,7 @@ defmodule Boruta.Ecto.Token do
     ])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "code")
-    |> put_value()
+    |> put_value(:code)
     |> put_c_nonce()
     |> put_code_expires_at()
     |> put_code_challenge_method()
@@ -316,11 +316,11 @@ defmodule Boruta.Ecto.Token do
     change(token, revoked_at: now)
   end
 
-  defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset) do
+  defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset, type) do
     put_change(
       changeset,
       :value,
-      token_generator().generate(:access_token, struct(data, changes))
+      token_generator().generate(type, struct(data, changes))
     )
   end
 
