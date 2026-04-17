@@ -281,7 +281,7 @@ defmodule Boruta.Openid do
            case do_check_client_metadata_policy(
                   params,
                   current.metadata_policy,
-                  acc
+                  code_chain -- acc
                 ) do
              :ok ->
                {:cont, acc}
