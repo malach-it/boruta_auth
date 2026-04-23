@@ -388,7 +388,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
     test "returns a code and an id_token", %{client: client, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-      |> expect(:claims, fn _sub, _scope -> %{"email" => resource_owner.username} end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -446,7 +447,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
     } do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-      |> expect(:claims, fn _sub, _scope -> %{"email" => resource_owner.username} end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -580,7 +582,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
     } do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-      |> expect(:claims, fn _sub, _scope -> %{"email" => resource_owner.username} end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -639,7 +642,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
     } do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-      |> expect(:claims, fn _sub, _scope -> %{"email" => resource_owner.username} end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
       nonce = "nonce"
@@ -699,7 +703,8 @@ defmodule Boruta.OauthTest.HybridGrantTest do
     } do
       ResourceOwners
       |> expect(:authorized_scopes, fn _resource_owner -> [] end)
-      |> expect(:claims, fn _sub, _scope -> %{"email" => resource_owner.username} end)
+      |> expect(:claims, fn (_sub, _scope) -> %{"email" => resource_owner.username} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = "https://wildcard-redirect-uri.uri"
       nonce = "nonce"

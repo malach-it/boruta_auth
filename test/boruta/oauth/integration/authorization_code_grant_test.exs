@@ -951,6 +951,9 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with siopv2 (direct_post)" do
+      stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+        {:ok, []}
+      end)
       redirect_uri = "openid:"
 
       assert {:authorize_success,
@@ -1022,6 +1025,9 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with verifiable presentation (direct_post)" do
+      stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+        {:ok, []}
+      end)
       redirect_uri = "openid:"
       insert(:scope, name: "vp_token", public: true)
 
@@ -1780,6 +1786,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
          }}
       end)
       |> expect(:claims, fn _sub, _scope -> %{} end)
+      |> expect(:trust_chain, fn _client -> {:ok, []} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
