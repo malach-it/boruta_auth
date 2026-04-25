@@ -718,7 +718,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
          scope: scope,
          state: state,
          resource_owner: resource_owner,
-         agent_token: agent_token,
+         agent_token: agent_token || code.agent_token,
          authorization_details: resource_owner.authorization_details
        }}
     else
@@ -984,7 +984,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           resource_owner: resource_owner,
           response_type: response_type,
           scope: scope,
-          state: state
+          state: state,
+          agent_token: agent_token
         } = request
       ) do
     with response_types <-
@@ -1016,16 +1017,28 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             end),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
-         {:ok, previous_code} <- (case code do
-           nil -> {:ok, nil}
-           value -> Authorization.Code.authorize(%{value: value})
-         end),
+         {:ok, previous_code} <-
+           (case code do
+              nil -> {:ok, nil}
+              value -> Authorization.Code.authorize(%{value: value})
+            end),
          :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
          presentation_definition <-
            VerifiablePresentations.presentation_definition(
              resource_owner.presentation_configuration,
              scope
-           ) do
+           ),
+         {:ok, resource_owner} <-
+           (case agent_token do
+              nil ->
+                {:ok, resource_owner}
+
+              agent_token ->
+                Authorization.AgentToken.authorize(
+                  agent_token: agent_token,
+                  resource_owner: resource_owner
+                )
+            end) do
       {code_challenge, code_challenge_method} =
         case resource_owner.code_verifier do
           nil -> {code_challenge, code_challenge_method}
@@ -1050,6 +1063,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          public_client_id: client_id,
          redirect_uri: redirect_uri,
          response_types: response_types,
+         agent_token: agent_token
        }}
     else
       error ->
@@ -1069,6 +1083,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             nonce: nonce,
             code: code,
             previous_code: previous_code,
+            agent_token: agent_token,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
             presentation_definition: presentation_definition,
@@ -1090,6 +1105,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                scope: scope,
                state: state,
                nonce: nonce,
+               agent_token: previous_code && previous_code.agent_token || agent_token,
                code_challenge: code_challenge,
                code_challenge_method: code_challenge_method,
                authorization_details: authorization_details,

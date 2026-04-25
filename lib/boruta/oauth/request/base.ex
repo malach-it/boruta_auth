@@ -257,6 +257,7 @@ defmodule Boruta.Oauth.Request.Base do
       code_challenge: params["code_challenge"],
       code_challenge_method: params["code_challenge_method"],
       code: params["code"],
+      agent_token: params["agent_token"],
       scope: params["scope"],
       client_metadata: client_metadata,
       response_type: response_type
