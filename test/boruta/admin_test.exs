@@ -266,7 +266,7 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:error, %Ecto.Changeset{errors: errors}} =
                Admin.create_client(
                  Map.merge(@client_valid_attrs, %{
-                   key_pair_type: %{"type" => "rsa"},
+                   key_pair_type: %{"type" => "rsa", "modulus_size" => "2048"},
                    signatures_adapter: "Elixir.Universal.Signatures"
                  })
                )
