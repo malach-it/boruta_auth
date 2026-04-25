@@ -71,6 +71,7 @@ defmodule Boruta.Ecto.Client do
   ]
 
   @response_modes ["post", "direct_post"]
+  @minimum_rsa_modulus_size 2048
 
   @key_pair_type_schema %{
     "type" => "object",
@@ -141,7 +142,7 @@ defmodule Boruta.Ecto.Client do
     field(:key_pair_type, :map,
       default: %{
         "type" => "rsa",
-        "modulus_size" => "1024",
+        "modulus_size" => "2048",
         "exponent_size" => "65537"
       }
     )
@@ -430,11 +431,44 @@ defmodule Boruta.Ecto.Client do
           :userinfo_signed_response_alg,
           @key_pair_type_jwt_algs[key_pair_type["type"]]
         )
+        |> validate_rsa_modulus_size(key_pair_type)
 
       {:error, errors} ->
         add_error(changeset, :key_pair_type, "validation failed: #{Enum.join(errors, " ")}")
     end
   end
+
+  defp validate_rsa_modulus_size(changeset, %{"type" => "rsa", "modulus_size" => modulus_size}) do
+    case parse_rsa_modulus_size(modulus_size) do
+      {:ok, modulus_size} when modulus_size >= @minimum_rsa_modulus_size ->
+        changeset
+
+      _ ->
+        add_error(
+          changeset,
+          :key_pair_type,
+          "rsa modulus_size must be at least #{@minimum_rsa_modulus_size}"
+        )
+    end
+  end
+
+  defp validate_rsa_modulus_size(changeset, %{"type" => "rsa"}) do
+    add_error(changeset, :key_pair_type, "rsa modulus_size is required")
+  end
+
+  defp validate_rsa_modulus_size(changeset, _key_pair_type), do: changeset
+
+  defp parse_rsa_modulus_size(modulus_size) when is_integer(modulus_size),
+    do: {:ok, modulus_size}
+
+  defp parse_rsa_modulus_size(modulus_size) when is_binary(modulus_size) do
+    case Integer.parse(modulus_size) do
+      {modulus_size, ""} -> {:ok, modulus_size}
+      _ -> :error
+    end
+  end
+
+  defp parse_rsa_modulus_size(_modulus_size), do: :error
 
   defp validate_redirect_uris(changeset) do
     validate_change(changeset, :redirect_uris, fn field, values ->
@@ -509,9 +543,15 @@ defmodule Boruta.Ecto.Client do
     private_key =
       case get_field(changeset, :key_pair_type) do
         %{"type" => "rsa", "modulus_size" => modulus_size, "exponent_size" => exponent_size} ->
-          JOSE.JWK.generate_key(
-            {:rsa, String.to_integer(modulus_size), String.to_integer(exponent_size)}
-          )
+          case parse_rsa_modulus_size(modulus_size) do
+            {:ok, modulus_size} when modulus_size >= @minimum_rsa_modulus_size ->
+              JOSE.JWK.generate_key(
+                {:rsa, modulus_size, String.to_integer(exponent_size)}
+              )
+
+            _ ->
+              nil
+          end
 
         %{"type" => "ec", "curve" => curve} ->
           JOSE.JWK.generate_key({:ec, curve})

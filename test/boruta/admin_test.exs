@@ -315,6 +315,19 @@ defmodule Boruta.Ecto.AdminTest do
              ]
     end
 
+    test "returns an error with an invalid rsa modulus size" do
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               Admin.create_client(
+                 Map.put(@client_valid_attrs, :key_pair_type, %{
+                   "type" => "rsa",
+                   "modulus_size" => "1024",
+                   "exponent_size" => "65537"
+                 })
+               )
+
+      assert {:key_pair_type, {"rsa modulus_size must be at least 2048", []}} in errors
+    end
+
     test "creates a client with default id token signature alg" do
       assert {:ok, %Client{id_token_signature_alg: "RS512"}} =
                Admin.create_client(@client_valid_attrs)
@@ -463,6 +476,23 @@ defmodule Boruta.Ecto.AdminTest do
                )
 
       assert key_pair_type == %{"curve" => "P-256", "type" => "ec"}
+    end
+
+    test "returns an error with an invalid rsa modulus size" do
+      client = client_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               Admin.update_client(
+                 client,
+                 Map.put(@client_update_attrs, :key_pair_type, %{
+                   "type" => "rsa",
+                   "modulus_size" => "1024",
+                   "exponent_size" => "65537"
+                 })
+               )
+
+      assert {:key_pair_type, {"rsa modulus_size must be at least 2048", []}} in errors
+      assert Admin.get_client!(client.id).key_pair_type == client.key_pair_type
     end
   end
 
