@@ -50,6 +50,9 @@ jobs:
       - name: Run Credo
         run: mix credo --strict
 
+      - name: Run Security Audit
+        run: mix security.audit
+
       - name: Run Dialyzer
         run: mix dialyzer
 

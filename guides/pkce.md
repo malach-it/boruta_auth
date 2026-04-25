@@ -64,5 +64,5 @@ and it implements the logic to handle it.
 And that is all. If your configuration is right, you will get a response like this.
 
 ```json
-{"access_token":"BHYQabRwti673RVhoMnqXtrvgiEilawgaAj1KosrQV9pGQ4DBENXzhUHeSjZE4K02S8bNtlNL2gU9bzFhKMoQK","expires_in":3600,"refresh_token":"r90e4S9uaqH59xMO809Ws2uzWPtcaMlcF1J7fcaaSruE1AAc30WuykNAL73GGNECtmYezQSf2CzJGgQWPqdM5M","token_type":"bearer"}
+{"access_token":"<access-token>","expires_in":3600,"refresh_token":"<refresh-token>","token_type":"bearer"}
 ```
