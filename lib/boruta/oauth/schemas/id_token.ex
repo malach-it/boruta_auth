@@ -40,12 +40,14 @@ defmodule Boruta.Oauth.IdToken do
           }
         }
 
-  @spec generate(tokens :: tokens(), nonce :: String.t()) :: id_token :: Oauth.Token.t()
+  @spec generate(tokens :: tokens(), nonce :: String.t()) ::
+          {:ok, id_token :: Oauth.Token.t()} | {:error, reason :: String.t()}
   def generate(tokens, nonce) do
     {base_token, payload} = payload(tokens, nonce, %{})
 
-    value = Client.Crypto.id_token_sign(payload, base_token.client)
-    %{base_token | type: "id_token", value: value}
+    with "" <> value <- Client.Crypto.id_token_sign(payload, base_token.client) do
+      {:ok, %{base_token | type: "id_token", value: value}}
+    end
   end
 
   defp payload(%{code: code} = tokens, nonce, acc) do

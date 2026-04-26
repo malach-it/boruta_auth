@@ -19,6 +19,10 @@ defmodule Boruta.Oauth.IdTokenTest do
       claims
     end)
 
+    stub(Boruta.Support.ResourceOwners, :trust_chain, fn _client ->
+      {:ok, []}
+    end)
+
     {:ok, resource_owner: resource_owner, claims: claims}
   end
 
@@ -40,14 +44,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     nonce = "nonce"
 
-    assert %{
+    assert {:ok, %{
              sub: "sub",
              client: ^client,
              inserted_at: ^inserted_at,
              scope: "scope",
              value: value,
              type: "id_token"
-           } = IdToken.generate(%{code: code}, nonce)
+           }} = IdToken.generate(%{code: code}, nonce)
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -88,14 +92,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     nonce = "nonce"
 
-    assert %{
+    assert {:ok, %{
              sub: "sub",
              client: ^client,
              inserted_at: ^inserted_at,
              scope: "scope",
              value: value,
              type: "id_token"
-           } = IdToken.generate(%{token: token}, nonce)
+           }} = IdToken.generate(%{token: token}, nonce)
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -146,14 +150,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     nonce = "nonce"
 
-    assert %{
+    assert {:ok, %{
              sub: "sub",
              client: ^client,
              inserted_at: ^inserted_at,
              scope: "scope",
              value: value,
              type: "id_token"
-           } = IdToken.generate(%{token: token, code: code}, nonce)
+           }} = IdToken.generate(%{token: token, code: code}, nonce)
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -194,14 +198,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     nonce = "nonce"
 
-    assert %{
+    assert {:ok, %{
              sub: "sub",
              client: ^client,
              inserted_at: ^inserted_at,
              scope: "scope",
              value: value,
              type: "id_token"
-           } = IdToken.generate(%{base_token: base_token}, nonce)
+           }} = IdToken.generate(%{base_token: base_token}, nonce)
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -240,14 +244,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
     nonce = "nonce"
 
-    assert %{
+    assert {:ok, %{
              sub: "sub",
              client: ^client,
              inserted_at: ^inserted_at,
              scope: "scope",
              value: value,
              type: "id_token"
-           } = IdToken.generate(%{base_token: base_token}, nonce)
+           }} = IdToken.generate(%{base_token: base_token}, nonce)
 
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -296,14 +300,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
       nonce = "nonce"
 
-      assert %{
+    assert {:ok, %{
                sub: "sub",
                client: ^client,
                inserted_at: ^inserted_at,
                scope: "scope",
                value: value,
                type: "id_token"
-             } = IdToken.generate(%{token: token, code: code}, nonce)
+             }} = IdToken.generate(%{token: token, code: code}, nonce)
 
       signer = Joken.Signer.create("RS256", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -358,14 +362,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
       nonce = "nonce"
 
-      assert %{
+    assert {:ok, %{
                sub: "sub",
                client: ^client,
                inserted_at: ^inserted_at,
                scope: "scope",
                value: value,
                type: "id_token"
-             } = IdToken.generate(%{token: token, code: code}, nonce)
+             }} = IdToken.generate(%{token: token, code: code}, nonce)
 
       signer = Joken.Signer.create("RS384", %{"pem" => client.private_key, "aud" => client.id})
 
@@ -420,14 +424,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
       nonce = "nonce"
 
-      assert %{
+    assert {:ok, %{
                sub: "sub",
                client: ^client,
                inserted_at: ^inserted_at,
                scope: "scope",
                value: value,
                type: "id_token"
-             } = IdToken.generate(%{token: token, code: code}, nonce)
+             }} = IdToken.generate(%{token: token, code: code}, nonce)
 
       signer = Joken.Signer.create("HS256", client.secret)
 
@@ -481,14 +485,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
       nonce = "nonce"
 
-      assert %{
+    assert {:ok, %{
                sub: "sub",
                client: ^client,
                inserted_at: ^inserted_at,
                scope: "scope",
                value: value,
                type: "id_token"
-             } = IdToken.generate(%{token: token, code: code}, nonce)
+             }} = IdToken.generate(%{token: token, code: code}, nonce)
 
       signer = Joken.Signer.create("HS384", client.secret)
 
@@ -550,14 +554,14 @@ defmodule Boruta.Oauth.IdTokenTest do
 
       nonce = "nonce"
 
-      assert %{
+    assert {:ok, %{
                sub: "sub",
                client: ^client,
                inserted_at: ^inserted_at,
                scope: "scope",
                value: value,
                type: "id_token"
-             } = IdToken.generate(%{token: token, code: code}, nonce)
+             }} = IdToken.generate(%{token: token, code: code}, nonce)
 
       signer = Joken.Signer.create("HS512", client.secret)
 

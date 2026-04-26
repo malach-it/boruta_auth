@@ -31,5 +31,11 @@ defmodule Boruta.Oauth.ResourceOwners do
   @callback claims(resource_owner :: ResourceOwner.t(), scope :: String.t()) ::
               claims :: Boruta.Oauth.IdToken.claims()
 
+  @doc """
+  Returns `id_token` trust_chain for the given client. This will be present in the `trust_chain` header of the resulting `id_token` of OpenID Connect flows.
+  """
+  @callback trust_chain(client :: Boruta.Oauth.Client.t()) ::
+              {:ok, trust_chain :: list(String.t())} | {:error, reason :: String.t()}
+
   @optional_callbacks claims: 2
 end

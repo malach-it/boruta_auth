@@ -1,6 +1,8 @@
 defmodule Boruta.Internal.Signatures do
   @behaviour Boruta.Oauth.Signatures
 
+  import Boruta.Config, only: [resource_owners: 0]
+
   defmodule Token do
     @moduledoc false
 
@@ -161,13 +163,16 @@ defmodule Boruta.Internal.Signatures do
     do: @signature_algorithms[String.to_atom(signature_alg)][:type]
 
   defp get_signing_key(client, :id_token) do
-    {:ok,
-     %SigningKey{
-       type: :internal,
-       private_key: client.private_key,
-       secret: client.secret,
-       kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key)
-     }}
+    with {:ok, trust_chain} <- resource_owners().trust_chain(client) do
+      {:ok,
+       %SigningKey{
+         type: :internal,
+         private_key: client.private_key,
+         secret: client.secret,
+         kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key),
+         trust_chain: trust_chain
+       }}
+    end
   end
 
   defp get_signing_key(client, :userinfo) do
@@ -181,12 +186,15 @@ defmodule Boruta.Internal.Signatures do
   end
 
   defp get_signing_key(client, :verifiable_credential) do
-    {:ok,
-     %SigningKey{
-       type: :internal,
-       private_key: client.private_key,
-       secret: client.secret,
-       kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key)
-     }}
+    with {:ok, trust_chain} <- resource_owners().trust_chain(client) do
+      {:ok,
+       %SigningKey{
+         type: :internal,
+         private_key: client.private_key,
+         secret: client.secret,
+         kid: client.did || client.id_token_kid || Client.Crypto.kid_from_private_key(client.private_key),
+         trust_chain: trust_chain
+       }}
+    end
   end
 end
