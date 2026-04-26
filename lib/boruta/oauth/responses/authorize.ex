@@ -198,9 +198,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
          token_type: token_type
        }) do
     %{
-      code: code,
+      code: code && code.value,
       id_token: id_token,
-      access_token: access_token,
+      access_token: access_token && access_token.value,
       expires_in: expires_in,
       state: state,
       token_type: token_type
