@@ -806,7 +806,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -823,7 +823,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                )
 
       assert type == :hybrid
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -842,7 +842,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -859,7 +859,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                )
 
       assert type == :hybrid
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -905,7 +905,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -922,7 +922,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                )
 
       assert type == :hybrid
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -940,7 +940,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -957,7 +957,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                )
 
       assert type == :hybrid
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -1028,7 +1028,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in,
                 state: state
               }} =
@@ -1046,7 +1046,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                )
 
       assert type == :hybrid
-      assert value
+      assert code
       assert expires_in
       assert state == given_state
     end
@@ -1094,7 +1094,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in,
                 state: state,
                 code_challenge: code_challenge,
@@ -1119,14 +1119,14 @@ defmodule Boruta.OauthTest.HybridGrantTest do
         code_challenge: repo_code_challenge,
         code_challenge_method: repo_code_challenge_method,
         code_challenge_hash: repo_code_challenge_hash
-      } = Repo.get_by(Ecto.Token, value: value)
+      } = Repo.get_by(Ecto.Token, value: code.value)
 
       assert repo_code_challenge == nil
       assert repo_code_challenge_method == "S256"
       assert String.length(repo_code_challenge_hash) == 128
 
       assert type == :hybrid
-      assert value
+      assert code
       assert expires_in
       assert state == given_state
       assert code_challenge == given_code_challenge
@@ -1143,7 +1143,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       assert {:authorize_success,
               %AuthorizeResponse{
-                code: value
+                code: code
               }} =
                Oauth.authorize(
                  %Plug.Conn{
@@ -1161,7 +1161,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       %Ecto.Token{
         code_challenge_method: repo_code_challenge_method
-      } = Repo.get_by(Ecto.Token, value: value)
+      } = Repo.get_by(Ecto.Token, value: code.value)
 
       assert repo_code_challenge_method == "plain"
     end

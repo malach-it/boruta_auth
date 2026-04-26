@@ -267,7 +267,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -283,7 +283,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
 
       assert type == :code
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -296,7 +296,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -312,7 +312,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
 
       assert type == :code
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -325,7 +325,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -341,7 +341,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
 
       assert type == :code
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -357,7 +357,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -373,7 +373,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
 
       assert type == :code
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -419,11 +419,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           code: value,
+           code: code,
            expires_in: expires_in
          }} ->
           assert type == :code
-          assert value
+          assert code
           assert expires_in
 
         _ ->
@@ -457,11 +457,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           code: value,
+           code: code,
            expires_in: expires_in
          }} ->
           assert type == :code
-          assert value
+          assert code
           assert expires_in
 
         _ ->
@@ -523,11 +523,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           code: value,
+           code: code,
            expires_in: expires_in
          }} ->
           assert type == :code
-          assert value
+          assert code
           assert expires_in
 
         _ ->
@@ -561,11 +561,11 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           code: value,
+           code: code,
            expires_in: expires_in
          }} ->
           assert type == :code
-          assert value
+          assert code
           assert expires_in
 
         _ ->
@@ -652,12 +652,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           code: value,
+           code: code,
            expires_in: expires_in,
            state: state
          }} ->
           assert type == :code
-          assert value
+          assert code
           assert expires_in
           assert state == given_state
 
@@ -723,7 +723,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           code: value,
+           code: code,
            expires_in: expires_in,
            state: state,
            code_challenge: code_challenge,
@@ -733,14 +733,14 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
             code_challenge: repo_code_challenge,
             code_challenge_method: repo_code_challenge_method,
             code_challenge_hash: repo_code_challenge_hash
-          } = Repo.get_by(Ecto.Token, value: value)
+          } = Repo.get_by(Ecto.Token, value: code.value)
 
           assert repo_code_challenge == nil
           assert repo_code_challenge_method == "S256"
           assert String.length(repo_code_challenge_hash) == 128
 
           assert type == :code
-          assert value
+          assert code
           assert expires_in
           assert state == given_state
           assert code_challenge == given_code_challenge
@@ -775,7 +775,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -789,7 +789,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
 
       assert type == :code
-      assert value
+      assert code
       assert expires_in
     end
 
@@ -855,12 +855,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            ) do
         {:authorize_success,
          %AuthorizeResponse{
-           code: value
+           code: code
          }} ->
           %Ecto.Token{
             code_challenge_method: repo_code_challenge_method,
             code_challenge_hash: repo_code_challenge_hash
-          } = Repo.get_by(Ecto.Token, value: value)
+          } = Repo.get_by(Ecto.Token, value: code.value)
 
           assert repo_code_challenge_method == "plain"
           assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
@@ -896,12 +896,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
            ) do
         {:authorize_success,
          %AuthorizeResponse{
-           code: value
+           code: code
          }} ->
           %Ecto.Token{
             code_challenge_method: repo_code_challenge_method,
             code_challenge_hash: repo_code_challenge_hash
-          } = Repo.get_by(Ecto.Token, value: value)
+          } = Repo.get_by(Ecto.Token, value: code.value)
 
           assert repo_code_challenge_method == "S256"
           assert repo_code_challenge_hash == Boruta.Oauth.Token.hash(given_code_challenge)
@@ -927,7 +927,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                code: value,
+                code: code,
                 expires_in: expires_in
               }} =
                Oauth.authorize(
@@ -944,10 +944,10 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                )
 
       assert type == :code
-      assert value
+      assert code
       assert expires_in
 
-      assert Repo.get_by(Ecto.Token, value: value).authorization_details == authorization_details
+      assert Repo.get_by(Ecto.Token, value: code.value).authorization_details == authorization_details
     end
 
     test "returns a code with siopv2 (direct_post - jwe)" do
@@ -1756,7 +1756,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert access_token
       assert expires_in
       assert refresh_token
-      refute Repo.get_by(Ecto.Token, value: access_token).revoked_at
+      refute Repo.get_by(Ecto.Token, value: access_token.value).revoked_at
     end
 
     test "stores previous code", %{client: client, code: code, resource_owner: resource_owner} do
@@ -1781,7 +1781,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  ApplicationMock
                )
 
-      assert token = Repo.get_by(Ecto.Token, value: access_token)
+      assert token = Repo.get_by(Ecto.Token, value: access_token.value)
       assert token.previous_code == code.value
     end
 
@@ -1865,7 +1865,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  ApplicationMock
                )
 
-      assert Repo.get_by(Ecto.Token, value: access_token).revoked_at
+      assert Repo.get_by(Ecto.Token, value: access_token.value).revoked_at
     end
 
     test "returns a token and an id_token with openid scope", %{
@@ -2247,7 +2247,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert expires_in
       assert refresh_token
 
-      assert Repo.get_by(Ecto.Token, value: access_token).authorization_details ==
+      assert Repo.get_by(Ecto.Token, value: access_token.value).authorization_details ==
                code.authorization_details
     end
 
