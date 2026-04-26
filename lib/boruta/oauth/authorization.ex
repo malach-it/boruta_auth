@@ -1114,6 +1114,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                client_encryption_alg: previous_code && previous_code.client_encryption_alg
              }) do
         case List.first(response_types) do
+          "code" ->
+            {:ok, %{siopv2_code: code, response_mode: response_mode}}
+
           "id_token" ->
             {:ok, %{siopv2_code: code, response_mode: response_mode}}
 
