@@ -70,7 +70,7 @@ defmodule Boruta.Ecto.AccessTokens do
       redirect_uri: redirect_uri,
       state: state,
       scope: scope,
-      requested_scope: requested_scope || scope,
+      requested_scope: requested_scope || "",
       access_token_ttl: access_token_ttl,
       previous_token: previous_token,
       previous_code: previous_code,

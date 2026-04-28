@@ -970,6 +970,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PresentationRequest
+  alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
   alias Boruta.Openid.VerifiableCredentials
   alias Boruta.Openid.VerifiablePresentations
@@ -1051,7 +1052,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                resource_owner: resource_owner,
                presentation_scopes: [identifier]
              }
-           ) do
+           ),
+           requested_scope <- Enum.join(Scope.split(requested_scope) -- Scope.split(scope), " ") do
       {code_challenge, code_challenge_method} =
         case resource_owner.code_verifier do
           nil -> {code_challenge, code_challenge_method}

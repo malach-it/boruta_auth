@@ -3,7 +3,7 @@ defmodule Boruta.Repo.Migrations.AddRequestedScopeToOauthTokens do
 
   def change do
     alter table(:oauth_tokens) do
-      add(:requested_scope, :string)
+      add(:requested_scope, :string, default: "")
     end
   end
 end
