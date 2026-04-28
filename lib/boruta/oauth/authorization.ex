@@ -706,10 +706,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
              resource_owner: resource_owner
            ),
          {:ok, scope} <-
-           Authorization.Scope.authorize(
+           Authorization.Scope.filter(
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
-           ) do
+            ) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
