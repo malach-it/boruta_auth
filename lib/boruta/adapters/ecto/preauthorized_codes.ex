@@ -44,8 +44,9 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           redirect_uri: redirect_uri,
           response_type: params[:response_type],
           scope: scope,
+          requested_scope: params[:requested_scope] || scope,
           state: state,
-          sub: sub,
+          sub: sub
         }
       ])
 

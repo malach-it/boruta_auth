@@ -38,6 +38,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             resource_owner: nil,
             sub: nil,
             scope: nil,
+            requested_scope: nil,
             state: nil,
             nonce: nil,
             access_token: nil,
@@ -66,6 +67,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           sub: String.t() | nil,
           resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
           scope: String.t(),
+          requested_scope: String.t(),
           state: String.t() | nil,
           nonce: String.t() | nil,
           code_challenge: String.t() | nil,
@@ -984,7 +986,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           redirect_uri: redirect_uri,
           resource_owner: resource_owner,
           response_type: response_type,
-          scope: scope,
+          scope: requested_scope,
           state: state,
           agent_token: agent_token
         } = request
@@ -992,7 +994,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
     with response_types <-
            VerifiablePresentations.response_types(
              response_type,
-             scope,
+             requested_scope,
              resource_owner.presentation_configuration
            ),
          {:ok, client} <-
@@ -1028,7 +1030,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            VerifiablePresentations.presentation_definition(
              response_types,
              resource_owner.presentation_configuration,
-             scope
+             requested_scope
            ),
          {:ok, resource_owner} <-
            (case agent_token do
@@ -1043,7 +1045,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             end),
          {:ok, scope} <-
            Authorization.Scope.filter(
-             scope: scope,
+             scope: requested_scope,
              against: %{
                client: client,
                resource_owner: resource_owner,
@@ -1063,6 +1065,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          sub: resource_owner.sub,
          resource_owner: resource_owner,
          scope: scope,
+         requested_scope: requested_scope,
          state: state,
          nonce: nonce,
          code: code,
@@ -1090,6 +1093,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             sub: sub,
             resource_owner: resource_owner,
             scope: scope,
+            requested_scope: requested_scope,
             state: state,
             nonce: nonce,
             code: code,
@@ -1114,6 +1118,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                redirect_uri: redirect_uri,
                previous_code: code,
                scope: scope,
+               requested_scope: requested_scope,
                state: state,
                nonce: nonce,
                agent_token: (previous_code && previous_code.agent_token) || agent_token,

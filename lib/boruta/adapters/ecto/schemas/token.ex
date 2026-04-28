@@ -25,6 +25,7 @@ defmodule Boruta.Ecto.Token do
           nonce: String.t(),
           c_nonce: String.t(),
           scope: String.t(),
+          requested_scope: String.t() | nil,
           redirect_uri: String.t(),
           expires_at: integer(),
           client: Client.t(),
@@ -73,6 +74,7 @@ defmodule Boruta.Ecto.Token do
     field(:nonce, :string)
     field(:c_nonce, :string)
     field(:scope, :string, default: "")
+    field(:requested_scope, :string)
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)
@@ -110,6 +112,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :access_token_ttl,
       :previous_code,
       :authorization_details,
@@ -136,6 +139,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :previous_token,
       :previous_code,
       :authorization_details,
@@ -160,6 +164,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :access_token_ttl,
       :previous_code,
       :authorization_details,
@@ -186,6 +191,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :previous_token,
       :previous_code,
       :authorization_details,
@@ -216,6 +222,7 @@ defmodule Boruta.Ecto.Token do
       :public_client_id,
       :redirect_uri,
       :scope,
+      :requested_scope,
       :state,
       :sub
     ])
@@ -244,6 +251,7 @@ defmodule Boruta.Ecto.Token do
       :public_client_id,
       :redirect_uri,
       :scope,
+      :requested_scope,
       :state,
       :sub
     ])
@@ -274,6 +282,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :authorization_details,
       :presentation_definition,
       :client_encryption_key,
@@ -300,6 +309,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :code_challenge,
       :code_challenge_method,
       :authorization_details,

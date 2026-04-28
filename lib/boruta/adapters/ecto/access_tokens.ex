@@ -57,6 +57,7 @@ defmodule Boruta.Ecto.AccessTokens do
     redirect_uri = params[:redirect_uri]
     previous_token = params[:previous_token]
     previous_code = params[:previous_code]
+    requested_scope = params[:requested_scope]
     resource_owner = params[:resource_owner]
     agent_token = params[:agent_token]
 
@@ -69,6 +70,7 @@ defmodule Boruta.Ecto.AccessTokens do
       redirect_uri: redirect_uri,
       state: state,
       scope: scope,
+      requested_scope: requested_scope || scope,
       access_token_ttl: access_token_ttl,
       previous_token: previous_token,
       previous_code: previous_code,
