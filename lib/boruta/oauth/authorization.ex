@@ -277,6 +277,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              client: client,
              code_verifier: code_verifier
            }),
+         code_chain <- CodesAdapter.code_chain(code),
          {:ok, %ResourceOwner{sub: sub}} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       {:ok,
@@ -285,7 +286,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
          code: code,
          redirect_uri: redirect_uri,
          sub: sub,
-         scope: code.scope,
+         scope: code_chain |> Enum.map(&(&1.scope)) |> Enum.join(" "),
          nonce: code.nonce,
          authorization_details: code.authorization_details
        }}
@@ -718,7 +719,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
          scope: scope,
          state: state,
          resource_owner: resource_owner,
-         agent_token: agent_token || code.agent_token,
+         agent_token: agent_token || code && code.agent_token,
          authorization_details: resource_owner.authorization_details
        }}
     else
