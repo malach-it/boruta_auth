@@ -210,13 +210,15 @@ defmodule Boruta.Openid.VerifiableCredentials do
           resource_owner :: ResourceOwner.t(),
           credential_params :: map(),
           token :: Boruta.Oauth.Token.t(),
-          default_credential_configuration :: map()
+          default_credential_configuration :: map(),
+          code_chain :: list(Boruta.Oauth.Token.t())
         ) :: {:ok, credential :: Credential.t()} | {:error, reason :: String.t()}
   def issue_verifiable_credential(
         resource_owner,
         credential_params,
         token,
-        default_credential_configuration
+        default_credential_configuration,
+        code_chain \\ []
       ) do
     proof = credential_params["proof"]
 
@@ -226,20 +228,20 @@ defmodule Boruta.Openid.VerifiableCredentials do
         _ -> resource_owner.credential_configuration
       end
 
+    token_scopes = token_chain_scopes([token | code_chain])
+
     # TODO filter from resource owner authorization details
     with {credential_identifier, credential_configuration} <-
            Enum.find(credential_configuration, fn {identifier, configuration} ->
-             case configuration[:version] do
-               "11" ->
-                 (credential_params["types"] &&
-                    Enum.empty?(configuration[:types] -- credential_params["types"])) ||
-                   Enum.member?(Scope.split(token.scope), identifier)
-
-               "13" ->
-                 (identifier == credential_params["credential_identifier"]) ||
-                   Enum.member?(Scope.split(token.scope), identifier)
-             end
+             credential_configuration_matches?(
+               identifier,
+               configuration,
+               credential_params,
+               token_scopes
+             )
            end),
+         {:ok, credential_configuration} <-
+           configuration_scope_authorized?(credential_configuration, token_scopes),
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
          :ok <- validate_claims(proof["jwt"]),
@@ -268,6 +270,46 @@ defmodule Boruta.Openid.VerifiableCredentials do
       nil -> {:error, "Credential not found."}
       error -> error
     end
+  end
+
+  defp credential_configuration_matches?(
+         identifier,
+         %{version: "11"} = configuration,
+         credential_params,
+         token_scopes
+       ) do
+    (credential_params["types"] &&
+       Enum.empty?(configuration[:types] -- credential_params["types"])) ||
+      Enum.member?(token_scopes, identifier)
+  end
+
+  defp credential_configuration_matches?(
+         identifier,
+         %{version: "13"},
+         credential_params,
+         token_scopes
+       ) do
+    identifier == credential_params["credential_identifier"] ||
+      Enum.member?(token_scopes, identifier)
+  end
+
+  defp credential_configuration_matches?(_identifier, _configuration, _credential_params, _token_scopes),
+    do: false
+
+  defp configuration_scope_authorized?(%{scopes: scopes} = configuration, token_scopes)
+       when is_list(scopes) do
+    case Enum.any?(scopes, &Enum.member?(token_scopes, &1)) do
+      true -> {:ok, configuration}
+      false -> {:error, "Credential scope is not authorized."}
+    end
+  end
+
+  defp configuration_scope_authorized?(configuration, _token_scopes), do: {:ok, configuration}
+
+  defp token_chain_scopes(token_chain) do
+    token_chain
+    |> Enum.flat_map(fn token -> Scope.split(token.scope) end)
+    |> Enum.uniq()
   end
 
   @spec validate_authorization_details(authorization_details :: String.t()) ::

@@ -96,7 +96,8 @@ defmodule Boruta.Openid do
              token.resource_owner,
              credential_params,
              token,
-             default_credential_configuration
+             default_credential_configuration,
+             code_chain
            ),
          {:ok, _codes} <- maybe_revoke_code_chain(%{credential: credential}, code_chain) do
       case credential do

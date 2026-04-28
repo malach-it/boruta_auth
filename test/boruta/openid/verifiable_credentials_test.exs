@@ -221,6 +221,149 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       assert credential
     end
 
+    test "issues credential selected by configuration scopes", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      jwk =
+        private_key_fixture()
+        |> JOSE.JWK.from_pem()
+        |> JOSE.JWK.to_public()
+        |> JOSE.JWK.to_map()
+        |> elem(1)
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => jwk,
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
+
+      resource_owner = %ResourceOwner{
+        resource_owner
+        | credential_configuration: %{
+            "VerifiableCredential" => Map.put(
+              resource_owner.credential_configuration["VerifiableCredential"],
+              :scopes,
+              ["credential:read"]
+            )
+          }
+      }
+
+      credential_params =
+        credential_params
+        |> Map.put("proof", %{"proof_type" => "jwt", "jwt" => jwt})
+
+      token = insert(:token, scope: "credential:read") |> to_oauth_schema()
+
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "jwt_vc"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 token,
+                 %{}
+               )
+
+      assert credential
+    end
+
+    test "issues credential selected by configuration scopes from code chain", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      jwk =
+        private_key_fixture()
+        |> JOSE.JWK.from_pem()
+        |> JOSE.JWK.to_public()
+        |> JOSE.JWK.to_map()
+        |> elem(1)
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => jwk,
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
+
+      resource_owner = %ResourceOwner{
+        resource_owner
+        | credential_configuration: %{
+            "VerifiableCredential" => Map.put(
+              resource_owner.credential_configuration["VerifiableCredential"],
+              :scopes,
+              ["credential:read"]
+            )
+          }
+      }
+
+      credential_params =
+        credential_params
+        |> Map.put("proof", %{"proof_type" => "jwt", "jwt" => jwt})
+
+      token = insert(:token, scope: "other:scope") |> to_oauth_schema()
+      code_chain = [insert(:token, type: "code", scope: "credential:read") |> to_oauth_schema()]
+
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "jwt_vc"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 token,
+                 %{},
+                 code_chain
+               )
+
+      assert credential
+    end
+
+    test "returns an error when configuration scope is not authorized", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      resource_owner = %ResourceOwner{
+        resource_owner
+        | credential_configuration: %{
+            "VerifiableCredential" => Map.put(
+              resource_owner.credential_configuration["VerifiableCredential"],
+              :scopes,
+              ["other:scope"]
+            )
+          }
+      }
+
+      token = insert(:token, scope: "credential:read") |> to_oauth_schema()
+
+      assert VerifiableCredentials.issue_verifiable_credential(
+               resource_owner,
+               credential_params,
+               token,
+               %{}
+             ) == {:error, "Credential scope is not authorized."}
+    end
+
     test "issues jwt_vc credential with nested claims", %{
       credential_params: credential_params
     } do
