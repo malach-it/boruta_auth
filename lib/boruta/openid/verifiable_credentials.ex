@@ -298,7 +298,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
   defp configuration_scope_authorized?(%{scopes: scopes} = configuration, token_scopes)
        when is_list(scopes) do
-    case Enum.any?(scopes, &Enum.member?(token_scopes, &1)) do
+    case Enum.all?(scopes, &Enum.member?(token_scopes, &1)) do
       true -> {:ok, configuration}
       false -> {:error, "Credential scope is not authorized."}
     end
