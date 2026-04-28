@@ -1023,7 +1023,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
               value -> Authorization.Code.authorize(%{value: value})
             end),
          :ok <- VerifiablePresentations.check_client_metadata(client_metadata),
-         presentation_definition <-
+         {:ok, identifier, presentation_definition} <-
            VerifiablePresentations.presentation_definition(
              resource_owner.presentation_configuration,
              scope
@@ -1051,7 +1051,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          client: client,
          sub: resource_owner.sub,
          resource_owner: resource_owner,
-         scope: scope,
+         scope: identifier,
          state: state,
          nonce: nonce,
          code: code,
@@ -1113,19 +1113,20 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                client_encryption_key: previous_code && previous_code.client_encryption_key,
                client_encryption_alg: previous_code && previous_code.client_encryption_alg
              }) do
-        case List.first(response_types) do
-          "code" ->
+        case verifiable_presentation?(response_types) do
+          false ->
             {:ok, %{siopv2_code: code, response_mode: response_mode}}
 
-          "id_token" ->
-            {:ok, %{siopv2_code: code, response_mode: response_mode}}
-
-          "vp_token" ->
+          true ->
             {:ok, %{vp_code: code, response_mode: response_mode}}
         end
       end
     end
   end
+
+  defp verifiable_presentation?(["code" | _response_types]), do: false
+  defp verifiable_presentation?(["id_token" | _response_types]), do: false
+  defp verifiable_presentation?(["vp_token" | _response_types]), do: true
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do

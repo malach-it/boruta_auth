@@ -43,10 +43,10 @@ defmodule Boruta.Openid.VerifiablePresentations do
            Enum.member?(Scope.split(scope), identifier)
          end) do
       nil ->
-        nil
+        {:ok, nil, nil}
 
-      {_identifier, configuration} ->
-        configuration[:definition]
+      {identifier, configuration} ->
+        {:ok, identifier, configuration[:definition]}
     end
   end
 
