@@ -25,8 +25,10 @@ defmodule Boruta.Openid.VerifiablePresentations do
     case response_types do
       ["code" | _rest] ->
         response_types
+
       ["id_token" | _rest] ->
         response_types
+
       ["vp_token" | rest] ->
         case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
                Enum.member?(Scope.split(scope), presentation_identifier)
@@ -34,11 +36,13 @@ defmodule Boruta.Openid.VerifiablePresentations do
           true -> String.split(response_type, " ")
           false -> ["id_token" | rest]
         end
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
-  def presentation_definition(presentation_configuration, scope) do
+  def presentation_definition(["vp_token" | _response_types], presentation_configuration, scope) do
     case Enum.find(presentation_configuration, fn {identifier, _configuration} ->
            Enum.member?(Scope.split(scope), identifier)
          end) do
@@ -49,6 +53,9 @@ defmodule Boruta.Openid.VerifiablePresentations do
         {:ok, identifier, configuration[:definition]}
     end
   end
+
+  def presentation_definition(_response_types, _presentation_configuration, _scope),
+    do: {:ok, nil, nil}
 
   def validate_presentation(vp_token, presentation_submission, presentation_definition) do
     with :ok <-
