@@ -4,6 +4,14 @@ defprotocol Boruta.Oauth.Scope.Authorize do
   def authorized_scopes(schema, scope, public_scopes)
 end
 
+defimpl Boruta.Oauth.Scope.Authorize, for: Atom do
+  import Boruta.Config, only: [resource_owners: 0]
+
+  alias Boruta.Oauth.ResourceOwner
+
+  def authorized_scopes(_authorized_scopes, _scopes, _public_scopes), do: []
+end
+
 defimpl Boruta.Oauth.Scope.Authorize, for: List do
   import Boruta.Config, only: [resource_owners: 0]
 
