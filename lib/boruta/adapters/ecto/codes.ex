@@ -141,11 +141,27 @@ defmodule Boruta.Ecto.Codes do
   defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_code_changeset
 
   @impl Boruta.Oauth.Codes
-  def update_client_encryption(%Oauth.Token{value: value} = code, params) do
+  def update_sub(%Oauth.Token{id: id}, sub, metadata_policy) do
+    with %Token{} = code <-
+           repo().one(
+             from t in Token,
+               where: t.type in ["code", "preauthorized_code"] and t.id == ^id
+           ),
+         {:ok, code} <- Token.sub_changeset(code, sub, metadata_policy) |> repo().update(),
+         {:ok, token} <- TokenStore.put(to_oauth_schema(code)) do
+      {:ok, token}
+    else
+      _ ->
+        {:error, "Preauthorized code not found."}
+    end
+  end
+
+  @impl Boruta.Oauth.Codes
+  def update_client_encryption(%Oauth.Token{value: value}, params) do
     with %Token{} = token <- repo().get_by(Token, value: value),
          {:ok, token} <- Token.client_encryption_changeset(token, params) |> repo().update(),
-         {:ok, _token} <- TokenStore.invalidate(code) do
-      {:ok, to_oauth_schema(token)}
+         {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
+      {:ok, token}
     end
   end
 
@@ -197,22 +213,6 @@ defmodule Boruta.Ecto.Codes do
            Token.revoke_changeset(previous_token)
            |> repo().update() do
       {:ok, code}
-    end
-  end
-
-  @impl Boruta.Oauth.Codes
-  def update_sub(%Oauth.Token{id: id}, sub, metadata_policy) do
-    with %Token{} = code <-
-           repo().one(
-             from t in Token,
-               where: t.type in ["code", "preauthorized_code"] and t.id == ^id
-           ),
-         {:ok, code} <- Token.sub_changeset(code, sub, metadata_policy) |> repo().update(),
-         {:ok, code} <- TokenStore.invalidate(code) do
-      {:ok, to_oauth_schema(code)}
-    else
-      _ ->
-        {:error, "Preauthorized code not found."}
     end
   end
 
