@@ -662,6 +662,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest do
+  import Boruta.Config, only: [resource_owners: 0]
+
   alias Boruta.CodesAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.PreauthorizedCodesAdapter
@@ -702,15 +704,16 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
               nil -> {:ok, nil}
               previous_code -> Authorization.Code.authorize(%{value: previous_code})
             end),
+         {:ok, scope} <-
+           Authorization.Scope.filter(
+             scope: scope,
+             against: %{client: client, resource_owner: resource_owner, code: code}
+           ),
+         {:ok, resource_owner} <- resource_owners().get_by(sub: resource_owner.sub, scope: scope),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.AgentToken.authorize(
              agent_token: (code && code.agent_token) || agent_token,
              resource_owner: resource_owner
-           ),
-         {:ok, scope} <-
-           Authorization.Scope.filter(
-             scope: scope,
-             against: %{client: client, resource_owner: resource_owner}
            ) do
       {:ok,
        %AuthorizationSuccess{
@@ -1053,7 +1056,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                presentation_scopes: [identifier]
              }
            ),
-           requested_scope <- Enum.join(Scope.split(requested_scope) -- Scope.split(scope), " ") do
+         requested_scope <- Enum.join(Scope.split(requested_scope) -- Scope.split(scope), " ") do
       {code_challenge, code_challenge_method} =
         case resource_owner.code_verifier do
           nil -> {code_challenge, code_challenge_method}
