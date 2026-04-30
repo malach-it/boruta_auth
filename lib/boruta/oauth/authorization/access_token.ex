@@ -42,9 +42,25 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
     end
   end
 
+  def authorize(value: value, resource: resource) do
+    with {:ok, token} <- authorize(value: value),
+         :ok <- validate_resource(token, resource) do
+      {:ok, token}
+    else
+      _ ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_access_token,
+           error_description:
+             "Given access token is invalid, revoked, expired, or not valid for the requested resource."
+         }}
+    end
+  end
+
   def authorize(refresh_token: refresh_token) do
     with %Token{} = token <- Boruta.AccessTokensAdapter.get_by(refresh_token: refresh_token),
-      :ok <- Token.ensure_valid(token, :refresh_token) do
+         :ok <- Token.ensure_valid(token, :refresh_token) do
       {:ok, token}
     else
       _ ->
@@ -56,4 +72,8 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
          }}
     end
   end
+
+  defp validate_resource(%Token{resource: resource}, resource), do: :ok
+  defp validate_resource(_token, nil), do: :ok
+  defp validate_resource(_token, _resource), do: {:error, :invalid_target}
 end

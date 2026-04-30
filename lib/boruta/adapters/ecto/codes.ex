@@ -106,6 +106,7 @@ defmodule Boruta.Ecto.Codes do
           state: state,
           nonce: params[:nonce],
           scope: scope,
+          resource: params[:resource],
           authorization_code_ttl: authorization_code_ttl,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,

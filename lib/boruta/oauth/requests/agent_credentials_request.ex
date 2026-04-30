@@ -13,6 +13,7 @@ defmodule Boruta.Oauth.AgentCredentialsRequest do
             value: String.t()
           },
           scope: String.t(),
+          resource: String.t() | nil,
           grant_type: String.t(),
           dpop: Boruta.Dpop.t() | nil,
           bind_data: String.t(),
@@ -22,6 +23,7 @@ defmodule Boruta.Oauth.AgentCredentialsRequest do
   defstruct client_id: nil,
             client_authentication: nil,
             scope: "",
+            resource: nil,
             grant_type: "agent_credentials",
             dpop: nil,
             bind_data: "",

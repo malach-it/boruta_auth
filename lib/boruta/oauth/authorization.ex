@@ -38,6 +38,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
             resource_owner: nil,
             sub: nil,
             scope: nil,
+            resource: nil,
             state: nil,
             nonce: nil,
             access_token: nil,
@@ -62,6 +63,7 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
           sub: String.t() | nil,
           resource_owner: Boruta.Oauth.ResourceOwner.t() | nil,
           scope: String.t(),
+          resource: String.t() | nil,
           state: String.t() | nil,
           nonce: String.t() | nil,
           code_challenge: String.t() | nil,
@@ -76,6 +78,27 @@ defmodule Boruta.Oauth.AuthorizationSuccess do
         }
 end
 
+defmodule Boruta.Oauth.Authorization.Resource do
+  @moduledoc false
+
+  alias Boruta.Oauth.Error
+
+  @spec resolve(requested_resource :: String.t() | nil, authorized_resource :: String.t() | nil) ::
+          {:ok, String.t() | nil} | {:error, Error.t()}
+  def resolve(nil, authorized_resource), do: {:ok, authorized_resource}
+  def resolve(requested_resource, nil), do: {:ok, requested_resource}
+  def resolve(resource, resource), do: {:ok, resource}
+
+  def resolve(_requested_resource, _authorized_resource) do
+    {:error,
+     %Error{
+       status: :bad_request,
+       error: :invalid_target,
+       error_description: "Requested resource is not authorized for this token."
+     }}
+  end
+end
+
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest do
   alias Boruta.AccessTokensAdapter
   alias Boruta.Dpop
@@ -88,6 +111,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
         client_id: client_id,
         client_authentication: client_source,
         scope: scope,
+        resource: resource,
         grant_type: grant_type,
         dpop: dpop
       }) do
@@ -99,17 +123,19 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
            ),
          :ok <- Dpop.validate(dpop, client),
          {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}) do
-      {:ok, %AuthorizationSuccess{client: client, scope: scope}}
+      {:ok, %AuthorizationSuccess{client: client, scope: scope, resource: resource}}
     end
   end
 
   def token(request) do
-    with {:ok, %AuthorizationSuccess{client: client, scope: scope}} <- preauthorize(request) do
+    with {:ok, %AuthorizationSuccess{client: client, scope: scope, resource: resource}} <-
+           preauthorize(request) do
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
                  client: client,
-                 scope: scope
+                 scope: scope,
+                 resource: resource
                },
                refresh_token: true
              ) do
@@ -131,6 +157,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
         client_id: client_id,
         client_authentication: client_source,
         scope: scope,
+        resource: resource,
         grant_type: grant_type,
         dpop: dpop,
         bind_data: bind_data,
@@ -150,6 +177,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
        %AuthorizationSuccess{
          client: client,
          scope: scope,
+         resource: resource,
          bind_data: bind_data,
          bind_configuration: bind_configuration
        }}
@@ -161,6 +189,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
           %AuthorizationSuccess{
             client: client,
             scope: scope,
+            resource: resource,
             bind_data: bind_data,
             bind_configuration: bind_configuration
           }} <- preauthorize(request) do
@@ -169,6 +198,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
                %{
                  client: client,
                  scope: scope,
+                 resource: resource,
                  bind_data: bind_data,
                  bind_configuration: bind_configuration
                },
@@ -194,6 +224,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
         username: username,
         password: password,
         scope: scope,
+        resource: resource,
         grant_type: grant_type
       }) do
     with {:ok, client} <-
@@ -209,20 +240,21 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
            ) do
-      {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}}
+      {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, resource: resource}}
     end
   end
 
   @dialyzer {:no_match, token: 1}
   def token(request) do
-    with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope}} <-
+    with {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, resource: resource}} <-
            preauthorize(request) do
       with {:ok, access_token} <-
              AccessTokensAdapter.create(
                %{
                  client: client,
                  sub: sub,
-                 scope: scope
+                 scope: scope,
+                 resource: resource
                },
                refresh_token: true
              ) do
@@ -250,6 +282,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
         client_authentication: client_source,
         code: code,
         redirect_uri: redirect_uri,
+        resource: resource,
         grant_type: grant_type,
         code_verifier: code_verifier,
         dpop: dpop
@@ -271,6 +304,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              client: client,
              code_verifier: code_verifier
            }),
+         {:ok, resource} <- Authorization.Resource.resolve(resource, code.resource),
          {:ok, %ResourceOwner{sub: sub}} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       {:ok,
@@ -280,6 +314,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
          redirect_uri: redirect_uri,
          sub: sub,
          scope: code.scope,
+         resource: resource,
          nonce: code.nonce,
          authorization_details: code.authorization_details
        }}
@@ -294,6 +329,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
+            resource: resource,
             nonce: nonce,
             authorization_details: authorization_details
           }} <-
@@ -306,6 +342,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
                previous_code: code.value,
                sub: sub,
                scope: scope,
+               resource: resource,
                authorization_details: authorization_details
              },
              refresh_token: true
@@ -346,6 +383,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
         client_authentication: client_source,
         code: code,
         redirect_uri: redirect_uri,
+        resource: resource,
         grant_type: grant_type,
         code_verifier: code_verifier,
         dpop: dpop,
@@ -369,6 +407,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
              client: client,
              code_verifier: code_verifier
            }),
+         {:ok, resource} <- Authorization.Resource.resolve(resource, code.resource),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner),
          {:ok, bind_data, bind_configuration} <-
@@ -380,6 +419,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
          redirect_uri: redirect_uri,
          sub: sub,
          scope: code.scope,
+         resource: resource,
          nonce: code.nonce,
          authorization_details: code.authorization_details,
          bind_data: bind_data,
@@ -396,6 +436,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
+            resource: resource,
             nonce: nonce,
             authorization_details: authorization_details,
             bind_data: bind_data,
@@ -410,6 +451,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
                previous_code: code.value,
                sub: sub,
                scope: scope,
+               resource: resource,
                authorization_details: authorization_details,
                bind_data: bind_data,
                bind_configuration: bind_configuration
@@ -553,6 +595,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
           state: state,
           nonce: nonce,
           scope: scope,
+          resource: resource,
           grant_type: grant_type
         } = request
       ) do
@@ -579,6 +622,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
          redirect_uri: redirect_uri,
          sub: sub,
          scope: scope,
+         resource: resource,
          state: state,
          nonce: nonce
        }}
@@ -594,6 +638,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
+            resource: resource,
             state: state,
             nonce: nonce
           }} <- preauthorize(request) do
@@ -610,6 +655,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                 redirect_uri: redirect_uri,
                 sub: sub,
                 scope: scope,
+                resource: resource,
                 state: state,
                 inserted_at: DateTime.utc_now()
               }
@@ -639,6 +685,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
                      redirect_uri: redirect_uri,
                      sub: sub,
                      scope: scope,
+                     resource: resource,
                      state: state,
                      resource_owner: resource_owner
                    },
@@ -760,6 +807,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
           state: state,
           nonce: nonce,
           scope: scope,
+          resource: resource,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,
           authorization_details: authorization_details
@@ -789,6 +837,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
          redirect_uri: redirect_uri,
          sub: sub,
          scope: scope,
+         resource: resource,
          state: state,
          nonce: nonce,
          code_challenge: code_challenge,
@@ -818,6 +867,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
+            resource: resource,
             state: state,
             nonce: nonce,
             code_challenge: code_challenge,
@@ -832,6 +882,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
                redirect_uri: redirect_uri,
                sub: sub,
                scope: scope,
+               resource: resource,
                state: state,
                nonce: nonce,
                code_challenge: code_challenge,
@@ -877,6 +928,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
         redirect_uri: redirect_uri,
         state: state,
         scope: scope,
+        resource: resource,
         code_challenge: code_challenge,
         code_challenge_method: code_challenge_method
       }) do
@@ -899,6 +951,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
          client: client,
          redirect_uri: redirect_uri,
          scope: scope,
+         resource: resource,
          state: state,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method
@@ -1169,6 +1222,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
         client_authentication: client_source,
         refresh_token: refresh_token,
         scope: scope,
+        resource: resource,
         grant_type: grant_type
       }) do
     with {:ok, client} <-
@@ -1183,9 +1237,17 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
             sub: sub,
             scope: token_scope
           } = token} <- Authorization.AccessToken.authorize(refresh_token: refresh_token),
+         {:ok, resource} <- Authorization.Resource.resolve(resource, token.resource),
          {:ok, scope} <-
            Authorization.Scope.authorize(scope: scope || token_scope, against: %{token: token}) do
-      {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, access_token: token}}
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         sub: sub,
+         scope: scope,
+         resource: resource,
+         access_token: token
+       }}
     else
       {:ok, _token} ->
         {:error,
@@ -1206,6 +1268,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
             client: client,
             sub: sub,
             scope: scope,
+            resource: resource,
             access_token: previous_token
           }} <-
            preauthorize(request) do
@@ -1215,7 +1278,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
                  previous_token: previous_token.value,
                  client: client,
                  sub: sub,
-                 scope: scope
+                 scope: scope,
+                 resource: resource
                },
                refresh_token: true
              ),

@@ -110,6 +110,8 @@ defmodule Boruta.OauthTest.IntrospectTest do
                   exp: nil,
                   iat: nil,
                   iss: "boruta",
+                  aud: nil,
+                  resource: nil,
                   scope: nil,
                   sub: nil,
                   username: nil
@@ -162,6 +164,37 @@ defmodule Boruta.OauthTest.IntrospectTest do
         _ ->
           assert false
       end
+    end
+
+    test "returns token resource when token is active", %{
+      client: client,
+      token: token,
+      resource_owner: resource_owner
+    } do
+      resource = "https://mcp.example.com"
+      token = Ecto.Changeset.change(token, resource: resource) |> Boruta.Repo.update!()
+
+      ResourceOwners
+      |> expect(:get_by, fn _params ->
+        {:ok, %ResourceOwner{sub: resource_owner.id, username: resource_owner.email}}
+      end)
+
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert {:introspect_success,
+              %IntrospectResponse{
+                active: true,
+                resource: ^resource,
+                aud: ^resource
+              }} =
+               Oauth.introspect(
+                 %Plug.Conn{
+                   body_params: %{"token" => token.value},
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
     end
 
     test "returns a token introspected if token is active (with body params)", %{

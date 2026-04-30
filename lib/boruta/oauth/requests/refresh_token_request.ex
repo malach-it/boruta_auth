@@ -14,6 +14,7 @@ defmodule Boruta.Oauth.RefreshTokenRequest do
           },
           refresh_token: String.t(),
           scope: String.t(),
+          resource: String.t() | nil,
           grant_type: String.t()
         }
   @enforce_keys [:client_id, :client_authentication, :refresh_token]
@@ -21,5 +22,6 @@ defmodule Boruta.Oauth.RefreshTokenRequest do
             client_authentication: nil,
             refresh_token: nil,
             scope: "",
+            resource: nil,
             grant_type: "refresh_token"
 end

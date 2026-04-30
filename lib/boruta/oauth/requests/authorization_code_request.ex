@@ -14,6 +14,7 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
           },
           redirect_uri: String.t(),
           code: String.t(),
+          resource: String.t() | nil,
           grant_type: String.t(),
           code_verifier: String.t(),
           dpop: Boruta.Dpop.t()
@@ -23,6 +24,7 @@ defmodule Boruta.Oauth.AuthorizationCodeRequest do
             client_authentication: nil,
             redirect_uri: nil,
             code: nil,
+            resource: nil,
             grant_type: "authorization_code",
             code_verifier: "",
             dpop: nil
