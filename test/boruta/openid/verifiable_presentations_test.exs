@@ -191,6 +191,54 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                presentation_definition
              ) == :ok
     end
+
+    test "returns an error when input descriptor and descriptor map counts do not match", %{
+      vp_token: vp_token
+    } do
+      presentation_submission = %{
+        "id" => "test",
+        "definition_id" => "test",
+        "descriptor_map" => [
+          %{
+            "id" => "test",
+            "format" => "jwt_vp",
+            "path" => "$",
+            "path_nested" => %{
+              "id" => "test",
+              "format" => "jwt_vc",
+              "path" => "$.vp.verifiableCredential[0]"
+            }
+          }
+        ]
+      }
+
+      presentation_definition = %{
+        "id" => "test",
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+        "input_descriptors" => [
+          %{
+            "id" => "test",
+            "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+            "constraints" => %{
+              "fields" => []
+            }
+          },
+          %{
+            "id" => "test-2",
+            "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+            "constraints" => %{
+              "fields" => []
+            }
+          }
+        ]
+      }
+
+      assert VerifiablePresentations.validate_presentation(
+               vp_token,
+               presentation_submission,
+               presentation_definition
+             ) == {:error, "Input descriptor count does not match descriptor map count."}
+    end
   end
 
   describe "validate_credential/3" do

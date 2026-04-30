@@ -64,6 +64,11 @@ defmodule Boruta.Openid.VerifiablePresentations do
              presentation_submission,
              error_formatter: BorutaFormatter
            ),
+         :ok <-
+           validate_descriptor_count(
+             presentation_definition["input_descriptors"],
+             presentation_submission["descriptor_map"]
+           ),
          {:ok, _jwk, vp_claims} <- validate_signature(vp_token) do
       Enum.reduce_while(
         Enum.zip(
@@ -88,6 +93,17 @@ defmodule Boruta.Openid.VerifiablePresentations do
         error
     end
   end
+
+  defp validate_descriptor_count(input_descriptors, descriptor_map)
+       when is_list(input_descriptors) and is_list(descriptor_map) do
+    case length(input_descriptors) == length(descriptor_map) do
+      true -> :ok
+      false -> {:error, "Input descriptor count does not match descriptor map count."}
+    end
+  end
+
+  defp validate_descriptor_count(_input_descriptors, _descriptor_map),
+    do: {:error, "Input descriptor count does not match descriptor map count."}
 
   defp extract_path(raw_path) do
     raw_path
