@@ -209,11 +209,14 @@ defmodule Boruta.Openid do
              maybe_verify_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- check_client_metadata_policy(code_chain, direct_post_params),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           {:ok, code} <-
-             CodesAdapter.update_client_encryption(code, %{
-               client_encryption_key: claims["client_encryption_key"],
-               client_encryption_alg: claims["client_encryption_alg"]
-             }),
+             {:ok, code} <- (case direct_post_params[:id_token] do
+               nil -> {:ok, code}
+               _ ->
+                CodesAdapter.update_client_encryption(code, %{
+                  client_encryption_key: claims["client_encryption_key"],
+                  client_encryption_alg: claims["client_encryption_alg"]
+                })
+             end),
            {:ok, _codes} <- maybe_revoke_code_chain(direct_post_params, code_chain) do
         module.direct_post_success(conn, %DirectPostResponse{
           id_token: direct_post_params[:id_token],
