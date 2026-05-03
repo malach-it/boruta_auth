@@ -232,6 +232,7 @@ defmodule Boruta.MixProject do
     [
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "security.audit": ["cmd scripts/security_audit.sh"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
