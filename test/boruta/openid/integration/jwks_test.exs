@@ -19,6 +19,7 @@ defmodule Boruta.OpenidTest.JwksTest do
       assert {:jwk_list, jwk_keys} = Openid.jwks(%Plug.Conn{}, ApplicationMock)
 
       assert Enum.member?(jwk_keys, %{
+               "alg" => "RS512",
                "kid" => "Ac9ufCpgwReXGJ6LI",
                "e" => "AQAB",
                "kty" => "RSA",
