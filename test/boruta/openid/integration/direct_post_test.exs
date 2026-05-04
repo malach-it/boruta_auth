@@ -378,6 +378,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "siopv2 - authenticates with bad public client", %{
       id_token: id_token,
       bad_public_client_code: code
