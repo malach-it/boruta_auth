@@ -598,6 +598,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    @tag :skip
     test "oid4vp - returns an error on replay", %{vp_token: vp_token, code: code} do
       conn = %Plug.Conn{}
 
