@@ -87,7 +87,9 @@ defmodule Boruta.Oauth.Authorization.Scope do
 
     against = Map.put(against, :public, public_scopes)
 
-    {:ok, Enum.join(authorized_scopes(scopes, against), " ")}
+    authorized_scopes = authorized_scopes(scopes, against)
+
+    {:ok, Enum.join(scopes -- (scopes -- authorized_scopes), " ")}
   end
 
   defp authorized_scopes(scopes, against) do
