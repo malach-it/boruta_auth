@@ -998,7 +998,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           response_type: response_type,
           scope: requested_scope,
           state: state,
-          agent_token: agent_token
+          agent_token: agent_token,
+          client_encryption_key: client_encryption_key,
+          client_encryption_alg: client_encryption_alg
         } = request
       ) do
     with response_types <-
@@ -1088,7 +1090,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          public_client_id: client_id,
          redirect_uri: redirect_uri,
          response_types: response_types,
-         agent_token: agent_token
+         agent_token: agent_token,
+         client_encryption_key: client_encryption_key,
+         client_encryption_alg: client_encryption_alg
        }}
     else
       error ->
@@ -1116,7 +1120,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             public_client_id: public_client_id,
             redirect_uri: redirect_uri,
             response_mode: response_mode,
-            response_types: response_types
+            response_types: response_types,
+            client_encryption_key: client_encryption_key,
+            client_encryption_alg: client_encryption_alg
           }} <-
            preauthorize(request) do
       with {:ok, code} <-
@@ -1137,8 +1143,10 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
                code_challenge_method: code_challenge_method,
                authorization_details: authorization_details,
                presentation_definition: presentation_definition,
-               client_encryption_key: previous_code && previous_code.client_encryption_key,
-               client_encryption_alg: previous_code && previous_code.client_encryption_alg
+               client_encryption_key:
+                 (previous_code && previous_code.client_encryption_key) || client_encryption_key,
+               client_encryption_alg:
+                 (previous_code && previous_code.client_encryption_alg) || client_encryption_alg
              }) do
         case verifiable_presentation?(response_types) do
           false ->

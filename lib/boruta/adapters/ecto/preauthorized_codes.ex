@@ -35,6 +35,8 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           authorization_code_ttl: authorization_code_ttl,
           authorization_details: resource_owner.authorization_details,
           client_id: client_id,
+          client_encryption_key: params[:client_encryption_key],
+          client_encryption_alg: params[:client_encryption_alg],
           code_challenge: params[:code_challenge],
           code_challenge_method: params[:code_challenge_method],
           nonce: params[:nonce],

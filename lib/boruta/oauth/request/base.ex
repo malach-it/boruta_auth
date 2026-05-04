@@ -127,20 +127,20 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   def build_request(
-    %{"response_type" => "code" <> _rest, "client_metadata" => _client_metadata} = params
-  ) do
+        %{"response_type" => "code" <> _rest, "client_metadata" => _client_metadata} = params
+      ) do
     presentation_request(params)
   end
 
   def build_request(
-    %{"response_type" => "id_token" <> _rest, "client_metadata" => _client_metadata} = params
-  ) do
+        %{"response_type" => "id_token" <> _rest, "client_metadata" => _client_metadata} = params
+      ) do
     presentation_request(params)
   end
 
   def build_request(
-    %{"response_type" => "vp_token" <> _rest, "client_metadata" => _client_metadata} = params
-  ) do
+        %{"response_type" => "vp_token" <> _rest, "client_metadata" => _client_metadata} = params
+      ) do
     presentation_request(params)
   end
 
@@ -245,8 +245,8 @@ defmodule Boruta.Oauth.Request.Base do
   end
 
   defp presentation_request(
-        %{"response_type" => response_type, "client_metadata" => client_metadata} = params
-  ) do
+         %{"response_type" => response_type, "client_metadata" => client_metadata} = params
+       ) do
     request = %PresentationRequest{
       client_id: params["client_id"],
       resource_owner: params["resource_owner"],
@@ -260,7 +260,9 @@ defmodule Boruta.Oauth.Request.Base do
       agent_token: params["agent_token"],
       scope: params["scope"],
       client_metadata: client_metadata,
-      response_type: response_type
+      response_type: response_type,
+      client_encryption_key: params["client_encryption_key"],
+      client_encryption_alg: params["client_encryption_alg"]
     }
 
     request =
