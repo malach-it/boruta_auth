@@ -280,7 +280,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              code_verifier: code_verifier
            }),
          code_chain <- CodesAdapter.code_chain(code),
-         {:ok, %ResourceOwner{sub: sub}} <-
+         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       {:ok,
        %AuthorizationSuccess{
@@ -288,6 +288,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
          code: code,
          redirect_uri: redirect_uri,
          sub: sub,
+         resource_owner: resource_owner,
          scope: code_chain |> Enum.map(& &1.scope) |> Enum.join(" "),
          nonce: code.nonce,
          authorization_details: code.authorization_details
@@ -302,6 +303,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
             code: code,
             redirect_uri: redirect_uri,
             sub: sub,
+            resource_owner: resource_owner,
             scope: scope,
             nonce: nonce,
             authorization_details: authorization_details
@@ -314,6 +316,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
                redirect_uri: redirect_uri,
                previous_code: code.value,
                sub: sub,
+               resource_owner: resource_owner,
                scope: scope,
                authorization_details: authorization_details
              },
@@ -388,6 +391,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
          code: code,
          redirect_uri: redirect_uri,
          sub: sub,
+         resource_owner: resource_owner,
          scope: code.scope,
          nonce: code.nonce,
          authorization_details: code.authorization_details,
@@ -404,6 +408,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
             code: code,
             redirect_uri: redirect_uri,
             sub: sub,
+            resource_owner: resource_owner,
             scope: scope,
             nonce: nonce,
             authorization_details: authorization_details,
@@ -418,6 +423,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
                redirect_uri: redirect_uri,
                previous_code: code.value,
                sub: sub,
+               resource_owner: resource_owner,
                scope: scope,
                authorization_details: authorization_details,
                bind_data: bind_data,
@@ -465,7 +471,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
              value: preauthorized_code
            }),
          :ok <- maybe_check_tx_code(tx_code, code),
-         {:ok, %ResourceOwner{sub: sub}} <-
+         {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            (case code.agent_token do
               nil ->
                 Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
@@ -478,6 +484,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
          client: code.client,
          code: code,
          sub: sub,
+         resource_owner: resource_owner,
          scope: code.scope,
          nonce: code.nonce,
          authorization_details: code.authorization_details,
@@ -492,6 +499,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
             client: client,
             code: code,
             sub: sub,
+            resource_owner: resource_owner,
             scope: scope,
             nonce: nonce,
             authorization_details: authorization_details,
@@ -504,6 +512,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
                client: client,
                previous_code: code.value,
                sub: sub,
+               resource_owner: resource_owner,
                scope: scope,
                authorization_details: authorization_details,
                agent_token: agent_token

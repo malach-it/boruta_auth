@@ -947,7 +947,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert code
       assert expires_in
 
-      assert Repo.get_by(Ecto.Token, value: code.value).authorization_details == authorization_details
+      assert Repo.get_by(Ecto.Token, value: code.value).authorization_details ==
+               authorization_details
     end
 
     test "returns a code with siopv2 (direct_post - jwe)" do
@@ -989,18 +990,22 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
                ~r"#{redirect_uri}"
 
-      [_all, jwe] = Regex.run(~r/request=([^&]+)/, SiopV2Response.redirect_to_deeplink(response, fn code -> code end))
+      [_all, jwe] =
+        Regex.run(
+          ~r/request=([^&]+)/,
+          SiopV2Response.redirect_to_deeplink(response, fn code -> code end)
+        )
 
       assert %{
-        "aud" => "did:key:test",
-        "authorization_server_encryption_key" => %{},
-        "client_id" => "boruta",
-        "iss" => "boruta",
-        "nonce" => "nonce",
-        "response_mode" => "direct_post",
-        "response_type" => "id_token",
-        "scope" => "openid"
-      } = JOSE.JWE.block_decrypt(client_private_key, jwe) |> elem(0) |> Jason.decode!()
+               "aud" => "did:key:test",
+               "authorization_server_encryption_key" => %{},
+               "client_id" => "boruta",
+               "iss" => "boruta",
+               "nonce" => "nonce",
+               "response_mode" => "direct_post",
+               "response_type" => "id_token",
+               "scope" => "openid"
+             } = JOSE.JWE.block_decrypt(client_private_key, jwe) |> elem(0) |> Jason.decode!()
     end
 
     test "returns a code with siopv2 (direct_post - jwt)" do
@@ -1038,21 +1043,27 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert SiopV2Response.redirect_to_deeplink(response, fn code -> code end) =~
                ~r"#{redirect_uri}"
 
-      [_all, jwt] = Regex.run(~r/request=([^&]+)/, SiopV2Response.redirect_to_deeplink(response, fn code -> code end))
+      [_all, jwt] =
+        Regex.run(
+          ~r/request=([^&]+)/,
+          SiopV2Response.redirect_to_deeplink(response, fn code -> code end)
+        )
 
-      assert {:ok, %{
-        "aud" => "did:key:test",
-        "authorization_server_encryption_key" => %{},
-        "client_id" => "boruta",
-        "iss" => "boruta",
-        "nonce" => "nonce",
-        "response_mode" => "direct_post",
-        "response_type" => "id_token",
-        "scope" => "openid"
-      }} = Oauth.Client.Crypto.verify_id_token_signature(
-        jwt,
-        JOSE.JWK.from_pem(client.private_key) |> JOSE.JWK.to_map()
-      )
+      assert {:ok,
+              %{
+                "aud" => "did:key:test",
+                "authorization_server_encryption_key" => %{},
+                "client_id" => "boruta",
+                "iss" => "boruta",
+                "nonce" => "nonce",
+                "response_mode" => "direct_post",
+                "response_type" => "id_token",
+                "scope" => "openid"
+              }} =
+               Oauth.Client.Crypto.verify_id_token_signature(
+                 jwt,
+                 JOSE.JWK.from_pem(client.private_key) |> JOSE.JWK.to_map()
+               )
     end
 
     test "returns a code with siopv2 - previous_code (direct_post)" do
@@ -1691,7 +1702,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         )
 
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1729,7 +1740,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1756,12 +1767,12 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert access_token
       assert expires_in
       assert refresh_token
-      refute Repo.get_by(Ecto.Token, value: access_token.value).revoked_at
+      refute Repo.get_by(Ecto.Token, value: access_token).revoked_at
     end
 
     test "stores previous code", %{client: client, code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1781,7 +1792,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  ApplicationMock
                )
 
-      assert token = Repo.get_by(Ecto.Token, value: access_token.value)
+      assert token = Repo.get_by(Ecto.Token, value: access_token)
       assert token.previous_code == code.value
     end
 
@@ -1791,7 +1802,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1830,7 +1841,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1865,7 +1876,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  ApplicationMock
                )
 
-      assert Repo.get_by(Ecto.Token, value: access_token.value).revoked_at
+      assert Repo.get_by(Ecto.Token, value: access_token).revoked_at
     end
 
     test "returns a token and an id_token with openid scope", %{
@@ -1874,7 +1885,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params ->
+      |> expect(:get_by, 1, fn _params ->
         {:ok,
          %{
            resource_owner
@@ -1948,7 +1959,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
       Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
@@ -1987,7 +1998,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2142,7 +2153,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       case Oauth.token(
              %Plug.Conn{
@@ -2180,7 +2191,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2219,7 +2230,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2247,7 +2258,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert expires_in
       assert refresh_token
 
-      assert Repo.get_by(Ecto.Token, value: access_token.value).authorization_details ==
+      assert Repo.get_by(Ecto.Token, value: access_token).authorization_details ==
                code.authorization_details
     end
 
@@ -2729,7 +2740,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
         )
 
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2766,7 +2777,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "returns a token", %{client: client, code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2804,7 +2815,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2839,7 +2850,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
     test "stores previous code", %{client: client, code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2871,7 +2882,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2912,7 +2923,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -2960,7 +2971,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params ->
+      |> expect(:get_by, 1, fn _params ->
         {:ok,
          %{
            resource_owner
@@ -3032,7 +3043,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
       Ecto.Codes.get_by(value: code.value, redirect_uri: redirect_uri)
@@ -3073,7 +3084,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -3238,7 +3249,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       redirect_uri = List.first(client.redirect_uris)
 
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       assert {:token_success,
               %TokenResponse{
@@ -3275,7 +3286,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 
@@ -3313,7 +3324,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       resource_owner: resource_owner
     } do
       ResourceOwners
-      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       redirect_uri = List.first(client.redirect_uris)
 

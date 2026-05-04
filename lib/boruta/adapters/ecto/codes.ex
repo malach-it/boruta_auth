@@ -196,7 +196,7 @@ defmodule Boruta.Ecto.Codes do
            Token.revoke_changeset(token)
            |> repo().update(),
          {:ok, _token} <- TokenStore.invalidate(code) do
-      {:ok, to_oauth_schema(token)}
+      {:ok, %{code | revoked_at: token.revoked_at}}
     else
       nil ->
         {:error, "Code not found."}

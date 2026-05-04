@@ -1087,7 +1087,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
     test "returns a token", %{code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       assert {:token_success,
               %TokenResponse{
@@ -1148,7 +1148,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
     test "returns a token with tx code", %{tx_code_code: code, resource_owner: resource_owner} do
       ResourceOwners
-      |> expect(:get_by, 3, fn _params -> {:ok, resource_owner} end)
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
 
       assert {:token_success,
               %TokenResponse{
