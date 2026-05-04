@@ -142,7 +142,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     #                )
     #     end
 
-    test "returns an error if scope is unknown or unauthorized", %{
+    test "filters unknown or unauthorized scopes", %{
       client_with_scope: client,
       resource_owner: resource_owner
     } do
@@ -152,26 +152,23 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       given_scope = "bad_scope"
       redirect_uri = List.first(client.redirect_uris)
 
-      assert Oauth.authorize(
-               %Plug.Conn{
-                 query_params: %{
-                   "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
-                   "client_id" => client.id,
-                   "redirect_uri" => redirect_uri,
-                   "scope" => given_scope
-                 }
-               },
-               resource_owner,
-               ApplicationMock
-             ) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_scope,
-                  error_description: "Given scopes are unknown or unauthorized.",
-                  format: :query,
-                  redirect_uri: "https://redirect.uri",
-                  status: :bad_request
-                }}
+      assert {:authorize_success,
+              %CredentialOfferResponse{
+                code: %Oauth.Token{scope: ""},
+                redirect_uri: ^redirect_uri
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => given_scope
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns an error when agent_token is invalid", %{

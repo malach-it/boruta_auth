@@ -671,8 +671,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
 end
 
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest do
-  import Boruta.Config, only: [resource_owners: 0]
-
   alias Boruta.CodesAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.PreauthorizedCodesAdapter
@@ -718,7 +716,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
              scope: scope,
              against: %{client: client, resource_owner: resource_owner, code: code}
            ),
-         {:ok, resource_owner} <- resource_owners().get_by(sub: resource_owner.sub, scope: scope),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.AgentToken.authorize(
              agent_token: (code && code.agent_token) || agent_token,
