@@ -81,20 +81,107 @@ end
 defmodule Boruta.Oauth.Authorization.Resource do
   @moduledoc false
 
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
+
+  @uri_characters ~r/^[A-Za-z][A-Za-z0-9+\-.]*:[A-Za-z0-9\-._~:\/\?\[\]@!\$&'\(\)\*\+,;=%]*$/
+
+  @spec authorize(resource :: String.t() | nil, client :: Client.t()) ::
+          {:ok, String.t() | nil} | {:error, Error.t()}
+  def authorize(resource, %Client{} = client) do
+    with :ok <- validate(resource),
+         :ok <- validate_authorized(resource, client) do
+      {:ok, resource}
+    end
+  end
+
+  @spec authorize(
+          requested_resource :: String.t() | nil,
+          client :: Client.t(),
+          authorized_resource :: String.t() | nil
+        ) ::
+          {:ok, String.t() | nil} | {:error, Error.t()}
+  def authorize(requested_resource, %Client{} = client, authorized_resource) do
+    with {:ok, resource} <- resolve(requested_resource, authorized_resource),
+         :ok <- validate_authorized(resource, client) do
+      {:ok, resource}
+    end
+  end
+
+  @spec validate(resource :: String.t() | nil) :: :ok | {:error, Error.t()}
+  def validate(nil), do: :ok
+
+  def validate("" <> resource) do
+    if valid_uri?(resource) do
+      :ok
+    else
+      invalid_target("Requested resource must be an absolute URI without a fragment.")
+    end
+  end
+
+  def validate(_resource), do: invalid_target("Requested resource is invalid.")
 
   @spec resolve(requested_resource :: String.t() | nil, authorized_resource :: String.t() | nil) ::
           {:ok, String.t() | nil} | {:error, Error.t()}
-  def resolve(nil, authorized_resource), do: {:ok, authorized_resource}
-  def resolve(requested_resource, nil), do: {:ok, requested_resource}
-  def resolve(resource, resource), do: {:ok, resource}
+  def resolve(nil, nil), do: {:ok, nil}
+
+  def resolve(nil, authorized_resource) do
+    with :ok <- validate(authorized_resource) do
+      {:ok, authorized_resource}
+    end
+  end
+
+  def resolve(_requested_resource, nil), do: invalid_target("Requested resource is not authorized for this token.")
+
+  def resolve(resource, resource) do
+    with :ok <- validate(resource) do
+      {:ok, resource}
+    end
+  end
 
   def resolve(_requested_resource, _authorized_resource) do
+    invalid_target("Requested resource is not authorized for this token.")
+  end
+
+  defp validate_authorized(nil, _client), do: :ok
+  defp validate_authorized(_resource, %Client{authorized_resources: []}), do: :ok
+  defp validate_authorized(_resource, %Client{authorized_resources: nil}), do: :ok
+
+  defp validate_authorized(resource, %Client{authorized_resources: authorized_resources}) do
+    if resource in authorized_resources do
+      :ok
+    else
+      invalid_target("Requested resource is not authorized for this client.")
+    end
+  end
+
+  defp valid_uri?(resource) do
+    uri = URI.parse(resource)
+
+    absolute_uri?(uri) and is_nil(uri.fragment) and
+      not String.match?(resource, ~r/\s/) and valid_percent_encoding?(resource) and
+      valid_characters?(resource) and valid_authority?(uri)
+  end
+
+  defp absolute_uri?(%URI{scheme: scheme}) when is_binary(scheme) and scheme != "", do: true
+  defp absolute_uri?(_uri), do: false
+
+  defp valid_percent_encoding?(resource) do
+    not Regex.match?(~r/%(?![0-9A-Fa-f]{2})/, resource)
+  end
+
+  defp valid_characters?(resource), do: Regex.match?(@uri_characters, resource)
+
+  defp valid_authority?(%URI{authority: nil}), do: true
+  defp valid_authority?(%URI{host: host}) when is_binary(host) and host != "", do: true
+  defp valid_authority?(_uri), do: false
+
+  defp invalid_target(error_description) do
     {:error,
      %Error{
        status: :bad_request,
        error: :invalid_target,
-       error_description: "Requested resource is not authorized for this token."
+       error_description: error_description
      }}
   end
 end
@@ -122,7 +209,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
              grant_type: grant_type
            ),
          :ok <- Dpop.validate(dpop, client),
-         {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}) do
+         {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok, %AuthorizationSuccess{client: client, scope: scope, resource: resource}}
     end
   end
@@ -172,7 +260,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
          :ok <- Dpop.validate(dpop, client),
          {:ok, scope} <- Authorization.Scope.authorize(scope: scope, against: %{client: client}),
          {:ok, bind_data, bind_configuration} <-
-           Authorization.Data.authorize(bind_data, bind_configuration) do
+           Authorization.Data.authorize(bind_data, bind_configuration),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
@@ -239,7 +328,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PasswordRequest do
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
-           ) do
+           ),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, resource: resource}}
     end
   end
@@ -304,7 +394,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationCodeRequest d
              client: client,
              code_verifier: code_verifier
            }),
-         {:ok, resource} <- Authorization.Resource.resolve(resource, code.resource),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client, code.resource),
          {:ok, %ResourceOwner{sub: sub}} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner) do
       {:ok,
@@ -407,7 +497,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
              client: client,
              code_verifier: code_verifier
            }),
-         {:ok, resource} <- Authorization.Resource.resolve(resource, code.resource),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client, code.resource),
          {:ok, %ResourceOwner{sub: sub} = resource_owner} <-
            Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner),
          {:ok, bind_data, bind_configuration} <-
@@ -613,7 +703,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
            ),
-         :ok <- Authorization.Nonce.authorize(request) do
+         :ok <- Authorization.Nonce.authorize(request),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok,
        %AuthorizationSuccess{
          response_types: response_types,
@@ -830,7 +921,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
            ),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
-         :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
+         :ok <- check_code_challenge(client, code_challenge, code_challenge_method),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
@@ -945,7 +1037,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AuthorizationRequest do
              scope: scope,
              against: %{client: client}
            ),
-         :ok <- check_code_challenge(client, code_challenge, code_challenge_method) do
+         :ok <- check_code_challenge(client, code_challenge, code_challenge_method),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
@@ -1143,6 +1236,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
+            resource: resource,
             state: state,
             nonce: nonce,
             code_challenge: code_challenge,
@@ -1161,6 +1255,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                    redirect_uri: redirect_uri,
                    sub: sub,
                    scope: scope,
+                   resource: resource,
                    state: state,
                    nonce: nonce,
                    code_challenge: code_challenge,
@@ -1190,6 +1285,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                      redirect_uri: redirect_uri,
                      sub: sub,
                      scope: scope,
+                     resource: resource,
                      state: state
                    },
                    refresh_token: false
@@ -1237,7 +1333,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.RefreshTokenRequest do
             sub: sub,
             scope: token_scope
           } = token} <- Authorization.AccessToken.authorize(refresh_token: refresh_token),
-         {:ok, resource} <- Authorization.Resource.resolve(resource, token.resource),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client, token.resource),
          {:ok, scope} <-
            Authorization.Scope.authorize(scope: scope || token_scope, against: %{token: token}) do
       {:ok,

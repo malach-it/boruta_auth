@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
   Check against given params and return the corresponding access token
   """
 
+  alias Boruta.Oauth.Authorization.Resource
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.Token
 
@@ -73,7 +74,10 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
     end
   end
 
-  defp validate_resource(%Token{resource: resource}, resource), do: :ok
+  defp validate_resource(%Token{resource: resource}, resource) do
+    Resource.validate(resource)
+  end
+
   defp validate_resource(_token, nil), do: :ok
   defp validate_resource(_token, _resource), do: {:error, :invalid_target}
 end
