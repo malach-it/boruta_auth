@@ -14,6 +14,8 @@ defmodule Boruta.Oauth.RequestTest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.IntrospectRequest
+  alias Boruta.Oauth.PreauthorizationCodeRequest
+  alias Boruta.Oauth.PreauthorizedCodeRequest
   alias Boruta.Oauth.RefreshTokenRequest
   alias Boruta.Oauth.Request
   alias Boruta.Oauth.ResourceOwner
@@ -199,6 +201,20 @@ defmodule Boruta.Oauth.RequestTest do
       assert {:ok, %RefreshTokenRequest{resource: ^resource}} = Request.token_request(conn)
     end
 
+    test "adds resource to preauthorized code token requests" do
+      resource = "https://mcp.example.com"
+
+      conn =
+        conn(:post, "/", %{
+          "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+          "pre-authorized_code" => "code",
+          "resource" => resource
+        })
+
+      assert {:ok, %PreauthorizationCodeRequest{resource: ^resource}} =
+               Request.token_request(conn)
+    end
+
     test "adds resource to authorization requests" do
       client_id = SecureRandom.uuid()
       redirect_uri = "https://redirect.uri"
@@ -213,6 +229,23 @@ defmodule Boruta.Oauth.RequestTest do
         })
 
       assert {:ok, %CodeRequest{resource: ^resource}} =
+               Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+
+    test "adds resource to preauthorized code authorization requests" do
+      client_id = SecureRandom.uuid()
+      redirect_uri = "https://redirect.uri"
+      resource = "https://mcp.example.com"
+
+      conn =
+        conn(:get, "/", %{
+          "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+          "client_id" => client_id,
+          "redirect_uri" => redirect_uri,
+          "resource" => resource
+        })
+
+      assert {:ok, %PreauthorizedCodeRequest{resource: ^resource}} =
                Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
   end
@@ -733,7 +766,11 @@ defmodule Boruta.Oauth.RequestTest do
           "request" => "bad_jwt"
         })
 
-      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Unsigned request jwt param is malformed."
+              }} =
                Request.token_request(conn)
     end
 
@@ -765,7 +802,11 @@ defmodule Boruta.Oauth.RequestTest do
           "request" => "bad_jwt"
         })
 
-      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Unsigned request jwt param is malformed."
+              }} =
                Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
 

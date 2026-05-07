@@ -131,7 +131,8 @@ defmodule Boruta.Oauth.Authorization.Resource do
     end
   end
 
-  def resolve(_requested_resource, nil), do: invalid_target("Requested resource is not authorized for this token.")
+  def resolve(_requested_resource, nil),
+    do: invalid_target("Requested resource is not authorized for this token.")
 
   def resolve(resource, resource) do
     with :ok <- validate(resource) do
@@ -143,7 +144,14 @@ defmodule Boruta.Oauth.Authorization.Resource do
     invalid_target("Requested resource is not authorized for this token.")
   end
 
-  defp validate_authorized(nil, _client), do: :ok
+  defp validate_authorized(nil, %Client{authorized_resources: []}), do: :ok
+  defp validate_authorized(nil, %Client{authorized_resources: nil}), do: :ok
+
+  defp validate_authorized(nil, %Client{authorized_resources: authorized_resources})
+       when is_list(authorized_resources) do
+    invalid_target("Requested resource is not authorized for this client.")
+  end
+
   defp validate_authorized(_resource, %Client{authorized_resources: []}), do: :ok
   defp validate_authorized(_resource, %Client{authorized_resources: nil}), do: :ok
 
@@ -513,7 +521,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
          nonce: code.nonce,
          authorization_details: code.authorization_details,
          bind_data: bind_data,
-         bind_configuration: bind_configuration,
+         bind_configuration: bind_configuration
        }}
     end
   end
@@ -530,7 +538,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCodeRequest do
             nonce: nonce,
             authorization_details: authorization_details,
             bind_data: bind_data,
-            bind_configuration: bind_configuration,
+            bind_configuration: bind_configuration
           }} <-
            preauthorize(request),
          {:ok, agent_token} <-
@@ -581,26 +589,31 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
 
   def preauthorize(%PreauthorizationCodeRequest{
         preauthorized_code: preauthorized_code,
-        tx_code: tx_code
+        tx_code: tx_code,
+        resource: resource
       }) do
     with {:ok, code} <-
            Authorization.Code.authorize(%{
              value: preauthorized_code
            }),
+         {:ok, resource} <-
+           Authorization.Resource.authorize(resource, code.client, code.resource),
          :ok <- maybe_check_tx_code(tx_code, code),
          {:ok, %ResourceOwner{sub: sub}} <-
            (case code.agent_token do
-             nil ->
-               Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
-             _ ->
-               {:ok, code.resource_owner}
-           end) do
+              nil ->
+                Authorization.ResourceOwner.authorize(resource_owner: code.resource_owner)
+
+              _ ->
+                {:ok, code.resource_owner}
+            end) do
       {:ok,
        %AuthorizationSuccess{
          client: code.client,
          code: code,
          sub: sub,
          scope: code.scope,
+         resource: resource,
          nonce: code.nonce,
          authorization_details: code.authorization_details,
          agent_token: code.agent_token
@@ -615,6 +628,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
             code: code,
             sub: sub,
             scope: scope,
+            resource: resource,
             nonce: nonce,
             authorization_details: authorization_details,
             agent_token: agent_token
@@ -627,6 +641,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizationCodeReques
                previous_code: code.value,
                sub: sub,
                scope: scope,
+               resource: resource,
                authorization_details: authorization_details,
                agent_token: agent_token
              },
@@ -807,6 +822,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
         resource_owner: resource_owner,
         state: state,
         scope: scope,
+        resource: resource,
         grant_type: grant_type
       }) do
     with {:ok, client} <-
@@ -831,13 +847,15 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
            Authorization.Scope.authorize(
              scope: scope,
              against: %{client: client, resource_owner: resource_owner}
-           ) do
+           ),
+         {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok,
        %AuthorizationSuccess{
          client: client,
          redirect_uri: redirect_uri,
          sub: sub,
          scope: scope,
+         resource: resource,
          state: state,
          resource_owner: resource_owner,
          agent_token: agent_token
@@ -856,6 +874,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
             redirect_uri: redirect_uri,
             sub: sub,
             scope: scope,
+            resource: resource,
             state: state,
             nonce: nonce,
             agent_token: agent_token
@@ -869,6 +888,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
                redirect_uri: redirect_uri,
                sub: sub,
                scope: scope,
+               resource: resource,
                state: state,
                nonce: nonce,
                agent_token: agent_token
@@ -1118,7 +1138,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
          {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-               {:ok, ClientsAdapter.public!()}
+                {:ok, ClientsAdapter.public!()}
 
               _ ->
                 Authorization.Client.authorize(
@@ -1136,11 +1156,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
              resource_owner.presentation_configuration,
              scope
            ) do
-
-      {code_challenge, code_challenge_method} = case resource_owner.code_verifier do
-        nil -> {code_challenge, code_challenge_method}
-        code_verifier -> {code_verifier , "plain"}
-      end
+      {code_challenge, code_challenge_method} =
+        case resource_owner.code_verifier do
+          nil -> {code_challenge, code_challenge_method}
+          code_verifier -> {code_verifier, "plain"}
+        end
 
       {:ok,
        %AuthorizationSuccess{

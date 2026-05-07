@@ -15,9 +15,10 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
           state: String.t(),
           prompt: String.t(),
           scope: String.t(),
+          resource: String.t() | nil,
           resource_owner: struct(),
           response_type: String.t(),
-          grant_type: String.t(),
+          grant_type: String.t()
         }
 
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
@@ -27,6 +28,7 @@ defmodule Boruta.Oauth.PreauthorizedCodeRequest do
             state: "",
             prompt: "",
             scope: "",
+            resource: nil,
             resource_owner: nil,
             response_type: "urn:ietf:params:oauth:grant-type:pre-authorized_code",
             grant_type: "preauthorized_code"

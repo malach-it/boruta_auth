@@ -85,6 +85,19 @@ defmodule Boruta.Oauth.Authorization.ResourceTest do
              }) == {:ok, "https://mcp.example.com"}
     end
 
+    test "rejects omitted resources when the client configures an allowlist" do
+      assert {:error,
+              %Error{
+                status: :bad_request,
+                error: :invalid_target,
+                error_description: "Requested resource is not authorized for this client."
+              }} =
+               Resource.authorize(nil, %Client{
+                 id: "client",
+                 authorized_resources: ["https://mcp.example.com"]
+               })
+    end
+
     test "rejects resources missing from the client allowlist" do
       assert {:error,
               %Error{

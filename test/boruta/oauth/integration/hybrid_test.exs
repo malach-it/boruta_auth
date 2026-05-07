@@ -576,6 +576,9 @@ defmodule Boruta.OauthTest.HybridGrantTest do
 
       assert {:ok, %{resource: ^resource}} =
                Authorization.AccessToken.authorize(value: access_token, resource: resource)
+
+      assert {:error, %Error{error: :invalid_access_token}} =
+               Authorization.AccessToken.authorize(value: access_token, resource: nil)
     end
 
     test "returns a code and a token with `response_mode=query`", %{

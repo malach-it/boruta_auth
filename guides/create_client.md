@@ -59,7 +59,7 @@ Clients can opt into OAuth Resource Indicators audience binding with
 `authorized_resources`. Values must be absolute URIs without fragments. When the
 list is empty or omitted, Boruta accepts any valid requested `resource` for
 backward compatibility. When the list contains one or more URIs, token and
-authorization requests using `resource` must match one of those configured
+authorization requests must include a `resource` matching one of those configured
 values, otherwise Boruta returns `invalid_target`.
 
 Or so, you can use all administration utilities described in [Boruta API documentation](https://hexdocs.pm/boruta/Boruta.Ecto.Admin.html) to manage all entities you need to have your server up and running. If some are missing or can be improved do not hesitate to open an issue on [GitLab](https://gitlab.com/patatoid/boruta_auth/-/issues), it would be very welcome.

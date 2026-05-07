@@ -45,18 +45,21 @@ defmodule <%= @web_module %>.OauthView do
       }) do
     case active do
       true ->
-        %{
+        response = %{
           active: true,
           client_id: client_id,
           username: username,
           scope: scope,
-          resource: resource,
-          aud: aud,
           sub: sub,
           iss: iss,
           exp: exp,
           iat: iat
         }
+
+        case resource do
+          nil -> response
+          _ -> Map.merge(response, %{resource: resource, aud: aud})
+        end
 
       false ->
         %{active: false}

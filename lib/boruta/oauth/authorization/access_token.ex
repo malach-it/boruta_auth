@@ -74,10 +74,10 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
     end
   end
 
-  defp validate_resource(%Token{resource: resource}, resource) do
+  defp validate_resource(%Token{resource: resource}, resource) when is_binary(resource) do
     Resource.validate(resource)
   end
 
-  defp validate_resource(_token, nil), do: :ok
+  defp validate_resource(%Token{resource: nil}, nil), do: :ok
   defp validate_resource(_token, _resource), do: {:error, :invalid_target}
 end
