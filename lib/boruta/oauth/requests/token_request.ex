@@ -17,6 +17,7 @@ defmodule Boruta.Oauth.TokenRequest do
           resource_owner: struct(),
           grant_type: String.t(),
           nonce: String.t(),
+          resource: String.t() | nil,
           response_mode: String.t() | nil
         }
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
@@ -27,6 +28,7 @@ defmodule Boruta.Oauth.TokenRequest do
             resource_owner: nil,
             grant_type: "implicit",
             nonce: nil,
+            resource: nil,
             response_types: [],
             response_mode: nil,
             prompt: ""

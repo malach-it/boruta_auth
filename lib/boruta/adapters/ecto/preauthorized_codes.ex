@@ -37,6 +37,7 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
           nonce: params[:nonce],
           agent_token: params[:agent_token],
           scope: scope,
+          resource: params[:resource],
           redirect_uri: redirect_uri,
           authorization_code_ttl: authorization_code_ttl,
           authorization_details: resource_owner.authorization_details

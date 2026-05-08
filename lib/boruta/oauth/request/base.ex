@@ -36,6 +36,7 @@ defmodule Boruta.Oauth.Request.Base do
        client_id: params["client_id"],
        client_authentication: client_authentication_from_params(params),
        scope: params["scope"],
+       resource: params["resource"],
        dpop: params["dpop"]
      }}
   end
@@ -46,6 +47,7 @@ defmodule Boruta.Oauth.Request.Base do
        client_id: params["client_id"],
        client_authentication: client_authentication_from_params(params),
        scope: params["scope"],
+       resource: params["resource"],
        dpop: params["dpop"],
        bind_data: params["bind_data"],
        bind_configuration: params["bind_configuration"]
@@ -59,7 +61,8 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        username: params["username"],
        password: params["password"],
-       scope: params["scope"]
+       scope: params["scope"],
+       resource: params["resource"]
      }}
   end
 
@@ -70,6 +73,7 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        code: params["code"],
        redirect_uri: params["redirect_uri"],
+       resource: params["resource"],
        code_verifier: params["code_verifier"],
        dpop: params["dpop"]
      }}
@@ -82,6 +86,7 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        code: params["code"],
        redirect_uri: params["redirect_uri"],
+       resource: params["resource"],
        code_verifier: params["code_verifier"],
        dpop: params["dpop"],
        bind_data: params["bind_data"],
@@ -96,6 +101,7 @@ defmodule Boruta.Oauth.Request.Base do
      %PreauthorizationCodeRequest{
        preauthorized_code: params["pre-authorized_code"],
        tx_code: params["tx_code"],
+       resource: params["resource"],
        code_verifier: params["code_verifier"]
      }}
   end
@@ -111,7 +117,8 @@ defmodule Boruta.Oauth.Request.Base do
        resource_owner: params["resource_owner"],
        state: params["state"],
        prompt: params["prompt"],
-       scope: params["scope"]
+       scope: params["scope"],
+       resource: params["resource"]
      }}
   end
 
@@ -121,11 +128,15 @@ defmodule Boruta.Oauth.Request.Base do
        client_id: params["client_id"],
        client_authentication: client_authentication_from_params(params),
        refresh_token: params["refresh_token"],
-       scope: params["scope"]
+       scope: params["scope"],
+       resource: params["resource"]
      }}
   end
 
-  def build_request(%{"response_type" => response_type, "client_metadata" => client_metadata} = params) when response_type in ["code", "vp_token"] do
+  def build_request(
+        %{"response_type" => response_type, "client_metadata" => client_metadata} = params
+      )
+      when response_type in ["code", "vp_token"] do
     request = %PresentationRequest{
       client_id: params["client_id"],
       resource_owner: params["resource_owner"],
@@ -157,7 +168,8 @@ defmodule Boruta.Oauth.Request.Base do
       state: params["state"],
       code_challenge: params["code_challenge"],
       code_challenge_method: params["code_challenge_method"],
-      scope: params["scope"]
+      scope: params["scope"],
+      resource: params["resource"]
     }
 
     {:ok, request}
@@ -174,6 +186,7 @@ defmodule Boruta.Oauth.Request.Base do
       code_challenge: params["code_challenge"],
       code_challenge_method: params["code_challenge_method"],
       scope: params["scope"],
+      resource: params["resource"],
       response_mode: params["response_mode"]
     }
 
@@ -211,6 +224,7 @@ defmodule Boruta.Oauth.Request.Base do
           response_mode: params["response_mode"],
           response_types: response_types,
           scope: params["scope"],
+          resource: params["resource"],
           state: params["state"]
         }
 
@@ -233,6 +247,7 @@ defmodule Boruta.Oauth.Request.Base do
            response_types: response_types,
            response_mode: params["response_mode"],
            scope: params["scope"],
+           resource: params["resource"],
            state: params["state"]
          }}
     end
@@ -393,6 +408,7 @@ defmodule Boruta.Oauth.Request.Base do
     else
       {:ok, _payload} ->
         {:error, "Either alg header missing or cnf claim missing in client assertion."}
+
       _ ->
         {:error, "Could not decode client assertion JWT."}
     end

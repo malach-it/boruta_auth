@@ -13,6 +13,7 @@ defmodule Boruta.Oauth.ClientCredentialsRequest do
             value: String.t()
           },
           scope: String.t(),
+          resource: String.t() | nil,
           grant_type: String.t(),
           dpop: Boruta.Dpop.t() | nil
         }
@@ -20,6 +21,7 @@ defmodule Boruta.Oauth.ClientCredentialsRequest do
   defstruct client_id: nil,
             client_authentication: nil,
             scope: "",
+            resource: nil,
             grant_type: "client_credentials",
             dpop: nil
 end

@@ -9,6 +9,7 @@ defmodule Boruta.OauthTest.HybridGrantTest do
   alias Boruta.Ecto.ScopeStore
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
+  alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.AuthorizeResponse
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
@@ -532,6 +533,52 @@ defmodule Boruta.OauthTest.HybridGrantTest do
       assert code
       assert access_token
       assert expires_in
+    end
+
+    test "returns a code and a token bound to resource", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:authorized_scopes, fn _resource_owner -> [] end)
+
+      redirect_uri = List.first(client.redirect_uris)
+      nonce = "nonce"
+      resource = "https://mcp.example.com"
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                code: code,
+                access_token: access_token
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code token",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "scope" => "openid",
+                     "nonce" => nonce,
+                     "resource" => resource
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert {:ok, %{resource: ^resource}} =
+               Authorization.Code.authorize(%{
+                 value: code,
+                 redirect_uri: redirect_uri,
+                 client: struct(Client, Map.from_struct(client)),
+                 code_verifier: ""
+               })
+
+      assert {:ok, %{resource: ^resource}} =
+               Authorization.AccessToken.authorize(value: access_token, resource: resource)
+
+      assert {:error, %Error{error: :invalid_access_token}} =
+               Authorization.AccessToken.authorize(value: access_token, resource: nil)
     end
 
     test "returns a code and a token with `response_mode=query`", %{
