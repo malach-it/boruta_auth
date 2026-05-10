@@ -107,6 +107,13 @@ defmodule Boruta.Ecto.AdminTest do
                )
     end
 
+    test "creates a client with code_chain supported_grant_type" do
+      assert {:ok, %Client{supported_grant_types: ["code_chain"]}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{supported_grant_types: ["code_chain"]})
+               )
+    end
+
     test "creates a client with a secret" do
       {:ok, %Client{secret: secret}} = Admin.create_client(@client_valid_attrs)
       assert secret

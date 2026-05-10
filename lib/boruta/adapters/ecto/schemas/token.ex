@@ -311,7 +311,7 @@ defmodule Boruta.Ecto.Token do
       :client_encryption_alg,
       :previous_code
     ])
-    |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
+    |> validate_required([:authorization_code_ttl, :client_id, :sub])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "code")
     |> put_value(:code)
@@ -345,7 +345,6 @@ defmodule Boruta.Ecto.Token do
       :authorization_code_ttl,
       :client_id,
       :sub,
-      :redirect_uri,
       :code_challenge
     ])
     |> foreign_key_constraint(:client_id)

@@ -252,6 +252,90 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.ClientCredentialsRequest d
   end
 end
 
+defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
+  alias Boruta.CodesAdapter
+  alias Boruta.Dpop
+  alias Boruta.Oauth.Authorization
+  alias Boruta.Oauth.AuthorizationSuccess
+  alias Boruta.Oauth.Client
+  alias Boruta.Oauth.CodeChainRequest
+  alias Boruta.Oauth.ResourceOwner
+
+  def preauthorize(%CodeChainRequest{
+        client_id: client_id,
+        client_authentication: client_source,
+        id_token: id_token,
+        authorization_code: authorization_code,
+        grant_type: grant_type,
+        dpop: dpop,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method
+      }) do
+    with {:ok, client} <-
+           Authorization.Client.authorize(
+             id: client_id,
+             source: client_source,
+             grant_type: grant_type
+           ),
+         :ok <- Dpop.validate(dpop, client),
+         {:ok, id_token_claims} <- Authorization.IdToken.authorize(id_token),
+         {:ok, previous_code} <-
+           (case authorization_code do
+              nil ->
+                {:ok, nil}
+
+              authorization_code ->
+                Authorization.Code.authorize(%{value: authorization_code, client: client})
+            end) do
+      sub = id_token_claims["sub"] || id_token_claims[:sub]
+
+      {:ok,
+       %AuthorizationSuccess{
+         client: client,
+         code: previous_code,
+         redirect_uri: nil,
+         sub: sub,
+         resource_owner: %ResourceOwner{sub: sub},
+         scope: id_token_claims["scope"] || "",
+         nonce: id_token_claims["nonce"],
+         code_challenge: code_challenge,
+         code_challenge_method: code_challenge_method
+       }}
+    end
+  end
+
+  def token(request) do
+    with {:ok,
+          %AuthorizationSuccess{
+            client: client,
+            code: previous_code,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            resource_owner: resource_owner,
+            scope: scope,
+            nonce: nonce,
+            code_challenge: code_challenge,
+            code_challenge_method: code_challenge_method
+          }} <- preauthorize(request),
+         {:ok, code} <-
+           CodesAdapter.create(%{
+             client: client,
+             redirect_uri: redirect_uri,
+             sub: sub,
+             resource_owner: resource_owner,
+             scope: scope,
+             state: nil,
+             nonce: nonce,
+             code_challenge: code_challenge,
+             code_challenge_method: code_challenge_method,
+             authorization_details: nil,
+             previous_code: previous_code && previous_code.value
+           }) do
+      {:ok, %{authorization_code: code}}
+    end
+  end
+end
+
 defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.AgentCredentialsRequest do
   alias Boruta.AgentTokensAdapter
   alias Boruta.Dpop

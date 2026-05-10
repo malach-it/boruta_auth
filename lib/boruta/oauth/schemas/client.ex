@@ -103,6 +103,7 @@ defmodule Boruta.Oauth.Client do
   @grant_types Enum.uniq(
                  [
                    "client_credentials",
+                   "code_chain",
                    "password",
                    "authorization_code",
                    "agent_code",

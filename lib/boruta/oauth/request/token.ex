@@ -7,6 +7,7 @@ defmodule Boruta.Oauth.Request.Token do
   alias Boruta.Oauth
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.ClientCredentialsRequest
+  alias Boruta.Oauth.CodeChainRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PasswordRequest
   alias Boruta.Oauth.Validator
@@ -24,6 +25,7 @@ defmodule Boruta.Oauth.Request.Token do
              oauth_request ::
                AuthorizationCodeRequest.t()
                | ClientCredentialsRequest.t()
+               | CodeChainRequest.t()
                | PasswordRequest.t()}
   def request(%{body_params: body_params} = request) do
     with {:ok, body_params} <- decrypt_request(body_params),
@@ -50,7 +52,8 @@ defmodule Boruta.Oauth.Request.Token do
     end
   end
 
-  def decrypt_request(%{"client_id" => client_id, "encrypted_request" => request} = params) when is_binary(request) do
+  def decrypt_request(%{"client_id" => client_id, "encrypted_request" => request} = params)
+      when is_binary(request) do
     with %Oauth.Client{} = client <- ClientsAdapter.get_client(client_id),
          {:ok, request_params} <- Oauth.Client.Crypto.decrypt(request, client) do
       {:ok, Map.merge(params, request_params)}
@@ -69,6 +72,7 @@ defmodule Boruta.Oauth.Request.Token do
     else
       {"dpop", _dpop} ->
         {:error, "More than one DPoP header present in the request."}
+
       _ ->
         {:ok, nil}
     end

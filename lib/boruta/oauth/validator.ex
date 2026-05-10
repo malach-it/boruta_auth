@@ -31,6 +31,7 @@ defmodule Boruta.Oauth.Validator do
              "password",
              "client_credentials",
              "agent_credentials",
+             "code_chain",
              "agent_code",
              "authorization_code",
              "refresh_token"
