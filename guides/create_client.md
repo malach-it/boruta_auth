@@ -29,6 +29,7 @@ Boruta.Ecto.Admin.create_client(%{
   authorized_resources: ["https://mcp.example.com"], # optional RFC 8707 resource allowlist
   supported_grant_types: [ # client supported grant types
     "client_credentials",
+    "code_chain",
     "password",
     "authorization_code",
     "refresh_token",

@@ -7,6 +7,7 @@ defmodule Boruta.Oauth.Request.Token do
   alias Boruta.Oauth
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.ClientCredentialsRequest
+  alias Boruta.Oauth.CodeChainRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PasswordRequest
   alias Boruta.Oauth.Validator
@@ -24,6 +25,7 @@ defmodule Boruta.Oauth.Request.Token do
              oauth_request ::
                AuthorizationCodeRequest.t()
                | ClientCredentialsRequest.t()
+               | CodeChainRequest.t()
                | PasswordRequest.t()}
   def request(%{body_params: body_params} = request) do
     with {:ok, body_params} <- decrypt_request(body_params),
