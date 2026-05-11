@@ -185,6 +185,7 @@ defmodule Boruta.Oauth.Request.Base do
     request = %CodeRequest{
       client_id: params["client_id"],
       redirect_uri: params["redirect_uri"],
+      code: params["code"],
       resource_owner: params["resource_owner"],
       state: params["state"],
       nonce: params["nonce"],
@@ -221,6 +222,7 @@ defmodule Boruta.Oauth.Request.Base do
       true ->
         request = %HybridRequest{
           client_id: params["client_id"],
+          code: params["code"],
           code_challenge: params["code_challenge"],
           code_challenge_method: params["code_challenge_method"],
           nonce: params["nonce"],

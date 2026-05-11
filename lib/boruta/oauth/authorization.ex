@@ -1034,6 +1034,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
         %CodeRequest{
           client_id: client_id,
           redirect_uri: redirect_uri,
+          code: code,
           resource_owner: resource_owner,
           state: state,
           nonce: nonce,
@@ -1061,6 +1062,11 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
            ),
          :ok <- Authorization.Nonce.authorize(request),
          :ok <- VerifiableCredentials.validate_authorization_details(authorization_details),
+         {:ok, previous_code} <-
+           (case code do
+              nil -> {:ok, nil}
+              value -> Authorization.Code.authorize(%{value: value})
+            end),
          :ok <- check_code_challenge(client, code_challenge, code_challenge_method),
          {:ok, resource} <- Authorization.Resource.authorize(resource, client) do
       {:ok,
@@ -1074,6 +1080,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
          nonce: nonce,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method,
+         previous_code: previous_code,
          resource_owner: resource_owner,
          authorization_details: Jason.decode!(authorization_details)
        }}
@@ -1102,6 +1109,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
             resource: resource,
             state: state,
             nonce: nonce,
+            previous_code: previous_code,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
             authorization_details: authorization_details
@@ -1120,6 +1128,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeRequest do
                nonce: nonce,
                code_challenge: code_challenge,
                code_challenge_method: code_challenge_method,
+               previous_code: previous_code && previous_code.value,
                authorization_details: authorization_details
              }) do
         {:ok, %{code: code}}
@@ -1452,6 +1461,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
             resource: resource,
             state: state,
             nonce: nonce,
+            previous_code: previous_code,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
             authorization_details: authorization_details
@@ -1474,6 +1484,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
                    nonce: nonce,
                    code_challenge: code_challenge,
                    code_challenge_method: code_challenge_method,
+                   previous_code: previous_code && previous_code.value,
                    authorization_details: authorization_details
                  }) do
             {:ok, Map.put(tokens, :code, code)}

@@ -337,6 +337,27 @@ defmodule Boruta.Oauth.RequestTest do
     end
   end
 
+  describe "code request (authorize endpoint)" do
+    test "builds a code request with previous code" do
+      client_id = SecureRandom.uuid()
+
+      conn =
+        conn(:get, "/", %{
+          "response_type" => "code",
+          "client_id" => client_id,
+          "redirect_uri" => "https://redirect.uri",
+          "code" => "previous_code"
+        })
+
+      assert {:ok,
+              %CodeRequest{
+                client_id: ^client_id,
+                redirect_uri: "https://redirect.uri",
+                code: "previous_code"
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
+    end
+  end
+
   describe "JWT profile client authentication and authorization grants (token endpoint)" do
     test "returns an error with a bad JWT" do
       conn =

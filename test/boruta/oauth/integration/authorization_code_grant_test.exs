@@ -287,6 +287,33 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert expires_in
     end
 
+    test "returns a code with previous_code", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+      previous_code = insert(:token, type: "code").value
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: :code,
+                code: code,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "code" => previous_code
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert code.previous_code == previous_code
+      assert expires_in
+    end
+
     test "returns a code with a confidential client", %{
       confidential_client: client,
       resource_owner: resource_owner
