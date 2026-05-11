@@ -11,6 +11,7 @@ defmodule Boruta.Oauth.CodeRequest do
   @type t :: %__MODULE__{
           client_id: String.t(),
           redirect_uri: String.t(),
+          code: String.t() | nil,
           state: String.t(),
           nonce: String.t(),
           prompt: String.t(),
@@ -28,6 +29,7 @@ defmodule Boruta.Oauth.CodeRequest do
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct client_id: nil,
             redirect_uri: nil,
+            code: nil,
             state: "",
             nonce: "",
             prompt: "",

@@ -282,6 +282,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"},
+        "code" => %{"type" => "string"},
         "prompt" => %{"type" => "string"},
         "code_challenge" => %{"type" => "string"},
         "code_challenge_method" => %{
