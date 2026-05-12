@@ -208,6 +208,7 @@ defmodule Boruta.Openid do
              maybe_verify_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- check_client_metadata_policy(code_chain, direct_post_params),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           :ok <- maybe_check_resource_owner(direct_post_params, code.scope),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
                client_encryption_key: claims["client_encryption_key"],
@@ -605,6 +606,26 @@ defmodule Boruta.Openid do
   end
 
   defp maybe_check_presentation(_, _), do: :ok
+
+  defp maybe_check_resource_owner(%{id_token: id_token}, scope) when not is_nil(id_token) do
+    case Authorization.ResourceOwner.authorize(id_token: id_token, scope: scope) do
+      {:ok, _resource_owner} ->
+        :ok
+
+      {:error, %Error{} = error} ->
+        {:error, error}
+
+      {:error, error} ->
+        {:error,
+         %Error{
+           status: :unauthorized,
+           error: :invalid_resource_owner,
+           error_description: error
+         }}
+    end
+  end
+
+  defp maybe_check_resource_owner(_direct_post_params, _scope), do: :ok
 
   defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
     CodesAdapter.revoke(code_chain)
