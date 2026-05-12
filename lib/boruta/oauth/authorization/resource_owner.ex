@@ -18,7 +18,7 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
   """
   @spec authorize(
           [email: String.t(), password: String.t()]
-          | [id_token: String.t()]
+          | [id_token: String.t(), scope: String.t()]
           | [resource_owner: ResourceOwner.t()]
         ) ::
           {:error,
@@ -49,10 +49,10 @@ defmodule Boruta.Oauth.Authorization.ResourceOwner do
     {:ok, resource_owner}
   end
 
-  def authorize(id_token: id_token) do
+  def authorize(id_token: id_token, scope: scope) do
     case VerifiablePresentations.validate_signature(id_token) do
       {:ok, _jwk, _claims} ->
-        resource_owners().get_by(id_token: id_token)
+        resource_owners().get_by(id_token: id_token, scope: scope)
 
       {:error, error} ->
         {:error,
