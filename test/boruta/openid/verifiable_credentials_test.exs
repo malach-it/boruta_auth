@@ -248,6 +248,30 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       assert credential
     end
 
+    test "issues jwt_vc credential with credential_configuration_id", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      credential_params =
+        credential_params
+        |> Map.delete("credential_identifier")
+        |> Map.put("credential_configuration_id", "VerifiableCredential")
+
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "jwt_vc"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:token) |> to_oauth_schema(),
+                 %{}
+               )
+
+      assert credential
+    end
+
     test "issues credential selected by configuration scopes", %{
       resource_owner: resource_owner,
       credential_params: credential_params

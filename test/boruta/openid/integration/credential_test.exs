@@ -169,7 +169,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
       credential_params = %{
         "format" => "jwt_vc",
         "proof" => proof,
-        "credential_identifier" => "VerifiableCredential"
+        "credential_configuration_id" => "VerifiableCredential"
       }
 
       sub = SecureRandom.uuid()

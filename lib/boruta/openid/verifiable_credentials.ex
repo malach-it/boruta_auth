@@ -289,7 +289,8 @@ defmodule Boruta.Openid.VerifiableCredentials do
          credential_params,
          token_scopes
        ) do
-    identifier == credential_params["credential_identifier"] ||
+    identifier == credential_params["credential_configuration_id"] ||
+      identifier == credential_params["credential_identifier"] ||
       Enum.member?(token_scopes, identifier)
   end
 
