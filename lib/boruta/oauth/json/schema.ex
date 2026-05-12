@@ -80,6 +80,7 @@ defmodule Boruta.Oauth.Json.Schema do
         },
         "id_token" => %{"type" => "string"},
         "authorization_code" => %{"type" => "string"},
+        "scope" => %{"type" => "string"},
         "code_challenge" => %{"type" => "string"},
         "code_challenge_method" => %{
           "type" => "string",

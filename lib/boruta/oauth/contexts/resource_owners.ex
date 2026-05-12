@@ -10,6 +10,7 @@ defmodule Boruta.Oauth.ResourceOwners do
   """
   @callback get_by(
               [username: String.t()]
+              | [id_token: String.t()]
               | [sub: String.t(), scope: String.t()]
             ) ::
               {:ok, resource_owner :: ResourceOwner.t()} | {:error, String.t()}

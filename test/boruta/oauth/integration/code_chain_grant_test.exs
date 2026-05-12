@@ -3,6 +3,7 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
   use Boruta.DataCase
 
   import Boruta.Factory
+  import Mox
 
   defmodule Token do
     @moduledoc false
@@ -14,8 +15,12 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.TokenResponse
   alias Boruta.Repo
+  alias Boruta.Support.ResourceOwners
+
+  setup :verify_on_exit!
 
   describe "code chain grant" do
     setup do
@@ -60,6 +65,11 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
     end
 
     test "issues an authorization code from an id_token", %{client: client} do
+      id_token = id_token(client, "agent")
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^id_token -> {:ok, %ResourceOwner{sub: "agent"}} end)
+
       assert {:token_success,
               %TokenResponse{
                 authorization_code: authorization_code,
@@ -72,7 +82,7 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
                      "grant_type" => "code_chain",
                      "client_id" => client.id,
                      "client_secret" => client.secret,
-                     "id_token" => id_token(client, "agent")
+                     "id_token" => id_token
                    }
                  },
                  ApplicationMock
@@ -81,13 +91,23 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       assert %Ecto.Token{
                type: "code",
                value: ^authorization_code,
-               sub: "agent",
+               sub: ^id_token,
                redirect_uri: nil,
+               nonce: nil,
+               scope: "",
                previous_code: nil
              } = Repo.get_by(Ecto.Token, value: authorization_code)
     end
 
     test "chains a new authorization code from a previous authorization code", %{client: client} do
+      first_id_token = id_token(client, "first-agent")
+      second_id_token = id_token(client, "second-agent")
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^first_id_token ->
+        {:ok, %ResourceOwner{sub: "first-agent"}}
+      end)
+
       {:token_success, %TokenResponse{authorization_code: previous_authorization_code}} =
         Oauth.token(
           %Plug.Conn{
@@ -95,11 +115,16 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
               "grant_type" => "code_chain",
               "client_id" => client.id,
               "client_secret" => client.secret,
-              "id_token" => id_token(client, "first-agent")
+              "id_token" => first_id_token
             }
           },
           ApplicationMock
         )
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^second_id_token ->
+        {:ok, %ResourceOwner{sub: "second-agent"}}
+      end)
 
       assert {:token_success, %TokenResponse{authorization_code: authorization_code}} =
                Oauth.token(
@@ -108,7 +133,7 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
                      "grant_type" => "code_chain",
                      "client_id" => client.id,
                      "client_secret" => client.secret,
-                     "id_token" => id_token(client, "second-agent"),
+                     "id_token" => second_id_token,
                      "authorization_code" => previous_authorization_code
                    }
                  },
@@ -118,9 +143,43 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       assert %Ecto.Token{
                type: "code",
                value: ^authorization_code,
-               sub: "second-agent",
+               sub: ^second_id_token,
                redirect_uri: nil,
+               nonce: nil,
                previous_code: ^previous_authorization_code
+             } = Repo.get_by(Ecto.Token, value: authorization_code)
+    end
+
+    test "takes scope from request parameters" do
+      client =
+        insert(:client,
+          authorize_scope: true,
+          authorized_scopes: [insert(:scope, name: "credential:read")]
+        )
+
+      id_token = id_token(client, "agent")
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^id_token -> {:ok, %ResourceOwner{sub: "agent"}} end)
+
+      assert {:token_success, %TokenResponse{authorization_code: authorization_code}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "code_chain",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "id_token" => id_token,
+                     "scope" => "credential:read"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert %Ecto.Token{
+               value: ^authorization_code,
+               scope: "credential:read",
+               nonce: nil
              } = Repo.get_by(Ecto.Token, value: authorization_code)
     end
 
@@ -138,9 +197,9 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_grant,
-                  error_description: "id_token must be a jwt.",
-                  status: :bad_request
+                  error: :invalid_resource_owner,
+                  error_description: "{:error, :token_malformed}",
+                  status: :unauthorized
                 }}
     end
   end

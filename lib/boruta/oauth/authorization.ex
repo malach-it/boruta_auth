@@ -259,13 +259,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
   alias Boruta.Oauth.AuthorizationSuccess
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.CodeChainRequest
-  alias Boruta.Oauth.ResourceOwner
 
   def preauthorize(%CodeChainRequest{
         client_id: client_id,
         client_authentication: client_source,
         id_token: id_token,
         authorization_code: authorization_code,
+        scope: scope,
         grant_type: grant_type,
         dpop: dpop,
         code_challenge: code_challenge,
@@ -277,8 +277,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
              source: client_source,
              grant_type: grant_type
            ),
+         {:ok, resource_owner} <- Authorization.ResourceOwner.authorize(id_token: id_token),
          :ok <- Dpop.validate(dpop, client),
-         {:ok, id_token_claims} <- Authorization.IdToken.authorize(id_token),
+         {:ok, scope} <-
+           Authorization.Scope.authorize(
+             scope: scope,
+             against: %{client: client, resource_owner: resource_owner}
+           ),
          {:ok, previous_code} <-
            (case authorization_code do
               nil ->
@@ -287,17 +292,14 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
               authorization_code ->
                 Authorization.Code.authorize(%{value: authorization_code, client: client})
             end) do
-      sub = id_token_claims["sub"] || id_token_claims[:sub]
-
       {:ok,
        %AuthorizationSuccess{
          client: client,
          code: previous_code,
          redirect_uri: nil,
-         sub: sub,
-         resource_owner: %ResourceOwner{sub: sub},
-         scope: id_token_claims["scope"] || "",
-         nonce: id_token_claims["nonce"],
+         sub: id_token,
+         resource_owner: resource_owner,
+         scope: scope,
          code_challenge: code_challenge,
          code_challenge_method: code_challenge_method
        }}
@@ -313,7 +315,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
             sub: sub,
             resource_owner: resource_owner,
             scope: scope,
-            nonce: nonce,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method
           }} <- preauthorize(request),
@@ -325,7 +326,6 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
              resource_owner: resource_owner,
              scope: scope,
              state: nil,
-             nonce: nonce,
              code_challenge: code_challenge,
              code_challenge_method: code_challenge_method,
              authorization_details: nil,

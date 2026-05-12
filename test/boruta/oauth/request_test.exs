@@ -326,7 +326,8 @@ defmodule Boruta.Oauth.RequestTest do
           "client_id" => client_id,
           "client_secret" => client_secret,
           "id_token" => "id.jwt.token",
-          "authorization_code" => "previous_code"
+          "authorization_code" => "previous_code",
+          "scope" => "openid"
         })
 
       assert {:ok,
@@ -334,7 +335,8 @@ defmodule Boruta.Oauth.RequestTest do
                 client_id: ^client_id,
                 client_authentication: %{type: "post", value: ^client_secret},
                 id_token: "id.jwt.token",
-                authorization_code: "previous_code"
+                authorization_code: "previous_code",
+                scope: "openid"
               }} = Request.token_request(conn)
     end
   end
