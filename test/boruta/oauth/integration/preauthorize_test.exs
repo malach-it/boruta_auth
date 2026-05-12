@@ -134,6 +134,31 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
                 }}
     end
 
+    test "returns an error if user is blocked", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+      resource_owner = %{resource_owner | blocked: true}
+
+      assert Oauth.preauthorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "token",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) ==
+               {:preauthorize_error,
+                %Error{
+                  error: :invalid_resource_owner,
+                  error_description: "Resource owner is blocked",
+                  status: :unauthorized,
+                  format: :fragment,
+                  redirect_uri: redirect_uri
+                }}
+    end
+
     test "preauthorizes", %{client: client, resource_owner: resource_owner} do
       redirect_uri = List.first(client.redirect_uris)
 

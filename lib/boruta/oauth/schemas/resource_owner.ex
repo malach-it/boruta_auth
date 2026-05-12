@@ -8,6 +8,7 @@ defmodule Boruta.Oauth.ResourceOwner do
             code_verifier: nil,
             username: nil,
             last_login_at: nil,
+            blocked: false,
             extra_claims: %{},
             authorization_details: [],
             presentation_configuration: %{},
@@ -18,6 +19,7 @@ defmodule Boruta.Oauth.ResourceOwner do
           code_verifier: String.t() | nil,
           username: String.t() | nil,
           last_login_at: DateTime.t() | nil,
+          blocked: boolean(),
           extra_claims: Boruta.Oauth.IdToken.claims(),
           authorization_details: list(map()),
           presentation_configuration: %{
@@ -44,5 +46,8 @@ defmodule Boruta.Oauth.ResourceOwner do
           }
         }
 
-  def agent_sub, do: "from_agent_token"
+  def agent_sub(), do: "from_agent_token"
+
+  def ensure_valid(%__MODULE__{blocked: true}), do: {:error, "Resource owner is blocked"}
+  def ensure_valid(_resource_owner), do: :ok
 end
