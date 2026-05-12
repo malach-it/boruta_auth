@@ -215,8 +215,7 @@ defmodule Boruta.Openid do
                code.client.trusted_authorities,
                code.client.trusted_hosts
              ),
-           {:ok, resource_owner} <- maybe_validate_resource_owner(direct_post_params, code),
-           :ok <- check_scope(code, resource_owner),
+           :ok <- maybe_check_resource_owner(direct_post_params, code.scope),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
                client_encryption_key: claims["client_encryption_key"],
@@ -575,10 +574,10 @@ defmodule Boruta.Openid do
 
   defp maybe_check_presentation(_, _, _, _), do: :ok
 
-  defp maybe_validate_resource_owner(%{id_token: id_token}, %Token{scope: scope}) when not is_nil(id_token) do
+  defp maybe_check_resource_owner(%{id_token: id_token}, scope) when not is_nil(id_token) do
     case Authorization.ResourceOwner.authorize(id_token: id_token, scope: scope) do
-      {:ok, resource_owner} ->
-        {:ok, resource_owner}
+      {:ok, _resource_owner} ->
+        :ok
 
       {:error, %Error{} = error} ->
         {:error, error}
@@ -593,22 +592,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_validate_resource_owner(_direct_post_params, %Token{resource_owner: resource_owner}) do
-    Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
-  end
-
-  defp check_scope(%Token{} = code, resource_owner) do
-    case Authorization.Scope.authorize(
-           scope: code.scope,
-           against: %{
-             client: code.client,
-             resource_owner: resource_owner
-           }
-         ) do
-      {:ok, _scope} -> :ok
-      {:error, %Error{} = error} -> {:error, error}
-    end
-  end
+  defp maybe_check_resource_owner(_direct_post_params, _scope), do: :ok
 
   defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
     CodesAdapter.revoke(code_chain)
