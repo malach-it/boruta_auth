@@ -62,6 +62,7 @@ defmodule Boruta.Oauth.Request.Base do
        client_authentication: client_authentication_from_params(params),
        id_token: params["id_token"],
        authorization_code: params["authorization_code"],
+       scope: params["scope"],
        dpop: params["dpop"],
        code_challenge: params["code_challenge"],
        code_challenge_method: params["code_challenge_method"]
