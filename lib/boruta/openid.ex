@@ -208,7 +208,8 @@ defmodule Boruta.Openid do
              maybe_verify_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- check_client_metadata_policy(code_chain, direct_post_params),
            :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
-           :ok <- maybe_check_resource_owner(direct_post_params, code.scope),
+           {:ok, resource_owner} <- maybe_validate_resource_owner(direct_post_params, code),
+           :ok <- check_scope(code, resource_owner),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
                client_encryption_key: claims["client_encryption_key"],
@@ -607,10 +608,10 @@ defmodule Boruta.Openid do
 
   defp maybe_check_presentation(_, _), do: :ok
 
-  defp maybe_check_resource_owner(%{id_token: id_token}, scope) when not is_nil(id_token) do
+  defp maybe_validate_resource_owner(%{id_token: id_token}, %Token{scope: scope}) when not is_nil(id_token) do
     case Authorization.ResourceOwner.authorize(id_token: id_token, scope: scope) do
-      {:ok, _resource_owner} ->
-        :ok
+      {:ok, resource_owner} ->
+        {:ok, resource_owner}
 
       {:error, %Error{} = error} ->
         {:error, error}
@@ -625,7 +626,22 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp maybe_check_resource_owner(_direct_post_params, _scope), do: :ok
+  defp maybe_validate_resource_owner(_direct_post_params, %Token{resource_owner: resource_owner}) do
+    Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
+  end
+
+  defp check_scope(%Token{} = code, resource_owner) do
+    case Authorization.Scope.authorize(
+           scope: code.scope,
+           against: %{
+             client: code.client,
+             resource_owner: resource_owner
+           }
+         ) do
+      {:ok, _scope} -> :ok
+      {:error, %Error{} = error} -> {:error, error}
+    end
+  end
 
   defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
     CodesAdapter.revoke(code_chain)
