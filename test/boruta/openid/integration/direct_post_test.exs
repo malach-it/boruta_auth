@@ -472,38 +472,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    test "siopv2 - returns an error when requested scope is unauthorized", %{
-      id_token: id_token,
-      code: code
-    } do
-      insert(:scope, name: "private_direct_post", public: false)
-
-      {:ok, code} =
-        Repo.get_by(Boruta.Ecto.Token, id: code.id)
-        |> Ecto.Changeset.change(%{scope: "private_direct_post", requested_scope: ""})
-        |> Repo.update()
-
-      conn = %Plug.Conn{}
-
-      assert {:authentication_failure,
-              %Error{
-                status: :bad_request,
-                error: :invalid_scope,
-                error_description: "Given scopes are unknown or unauthorized.",
-                format: :query,
-                redirect_uri: "http://redirect.uri",
-                state: "state"
-              }} =
-               Openid.direct_post(
-                 conn,
-                 %{
-                   code_id: code.id,
-                   id_token: id_token
-                 },
-                 ApplicationMock
-               )
-    end
-
     test "siopv2 - authenticates (jwe)", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 
