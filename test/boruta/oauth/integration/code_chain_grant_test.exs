@@ -68,7 +68,7 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       id_token = id_token(client, "agent")
 
       ResourceOwners
-      |> expect(:get_by, fn id_token: ^id_token -> {:ok, %ResourceOwner{sub: "agent"}} end)
+      |> expect(:get_by, fn id_token: ^id_token, scope: nil -> {:ok, %ResourceOwner{sub: "agent"}} end)
 
       assert {:token_success,
               %TokenResponse{
@@ -104,7 +104,7 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       second_id_token = id_token(client, "second-agent")
 
       ResourceOwners
-      |> expect(:get_by, fn id_token: ^first_id_token ->
+      |> expect(:get_by, fn id_token: ^first_id_token, scope: nil ->
         {:ok, %ResourceOwner{sub: "first-agent"}}
       end)
 
@@ -122,7 +122,7 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
         )
 
       ResourceOwners
-      |> expect(:get_by, fn id_token: ^second_id_token ->
+      |> expect(:get_by, fn id_token: ^second_id_token, scope: nil ->
         {:ok, %ResourceOwner{sub: "second-agent"}}
       end)
 
@@ -160,7 +160,8 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       id_token = id_token(client, "agent")
 
       ResourceOwners
-      |> expect(:get_by, fn id_token: ^id_token -> {:ok, %ResourceOwner{sub: "agent"}} end)
+      |> expect(:get_by, fn id_token: ^id_token, scope: "credential:read" -> {:ok, %ResourceOwner{sub: "agent"}} end)
+      |> expect(:authorized_scopes, fn _resource_owner -> [%Oauth.Scope{name: "credential:read"}] end)
 
       assert {:token_success, %TokenResponse{authorization_code: authorization_code}} =
                Oauth.token(
