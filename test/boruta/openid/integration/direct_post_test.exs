@@ -472,6 +472,36 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
+    test "siopv2 - returns an error when resource owner is blocked", %{
+      id_token: id_token,
+      code: code
+    } do
+      conn = %Plug.Conn{}
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^id_token, scope: "" ->
+        {:ok, %ResourceOwner{sub: code.sub, blocked: true}}
+      end)
+
+      assert {:authentication_failure,
+              %Error{
+                status: :unauthorized,
+                error: :invalid_resource_owner,
+                error_description: "Resource owner is blocked",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+    end
+
     test "siopv2 - authenticates (jwe)", %{id_token: id_token, code: code} do
       conn = %Plug.Conn{}
 

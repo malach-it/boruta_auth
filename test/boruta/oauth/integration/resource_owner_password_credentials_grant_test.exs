@@ -157,6 +157,38 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
                 }}
     end
 
+    test "returns an error if resource owner is blocked", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      resource_owner = %{resource_owner | blocked: true}
+
+      ResourceOwners
+      |> expect(:get_by, fn _params -> {:ok, resource_owner} end)
+      |> expect(:check_password, fn _resource_owner, _password -> :ok end)
+
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 req_headers: [{"authorization", authorization_header}],
+                 body_params: %{
+                   "grant_type" => "password",
+                   "username" => resource_owner.username,
+                   "password" => "password"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_resource_owner,
+                  error_description: "Resource owner is blocked",
+                  status: :unauthorized
+                }}
+    end
+
     test "returns an error if client_secret is invalid with a confidential client", %{
       confidential_client: client,
       resource_owner: resource_owner

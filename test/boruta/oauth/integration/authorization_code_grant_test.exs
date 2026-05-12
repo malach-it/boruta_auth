@@ -154,6 +154,31 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
+    test "returns an error if user is blocked", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+      resource_owner = %{resource_owner | blocked: true}
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_resource_owner,
+                  error_description: "Resource owner is blocked",
+                  status: :unauthorized,
+                  format: :query,
+                  redirect_uri: redirect_uri
+                }}
+    end
+
     test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
       resource_owner = %{resource_owner | sub: 1}
 
