@@ -54,6 +54,7 @@ defmodule Boruta.Ecto.AgentTokens do
       ) do
     sub = params[:sub]
     state = params[:state]
+    resource = params[:resource]
     redirect_uri = params[:redirect_uri]
     previous_token = params[:previous_token]
     previous_code = params[:previous_code]
@@ -72,6 +73,7 @@ defmodule Boruta.Ecto.AgentTokens do
       state: state,
       scope: scope,
       requested_scope: requested_scope || "",
+      resource: resource,
       access_token_ttl: agent_token_ttl,
       previous_token: previous_token,
       previous_code: previous_code,

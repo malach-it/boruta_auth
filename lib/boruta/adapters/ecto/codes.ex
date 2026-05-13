@@ -114,6 +114,7 @@ defmodule Boruta.Ecto.Codes do
           nonce: params[:nonce],
           scope: scope,
           requested_scope: params[:requested_scope] || "",
+          resource: params[:resource],
           authorization_code_ttl: authorization_code_ttl,
           code_challenge: code_challenge,
           code_challenge_method: code_challenge_method,

@@ -8,6 +8,8 @@ defmodule Boruta.Oauth.IntrospectResponse do
     client_id: String.t(),
     username: String.t(),
     scope: String.t(),
+    resource: String.t() | nil,
+    aud: String.t() | nil,
     sub: String.t(),
     iss: String.t(),
     exp: integer(),
@@ -21,6 +23,8 @@ defmodule Boruta.Oauth.IntrospectResponse do
     client_id: nil,
     username: nil,
     scope: nil,
+    resource: nil,
+    aud: nil,
     sub: nil,
     iss: "boruta",
     exp: nil,
@@ -41,6 +45,7 @@ defmodule Boruta.Oauth.IntrospectResponse do
     resource_owner: resource_owner,
     expires_at: expires_at,
     scope: scope,
+    resource: resource,
     inserted_at: inserted_at
   }) do
     username = case resource_owner do
@@ -53,6 +58,8 @@ defmodule Boruta.Oauth.IntrospectResponse do
       client_id: id,
       username: username,
       scope: scope,
+      resource: resource,
+      aud: resource,
       sub: sub,
       iss: Config.issuer(),
       exp: expires_at,

@@ -19,6 +19,7 @@ defmodule Boruta.Oauth.HybridRequest do
           response_mode: String.t(),
           response_types: list(String.t()),
           scope: String.t(),
+          resource: String.t() | nil,
           state: String.t(),
           authorization_details: String.t()
         }
@@ -34,6 +35,7 @@ defmodule Boruta.Oauth.HybridRequest do
             response_mode: "fragment",
             response_types: [],
             scope: "",
+            resource: nil,
             state: "",
             authorization_details: "[]"
 end

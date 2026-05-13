@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- OAuth Resource Indicators support for authorization, token, refresh, and introspection flows, with RFC 8707 validation and optional client-authorized resources
 - path wildcard (`**`) for redirect_uris
 - `form_post` response mode support per [OAuth 2.0 Form Post Response Mode](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
 - `response_mode` parameter support for code and token (implicit) flows

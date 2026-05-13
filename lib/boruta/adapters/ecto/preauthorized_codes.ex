@@ -32,6 +32,7 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
         %Token{resource_owner: resource_owner},
         %{
           agent_token: params[:agent_token],
+          resource: params[:resource],
           authorization_code_ttl: authorization_code_ttl,
           authorization_details: resource_owner.authorization_details,
           client_id: client_id,

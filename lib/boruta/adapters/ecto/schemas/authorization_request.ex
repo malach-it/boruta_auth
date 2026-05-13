@@ -14,6 +14,7 @@ defmodule Boruta.Ecto.AuthorizationRequest do
           response_type: String.t(),
           redirect_uri: String.t(),
           scope: String.t(),
+          resource: String.t() | nil,
           state: String.t(),
           code_challenge: String.t(),
           code_challenge_method: String.t(),
@@ -31,6 +32,7 @@ defmodule Boruta.Ecto.AuthorizationRequest do
     field :response_type, :string
     field :redirect_uri, :string
     field :scope, :string
+    field :resource, :string
     field :state, :string
     field :code_challenge, :string
     field :code_challenge_method, :string
@@ -47,6 +49,7 @@ defmodule Boruta.Ecto.AuthorizationRequest do
       :response_type,
       :redirect_uri,
       :scope,
+      :resource,
       :state,
       :code_challenge,
       :code_challenge_method,

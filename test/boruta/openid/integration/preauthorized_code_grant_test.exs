@@ -252,15 +252,15 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       }
 
       assert {
-              :authorize_error,
-              %Boruta.Oauth.Error{
-                redirect_uri: "https://redirect.uri",
-                error: :invalid_grant,
-                error_description: "Given authorization code is invalid, revoked, or expired.",
-                format: :query,
-                status: :bad_request
-              }
-            } =
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 redirect_uri: "https://redirect.uri",
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired.",
+                 format: :query,
+                 status: :bad_request
+               }
+             } =
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
@@ -292,15 +292,15 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       }
 
       assert {
-              :authorize_error,
-              %Boruta.Oauth.Error{
-                redirect_uri: "https://redirect.uri",
-                error: :invalid_grant,
-                error_description: "Given authorization code is invalid, revoked, or expired.",
-                format: :query,
-                status: :bad_request
-              }
-            } =
+               :authorize_error,
+               %Boruta.Oauth.Error{
+                 redirect_uri: "https://redirect.uri",
+                 error: :invalid_grant,
+                 error_description: "Given authorization code is invalid, revoked, or expired.",
+                 format: :query,
+                 status: :bad_request
+               }
+             } =
                Oauth.authorize(
                  %Plug.Conn{
                    query_params: %{
@@ -357,10 +357,17 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert preauthorized_code
     end
 
-    test "returns a credential offer response with a code (draft 13)", %{
-      client: client,
+    test "returns a credential offer response with a code bound to resource", %{
       resource_owner: resource_owner
     } do
+      resource = "https://mcp.example.com"
+
+      client =
+        insert(:client,
+          redirect_uris: ["https://redirect.uri"],
+          authorized_resources: [resource]
+        )
+
       redirect_uri = List.first(client.redirect_uris)
       code = insert(:token, type: "code")
 
@@ -391,7 +398,8 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                      "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
                      "client_id" => client.id,
                      "redirect_uri" => redirect_uri,
-                     "code" => code.value
+                     "code" => code.value,
+                     "resource" => resource
                    }
                  },
                  resource_owner,
@@ -400,11 +408,13 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
       assert preauthorized_code
 
-
       previous_code = code.value
+
       assert {:ok, %Oauth.Token{previous_code: ^previous_code}} =
                Ecto.TokenStore.get(value: preauthorized_code)
-      assert %Ecto.Token{previous_code: ^previous_code} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
+      assert %Ecto.Token{previous_code: ^previous_code, resource: ^resource} =
+               Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
     end
 
     test "returns a credential offer response (agent_token)", %{
@@ -450,7 +460,10 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                )
 
       assert preauthorized_code
-      assert %Ecto.Token{agent_token: agent_token} = Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
+      assert %Ecto.Token{agent_token: agent_token} =
+               Repo.get_by(Boruta.Ecto.Token, value: preauthorized_code)
+
       assert agent_token
     end
 
@@ -961,6 +974,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
       {:ok,
        resource_owner: resource_owner,
+       client: client,
        code: code,
        agent_code: agent_code,
        tx_code_code: tx_code_code,
@@ -1111,6 +1125,49 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
       assert expires_in
       assert refresh_token
       assert c_nonce
+    end
+
+    test "returns a token bound to the preauthorized code resource", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      resource = "https://mcp.example.com"
+
+      code =
+        insert(
+          :token,
+          type: "preauthorized_code",
+          client: client,
+          sub: resource_owner.sub,
+          resource: resource,
+          redirect_uri: List.first(client.redirect_uris),
+          authorization_details: [
+            %{
+              "credential_definition" => %{
+                "type" => ["credential"]
+              }
+            }
+          ]
+        )
+
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success,
+              %TokenResponse{
+                access_token: access_token
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+                     "pre-authorized_code" => code.value
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert %Ecto.Token{resource: ^resource} = Repo.get_by(Ecto.Token, value: access_token)
     end
 
     test "returns a token with an agent_token", %{agent_code: code} do

@@ -26,6 +26,7 @@ Boruta.Ecto.Admin.create_client(%{
   redirect_uris: ["http://redirect.uri"], # OAuth client redirect_uris
   authorize_scope: true, # take following authorized_scopes into account (skip public scopes)
   authorized_scopes: [%{name: "a:scope"}], # scopes that are authorized using this client
+  authorized_resources: ["https://mcp.example.com"], # optional RFC 8707 resource allowlist
   supported_grant_types: [ # client supported grant types
     "client_credentials",
     "password",
@@ -51,5 +52,14 @@ Boruta.Ecto.Admin.create_client(%{
   private_key: private_pem
 })
 ```
+
+## Resource indicators
+
+Clients can opt into OAuth Resource Indicators audience binding with
+`authorized_resources`. Values must be absolute URIs without fragments. When the
+list is empty or omitted, Boruta accepts any valid requested `resource` for
+backward compatibility. When the list contains one or more URIs, token and
+authorization requests must include a `resource` matching one of those configured
+values, otherwise Boruta returns `invalid_target`.
 
 Or so, you can use all administration utilities described in [Boruta API documentation](https://hexdocs.pm/boruta/Boruta.Ecto.Admin.html) to manage all entities you need to have your server up and running. If some are missing or can be improved do not hesitate to open an issue on [GitLab](https://gitlab.com/patatoid/boruta_auth/-/issues), it would be very welcome.

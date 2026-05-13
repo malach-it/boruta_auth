@@ -26,6 +26,7 @@ defmodule Boruta.Ecto.Token do
           c_nonce: String.t(),
           scope: String.t(),
           requested_scope: String.t() | nil,
+          resource: String.t() | nil,
           redirect_uri: String.t(),
           expires_at: integer(),
           client: Client.t(),
@@ -75,6 +76,7 @@ defmodule Boruta.Ecto.Token do
     field(:c_nonce, :string)
     field(:scope, :string, default: "")
     field(:requested_scope, :string)
+    field(:resource, :string)
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
     field(:revoked_at, :utc_datetime_usec)
@@ -113,6 +115,7 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :requested_scope,
+      :resource,
       :access_token_ttl,
       :previous_code,
       :authorization_details,
@@ -140,6 +143,7 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :requested_scope,
+      :resource,
       :previous_token,
       :previous_code,
       :authorization_details,
@@ -165,6 +169,7 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :requested_scope,
+      :resource,
       :access_token_ttl,
       :previous_code,
       :authorization_details,
@@ -192,6 +197,7 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :requested_scope,
+      :resource,
       :previous_token,
       :previous_code,
       :authorization_details,
@@ -214,6 +220,12 @@ defmodule Boruta.Ecto.Token do
       :response_type,
       :agent_token,
       :authorization_code_ttl,
+      :client_id,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :resource,
       :authorization_details,
       :client_id,
       :client_encryption_key,
@@ -247,6 +259,11 @@ defmodule Boruta.Ecto.Token do
       :client_id,
       :client_encryption_key,
       :client_encryption_alg,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :resource,
       :code_challenge,
       :code_challenge_method,
       :nonce,
@@ -287,6 +304,7 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :requested_scope,
+      :resource,
       :authorization_details,
       :presentation_definition,
       :client_encryption_key,
@@ -314,6 +332,7 @@ defmodule Boruta.Ecto.Token do
       :nonce,
       :scope,
       :requested_scope,
+      :resource,
       :code_challenge,
       :code_challenge_method,
       :authorization_details,

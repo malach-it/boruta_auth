@@ -30,6 +30,7 @@ defmodule Boruta.Ecto.Client do
           secret: String.t(),
           authorize_scope: boolean(),
           redirect_uris: list(String.t()),
+          authorized_resources: list(String.t()),
           supported_grant_types: list(String.t()),
           enforce_dpop: boolean(),
           enforce_tx_code: boolean(),
@@ -109,6 +110,7 @@ defmodule Boruta.Ecto.Client do
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
+  @resource_indicator_uri_characters ~r/^[A-Za-z][A-Za-z0-9+\-.]*:[A-Za-z0-9\-._~:\/\?\[\]@!\$&'\(\)\*\+,;=%]*$/
   schema "oauth_clients" do
     field(:public_client_id, :string)
     field(:name, :string)
@@ -118,6 +120,7 @@ defmodule Boruta.Ecto.Client do
     field(:enforce_tx_code, :boolean, default: false)
     field(:enforce_dpop, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
+    field(:authorized_resources, {:array, :string}, default: [])
 
     field(:supported_grant_types, {:array, :string}, default: Oauth.Client.grant_types())
 
@@ -190,6 +193,7 @@ defmodule Boruta.Ecto.Client do
       :refresh_token_ttl,
       :id_token_ttl,
       :redirect_uris,
+      :authorized_resources,
       :authorize_scope,
       :enforce_dpop,
       :enforce_tx_code,
@@ -221,6 +225,7 @@ defmodule Boruta.Ecto.Client do
     |> change_id_token_ttl()
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
+    |> validate_authorized_resources()
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> validate_inclusion(:response_mode, @response_modes)
@@ -257,6 +262,7 @@ defmodule Boruta.Ecto.Client do
       :refresh_token_ttl,
       :id_token_ttl,
       :redirect_uris,
+      :authorized_resources,
       :authorize_scope,
       :enforce_dpop,
       :enforce_tx_code,
@@ -304,6 +310,7 @@ defmodule Boruta.Ecto.Client do
       Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
     )
     |> validate_redirect_uris()
+    |> validate_authorized_resources()
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -478,6 +485,14 @@ defmodule Boruta.Ecto.Client do
     end)
   end
 
+  defp validate_authorized_resources(changeset) do
+    validate_change(changeset, :authorized_resources, fn field, values ->
+      Enum.map(values, &validate_resource_indicator_uri/1)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(fn error -> {field, error} end)
+    end)
+  end
+
   defp validate_supported_grant_types(changeset) do
     server_grant_types = Oauth.Client.grant_types()
 
@@ -502,6 +517,35 @@ defmodule Boruta.Ecto.Client do
         "`#{uri}` is invalid"
     end
   end
+
+  defp validate_resource_indicator_uri(nil), do: "empty values are not allowed"
+
+  defp validate_resource_indicator_uri("" <> uri) do
+    if valid_resource_indicator_uri?(uri), do: nil, else: "`#{uri}` is invalid"
+  end
+
+  defp valid_resource_indicator_uri?(uri) do
+    parsed_uri = URI.parse(uri)
+
+    valid_absolute_uri?(parsed_uri) and is_nil(parsed_uri.fragment) and
+      not String.match?(uri, ~r/\s/) and valid_percent_encoding?(uri) and
+      valid_resource_characters?(uri) and valid_resource_authority?(parsed_uri)
+  end
+
+  defp valid_absolute_uri?(%URI{scheme: scheme}) when is_binary(scheme) and scheme != "", do: true
+  defp valid_absolute_uri?(_uri), do: false
+
+  defp valid_percent_encoding?(uri) do
+    not Regex.match?(~r/%(?![0-9A-Fa-f]{2})/, uri)
+  end
+
+  defp valid_resource_characters?(uri) do
+    Regex.match?(@resource_indicator_uri_characters, uri)
+  end
+
+  defp valid_resource_authority?(%URI{authority: nil}), do: true
+  defp valid_resource_authority?(%URI{host: host}) when is_binary(host) and host != "", do: true
+  defp valid_resource_authority?(_uri), do: false
 
   defp validate_id_token_signature_alg(changeset) do
     signature_algorithms = Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)

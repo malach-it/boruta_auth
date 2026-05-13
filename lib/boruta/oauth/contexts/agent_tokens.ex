@@ -19,6 +19,7 @@ defmodule Boruta.Oauth.AgentTokens do
     :sub => String.t(),
     optional(:redirect_uri) => String.t(),
     :scope => String.t(),
+    optional(:resource) => String.t() | nil,
     optional(:state) => String.t(),
     optional(:previous_token) => String.t(),
     optional(:resource_owner) => Boruta.Oauth.ResourceOwner.t(),

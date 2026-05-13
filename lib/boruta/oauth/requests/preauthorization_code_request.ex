@@ -11,6 +11,7 @@ defmodule Boruta.Oauth.PreauthorizationCodeRequest do
   @type t :: %__MODULE__{
           preauthorized_code: String.t(),
           grant_type: String.t(),
+          resource: String.t() | nil,
           code_verifier: String.t(),
           tx_code: String.t() | nil
         }
@@ -18,6 +19,7 @@ defmodule Boruta.Oauth.PreauthorizationCodeRequest do
   defstruct client_authentication: nil,
             preauthorized_code: nil,
             grant_type: "authorization_code",
+            resource: nil,
             code_verifier: "",
             tx_code: nil
 end
