@@ -173,7 +173,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "token"},
-        "response_mode" => %{"type" => "string", "pattern" => "^form_post$"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment|form_post)$"},
         "client_id" => %{
           "type" => "string",
           "pattern" => @uuid_pattern
@@ -194,7 +194,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "id_token"},
-        "response_mode" => %{"type" => "string", "pattern" => "^form_post$"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment|form_post)$"},
         "client_id" => %{
           "type" => "string"
         },
@@ -213,7 +213,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "vp_token"},
-        "response_mode" => %{"type" => "string", "pattern" => "^form_post$"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment|form_post)$"},
         "client_id" => %{"type" => "string"},
         "state" => %{"type" => "string"},
         "client_metadata" => %{"type" => "string"},
@@ -273,7 +273,7 @@ defmodule Boruta.Oauth.Json.Schema do
       "type" => "object",
       "properties" => %{
         "response_type" => %{"type" => "string", "pattern" => "code"},
-        "response_mode" => %{"type" => "string", "pattern" => "^form_post$"},
+        "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment|form_post)$"},
         "client_id" => %{
           "type" => "string"
         },
