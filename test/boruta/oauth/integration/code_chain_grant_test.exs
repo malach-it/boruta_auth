@@ -91,7 +91,8 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       assert %Ecto.Token{
                type: "code",
                value: ^authorization_code,
-               sub: ^id_token,
+               sub: "agent",
+               id_token: ^id_token,
                redirect_uri: nil,
                nonce: nil,
                scope: "",
@@ -143,7 +144,8 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       assert %Ecto.Token{
                type: "code",
                value: ^authorization_code,
-               sub: ^second_id_token,
+               sub: "second-agent",
+               id_token: ^second_id_token,
                redirect_uri: nil,
                nonce: nil,
                previous_code: ^previous_authorization_code

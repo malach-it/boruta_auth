@@ -109,6 +109,7 @@ defmodule Boruta.Ecto.Codes do
           response_type: params[:response_type],
           client_id: client_id,
           sub: sub,
+          id_token: params[:id_token],
           redirect_uri: redirect_uri,
           state: state,
           nonce: params[:nonce],
