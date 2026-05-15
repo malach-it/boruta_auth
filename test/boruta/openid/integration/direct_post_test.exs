@@ -459,6 +459,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.id_token
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
+      assert response.code.id_token == id_token
+      assert Repo.reload(code).id_token == id_token
       assert response.state == code.state
     end
 
@@ -936,6 +938,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.vp_token
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
+      assert response.code.vp_token == vp_token
+      assert Repo.reload(code).vp_token == vp_token
       assert response.state == code.state
       refute Repo.reload(code).revoked_at
     end
