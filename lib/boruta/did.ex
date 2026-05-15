@@ -1,15 +1,14 @@
 defmodule Boruta.Did do
   # TODO integration tests
   @moduledoc """
-    Utilities to manipulate dids using an universal resolver or registrar.
+    Utilities to manipulate dids.
   """
 
   import Boruta.Config,
     only: [
       universal_did_auth: 0,
       ebsi_did_resolver_base_url: 0,
-      did_resolver_base_url: 0,
-      did_registrar_base_url: 0
+      did_resolver_base_url: 0
     ]
 
   alias Boruta.{ClientsAdapter, HttpClient}
@@ -51,7 +50,9 @@ defmodule Boruta.Did do
     end
   end
 
-  def resolve(did) do
+  def resolve(did), do: resolve_universal(did)
+
+  defp resolve_universal(did) do
     resolver_url = "#{did_resolver_base_url()}/identifiers/#{encode_path_segment(did)}"
 
     with {:ok, %Finch.Response{body: body, status: 200}} <-
@@ -72,54 +73,26 @@ defmodule Boruta.Did do
     end
   end
 
-  @dialyzer {:no_return, create: 1}
-  @dialyzer {:no_return, create: 2}
   @spec create(method :: String.t()) ::
           {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
   @spec create(method :: String.t(), jwk :: map() | nil) ::
           {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
   def create(method, jwk \\ nil)
 
+  def create("key", nil) do
+    jwk =
+      JOSE.JWK.generate_key({:okp, :Ed25519})
+      |> JOSE.JWK.to_public()
+      |> jwk_to_map()
+
+    create("key", jwk)
+  end
+
   def create("key", jwk) when is_map(jwk) do
     Crypto.did_key(jwk)
   end
 
-  def create("key" = method, nil) do
-    payload = %{
-      "didDocument" => %{
-        "@context" => ["https//www.w3.org/ns/did/v1"],
-        "service" => []
-      },
-      "secret" => %{}
-    }
-
-    payload =
-      Map.put(payload, "options", %{
-        "keyType" => "Ed25519",
-        "jwkJcsPub" => true
-      })
-
-    with {:ok, %Finch.Response{status: 201, body: body}} <-
-           http_post(
-             did_registrar_base_url() <> "/create?method=#{method}",
-             Jason.encode!(payload),
-             [
-               {"Authorization", "Bearer #{universal_did_auth()[:token]}"},
-               {"Content-Type", "application/json"}
-             ]
-           ),
-         %{
-           "didState" => %{
-             "did" => did
-           }
-         } <- Jason.decode!(body),
-         {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} <- resolve(did) do
-      {:ok, did, jwk}
-    else
-      _ ->
-        {:error, "Could not create did."}
-    end
-  end
+  def create(_method, _jwk), do: {:error, "Could not create did."}
 
   @spec controller(did :: String.t() | nil) :: controller :: String.t() | nil
   def controller(nil), do: nil
@@ -134,16 +107,12 @@ defmodule Boruta.Did do
     end
   end
 
-  defp http_post(url, body, headers) do
-    with %Client{trusted_authorities: trusted_authorities, trusted_hosts: trusted_hosts} <-
-           ClientsAdapter.public!() do
-      HttpClient.post(url, body, headers, trusted_authorities, trusted_hosts)
-    else
-      _client -> {:error, "No public client configured."}
-    end
-  end
-
   defp encode_path_segment(value), do: value |> to_string() |> URI.encode(&URI.char_unreserved?/1)
+
+  defp jwk_to_map(jwk) do
+    {_fields, jwk} = JOSE.JWK.to_map(jwk)
+    jwk
+  end
 
   defp key_did_document(did, fingerprint, jwk) do
     verification_method_id = did <> "#" <> fingerprint
