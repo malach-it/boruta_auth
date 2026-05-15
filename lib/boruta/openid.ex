@@ -198,8 +198,7 @@ defmodule Boruta.Openid do
          %Token{} = code <- CodesAdapter.get_by(id: direct_post_params[:code_id]) do
       with {:ok, %Token{value: value}} <-
              CodesAdapter.update_sub(code, kid, claims["metadata_policy"], %{
-               id_token: direct_post_params[:id_token],
-               vp_token: direct_post_params[:vp_token]
+               id_token: direct_post_params[:id_token]
              }),
            {:ok, code} <-
              Authorization.Code.authorize(%{
