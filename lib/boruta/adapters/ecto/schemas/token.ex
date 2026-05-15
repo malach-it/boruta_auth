@@ -18,6 +18,8 @@ defmodule Boruta.Ecto.Token do
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t(),
+          id_token: String.t() | nil,
+          vp_token: String.t() | nil,
           response_type: String.t() | nil,
           tx_code: String.t() | nil,
           authorization_details: list(),
@@ -65,6 +67,8 @@ defmodule Boruta.Ecto.Token do
   schema "oauth_tokens" do
     field(:type, :string)
     field(:value, :string)
+    field(:id_token, :string)
+    field(:vp_token, :string)
     field(:response_type, :string)
     field(:authorization_details, {:array, :map}, default: [])
     field(:presentation_definition, :map)
@@ -358,7 +362,14 @@ defmodule Boruta.Ecto.Token do
 
   @doc false
   def sub_changeset(code, sub, metadata_policy) do
-    change(code, %{sub: sub, type: "code", metadata_policy: metadata_policy})
+    sub_changeset(code, sub, metadata_policy, %{})
+  end
+
+  @doc false
+  def sub_changeset(code, sub, metadata_policy, attrs) do
+    code
+    |> cast(attrs, [:id_token, :vp_token])
+    |> change(%{sub: sub, type: "code", metadata_policy: metadata_policy})
   end
 
   @doc false
