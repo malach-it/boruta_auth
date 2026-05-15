@@ -74,6 +74,52 @@ defmodule Boruta.DidTest do
 
       assert verification_method_id == did <> "#" <> String.replace(did, "did:key:", "")
     end
+
+    test "resolves a local did:key JwkJcsPub DID document" do
+      jwk = %{
+        "crv" => "Ed25519",
+        "kty" => "OKP",
+        "x" => "sqA34wZlskczXTD6OwTIj4aFTd5ICalNa7a51hnPx1o"
+      }
+
+      assert {:ok, did, ^jwk} = Did.create("key", jwk)
+      "did:key:" <> key = did
+
+      assert {:ok,
+              %{
+                "id" => ^did,
+                "verificationMethod" => [
+                  %{
+                    "id" => verification_method_id,
+                    "type" => "JsonWebKey2020",
+                    "controller" => ^did,
+                    "publicKeyJwk" => ^jwk
+                  }
+                ],
+                "authentication" => [verification_method_id],
+                "assertionMethod" => [verification_method_id],
+                "capabilityInvocation" => [verification_method_id],
+                "capabilityDelegation" => [verification_method_id]
+              }} = Did.resolve("#{did}##{key}")
+    end
+
+    test "resolves the existing z2dmz P-256 JwkJcsPub DID shape" do
+      did =
+        "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9KbrSfZqXLVnTT5rRw7VCjbapSKSfZEUSekzuBrGZhfwxQTfsNVeUYsX5gH2eJ4LdVt6uctFyJsW76VygayYHiHpwnhGwAombiRJiimmRTMXUAa49VQ9NWT7PUK2P7VbBy4Bn"
+
+      assert {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}} = Did.resolve(did)
+
+      assert jwk == %{
+               "crv" => "P-256",
+               "kty" => "EC",
+               "x" => "dDrhCxO_15gxC4JKJyBbANQR_wL6-s2jTlmSvkqrDus",
+               "y" => "IdFmumwAY51zD9Y6jo1UsVvulADadb81s58gm7hy1QU"
+             }
+    end
+
+    test "rejects invalid local did:key values" do
+      assert {:error, _error} = Did.resolve("did:key:invalid")
+    end
   end
 
   describe "create/2" do
@@ -99,6 +145,49 @@ defmodule Boruta.DidTest do
 
       assert {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => ^public_jwk}]}} =
                Did.resolve(did)
+    end
+
+    test "creates a local did:key from an Ed25519 public JWK" do
+      jwk = %{
+        "crv" => "Ed25519",
+        "kty" => "OKP",
+        "x" => "sqA34wZlskczXTD6OwTIj4aFTd5ICalNa7a51hnPx1o"
+      }
+
+      assert {:ok, "did:key:z" <> key, ^jwk} = Did.create("key", jwk)
+      assert byte_size(key) > 0
+    end
+
+    test "creates a local did:key with a z2dmz prefix from a P-256 public JWK" do
+      jwk = %{
+        "crv" => "P-256",
+        "kty" => "EC",
+        "x" => "dDrhCxO_15gxC4JKJyBbANQR_wL6-s2jTlmSvkqrDus",
+        "y" => "IdFmumwAY51zD9Y6jo1UsVvulADadb81s58gm7hy1QU"
+      }
+
+      assert {:ok, "did:key:z2dmz" <> _key, ^jwk} = Did.create("key", jwk)
+    end
+
+    test "creates a local did:key and public JWK when no JWK is given" do
+      assert {:ok, "did:key:z" <> key, jwk} = Did.create("key")
+
+      assert byte_size(key) > 0
+      assert %{"crv" => "Ed25519", "kty" => "OKP", "x" => x} = jwk
+      assert is_binary(x)
+      refute Map.has_key?(jwk, "d")
+    end
+
+    test "only exposes the public part of a private JWK" do
+      jwk = %{
+        "crv" => "Ed25519",
+        "d" => "PMiV0jR23UbFa-sSafE4iMsI4RFGQ_OmLBCZLB9JqE0",
+        "kty" => "OKP",
+        "x" => "sqA34wZlskczXTD6OwTIj4aFTd5ICalNa7a51hnPx1o"
+      }
+
+      assert {:ok, _did, public_jwk} = Did.create("key", jwk)
+      refute Map.has_key?(public_jwk, "d")
     end
   end
 end
