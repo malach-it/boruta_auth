@@ -167,13 +167,12 @@ defmodule Boruta.Openid do
   end
 
   @type direct_post_params :: %{
-          response: String.t() | nil,
-          code_id: String.t(),
-          code_verifier: String.t() | nil,
-          id_token: nil | String.t(),
-          vp_token: nil | String.t(),
-          presentation_submission: nil | String.t(),
-          metadata_policy: map()
+          :code_id => String.t(),
+          optional(:code_verifier) => String.t() | nil,
+          optional(:presentation_submission) => String.t() | nil,
+          optional(:id_token) => String.t() | nil,
+          optional(:vp_token) => String.t() | nil,
+          optional(:response) => String.t() | nil
         }
   @spec direct_post(
           conn :: Plug.Conn.t(),
