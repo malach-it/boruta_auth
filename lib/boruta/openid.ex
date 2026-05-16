@@ -445,14 +445,6 @@ defmodule Boruta.Openid do
           verify_token_against_chain(code_chain, vp_token, alg)
       end
     else
-      false ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_client,
-           error_description: "Authorization client_id do not match vp_token signature."
-         }}
-
       {:error, _error} ->
         {:error,
          %Error{

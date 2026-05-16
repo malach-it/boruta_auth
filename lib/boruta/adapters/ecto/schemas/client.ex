@@ -543,9 +543,12 @@ defmodule Boruta.Ecto.Client do
     Regex.match?(@resource_indicator_uri_characters, uri)
   end
 
-  defp valid_resource_authority?(%URI{authority: nil}), do: true
-  defp valid_resource_authority?(%URI{host: host}) when is_binary(host) and host != "", do: true
-  defp valid_resource_authority?(_uri), do: false
+  defp valid_resource_authority?(%URI{} = uri) do
+    is_nil(Map.get(uri, :authority)) or valid_resource_host?(uri)
+  end
+
+  defp valid_resource_host?(%URI{host: host}) when is_binary(host) and host != "", do: true
+  defp valid_resource_host?(_uri), do: false
 
   defp validate_id_token_signature_alg(changeset) do
     signature_algorithms = Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
@@ -589,9 +592,7 @@ defmodule Boruta.Ecto.Client do
         %{"type" => "rsa", "modulus_size" => modulus_size, "exponent_size" => exponent_size} ->
           case parse_rsa_modulus_size(modulus_size) do
             {:ok, modulus_size} when modulus_size >= @minimum_rsa_modulus_size ->
-              JOSE.JWK.generate_key(
-                {:rsa, modulus_size, String.to_integer(exponent_size)}
-              )
+              JOSE.JWK.generate_key({:rsa, modulus_size, String.to_integer(exponent_size)})
 
             _ ->
               nil

@@ -188,9 +188,12 @@ defmodule Boruta.Oauth.Authorization.Resource do
 
   defp valid_characters?(resource), do: Regex.match?(@uri_characters, resource)
 
-  defp valid_authority?(%URI{authority: nil}), do: true
-  defp valid_authority?(%URI{host: host}) when is_binary(host) and host != "", do: true
-  defp valid_authority?(_uri), do: false
+  defp valid_authority?(%URI{} = uri) do
+    is_nil(Map.get(uri, :authority)) or valid_host?(uri)
+  end
+
+  defp valid_host?(%URI{host: host}) when is_binary(host) and host != "", do: true
+  defp valid_host?(_uri), do: false
 
   defp invalid_target(error_description) do
     {:error,
@@ -1143,6 +1146,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.PresentationRequest
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
   alias Boruta.Openid.VerifiableCredentials
@@ -1159,7 +1163,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           code_challenge_method: code_challenge_method,
           nonce: nonce,
           redirect_uri: redirect_uri,
-          resource_owner: resource_owner,
+          resource_owner: %ResourceOwner{} = resource_owner,
           response_type: response_type,
           scope: requested_scope,
           state: state,
@@ -1254,7 +1258,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
             client_encryption_key: client_encryption_key,
             client_encryption_alg: client_encryption_alg
           }} <-
-           preauthorize(request) do
+           Authorization.preauthorize(request) do
       with {:ok, code} <-
              PreauthorizedCodesAdapter.create(%{
                sub: sub,
@@ -1305,7 +1309,9 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
   defp authorize_optional_code(nil), do: {:ok, nil}
   defp authorize_optional_code(code), do: Authorization.Code.authorize(%{value: code})
 
-  defp authorize_presentation_agent_token(nil, resource_owner), do: {:ok, resource_owner}
+  defp authorize_presentation_agent_token(nil, resource_owner) do
+    Authorization.ResourceOwner.authorize(resource_owner: resource_owner)
+  end
 
   defp authorize_presentation_agent_token(agent_token, resource_owner) do
     Authorization.AgentToken.authorize(

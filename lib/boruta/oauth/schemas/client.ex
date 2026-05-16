@@ -335,7 +335,7 @@ defmodule Boruta.Oauth.Client do
     end
 
     @spec decrypt(encrypted :: String.t(), client :: Client.t()) ::
-            {:ok, String.t()} | {:error, reason :: String.t()}
+            {:ok, map()} | {:error, reason :: String.t()}
     def decrypt(encrypted, client) do
       private_key = JOSE.JWK.from_pem(client.private_key)
 
