@@ -161,6 +161,29 @@ defmodule Boruta.Ecto.Token do
   end
 
   @doc false
+  def credential_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :client_id,
+      :redirect_uri,
+      :sub,
+      :state,
+      :nonce,
+      :scope,
+      :requested_scope,
+      :resource,
+      :previous_code,
+      :authorization_details,
+      :agent_token,
+      :expires_at
+    ])
+    |> validate_required([:client_id, :previous_code])
+    |> foreign_key_constraint(:client_id)
+    |> put_change(:type, "credential")
+    |> put_value(:credential)
+  end
+
+  @doc false
   def data_changeset(token, attrs) do
     token
     |> cast(attrs, [

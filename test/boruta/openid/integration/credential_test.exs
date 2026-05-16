@@ -342,6 +342,14 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       # TODO validate credential body
       assert credential
+
+      assert %Token{
+               type: "credential",
+               previous_code: ^access_token,
+               value: credential_token
+             } = Repo.get_by(Token, type: "credential", previous_code: access_token)
+
+      assert credential_token
     end
 
     test "returns an error with invalid code chain", %{public_client: client} do
@@ -901,6 +909,14 @@ defmodule Boruta.OpenidTest.CredentialTest do
               }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
 
       assert acceptance_token
+
+      assert %Token{
+               type: "credential",
+               previous_code: ^access_token,
+               value: credential_token
+             } = Repo.get_by(Token, type: "credential", previous_code: access_token)
+
+      assert credential_token
     end
 
     test "returns an internal error when a defered credential cannot be persisted" do
