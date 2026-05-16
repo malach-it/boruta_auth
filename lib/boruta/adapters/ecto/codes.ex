@@ -161,8 +161,8 @@ defmodule Boruta.Ecto.Codes do
   def update_client_encryption(%Oauth.Token{value: value}, params) do
     with %Token{} = token <- repo().get_by(Token, value: value),
          {:ok, token} <- Token.client_encryption_changeset(token, params) |> repo().update(),
-         {:ok, token} <- TokenStore.put(to_oauth_schema(token)) do
-      {:ok, token}
+         token <- to_oauth_schema(token) do
+      TokenStore.put(token)
     end
   end
 

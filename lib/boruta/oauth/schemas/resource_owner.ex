@@ -44,5 +44,5 @@ defmodule Boruta.Oauth.ResourceOwner do
           }
         }
 
-  def agent_sub(), do: "from_agent_token"
+  def agent_sub, do: "from_agent_token"
 end

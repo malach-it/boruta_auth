@@ -130,6 +130,7 @@
         {Credo.Check.Warning.RaiseInsideRescue, []},
         # TODO enable spec with struct check
         {Credo.Check.Warning.SpecWithStruct, false},
+        {Credo.Check.Warning.StructFieldAmount, [max_fields: 40]},
         {Credo.Check.Warning.UnusedEnumOperation, []},
         {Credo.Check.Warning.UnusedFileOperation, []},
         {Credo.Check.Warning.UnusedKeywordOperation, []},

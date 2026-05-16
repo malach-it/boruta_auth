@@ -6,6 +6,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
+  alias Boruta.Oauth.Client.Crypto
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
@@ -425,7 +426,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       conn = %Plug.Conn{}
 
       response =
-        Oauth.Client.Crypto.encrypt(
+        Crypto.encrypt(
           %{id_token: id_token},
           JOSE.JWK.from_pem(code.client.public_key) |> JOSE.JWK.to_map(),
           "ECDH-ES"
@@ -848,7 +849,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         })
 
       response =
-        Oauth.Client.Crypto.encrypt(
+        Crypto.encrypt(
           %{
             vp_token: vp_token,
             presentation_submission: presentation_submission
