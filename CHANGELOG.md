@@ -7,18 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- oauth resource indicators support
+- `form_post` response mode support
+- path wildcard (`**`) for `redirect_uris`
+- siopv2 and openid4vp response encryption
+- encrypted oauth token and credential requests
+- presentation code chains for issuance and presentation hybrid flows
+- metadata policies for credential issuance
+- `superset_of` constraint in metadata policies
+- `code` and `client_id` in credential offer responses
+- deeplink redirects in credential offer responses
+- requested scope in oauth tokens schema
+- code chain scopes in preauthorized responses
+- agent token in presentation codes
+- agent token subject in resource owners
+- `alg` in exposed jwks keys
+- oauth clients rsa modulus size validation
+- automated security audits
+
 ### Changed
 
 - `AuthorizeResponse` result expose an `Oauth.Token` struct instead of value
+- oauth tokens value database field is now a text
+- token generator takes token type as parameter
+- credential presentations validation prefers jwk to kid
+- preauthorized code and verifiable presentation scopes filtering
+- requested scopes do not include authorized scopes anymore
+- reduce resource owner lookups in code grants
+- request all verifiable credential configured scopes
 
-### Added
+### Fixed
 
-- OAuth Resource Indicators support for authorization, token, refresh, and introspection flows, with RFC 8707 validation and optional client-authorized resources
-- path wildcard (`**`) for redirect_uris
-- `form_post` response mode support per [OAuth 2.0 Form Post Response Mode](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
-- `response_mode` parameter support for code and token (implicit) flows
-- `FormPostResponse` struct with params helper for rendering HTML forms
-- `form_post_success/2` and `form_post_error/2` callbacks in `AuthorizeApplication` behaviour
+- only include nonce claim in id_token when provided in auth request
+- verifiable presentation response type parsing
+- direct post handler types
+- direct post vp token presentation
+- vp token signature validation
+- preauthorized code persistence
+- preauthorized code authorization previous code validation
+- scope authorization against nil values
+- metadata policies validation
+- code chain metadata policy check
+- authorize response redirect to url
+- update cache on codes updates
+- invalid response mode hybrid grant tests
+- jwks tests
+- implicit and preauthorize tests
+- invalid client signature algorithm test
+- linter and dialyzer warnings
+
+### Security
+
+- avoid code chains replay attacks
+- code chains validation in direct post requests
+- revoke code chain at credential issuance
+- validate presentation descriptor map count
+- validate authorization requests response types from whitelist
+- require resource if specified by client
 
 ## [3.0.0-beta.4] - 2025-07-05
 
