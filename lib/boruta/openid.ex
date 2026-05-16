@@ -359,8 +359,8 @@ defmodule Boruta.Openid do
 
   defp metadata_policy_kid(params) do
     with {:ok, jwt} <- metadata_policy_jwt(params),
-         {:ok, %{"kid" => kid}} <- Joken.peek_header(jwt) do
-      {:ok, kid}
+         {:ok, headers} <- Joken.peek_header(jwt) do
+      {:ok, client_id_from_headers(headers)}
     end
   end
 
@@ -381,8 +381,8 @@ defmodule Boruta.Openid do
   defp check_id_token_client(%{vp_token: vp_token}) when not is_nil(vp_token) do
     case VerifiablePresentations.validate_signature(vp_token) do
       {:ok, _jwk, claims} ->
-        {:ok, %{"kid" => kid}} = Joken.peek_header(vp_token)
-        {:ok, kid, claims}
+        {:ok, headers} = Joken.peek_header(vp_token)
+        {:ok, client_id_from_headers(headers), claims}
 
       {:error, error} ->
         {:error,
@@ -397,8 +397,8 @@ defmodule Boruta.Openid do
   defp check_id_token_client(%{id_token: id_token}) when not is_nil(id_token) do
     case VerifiableCredentials.validate_signature(id_token) do
       {:ok, _jwk, claims} ->
-        {:ok, %{"kid" => kid}} = Joken.peek_header(id_token)
-        {:ok, kid, claims}
+        {:ok, headers} = Joken.peek_header(id_token)
+        {:ok, client_id_from_headers(headers), claims}
 
       {:error, error} ->
         {:error,
@@ -418,6 +418,12 @@ defmodule Boruta.Openid do
          error: :unauthorized,
          error_description: "id_token or vp_token param missing."
        }}
+
+  defp client_id_from_headers(%{"jwk" => jwk}) do
+    "did:jwk:" <> (Jason.encode!(jwk) |> Base.url_encode64(padding: false))
+  end
+
+  defp client_id_from_headers(%{"kid" => kid}), do: kid
 
   defp maybe_verify_public_client_id(_direct_post_params, _code_chain, %Client{
          check_public_client_id: false

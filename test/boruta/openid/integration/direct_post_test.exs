@@ -20,8 +20,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         |> Ecto.Changeset.change(%{check_public_client_id: false})
         |> Repo.update()
 
-      wallet_did =
-        "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
+      wallet_did = did_jwk_fixture()
 
       pkce_client = insert(:client, pkce: true, redirect_uris: ["https://redirect.uri"])
 
@@ -98,7 +97,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       invalid_policy_code_chain = [
         insert(
           :token,
-          [{:public_client_id, wallet_did}, {:previous_code, "invalid_policy_code_1"}] ++ code_params
+          [{:public_client_id, wallet_did}, {:previous_code, "invalid_policy_code_1"}] ++
+            code_params
         ),
         insert(
           :token,
@@ -164,15 +164,14 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" => wallet_did,
+          "jwk" => public_jwk_fixture(),
           "typ" => "openid4vci-proof+jwt"
         })
 
       {:ok, id_token, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
           %{
-            "iss" =>
-              "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ"
+            "iss" => wallet_did
           },
           signer
         )
@@ -192,8 +191,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       {:ok, vp_token, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
           %{
-            "iss" =>
-              "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+            "iss" => wallet_did,
             "vp" => %{
               "verifiableCredential" => [credential]
             }
@@ -1151,6 +1149,17 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
   def public_key_fixture do
     "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVOf8cU\n8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa9QyH\nsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8WdSq3d\nGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/U8xD\nZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2tpyQ0\nAEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQAB\n-----END RSA PUBLIC KEY-----\n\n"
+  end
+
+  def public_jwk_fixture do
+    public_key_fixture()
+    |> JOSE.JWK.from_pem()
+    |> JOSE.JWK.to_map()
+    |> elem(1)
+  end
+
+  def did_jwk_fixture do
+    "did:jwk:" <> (Jason.encode!(public_jwk_fixture()) |> Base.url_encode64(padding: false))
   end
 
   def private_key_fixture do

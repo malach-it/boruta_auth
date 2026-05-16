@@ -12,8 +12,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     setup do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" =>
-            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "jwk" => public_jwk_fixture(),
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -108,7 +107,10 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       credential_params: credential_params
     } do
       signer =
-        Joken.Signer.create("HS256", "secret", %{"kid" => "kid", "typ" => "openid4vci-proof+jwt"})
+        Joken.Signer.create("HS256", "secret", %{
+          "jwk" => public_jwk_fixture(),
+          "typ" => "openid4vci-proof+jwt"
+        })
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
 
@@ -132,7 +134,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
           "typ" => "unknown",
-          "kid" => "kid"
+          "jwk" => public_jwk_fixture()
         })
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
@@ -174,6 +176,29 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
              ) == {:error, "No proof key material found in JWT headers."}
     end
 
+    test "prefers jwk header over kid when validating proof signature" do
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk_fixture(),
+          "kid" => "did:example:unknown",
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, token, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
+
+      assert {:ok, jwk, %{"aud" => _aud, "iat" => _iat}} =
+               VerifiableCredentials.validate_signature(token)
+
+      assert jwk == public_jwk_fixture()
+    end
+
     test "verifies proof - must have required claims", %{
       resource_owner: resource_owner,
       credential_params: credential_params
@@ -181,7 +206,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
           "typ" => "openid4vci-proof+jwt",
-          "kid" => "kid"
+          "jwk" => public_jwk_fixture()
         })
 
       {:ok, token, _claims} = VerifiableCredentials.Token.generate_and_sign(%{}, signer)
@@ -250,11 +275,12 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       resource_owner = %ResourceOwner{
         resource_owner
         | credential_configuration: %{
-            "VerifiableCredential" => Map.put(
-              resource_owner.credential_configuration["VerifiableCredential"],
-              :scopes,
-              ["credential:read"]
-            )
+            "VerifiableCredential" =>
+              Map.put(
+                resource_owner.credential_configuration["VerifiableCredential"],
+                :scopes,
+                ["credential:read"]
+              )
           }
       }
 
@@ -308,11 +334,12 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       resource_owner = %ResourceOwner{
         resource_owner
         | credential_configuration: %{
-            "VerifiableCredential" => Map.put(
-              resource_owner.credential_configuration["VerifiableCredential"],
-              :scopes,
-              ["credential:read"]
-            )
+            "VerifiableCredential" =>
+              Map.put(
+                resource_owner.credential_configuration["VerifiableCredential"],
+                :scopes,
+                ["credential:read"]
+              )
           }
       }
 
@@ -346,11 +373,12 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       resource_owner = %ResourceOwner{
         resource_owner
         | credential_configuration: %{
-            "VerifiableCredential" => Map.put(
-              resource_owner.credential_configuration["VerifiableCredential"],
-              :scopes,
-              ["other:scope"]
-            )
+            "VerifiableCredential" =>
+              Map.put(
+                resource_owner.credential_configuration["VerifiableCredential"],
+                :scopes,
+                ["other:scope"]
+              )
           }
       }
 
@@ -692,7 +720,8 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                [_salt3, "nested.firstname", "firstname"],
                [_salt4, "nested.twice.lastname", "lastname"]
              ] =
-               Enum.map(claims, &Base.url_decode64!(&1, padding: false)) |> Enum.map(&Jason.decode!/1)
+               Enum.map(claims, &Base.url_decode64!(&1, padding: false))
+               |> Enum.map(&Jason.decode!/1)
     end
 
     test "issues vc+sd-jwt credential - valid", %{
@@ -734,6 +763,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       }
 
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -777,7 +807,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -821,7 +853,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -865,7 +899,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
           }
         }
       }
+
       token = insert(:token) |> to_oauth_schema()
+
       assert {:ok,
               %{
                 credential: credential,
@@ -916,21 +952,27 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       secret = "secret"
       expiration = 10
       now = :os.system_time(:seconds)
-      revoked = VerifiableCredentials.Hotp.generate_hotp(
-        secret,
-        div(now, expiration) +
-          VerifiableCredentials.Status.shift(:revoked)
-      )
-      suspended = VerifiableCredentials.Hotp.generate_hotp(
-        revoked,
-        div(now, expiration) +
-          VerifiableCredentials.Status.shift(:suspended)
-      )
-      valid = VerifiableCredentials.Hotp.generate_hotp(
-        suspended,
-        div(now, expiration) +
-          VerifiableCredentials.Status.shift(:valid)
-      )
+
+      revoked =
+        VerifiableCredentials.Hotp.generate_hotp(
+          secret,
+          div(now, expiration) +
+            VerifiableCredentials.Status.shift(:revoked)
+        )
+
+      suspended =
+        VerifiableCredentials.Hotp.generate_hotp(
+          revoked,
+          div(now, expiration) +
+            VerifiableCredentials.Status.shift(:suspended)
+        )
+
+      valid =
+        VerifiableCredentials.Hotp.generate_hotp(
+          suspended,
+          div(now, expiration) +
+            VerifiableCredentials.Status.shift(:valid)
+        )
 
       {:ok, expiration: expiration, secret: secret, status_list: valid, now: now}
     end
@@ -1025,6 +1067,13 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
 
   def public_key_fixture do
     "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVOf8cU\n8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa9QyH\nsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8WdSq3d\nGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/U8xD\nZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2tpyQ0\nAEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQAB\n-----END RSA PUBLIC KEY-----\n\n"
+  end
+
+  def public_jwk_fixture do
+    public_key_fixture()
+    |> JOSE.JWK.from_pem()
+    |> JOSE.JWK.to_map()
+    |> elem(1)
   end
 
   def private_key_fixture do
