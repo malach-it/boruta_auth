@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `AuthorizeResponse` result expose an `Oauth.Token` struct instead of value
+
 ### Added
 
 - OAuth Resource Indicators support for authorization, token, refresh, and introspection flows, with RFC 8707 validation and optional client-authorized resources

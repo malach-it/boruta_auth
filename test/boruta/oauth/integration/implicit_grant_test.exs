@@ -50,13 +50,17 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
-               {:authorize_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description:
-                    "Query params validation failed. Required properties client_id, redirect_uri are missing at #.",
-                  status: :bad_request
-                }}
+               {
+                 :authorize_error,
+                 %Boruta.Oauth.Error{
+                   error: :invalid_client,
+                   error_description: "Invalid client.",
+                   format: nil,
+                   redirect_uri: nil,
+                   state: nil,
+                   status: :unauthorized
+                 }
+               }
     end
 
     test "returns an error if client_id is invalid" do
@@ -210,7 +214,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                access_token: value,
+                access_token: access_token,
                 expires_in: expires_in,
                 redirect_uri: ^redirect_uri
               }} =
@@ -227,7 +231,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
 
       assert type == :token
-      assert value
+      assert access_token
       assert expires_in
     end
 
@@ -240,7 +244,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                access_token: value,
+                access_token: access_token,
                 expires_in: expires_in,
                 redirect_uri: ^redirect_uri
               }} =
@@ -257,7 +261,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
 
       assert type == :token
-      assert value
+      assert access_token
       assert expires_in
     end
 
@@ -270,7 +274,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                access_token: value,
+                access_token: access_token,
                 expires_in: expires_in,
                 redirect_uri: ^redirect_uri
               }} =
@@ -287,7 +291,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
 
       assert type == :token
-      assert value
+      assert access_token
       assert expires_in
     end
 
@@ -303,7 +307,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
       assert {:authorize_success,
               %AuthorizeResponse{
                 type: type,
-                access_token: value,
+                access_token: access_token,
                 expires_in: expires_in,
                 redirect_uri: ^redirect_uri
               }} =
@@ -320,7 +324,7 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
                )
 
       assert type == :token
-      assert value
+      assert access_token
       assert expires_in
     end
 
@@ -576,12 +580,12 @@ defmodule Boruta.OauthTest.ImplicitGrantTest do
         {:authorize_success,
          %AuthorizeResponse{
            type: type,
-           access_token: value,
+           access_token: access_token,
            expires_in: expires_in,
            token_type: "bearer"
          }} ->
           assert type == :token
-          assert value
+          assert access_token
           assert expires_in
 
         _ ->

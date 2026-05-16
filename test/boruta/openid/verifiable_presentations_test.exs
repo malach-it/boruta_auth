@@ -6,8 +6,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
     setup do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" =>
-            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "jwk" => public_jwk_fixture(),
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -22,8 +21,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       {:ok, expired_vp_token, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
           %{
-            "iss" =>
-              "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+            "iss" => did_jwk_fixture(),
             "vp" => %{
               "verifiableCredential" => [expired_credential]
             }
@@ -47,8 +45,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       {:ok, vp_token, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
           %{
-            "iss" =>
-              "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+            "iss" => did_jwk_fixture(),
             "vp" => %{
               "verifiableCredential" => [credential]
             }
@@ -191,22 +188,100 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                presentation_definition
              ) == :ok
     end
+
+    test "returns an error when input descriptor and descriptor map counts do not match", %{
+      vp_token: vp_token
+    } do
+      presentation_submission = %{
+        "id" => "test",
+        "definition_id" => "test",
+        "descriptor_map" => [
+          %{
+            "id" => "test",
+            "format" => "jwt_vp",
+            "path" => "$",
+            "path_nested" => %{
+              "id" => "test",
+              "format" => "jwt_vc",
+              "path" => "$.vp.verifiableCredential[0]"
+            }
+          }
+        ]
+      }
+
+      presentation_definition = %{
+        "id" => "test",
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+        "input_descriptors" => [
+          %{
+            "id" => "test",
+            "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+            "constraints" => %{
+              "fields" => []
+            }
+          },
+          %{
+            "id" => "test-2",
+            "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+            "constraints" => %{
+              "fields" => []
+            }
+          }
+        ]
+      }
+
+      assert VerifiablePresentations.validate_presentation(
+               vp_token,
+               presentation_submission,
+               presentation_definition
+             ) == {:error, "Input descriptor count does not match descriptor map count."}
+    end
   end
 
   describe "validate_credential/3" do
     setup do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "kid" =>
-            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
+          "jwk" => public_jwk_fixture(),
           "typ" => "openid4vci-proof+jwt"
         })
+
       {:ok, signer: signer}
     end
 
     test "returns an error with unknown format" do
       assert VerifiablePresentations.validate_credential("", %{}, "unknown") ==
-        {:error, "format \"unknown\" is not supported"}
+               {:error, "format \"unknown\" is not supported"}
+    end
+
+    test "prefers jwk header over kid when validating signature" do
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk_fixture(),
+          "kid" => "did:example:unknown",
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, credential, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "exp" => :os.system_time(:second) + 10,
+            "vc" => %{
+              "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
+              "type" => ["VerifiableAttestation"]
+            }
+          },
+          signer
+        )
+
+      descriptor = %{
+        "id" => "test",
+        "constraints" => %{
+          "fields" => []
+        }
+      }
+
+      assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") == :ok
     end
 
     test "returns an error when descriptor is invalid", %{signer: signer} do
@@ -226,7 +301,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       descriptor = %{}
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        {:error, "descriptor is invalid."}
+               {:error, "descriptor is invalid."}
     end
 
     test "returns an error when credential expired", %{signer: signer} do
@@ -252,7 +327,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        {:error, "is expired."}
+               {:error, "is expired."}
     end
 
     test "returns an error when not yet valid", %{signer: signer} do
@@ -293,7 +368,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        {:error, "is not yet valid."}
+               {:error, "is not yet valid."}
     end
 
     @tag :skip
@@ -307,7 +382,8 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
               "type" => ["VerifiableAttestation"],
               "test" => "pattern",
               "credentialStatus" => %{
-                "statusListCredential" => "https://api-conformance.ebsi.eu/trusted-issuers-registry/v5/issuers/did:ebsi:zjHZjJ4Sy7r92BxXzFGs7qD/proxies/0x0090e5904a806f9228f88a502e4788d512288c9ba22106f16b5ae7b279ae3598/credentials/status/1",
+                "statusListCredential" =>
+                  "https://api-conformance.ebsi.eu/trusted-issuers-registry/v5/issuers/did:ebsi:zjHZjJ4Sy7r92BxXzFGs7qD/proxies/0x0090e5904a806f9228f88a502e4788d512288c9ba22106f16b5ae7b279ae3598/credentials/status/1",
                 "statusListIndex" => "7"
               }
             }
@@ -339,7 +415,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        {:error, "is revoked."}
+               {:error, "is revoked."}
     end
 
     test "validates contains constraint", %{signer: signer} do
@@ -373,7 +449,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        {:error, "descriptor test does not contains \"not present\"."}
+               {:error, "descriptor test does not contains \"not present\"."}
     end
 
     test "validates pattern", %{signer: signer} do
@@ -406,7 +482,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        {:error, "descriptor test does not contain pattern \"non-existing\"."}
+               {:error, "descriptor test does not contain pattern \"non-existing\"."}
     end
 
     test "is valid", %{signer: signer} do
@@ -447,12 +523,23 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       }
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
-        :ok
+               :ok
     end
   end
 
   def public_key_fixture do
     "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVOf8cU\n8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa9QyH\nsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8WdSq3d\nGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/U8xD\nZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2tpyQ0\nAEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQAB\n-----END RSA PUBLIC KEY-----\n\n"
+  end
+
+  def public_jwk_fixture do
+    public_key_fixture()
+    |> JOSE.JWK.from_pem()
+    |> JOSE.JWK.to_map()
+    |> elem(1)
+  end
+
+  def did_jwk_fixture do
+    "did:jwk:" <> (Jason.encode!(public_jwk_fixture()) |> Base.url_encode64(padding: false))
   end
 
   def private_key_fixture do

@@ -8,11 +8,11 @@ end
 defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
   import Boruta.Config, only: [repo: 0, resource_owners: 0, clients: 0]
 
-  alias Boruta.Oauth
-  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Ecto
   alias Boruta.Ecto.AgentTokens
   alias Boruta.Ecto.OauthMapper
+  alias Boruta.Oauth
+  alias Boruta.Oauth.ResourceOwner
 
   def to_oauth_schema(%Ecto.Token{} = token) do
     client =
@@ -33,15 +33,16 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
           _ -> nil
         end
 
-    resource_owner = with "" <> agent_token <- token.agent_token,
-         %Oauth.Token{} = token <- AgentTokens.get_by(value: agent_token),
-         {:ok, claims} <- AgentTokens.claims_from_agent_token(token) do
-      resource_owner = resource_owner || %ResourceOwner{sub: nil}
-      %{resource_owner | extra_claims: Map.merge(resource_owner.extra_claims, claims)}
-    else
-      _ ->
-        resource_owner
-    end
+    resource_owner =
+      with "" <> agent_token <- token.agent_token,
+           %Oauth.Token{} = token <- AgentTokens.get_by(value: agent_token),
+           {:ok, claims} <- AgentTokens.claims_from_agent_token(token) do
+        resource_owner = resource_owner || %ResourceOwner{sub: ResourceOwner.agent_sub()}
+        %{resource_owner | extra_claims: Map.merge(resource_owner.extra_claims, claims)}
+      else
+        _ ->
+          resource_owner
+      end
 
     struct(
       Oauth.Token,
@@ -59,9 +60,9 @@ end
 defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Client do
   import Boruta.Config, only: [repo: 0]
 
-  alias Boruta.Oauth
   alias Boruta.Ecto
   alias Boruta.Ecto.OauthMapper
+  alias Boruta.Oauth
 
   def to_oauth_schema(%Ecto.Client{} = client) do
     client = repo().preload(client, :authorized_scopes)

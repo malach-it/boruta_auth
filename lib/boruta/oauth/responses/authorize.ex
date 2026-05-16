@@ -17,8 +17,8 @@ defmodule Boruta.Oauth.AuthorizeResponse do
             type: nil
 
   @type t :: %__MODULE__{
-          access_token: String.t() | nil,
-          code: String.t() | nil,
+          access_token: Boruta.Oauth.Token.t() | nil,
+          code: Boruta.Oauth.Token.t() | nil,
           code_challenge: String.t() | nil,
           code_challenge_method: String.t() | nil,
           expires_in: integer(),
@@ -56,12 +56,11 @@ defmodule Boruta.Oauth.AuthorizeResponse do
         %{
           code: %Token{
             expires_at: expires_at,
-            value: value,
             redirect_uri: redirect_uri,
             state: state,
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method
-          }
+          } = code
         } = params,
         request
       ) do
@@ -79,9 +78,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     %AuthorizeResponse{
       type: type,
       redirect_uri: redirect_uri,
-      code: value,
+      code: code,
       id_token: params[:id_token] && params[:id_token].value,
-      access_token: params[:token] && params[:token].value,
+      access_token: params[:token],
       expires_in: expires_in,
       state: state,
       code_challenge: code_challenge,
@@ -95,10 +94,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
         %{
           token: %Token{
             expires_at: expires_at,
-            value: value,
             redirect_uri: redirect_uri,
             state: state
-          }
+          } = token
         } = params,
         request
       ) do
@@ -108,7 +106,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
     %AuthorizeResponse{
       type: :token,
       redirect_uri: redirect_uri,
-      access_token: value,
+      access_token: token,
       id_token: params[:id_token] && params[:id_token].value,
       expires_in: expires_in,
       state: state,
@@ -200,9 +198,9 @@ defmodule Boruta.Oauth.AuthorizeResponse do
          token_type: token_type
        }) do
     %{
-      code: code,
+      code: code && code.value,
       id_token: id_token,
-      access_token: access_token,
+      access_token: access_token && access_token.value,
       expires_in: expires_in,
       state: state,
       token_type: token_type

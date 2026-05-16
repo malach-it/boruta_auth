@@ -10,7 +10,7 @@ defmodule Boruta.Oauth.Authorization.Scope do
   alias Boruta.ScopesAdapter
 
   @doc """
-  Authorize the given scope according to the given client.
+  Authorize the given scope according to the given constraints.
 
   ## Examples
       iex> authorize(%{scope: "scope", client: %Client{...}})
@@ -55,6 +55,41 @@ defmodule Boruta.Oauth.Authorization.Scope do
            status: :bad_request
          }}
     end
+  end
+
+  @doc """
+  Filter the given scope according to the given constraints.
+
+  ## Examples
+      iex> filter(%{scope: "scope", client: %Client{...}})
+      {:ok, "scope"}
+  """
+  @spec filter(
+          params :: [
+            scope: String.t(),
+            against: %{
+              optional(:client) => %Client{},
+              optional(:resource_owner) => struct(),
+              optional(:token) => %Token{}
+            }
+          ]
+        ) ::
+          {:ok, scope :: String.t()}
+  def filter(scope: nil, against: _against), do: {:ok, ""}
+
+  def filter(scope: "" <> scope, against: against) do
+    scopes = Scope.split(scope)
+
+    public_scopes =
+      ScopesAdapter.public()
+      |> List.insert_at(0, Scope.openid())
+      |> Enum.map(fn scope -> scope.name end)
+
+    against = Map.put(against, :public, public_scopes)
+
+    authorized_scopes = authorized_scopes(scopes, against)
+
+    {:ok, Enum.join(scopes -- (scopes -- authorized_scopes), " ")}
   end
 
   defp authorized_scopes(scopes, against) do

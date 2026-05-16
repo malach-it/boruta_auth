@@ -114,7 +114,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
       )
     end
 
-    defp derive_status(status, ttl, secret, [current|status_list]) do
+    defp derive_status(status, ttl, secret, [current | status_list]) do
       Hotp.generate_hotp(
         derive_status(current, ttl, secret, status_list),
         div(:os.system_time(:seconds), ttl) + shift(status)
@@ -210,13 +210,15 @@ defmodule Boruta.Openid.VerifiableCredentials do
           resource_owner :: ResourceOwner.t(),
           credential_params :: map(),
           token :: Boruta.Oauth.Token.t(),
-          default_credential_configuration :: map()
+          default_credential_configuration :: map(),
+          code_chain :: list(Boruta.Oauth.Token.t())
         ) :: {:ok, credential :: Credential.t()} | {:error, reason :: String.t()}
   def issue_verifiable_credential(
         resource_owner,
         credential_params,
         token,
-        default_credential_configuration
+        default_credential_configuration,
+        code_chain \\ []
       ) do
     proof = credential_params["proof"]
 
@@ -226,20 +228,20 @@ defmodule Boruta.Openid.VerifiableCredentials do
         _ -> resource_owner.credential_configuration
       end
 
+    token_scopes = token_chain_scopes([token | code_chain])
+
     # TODO filter from resource owner authorization details
     with {credential_identifier, credential_configuration} <-
            Enum.find(credential_configuration, fn {identifier, configuration} ->
-             case configuration[:version] do
-               "11" ->
-                 (credential_params["types"] &&
-                    Enum.empty?(configuration[:types] -- credential_params["types"])) ||
-                   Enum.member?(Scope.split(token.scope), identifier)
-
-               "13" ->
-                 (identifier == credential_params["credential_identifier"]) ||
-                   Enum.member?(Scope.split(token.scope), identifier)
-             end
+             credential_configuration_matches?(
+               identifier,
+               configuration,
+               credential_params,
+               token_scopes
+             )
            end),
+         {:ok, credential_configuration} <-
+           configuration_scope_authorized?(credential_configuration, token_scopes),
          {:ok, proof} <- validate_proof_format(proof),
          :ok <- validate_headers(proof["jwt"]),
          :ok <- validate_claims(proof["jwt"]),
@@ -268,6 +270,51 @@ defmodule Boruta.Openid.VerifiableCredentials do
       nil -> {:error, "Credential not found."}
       error -> error
     end
+  end
+
+  defp credential_configuration_matches?(
+         identifier,
+         %{version: "11"} = configuration,
+         credential_params,
+         token_scopes
+       ) do
+    (credential_params["types"] &&
+       Enum.empty?(configuration[:types] -- credential_params["types"])) ||
+      Enum.member?(token_scopes, identifier)
+  end
+
+  defp credential_configuration_matches?(
+         identifier,
+         %{version: "13"},
+         credential_params,
+         token_scopes
+       ) do
+    identifier == credential_params["credential_identifier"] ||
+      Enum.member?(token_scopes, identifier)
+  end
+
+  defp credential_configuration_matches?(
+         _identifier,
+         _configuration,
+         _credential_params,
+         _token_scopes
+       ),
+       do: false
+
+  defp configuration_scope_authorized?(%{scopes: scopes} = configuration, token_scopes)
+       when is_list(scopes) do
+    case Enum.all?(scopes, &Enum.member?(token_scopes, &1)) do
+      true -> {:ok, configuration}
+      false -> {:error, "Credential scope is not authorized."}
+    end
+  end
+
+  defp configuration_scope_authorized?(configuration, _token_scopes), do: {:ok, configuration}
+
+  defp token_chain_scopes(token_chain) do
+    token_chain
+    |> Enum.flat_map(fn token -> Scope.split(token.scope) end)
+    |> Enum.uniq()
   end
 
   @spec validate_authorization_details(authorization_details :: String.t()) ::
@@ -427,15 +474,11 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
     sub =
       case Joken.peek_header(proof) do
-        {:ok, headers} ->
-          case(extract_key(headers)) do
-            {_type, key} -> key
-          end
+        {:ok, headers} -> proof_subject(headers)
       end
 
     now = :os.system_time(:seconds)
     credential_id = SecureRandom.uuid()
-    sub = sub |> String.split("#") |> List.first()
 
     payload = %{
       "sub" => sub,
@@ -495,10 +538,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
     sub =
       case Joken.peek_header(proof) do
-        {:ok, headers} ->
-          case extract_key(headers) do
-            {_type, key} -> key
-          end
+        {:ok, headers} -> proof_subject(headers)
       end
 
     credential_id = SecureRandom.uuid()
@@ -552,10 +592,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
 
     sub =
       case Joken.peek_header(proof) do
-        {:ok, headers} ->
-          case(extract_key(headers)) do
-            {_type, key} -> key
-          end
+        {:ok, headers} -> proof_subject(headers)
       end
 
     claims_with_salt = Enum.flat_map(claims, &format_sd_claim(&1, client))
@@ -622,7 +659,9 @@ defmodule Boruta.Openid.VerifiableCredentials do
   defp format_sd_claim({name, {:items, claims}}, client, path) when is_list(claims) do
     claims
     |> Enum.with_index()
-    |> Enum.flat_map(fn {claim, index} -> format_sd_claim(claim, client, path ++ [name, to_string(index)]) end)
+    |> Enum.flat_map(fn {claim, index} ->
+      format_sd_claim(claim, client, path ++ [name, to_string(index)])
+    end)
   end
 
   defp format_sd_claim({name, {:claims, claims}}, client, path) when is_list(claims) do
@@ -633,13 +672,14 @@ defmodule Boruta.Openid.VerifiableCredentials do
     name = Enum.join(path ++ [name], ".")
 
     # TODO factorize
-    iss = case client.did do
-      nil ->
-        Client.Crypto.kid_from_private_key(client.private_key)
+    iss =
+      case client.did do
+        nil ->
+          Client.Crypto.kid_from_private_key(client.private_key)
 
-      did ->
-        did <> "#" <> String.replace(did, "did:key:", "")
-    end
+        did ->
+          did <> "#" <> String.replace(did, "did:key:", "")
+      end
 
     [
       {name, claim, Status.generate_status_token(iss, ttl, String.to_atom(status))}
@@ -694,9 +734,19 @@ defmodule Boruta.Openid.VerifiableCredentials do
       @individual_claim_default_expiration}}
   end
 
-  defp extract_key(%{"kid" => did}), do: {:did, did}
   defp extract_key(%{"jwk" => jwk}), do: {:jwk, jwk}
+  defp extract_key(%{"kid" => did}), do: {:did, did}
   defp extract_key(_headers), do: {:error, "No proof key material found in JWT headers"}
+
+  defp proof_subject(headers) do
+    case extract_key(headers) do
+      {:did, did} ->
+        did |> String.split("#") |> List.first()
+
+      {:jwk, jwk} ->
+        "did:jwk:" <> (Jason.encode!(jwk) |> Base.url_encode64(padding: false))
+    end
+  end
 
   defp do_validate_headers(checks) do
     do_validate_headers(checks, [])

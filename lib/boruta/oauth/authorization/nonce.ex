@@ -63,8 +63,8 @@ defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.CodeRequest do
 end
 
 defimpl Boruta.Oauth.Authorization.Nonce, for: Boruta.Oauth.TokenRequest do
-  alias Boruta.Oauth.TokenRequest
   alias Boruta.Oauth.Error
+  alias Boruta.Oauth.TokenRequest
 
   def authorize(%Boruta.Oauth.TokenRequest{nonce: nonce} = request) do
     case {TokenRequest.require_nonce?(request), nonce} do

@@ -31,16 +31,25 @@ defmodule Boruta.Ecto.PreauthorizedCodes do
       apply(Token, changeset_method(client), [
         %Token{resource_owner: resource_owner},
         %{
-          client_id: client_id,
-          sub: sub,
-          state: state,
-          nonce: params[:nonce],
           agent_token: params[:agent_token],
-          scope: scope,
           resource: params[:resource],
-          redirect_uri: redirect_uri,
           authorization_code_ttl: authorization_code_ttl,
-          authorization_details: resource_owner.authorization_details
+          authorization_details: resource_owner.authorization_details,
+          client_id: client_id,
+          client_encryption_key: params[:client_encryption_key],
+          client_encryption_alg: params[:client_encryption_alg],
+          code_challenge: params[:code_challenge],
+          code_challenge_method: params[:code_challenge_method],
+          nonce: params[:nonce],
+          presentation_definition: params[:presentation_definition],
+          previous_code: params[:previous_code],
+          public_client_id: params[:public_client_id],
+          redirect_uri: redirect_uri,
+          response_type: params[:response_type],
+          scope: scope,
+          requested_scope: params[:requested_scope] || "",
+          state: state,
+          sub: sub
         }
       ])
 

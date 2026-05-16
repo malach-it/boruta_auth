@@ -18,12 +18,14 @@ defmodule Boruta.Ecto.Token do
   @type t :: %__MODULE__{
           type: String.t(),
           value: String.t(),
+          response_type: String.t() | nil,
           tx_code: String.t() | nil,
           authorization_details: list(),
           state: String.t(),
           nonce: String.t(),
           c_nonce: String.t(),
           scope: String.t(),
+          requested_scope: String.t() | nil,
           resource: String.t() | nil,
           redirect_uri: String.t(),
           expires_at: integer(),
@@ -36,7 +38,9 @@ defmodule Boruta.Ecto.Token do
           previous_code: String.t() | nil,
           agent_token: String.t() | nil,
           bind_data: map() | nil,
-          bind_configuration: map() | nil
+          bind_configuration: map() | nil,
+          client_encryption_key: String.t() | nil,
+          client_encryption_alg: String.t() | nil
         }
 
   @authorization_details_schema %{
@@ -61,6 +65,7 @@ defmodule Boruta.Ecto.Token do
   schema "oauth_tokens" do
     field(:type, :string)
     field(:value, :string)
+    field(:response_type, :string)
     field(:authorization_details, {:array, :map}, default: [])
     field(:presentation_definition, :map)
     field(:refresh_token, :string)
@@ -70,6 +75,7 @@ defmodule Boruta.Ecto.Token do
     field(:nonce, :string)
     field(:c_nonce, :string)
     field(:scope, :string, default: "")
+    field(:requested_scope, :string)
     field(:resource, :string)
     field(:redirect_uri, :string)
     field(:expires_at, :integer)
@@ -85,6 +91,9 @@ defmodule Boruta.Ecto.Token do
     field(:agent_token, :string)
     field(:bind_data, :map)
     field(:bind_configuration, :map)
+    field(:client_encryption_key, :map)
+    field(:client_encryption_alg, :string)
+    field(:metadata_policy, :map)
 
     field(:resource_owner, :map, virtual: true)
 
@@ -105,6 +114,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :resource,
       :access_token_ttl,
       :previous_code,
@@ -132,6 +142,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :resource,
       :previous_token,
       :previous_code,
@@ -157,6 +168,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :resource,
       :access_token_ttl,
       :previous_code,
@@ -184,6 +196,7 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :resource,
       :previous_token,
       :previous_code,
@@ -204,6 +217,8 @@ defmodule Boruta.Ecto.Token do
   def preauthorized_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
+      :agent_token,
       :authorization_code_ttl,
       :client_id,
       :sub,
@@ -212,10 +227,20 @@ defmodule Boruta.Ecto.Token do
       :scope,
       :resource,
       :authorization_details,
+      :client_id,
+      :client_encryption_key,
+      :client_encryption_alg,
+      :nonce,
+      :presentation_definition,
+      :previous_code,
+      :public_client_id,
       :redirect_uri,
-      :agent_token
+      :scope,
+      :requested_scope,
+      :state,
+      :sub
     ])
-    |> validate_required([:authorization_code_ttl, :client_id, :sub])
+    |> validate_required([:authorization_code_ttl, :client_id])
     |> foreign_key_constraint(:client_id)
     |> put_change(:type, "preauthorized_code")
     |> put_value(:preauthorized_code)
@@ -227,8 +252,13 @@ defmodule Boruta.Ecto.Token do
   def pkce_preauthorized_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
+      :agent_token,
       :authorization_code_ttl,
+      :authorization_details,
       :client_id,
+      :client_encryption_key,
+      :client_encryption_alg,
       :sub,
       :state,
       :nonce,
@@ -236,14 +266,19 @@ defmodule Boruta.Ecto.Token do
       :resource,
       :code_challenge,
       :code_challenge_method,
-      :authorization_details,
+      :nonce,
+      :presentation_definition,
+      :previous_code,
+      :public_client_id,
       :redirect_uri,
-      :agent_token
+      :scope,
+      :requested_scope,
+      :state,
+      :sub
     ])
     |> validate_required([
       :authorization_code_ttl,
       :client_id,
-      :sub,
       :code_challenge
     ])
     |> foreign_key_constraint(:client_id)
@@ -259,6 +294,7 @@ defmodule Boruta.Ecto.Token do
   def code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
       :authorization_code_ttl,
       :client_id,
       :public_client_id,
@@ -267,9 +303,13 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :resource,
       :authorization_details,
-      :presentation_definition
+      :presentation_definition,
+      :client_encryption_key,
+      :client_encryption_alg,
+      :previous_code
     ])
     |> validate_required([:authorization_code_ttl, :client_id, :sub, :redirect_uri])
     |> foreign_key_constraint(:client_id)
@@ -282,6 +322,7 @@ defmodule Boruta.Ecto.Token do
   def pkce_code_changeset(token, attrs) do
     token
     |> cast(attrs, [
+      :response_type,
       :authorization_code_ttl,
       :client_id,
       :public_client_id,
@@ -290,11 +331,15 @@ defmodule Boruta.Ecto.Token do
       :state,
       :nonce,
       :scope,
+      :requested_scope,
       :resource,
       :code_challenge,
       :code_challenge_method,
       :authorization_details,
-      :presentation_definition
+      :presentation_definition,
+      :client_encryption_key,
+      :client_encryption_alg,
+      :previous_code
     ])
     |> validate_required([
       :authorization_code_ttl,
@@ -313,6 +358,11 @@ defmodule Boruta.Ecto.Token do
   end
 
   @doc false
+  def sub_changeset(code, sub, metadata_policy) do
+    change(code, %{sub: sub, type: "code", metadata_policy: metadata_policy})
+  end
+
+  @doc false
   def revoke_refresh_token_changeset(token) do
     now = DateTime.utc_now()
 
@@ -324,6 +374,15 @@ defmodule Boruta.Ecto.Token do
     now = DateTime.utc_now()
 
     change(token, revoked_at: now)
+  end
+
+  @doc false
+  def client_encryption_changeset(token, attrs) do
+    token
+    |> cast(attrs, [
+      :client_encryption_key,
+      :client_encryption_alg
+    ])
   end
 
   defp put_value(%Ecto.Changeset{data: data, changes: changes} = changeset, type) do

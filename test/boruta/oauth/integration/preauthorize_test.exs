@@ -53,13 +53,17 @@ defmodule Boruta.OauthTest.PreauthorizeTest do
                %ResourceOwner{sub: "sub"},
                ApplicationMock
              ) ==
-               {:preauthorize_error,
-                %Error{
-                  error: :invalid_request,
-                  error_description:
-                    "Query params validation failed. Required properties client_id, redirect_uri are missing at #.",
-                  status: :bad_request
-                }}
+               {
+                 :preauthorize_error,
+                 %Boruta.Oauth.Error{
+                   error: :invalid_client,
+                   error_description: "Invalid client.",
+                   format: nil,
+                   redirect_uri: nil,
+                   state: nil,
+                   status: :unauthorized
+                 }
+               }
     end
 
     test "returns an error if client_id is invalid" do

@@ -100,6 +100,7 @@
         # TODO: enable by default in Credo 1.1
         {Credo.Check.Readability.UnnecessaryAliasExpansion, false},
         {Credo.Check.Readability.VariableNames, []},
+        {Credo.Check.Readability.WithSingleClause, false},
 
         #
         ## Refactoring Opportunities
@@ -129,6 +130,7 @@
         {Credo.Check.Warning.RaiseInsideRescue, []},
         # TODO enable spec with struct check
         {Credo.Check.Warning.SpecWithStruct, false},
+        {Credo.Check.Warning.StructFieldAmount, [max_fields: 40]},
         {Credo.Check.Warning.UnusedEnumOperation, []},
         {Credo.Check.Warning.UnusedFileOperation, []},
         {Credo.Check.Warning.UnusedKeywordOperation, []},

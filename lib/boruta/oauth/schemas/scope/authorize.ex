@@ -4,13 +4,22 @@ defprotocol Boruta.Oauth.Scope.Authorize do
   def authorized_scopes(schema, scope, public_scopes)
 end
 
+defimpl Boruta.Oauth.Scope.Authorize, for: Atom do
+  import Boruta.Config, only: [resource_owners: 0]
+
+  alias Boruta.Oauth.ResourceOwner
+
+  def authorized_scopes(_authorized_scopes, _scopes, _public_scopes), do: []
+end
+
 defimpl Boruta.Oauth.Scope.Authorize, for: List do
   import Boruta.Config, only: [resource_owners: 0]
 
   alias Boruta.Oauth.ResourceOwner
 
   def authorized_scopes(authorized_scopes, scopes, _public_scopes) do
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- (scopes -- authorized_scopes)
   end
 end
 
@@ -19,11 +28,17 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.ResourceOwner do
 
   alias Boruta.Oauth.ResourceOwner
 
+  def authorized_scopes(%ResourceOwner{sub: "did:" <> _key}, scopes, public_scopes) do
+    # intersection
+    scopes -- (scopes -- public_scopes)
+  end
+
   def authorized_scopes(%ResourceOwner{} = resource_owner, scopes, _public_scopes) do
     authorized_scopes =
       Enum.map(resource_owners().authorized_scopes(resource_owner), fn e -> e.name end)
 
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- (scopes -- authorized_scopes)
   end
 end
 
@@ -35,7 +50,8 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.Client do
   def authorized_scopes(client, scope, public_scopes)
 
   def authorized_scopes(%Client{authorize_scope: false}, scopes, public_scopes) do
-    scopes -- (scopes -- public_scopes) # intersection
+    # intersection
+    scopes -- (scopes -- public_scopes)
   end
 
   def authorized_scopes(%Client{authorize_scope: true} = client, scopes, _public_scopes) do
@@ -45,17 +61,29 @@ defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.Client do
         fn %Scope{name: name} -> name end
       )
 
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- (scopes -- authorized_scopes)
   end
 end
 
 defimpl Boruta.Oauth.Scope.Authorize, for: Boruta.Oauth.Token do
+  alias Boruta.CodesAdapter
   alias Boruta.Oauth.Scope
   alias Boruta.Oauth.Token
+
+  def authorized_scopes(%Token{type: type, scope: token_scope} = code, scopes, _public_scopes)
+      when type in ["preauthorized_code", "code"] do
+    authorized_scopes = Scope.split(token_scope)
+
+    # intersection
+    (scopes -- (scopes -- authorized_scopes)) ++
+      (CodesAdapter.code_chain(code) |> Enum.flat_map(fn code -> Scope.split(code.scope) end))
+  end
 
   def authorized_scopes(%Token{scope: token_scope}, scopes, _public_scopes) do
     authorized_scopes = Scope.split(token_scope)
 
-    scopes -- (scopes -- authorized_scopes) # intersection
+    # intersection
+    scopes -- (scopes -- authorized_scopes)
   end
 end

@@ -19,30 +19,43 @@ defmodule Boruta.Openid.VerifiablePresentations do
   # TODO perform client metadata checks
   def check_client_metadata(_client_metadata), do: :ok
 
-  def response_types("code", _scope, _presentation_configuration), do: ["id_token"]
+  def response_types(response_type, scope, presentation_configuration) do
+    response_types = String.split(response_type, " ")
 
-  def response_types("id_token", _scope, _presentation_configuration), do: ["id_token"]
+    case response_types do
+      ["code" | _rest] ->
+        response_types
 
-  def response_types("vp_token", scope, presentation_configuration) do
-    case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
-           Enum.member?(Scope.split(scope), presentation_identifier)
-         end) do
-      true -> ["vp_token"]
-      false -> ["id_token"]
+      ["id_token" | _rest] ->
+        response_types
+
+      ["vp_token" | rest] ->
+        case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
+               Enum.member?(Scope.split(scope), presentation_identifier)
+             end) do
+          true -> String.split(response_type, " ")
+          false -> ["id_token" | rest]
+        end
+
+      _ ->
+        []
     end
   end
 
-  def presentation_definition(presentation_configuration, scope) do
+  def presentation_definition(["vp_token" | _response_types], presentation_configuration, scope) do
     case Enum.find(presentation_configuration, fn {identifier, _configuration} ->
            Enum.member?(Scope.split(scope), identifier)
          end) do
       nil ->
-        nil
+        {:ok, nil, nil}
 
-      {_identifier, configuration} ->
-        configuration[:definition]
+      {identifier, configuration} ->
+        {:ok, identifier, configuration[:definition]}
     end
   end
+
+  def presentation_definition(_response_types, _presentation_configuration, _scope),
+    do: {:ok, nil, nil}
 
   def validate_presentation(vp_token, presentation_submission, presentation_definition) do
     with :ok <-
@@ -50,6 +63,11 @@ defmodule Boruta.Openid.VerifiablePresentations do
              Schema.presentation_submission(),
              presentation_submission,
              error_formatter: BorutaFormatter
+           ),
+         :ok <-
+           validate_descriptor_count(
+             presentation_definition["input_descriptors"],
+             presentation_submission["descriptor_map"]
            ),
          {:ok, _jwk, vp_claims} <- validate_signature(vp_token) do
       Enum.reduce_while(
@@ -75,6 +93,17 @@ defmodule Boruta.Openid.VerifiablePresentations do
         error
     end
   end
+
+  defp validate_descriptor_count(input_descriptors, descriptor_map)
+       when is_list(input_descriptors) and is_list(descriptor_map) do
+    case length(input_descriptors) == length(descriptor_map) do
+      true -> :ok
+      false -> {:error, "Input descriptor count does not match descriptor map count."}
+    end
+  end
+
+  defp validate_descriptor_count(_input_descriptors, _descriptor_map),
+    do: {:error, "Input descriptor count does not match descriptor map count."}
 
   defp extract_path(raw_path) do
     raw_path
@@ -283,7 +312,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
 
   def verify_jwt(error, _alg, _jwt), do: error
 
-  defp extract_key(%{"kid" => did}), do: {:did, did}
   defp extract_key(%{"jwk" => jwk}), do: {:jwk, jwk}
+  defp extract_key(%{"kid" => did}), do: {:did, did}
   defp extract_key(_headers), do: {:error, "No proof key material found in JWT headers"}
 end
