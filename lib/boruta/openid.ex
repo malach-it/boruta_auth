@@ -100,26 +100,26 @@ defmodule Boruta.Openid do
              code_chain
            ),
          {:ok, _codes} <- maybe_revoke_code_chain(%{credential: credential}, code_chain) do
-      case credential do
-        %{defered: true} ->
-          case CredentialsAdapter.create_credential(credential, token) do
-            {:ok, credential} ->
+      case CredentialsAdapter.create_credential(credential, token) do
+        {:ok, credential} ->
+          case credential do
+            %{defered: true} ->
               response = DeferedCredentialResponse.from_credential(credential, token)
               module.credential_created(conn, response)
 
-            {:error, error} ->
-              error = %Error{
-                status: :internal_server_error,
-                error: :unknown_error,
-                error_description: inspect(error)
-              }
-
-              module.credential_failure(conn, error)
+            _ ->
+              response = CredentialResponse.from_credential(credential, token)
+              module.credential_created(conn, response)
           end
 
-        _ ->
-          response = CredentialResponse.from_credential(credential, token)
-          module.credential_created(conn, response)
+        {:error, error} ->
+          error = %Error{
+            status: :internal_server_error,
+            error: :unknown_error,
+            error_description: inspect(error)
+          }
+
+          module.credential_failure(conn, error)
       end
     else
       {:error, %Error{} = error} ->
