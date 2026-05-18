@@ -56,6 +56,24 @@ defmodule Boruta.DidTest do
     test "does not fall back to the universal resolver for malformed did:key values" do
       assert {:error, "Invalid did:key base58 fingerprint."} = Did.resolve("did:key:zinvalid0")
     end
+
+    test "resolves did:key URLs with verification method fragments" do
+      did =
+        "did:key:z2dmzD81cgPx8Vki7JbuuMmFYrWPgYoytykUZ3eyqht1j9KbtAoJqfb74EbV7paYy1ivneNPMf2t7GF6TaJHnbjBksaYALwBD8rhNUfY33KKCGALBKCjaaQpVRx36VZkqNQqYw5qsySyA631GsS2tKnPJ4fHPjmTjCygqMMNHtW1rEakiG"
+
+      assert {:ok,
+              %{
+                "id" => ^did,
+                "verificationMethod" => [
+                  %{
+                    "id" => verification_method_id,
+                    "publicKeyJwk" => %{"kty" => "EC", "crv" => "P-256"}
+                  }
+                ]
+              }} = Did.resolve(did <> "#" <> String.replace(did, "did:key:", ""))
+
+      assert verification_method_id == did <> "#" <> String.replace(did, "did:key:", "")
+    end
   end
 
   describe "create/2" do

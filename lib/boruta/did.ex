@@ -16,7 +16,10 @@ defmodule Boruta.Did do
 
   @spec resolve(did :: String.t()) ::
           {:ok, did_document :: map()} | {:error, reason :: String.t()}
-  def resolve("did:key:" <> fingerprint = did) do
+  def resolve("did:key:" <> _key = did_url) do
+    did = controller(did_url)
+    "did:key:" <> fingerprint = did
+
     with {:ok, jwk} <- Crypto.public_key_jwk(fingerprint) do
       {:ok, key_did_document(did, fingerprint, jwk)}
     end
