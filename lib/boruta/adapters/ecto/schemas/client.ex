@@ -615,14 +615,13 @@ defmodule Boruta.Ecto.Client do
       "universal" ->
         with {:ok, did, jwk} <- Did.create("key"),
              {:ok, key_id} <- Universal.Signatures.SigningKey.get_key_by_did(did) do
-          "did:key:" <> key = did
           public_key = JOSE.JWK.from_map(jwk)
           {_type, public_pem} = JOSE.JWK.to_pem(public_key)
 
           changeset
           |> put_change(:private_key, key_id["id"])
           |> put_change(:public_key, public_pem)
-          |> put_change(:did, "#{did}##{key}")
+          |> put_change(:did, did)
           |> put_change(:signatures_adapter, Boruta.Universal.Signatures |> Atom.to_string())
           |> put_change(:id_token_signature_alg, "EdDSA")
           |> put_change(:userinfo_signed_response_alg, "EdDSA")
@@ -667,8 +666,7 @@ defmodule Boruta.Ecto.Client do
 
         case Did.create("key", jwk) do
           {:ok, did, _jwk} ->
-            "did:key:" <> key = did
-            put_change(changeset, :did, "#{did}##{key}")
+            put_change(changeset, :did, did)
 
           {:error, error} ->
             add_error(changeset, :did, error)

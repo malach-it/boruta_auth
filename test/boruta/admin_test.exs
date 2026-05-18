@@ -112,6 +112,13 @@ defmodule Boruta.Ecto.AdminTest do
       assert secret
     end
 
+    test "regenerates a client did without a verification method fragment" do
+      client = client_fixture()
+
+      assert {:ok, %Client{did: "did:key:" <> fingerprint}} = Admin.regenerate_client_did(client)
+      refute String.contains?(fingerprint, "#")
+    end
+
     test "creates a client with a given secret" do
       secret = SecureRandom.hex(64)
 
