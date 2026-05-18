@@ -57,4 +57,30 @@ defmodule Boruta.DidTest do
       assert {:error, "Invalid did:key base58 fingerprint."} = Did.resolve("did:key:zinvalid0")
     end
   end
+
+  describe "create/2" do
+    test "creates did:key locally from a public RSA JWK" do
+      {_type, jwk} =
+        JOSE.JWK.generate_key({:rsa, 2048, 65_537})
+        |> JOSE.JWK.to_public()
+        |> JOSE.JWK.to_map()
+
+      assert {:ok, "did:key:" <> _ = did, public_jwk} = Did.create("key", jwk)
+
+      assert {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => ^public_jwk}]}} =
+               Did.resolve(did)
+    end
+
+    test "creates did:key locally from a public P-256 JWK" do
+      {_type, jwk} =
+        JOSE.JWK.generate_key({:ec, "P-256"})
+        |> JOSE.JWK.to_public()
+        |> JOSE.JWK.to_map()
+
+      assert {:ok, "did:key:" <> _ = did, public_jwk} = Did.create("key", jwk)
+
+      assert {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => ^public_jwk}]}} =
+               Did.resolve(did)
+    end
+  end
 end

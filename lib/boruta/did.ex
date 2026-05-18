@@ -75,7 +75,13 @@ defmodule Boruta.Did do
           {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
   @spec create(method :: String.t(), jwk :: map() | nil) ::
           {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
-  def create("key" = method, jwk \\ nil) do
+  def create(method, jwk \\ nil)
+
+  def create("key", jwk) when is_map(jwk) do
+    Crypto.did_key(jwk)
+  end
+
+  def create("key" = method, nil) do
     payload = %{
       "didDocument" => %{
         "@context" => ["https//www.w3.org/ns/did/v1"],
@@ -85,32 +91,10 @@ defmodule Boruta.Did do
     }
 
     payload =
-      case jwk do
-        nil ->
-          payload
-          |> Map.put("options", %{
-            "keyType" => "Ed25519",
-            "jwkJcsPub" => true
-          })
-
-        jwk ->
-          Map.put(payload, "didDocument", %{
-            "@context" => ["https//www.w3.org/ns/did/v1"],
-            "service" => [],
-            "verificationMethod" => [
-              %{
-                "id" => "#temp",
-                "type" => "JsonWebKey2020",
-                "publicKeyJwk" => jwk
-              }
-            ]
-          })
-          |> Map.put("options", %{
-            "keyType" => "Ed25519",
-            "clientSecretMode" => true,
-            "jwkJcsPub" => true
-          })
-      end
+      Map.put(payload, "options", %{
+        "keyType" => "Ed25519",
+        "jwkJcsPub" => true
+      })
 
     with {:ok, %Finch.Response{status: 201, body: body}} <-
            Finch.build(

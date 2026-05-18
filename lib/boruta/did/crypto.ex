@@ -27,6 +27,16 @@ defmodule Boruta.Did.Crypto do
     end
   end
 
+  @spec did_key(jwk :: map()) ::
+          {:ok, did :: String.t(), public_jwk :: map()} | {:error, reason :: String.t()}
+  def did_key(jwk) do
+    with {:ok, public_jwk, key_code, public_key} <- public_key_multicodec(jwk) do
+      fingerprint = "z" <> base58btc_encode(encode_varint(key_code) <> public_key)
+
+      {:ok, "did:key:" <> fingerprint, public_jwk}
+    end
+  end
+
   defp decode_multibase("z" <> base58_key), do: base58btc_decode(base58_key)
 
   defp decode_multibase(_fingerprint),
@@ -100,6 +110,48 @@ defmodule Boruta.Did.Crypto do
   defp public_key_jwk(_key_code, _public_key),
     do: {:error, "Unsupported did:key public key type."}
 
+  defp public_key_multicodec(%{"kty" => "OKP", "crv" => "Ed25519", "x" => x}) do
+    with {:ok, x} <- base64url_decode(x),
+         true <- byte_size(x) == 32 do
+      {:ok, %{"kty" => "OKP", "crv" => "Ed25519", "x" => base64url(x)}, @ed25519_public_key_code,
+       x}
+    else
+      _ -> {:error, "Invalid did:key Ed25519 public key."}
+    end
+  end
+
+  defp public_key_multicodec(%{"kty" => "EC", "crv" => "P-256", "x" => x, "y" => y}) do
+    ec_public_key_multicodec(@p256_public_key_code, "P-256", x, y)
+  end
+
+  defp public_key_multicodec(%{"kty" => "EC", "crv" => "secp256k1", "x" => x, "y" => y}) do
+    ec_public_key_multicodec(@secp256k1_public_key_code, "secp256k1", x, y)
+  end
+
+  defp public_key_multicodec(%{"kty" => "RSA", "n" => n, "e" => e}) do
+    with {:ok, n} <- base64url_decode(n),
+         {:ok, e} <- base64url_decode(e) do
+      public_jwk = %{"kty" => "RSA", "n" => base64url(n), "e" => base64url(e)}
+      rsa_public_key = {:RSAPublicKey, :binary.decode_unsigned(n), :binary.decode_unsigned(e)}
+
+      {:ok, public_jwk, @rsa_public_key_code,
+       :public_key.der_encode(:RSAPublicKey, rsa_public_key)}
+    end
+  end
+
+  defp public_key_multicodec(_jwk), do: {:error, "Unsupported did:key JWK."}
+
+  defp ec_public_key_multicodec(key_code, crv, x, y) do
+    with {:ok, x} <- base64url_decode(x),
+         {:ok, y} <- base64url_decode(y),
+         true <- byte_size(x) == 32 and byte_size(y) == 32 do
+      {:ok, %{"kty" => "EC", "crv" => crv, "x" => base64url(x), "y" => base64url(y)}, key_code,
+       <<4, x::binary, y::binary>>}
+    else
+      _ -> {:error, "Invalid did:key elliptic curve public key."}
+    end
+  end
+
   defp ec_public_key_jwk(<<4, x::binary-size(32), y::binary-size(32)>>, crv, _prime, _a, _b, 32) do
     {:ok,
      %{
@@ -163,6 +215,41 @@ defmodule Boruta.Did.Crypto do
   end
 
   defp base64url(binary), do: Base.url_encode64(binary, padding: false)
+
+  defp base64url_decode(value) when is_binary(value), do: Base.url_decode64(value, padding: false)
+
+  defp base64url_decode(_value), do: {:error, :invalid_base64url}
+
+  defp base58btc_encode(<<>>), do: ""
+
+  defp base58btc_encode(bytes) do
+    leading_zero_count =
+      bytes
+      |> :binary.bin_to_list()
+      |> Enum.take_while(&(&1 == 0))
+      |> length()
+
+    encoded =
+      bytes
+      |> :binary.decode_unsigned()
+      |> encode_base58_integer([])
+
+    :binary.copy("1", leading_zero_count) <> encoded
+  end
+
+  defp encode_base58_integer(0, []), do: ""
+
+  defp encode_base58_integer(0, chars), do: List.to_string(chars)
+
+  defp encode_base58_integer(integer, chars) do
+    encode_base58_integer(div(integer, 58), [Enum.at(@base58_alphabet, rem(integer, 58)) | chars])
+  end
+
+  defp encode_varint(value) when value < 0x80, do: <<value>>
+
+  defp encode_varint(value) do
+    <<(value &&& 0x7F) ||| 0x80>> <> encode_varint(value >>> 7)
+  end
 
   defp pad_unsigned(binary, size) when byte_size(binary) < size do
     :binary.copy(<<0>>, size - byte_size(binary)) <> binary
