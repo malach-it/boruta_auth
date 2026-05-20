@@ -20,11 +20,11 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
         ) ::
           {:error,
            %Error{
-             :error => :invalid_access_token,
+             :error => :invalid_access_token | :invalid_grant,
              :error_description => String.t(),
              :format => nil,
              :redirect_uri => nil,
-             :status => :unauthorized
+             :status => :bad_request
            }}
           | {:ok, %Token{}}
   def authorize(value: value) do
@@ -44,7 +44,7 @@ defmodule Boruta.Oauth.Authorization.AccessToken do
 
   def authorize(refresh_token: refresh_token) do
     with %Token{} = token <- Boruta.AccessTokensAdapter.get_by(refresh_token: refresh_token),
-      :ok <- Token.ensure_valid(token, :refresh_token) do
+         :ok <- Token.ensure_valid(token, :refresh_token) do
       {:ok, token}
     else
       _ ->

@@ -47,6 +47,14 @@ defmodule Boruta.Oauth.Authorization.Client do
                :redirect_uri => nil,
                :status => :unauthorized
              }}
+          | {:error,
+             %Error{
+               :error => :unsupported_grant_type,
+               :error_description => String.t(),
+               :format => nil,
+               :redirect_uri => nil,
+               :status => :bad_request
+             }}
   def authorize(id: id, source: source, grant_type: grant_type)
       when not is_nil(id) do
     with %Client{} = client <- ClientsAdapter.get_client(id),
@@ -301,7 +309,11 @@ defmodule Boruta.Oauth.Authorization.Client do
   defp verify_secret_result(
          %Client{
            token_endpoint_auth_methods: ["private_key_jwt" | methods]
-         } = client, source, _error, _refreshed) do
+         } = client,
+         source,
+         _error,
+         _refreshed
+       ) do
     message = "Given client expects the credentials to be provided with a jwt assertion."
     do_extract_secret(source, %{client | token_endpoint_auth_methods: methods}, message)
   end
