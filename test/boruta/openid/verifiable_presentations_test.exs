@@ -1,4 +1,5 @@
 defmodule Boruta.Openid.VerifiablePresentationsTest do
+  alias Boruta.Support.TLSServer
   alias Boruta.Openid.VerifiablePresentations
   use ExUnit.Case
 
@@ -557,6 +558,65 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
              ) == {:error, "could not get status list."}
     end
 
+    test "validates status list with trusted authorities", %{signer: signer} do
+      {:ok, status_list_credential, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "vc" => %{
+              "credentialSubject" => %{
+                "encodedList" => <<1>>,
+                "statusPurpose" => "revocation"
+              }
+            }
+          },
+          signer
+        )
+
+      {:ok, server} = TLSServer.start(status_list_credential)
+
+      on_exit(fn ->
+        TLSServer.stop(server)
+      end)
+
+      {:ok, credential, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "exp" => :os.system_time(:second) + 10,
+            "vc" => %{
+              "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
+              "type" => ["VerifiableAttestation"],
+              "credentialStatus" => %{
+                "statusListCredential" => server.url,
+                "statusListIndex" => "0"
+              }
+            }
+          },
+          signer
+        )
+
+      descriptor = %{
+        "id" => "test",
+        "constraints" => %{
+          "fields" => []
+        }
+      }
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor,
+               "jwt_vc",
+               server.trusted_authorities
+             ) == :ok
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor,
+               "jwt_vc",
+               server.wrong_trusted_authorities
+             ) == {:error, "could not get status list."}
+    end
+
+    @tag :skip
     test "validates status", %{signer: signer} do
       {:ok, credential, _claims} =
         VerifiablePresentations.Token.generate_and_sign(

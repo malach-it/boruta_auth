@@ -208,7 +208,12 @@ defmodule Boruta.Openid do
            :ok <-
              maybe_verify_public_client_id(direct_post_params, code_chain, code.client),
            :ok <- check_client_metadata_policy(code_chain, direct_post_params),
-           :ok <- maybe_check_presentation(direct_post_params, code.presentation_definition),
+           :ok <-
+             maybe_check_presentation(
+               direct_post_params,
+               code.presentation_definition,
+               code.client.trusted_authorities
+             ),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
                client_encryption_key: claims["client_encryption_key"],
@@ -509,7 +514,8 @@ defmodule Boruta.Openid do
 
   defp maybe_check_presentation(
          %{vp_token: vp_token, presentation_submission: presentation_submission},
-         presentation_definition
+         presentation_definition,
+         trusted_authorities
        )
        when not is_nil(vp_token) do
     case Jason.decode(presentation_submission) do
@@ -517,7 +523,8 @@ defmodule Boruta.Openid do
         case VerifiablePresentations.validate_presentation(
                vp_token,
                presentation_submission,
-               presentation_definition
+               presentation_definition,
+               trusted_authorities
              ) do
           :ok ->
             :ok
@@ -547,7 +554,8 @@ defmodule Boruta.Openid do
 
   defp maybe_check_presentation(
          %{vp_token: vp_token},
-         _presentation_definition
+         _presentation_definition,
+         _trusted_authorities
        )
        when not is_nil(vp_token) do
     {:error,
@@ -559,7 +567,7 @@ defmodule Boruta.Openid do
      }}
   end
 
-  defp maybe_check_presentation(_, _), do: :ok
+  defp maybe_check_presentation(_, _, _), do: :ok
 
   defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
     CodesAdapter.revoke(code_chain)

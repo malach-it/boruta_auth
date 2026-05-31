@@ -11,6 +11,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   alias Boruta.Did
+  alias Boruta.HttpClient
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Scope
   alias Boruta.Openid.Json.Schema
@@ -57,7 +58,12 @@ defmodule Boruta.Openid.VerifiablePresentations do
   def presentation_definition(_response_types, _presentation_configuration, _scope),
     do: {:ok, nil, nil}
 
-  def validate_presentation(vp_token, presentation_submission, presentation_definition) do
+  def validate_presentation(
+        vp_token,
+        presentation_submission,
+        presentation_definition,
+        trusted_authorities \\ nil
+      ) do
     with :ok <-
            ExJsonSchema.Validator.validate(
              Schema.presentation_submission(),
@@ -79,7 +85,12 @@ defmodule Boruta.Openid.VerifiablePresentations do
         fn {descriptor, map}, _acc ->
           credential = get_in(vp_claims, extract_path(map["path_nested"]["path"]))
 
-          case validate_credential(credential, descriptor, extract_format(map)) do
+          case validate_credential(
+                 credential,
+                 descriptor,
+                 extract_format(map),
+                 trusted_authorities
+               ) do
             :ok -> {:cont, :ok}
             {:error, error} -> {:halt, {:error, map["id"] <> " " <> error}}
           end
@@ -125,16 +136,18 @@ defmodule Boruta.Openid.VerifiablePresentations do
 
   defp extract_format(%{"path_nested" => %{"format" => format}}), do: format
 
-  def validate_credential(credential, descriptor, "jwt_vc") do
+  def validate_credential(credential, descriptor, format, trusted_authorities \\ nil)
+
+  def validate_credential(credential, descriptor, "jwt_vc", trusted_authorities) do
     with {:ok, _jwk, claims} <- validate_signature(credential),
          :ok <- validate_expiration(claims),
          :ok <- validate_valid_from(claims),
-         :ok <- validate_status_list(claims) do
+         :ok <- validate_status_list(claims, trusted_authorities) do
       validate_constraints(claims, descriptor)
     end
   end
 
-  def validate_credential(_credential, _descriptor, format),
+  def validate_credential(_credential, _descriptor, format, _trusted_authorities),
     do: {:error, "format \"#{format}\" is not supported"}
 
   defp validate_expiration(%{"exp" => expiry}) do
@@ -166,8 +179,8 @@ defmodule Boruta.Openid.VerifiablePresentations do
 
   defp validate_valid_from(_claims), do: {:error, "is invalid"}
 
-  defp validate_status_list(%{"vc" => %{"credentialStatus" => status}}) do
-    case Finch.build(:get, status["statusListCredential"]) |> Finch.request(OpenIDHttpClient) do
+  defp validate_status_list(%{"vc" => %{"credentialStatus" => status}}, trusted_authorities) do
+    case HttpClient.get(status["statusListCredential"], trusted_authorities) do
       {:ok, %Finch.Response{status: 200, body: status_credential}} ->
         case Joken.peek_claims(status_credential) do
           {:ok, %{"vc" => %{"credentialSubject" => status_list}}} ->
@@ -199,7 +212,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
     end
   end
 
-  defp validate_status_list(_claims), do: :ok
+  defp validate_status_list(_claims, _trusted_authorities), do: :ok
 
   defp validate_constraints(claims, %{
          "id" => id,
