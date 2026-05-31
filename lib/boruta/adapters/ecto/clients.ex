@@ -10,6 +10,7 @@ defmodule Boruta.Ecto.Clients do
 
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.ClientStore
+  alias Boruta.HttpClient
   alias Boruta.Oauth
 
   @impl Boruta.Oauth.Clients
@@ -51,7 +52,8 @@ defmodule Boruta.Ecto.Clients do
   defp public!(:from_database) do
     issuer = issuer()
 
-    with %Client{} = client <- repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
+    with %Client{} = client <-
+           repo().one(from c in Client, where: c.public_client_id == ^issuer, limit: 1),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put_public() do
       client
     end
@@ -97,7 +99,7 @@ defmodule Boruta.Ecto.Clients do
            repo().get_by(Client, id: client_id),
          %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           Finch.build(:get, jwks_uri) |> Finch.request(OpenIDHttpClient),
+           HttpClient.get(jwks_uri, client.trusted_authorities),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings),
          {:ok, %Client{jwt_public_key: jwt_public_key}} <-
            Client.update_changeset(client, %{
@@ -123,7 +125,11 @@ defmodule Boruta.Ecto.Clients do
     end
   end
 
-  defp rsa_key(%Client{public_key: public_key, private_key: private_key, id_token_signature_alg: id_token_signature_alg}) do
+  defp rsa_key(%Client{
+         public_key: public_key,
+         private_key: private_key,
+         id_token_signature_alg: id_token_signature_alg
+       }) do
     {_type, jwk} = public_key |> :jose_jwk.from_pem() |> :jose_jwk.to_map()
 
     jwk

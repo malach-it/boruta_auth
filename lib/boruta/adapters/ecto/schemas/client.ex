@@ -51,6 +51,7 @@ defmodule Boruta.Ecto.Client do
           public_key: String.t(),
           private_key: String.t(),
           response_mode: String.t(),
+          trusted_authorities: String.t() | nil,
           signatures_adapter: String.t(),
           key_pair_type: map()
         }
@@ -169,6 +170,7 @@ defmodule Boruta.Ecto.Client do
     field(:metadata, :map, default: %{})
 
     field(:response_mode, :string, default: "direct_post")
+    field(:trusted_authorities, :string)
 
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
@@ -213,6 +215,7 @@ defmodule Boruta.Ecto.Client do
       :logo_uri,
       :metadata,
       :response_mode,
+      :trusted_authorities,
       :signatures_adapter,
       :key_pair_type
     ])
@@ -226,6 +229,7 @@ defmodule Boruta.Ecto.Client do
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
     |> validate_authorized_resources()
+    |> validate_trusted_authorities(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> validate_inclusion(:response_mode, @response_modes)
@@ -282,6 +286,7 @@ defmodule Boruta.Ecto.Client do
       :logo_uri,
       :metadata,
       :response_mode,
+      :trusted_authorities,
       :signatures_adapter,
       :key_pair_type
     ])
@@ -311,6 +316,7 @@ defmodule Boruta.Ecto.Client do
     )
     |> validate_redirect_uris()
     |> validate_authorized_resources()
+    |> validate_trusted_authorities(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -491,6 +497,20 @@ defmodule Boruta.Ecto.Client do
       |> Enum.reject(&is_nil/1)
       |> Enum.map(fn error -> {field, error} end)
     end)
+  end
+
+  defp validate_trusted_authorities(changeset, attrs) do
+    case attrs[:trusted_authorities] || attrs["trusted_authorities"] do
+      value when is_binary(value) ->
+        if String.trim(value) == "" do
+          add_error(changeset, :trusted_authorities, "cannot be empty")
+        else
+          changeset
+        end
+
+      _value ->
+        changeset
+    end
   end
 
   defp validate_supported_grant_types(changeset) do

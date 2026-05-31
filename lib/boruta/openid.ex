@@ -29,6 +29,7 @@ defmodule Boruta.Openid do
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.CredentialsAdapter
+  alias Boruta.HttpClient
   alias Boruta.Oauth.Authorization
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
@@ -600,7 +601,7 @@ defmodule Boruta.Openid do
   defp parse_registration_params(params, %{jwks_uri: jwks_uri} = acc) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           Finch.build(:get, jwks_uri) |> Finch.request(OpenIDHttpClient),
+           HttpClient.get(jwks_uri, params[:trusted_authorities] || params["trusted_authorities"]),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings) do
       params =
         params
