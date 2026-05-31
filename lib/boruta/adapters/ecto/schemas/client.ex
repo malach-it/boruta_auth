@@ -215,10 +215,10 @@ defmodule Boruta.Ecto.Client do
       :logo_uri,
       :metadata,
       :response_mode,
-      :trusted_authorities,
       :signatures_adapter,
       :key_pair_type
     ])
+    |> cast_trusted_authorities(attrs)
     |> validate_required([:redirect_uris, :key_pair_type])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
@@ -229,7 +229,6 @@ defmodule Boruta.Ecto.Client do
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
     |> validate_authorized_resources()
-    |> validate_trusted_authorities(attrs)
     |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
@@ -287,10 +286,10 @@ defmodule Boruta.Ecto.Client do
       :logo_uri,
       :metadata,
       :response_mode,
-      :trusted_authorities,
       :signatures_adapter,
       :key_pair_type
     ])
+    |> cast_trusted_authorities(attrs)
     |> validate_required([
       :authorization_code_ttl,
       :access_token_ttl,
@@ -317,7 +316,6 @@ defmodule Boruta.Ecto.Client do
     )
     |> validate_redirect_uris()
     |> validate_authorized_resources()
-    |> validate_trusted_authorities(attrs)
     |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
@@ -501,18 +499,8 @@ defmodule Boruta.Ecto.Client do
     end)
   end
 
-  defp validate_trusted_authorities(changeset, attrs) do
-    case attrs[:trusted_authorities] || attrs["trusted_authorities"] do
-      value when is_binary(value) ->
-        if String.trim(value) == "" do
-          add_error(changeset, :trusted_authorities, "cannot be empty")
-        else
-          changeset
-        end
-
-      _value ->
-        changeset
-    end
+  defp cast_trusted_authorities(changeset, attrs) do
+    cast(changeset, attrs, [:trusted_authorities], empty_values: [])
   end
 
   defp validate_jwks_uri_fetch(changeset, attrs) do

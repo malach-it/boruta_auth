@@ -22,7 +22,7 @@ defmodule Boruta.HttpClient do
     |> String.trim()
     |> case do
       "" ->
-        {:error, "Trusted authorities cannot be empty."}
+        {:error, "Client do not trust authorities for outbound requests."}
 
       authorities ->
         case authorities
