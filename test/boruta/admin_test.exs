@@ -178,7 +178,7 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "creates a client with trusted authorities" do
-      trusted_authorities = "did:example:issuer"
+      trusted_authorities = "<pem certificate>"
 
       assert {:ok, %Client{trusted_authorities: ^trusted_authorities}} =
                Admin.create_client(
@@ -188,15 +188,22 @@ defmodule Boruta.Ecto.AdminTest do
                )
     end
 
-    test "returns an error when trusted authorities is empty" do
-      assert {:error, %Ecto.Changeset{errors: errors}} =
+    test "creates a client with empty trusted authorities" do
+      assert {:ok, %Client{trusted_authorities: ""}} =
                Admin.create_client(
                  Map.merge(@client_valid_attrs, %{
-                   trusted_authorities: " "
+                   trusted_authorities: ""
                  })
                )
+    end
 
-      assert {:trusted_authorities, {"cannot be empty", []}} in errors
+    test "creates a client with nil trusted authorities" do
+      assert {:ok, %Client{trusted_authorities: nil}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_authorities: nil
+                 })
+               )
     end
 
     test "creates a client with authorized scopes by id" do
@@ -342,13 +349,18 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.update_client(client, %{"trusted_authorities" => trusted_authorities})
     end
 
-    test "returns an error when updating trusted authorities to empty" do
+    test "updates the client with empty trusted authorities" do
       client = client_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: errors}} =
+      assert {:ok, %Client{trusted_authorities: ""}} =
                Admin.update_client(client, %{"trusted_authorities" => ""})
+    end
 
-      assert {:trusted_authorities, {"cannot be empty", []}} in errors
+    test "updates the client with nil trusted authorities" do
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_authorities: nil}} =
+               Admin.update_client(client, %{"trusted_authorities" => nil})
     end
 
     test "updates the client with authorized scopes" do
