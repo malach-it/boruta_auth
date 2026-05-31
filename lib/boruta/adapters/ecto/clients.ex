@@ -75,6 +75,9 @@ defmodule Boruta.Ecto.Clients do
            |> repo().update() do
       {:ok, jwt_public_key}
     else
+      {:error, error} ->
+        {:error, error}
+
       _ ->
         {:error, "Could not refresh client jwk with jwks_uri."}
     end

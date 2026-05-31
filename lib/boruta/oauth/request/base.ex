@@ -153,6 +153,9 @@ defmodule Boruta.Oauth.Request.Base do
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
+      {:error, "" <> error} ->
+        {:error, error}
+
       _ ->
         {:error, "Could not fetch unsigned request parameter from given URI."}
     end
@@ -175,6 +178,9 @@ defmodule Boruta.Oauth.Request.Base do
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
+      {:error, "" <> error} ->
+        {:error, error}
+
       _ ->
         {:error, "Could not fetch unsigned request parameter from given URI."}
     end

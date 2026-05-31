@@ -148,6 +148,7 @@ defmodule Boruta.Ecto.Client do
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
     |> validate_trusted_authorities(attrs)
+    |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
@@ -216,6 +217,7 @@ defmodule Boruta.Ecto.Client do
     )
     |> validate_redirect_uris()
     |> validate_trusted_authorities(attrs)
+    |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -294,6 +296,13 @@ defmodule Boruta.Ecto.Client do
 
       _value ->
         changeset
+    end
+  end
+
+  defp validate_jwks_uri_fetch(changeset, attrs) do
+    case attrs[:jwks_uri_fetch_error] || attrs["jwks_uri_fetch_error"] do
+      error when is_binary(error) -> add_error(changeset, :jwks_uri, error)
+      _value -> changeset
     end
   end
 
