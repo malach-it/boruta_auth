@@ -92,6 +92,10 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
+    test "creates a client with trusted authorities defaulting to nil" do
+      assert {:ok, %Client{trusted_authorities: nil}} = Admin.create_client(@client_valid_attrs)
+    end
+
     test "creates a client with supported_grant_types" do
       assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
                Admin.create_client(
@@ -171,6 +175,28 @@ defmodule Boruta.Ecto.AdminTest do
                    metadata: metadata
                  })
                )
+    end
+
+    test "creates a client with trusted authorities" do
+      trusted_authorities = "did:example:issuer"
+
+      assert {:ok, %Client{trusted_authorities: ^trusted_authorities}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_authorities: trusted_authorities
+                 })
+               )
+    end
+
+    test "returns an error when trusted authorities is empty" do
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_authorities: " "
+                 })
+               )
+
+      assert {:trusted_authorities, {"cannot be empty", []}} in errors
     end
 
     test "creates a client with authorized scopes by id" do
@@ -306,6 +332,23 @@ defmodule Boruta.Ecto.AdminTest do
     test "updates the client" do
       client = client_fixture()
       assert {:ok, %Client{}} = Admin.update_client(client, @client_update_attrs)
+    end
+
+    test "updates the client with trusted authorities" do
+      trusted_authorities = "did:example:issuer"
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_authorities: ^trusted_authorities}} =
+               Admin.update_client(client, %{"trusted_authorities" => trusted_authorities})
+    end
+
+    test "returns an error when updating trusted authorities to empty" do
+      client = client_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               Admin.update_client(client, %{"trusted_authorities" => ""})
+
+      assert {:trusted_authorities, {"cannot be empty", []}} in errors
     end
 
     test "updates the client with authorized scopes" do

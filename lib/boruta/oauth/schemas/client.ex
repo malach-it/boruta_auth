@@ -37,6 +37,7 @@ defmodule Boruta.Oauth.Client do
             public_key: nil,
             private_key: nil,
             logo_uri: nil,
+            trusted_authorities: nil,
             metadata: %{}
 
   @type t :: %__MODULE__{
@@ -65,6 +66,7 @@ defmodule Boruta.Oauth.Client do
           public_key: String.t(),
           private_key: String.t(),
           logo_uri: String.t() | nil,
+          trusted_authorities: String.t() | nil,
           metadata: map()
         }
 
@@ -230,7 +232,9 @@ defmodule Boruta.Oauth.Client do
             Joken.Signer.create(signature_alg, secret)
 
           :asymmetric ->
-            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{"kid" => id_token_kid || kid_from_private_key(private_key)})
+            Joken.Signer.create(signature_alg, %{"pem" => private_key}, %{
+              "kid" => id_token_kid || kid_from_private_key(private_key)
+            })
         end
 
       case Token.encode_and_sign(payload, signer) do

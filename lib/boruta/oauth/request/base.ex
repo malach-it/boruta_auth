@@ -2,7 +2,10 @@ defmodule Boruta.Oauth.Request.Base do
   @moduledoc false
 
   alias Boruta.BasicAuth
+  alias Boruta.ClientsAdapter
+  alias Boruta.HttpClient
   alias Boruta.Oauth.AuthorizationCodeRequest
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.HybridRequest
@@ -143,10 +146,10 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}) do
-    with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
+  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri} = params}) do
+    with %URI{scheme: "" <> scheme} when scheme in ["http", "https"] <- URI.parse(request_uri),
          {:ok, %Finch.Response{body: request, status: 200}} <-
-           Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient),
+           HttpClient.get(request_uri, trusted_authorities_from_params(params)),
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
@@ -165,10 +168,10 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri}}) do
+  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri} = params}) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
          {:ok, %Finch.Response{body: request, status: 200}} <-
-           Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient),
+           HttpClient.get(request_uri, trusted_authorities_from_params(params)),
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
@@ -290,4 +293,13 @@ defmodule Boruta.Oauth.Request.Base do
   defp client_authentication_from_params(%{"client_authentication" => client_authentication}) do
     %{type: client_authentication["type"], value: client_authentication["value"]}
   end
+
+  defp trusted_authorities_from_params(%{"client_id" => client_id}) do
+    case ClientsAdapter.get_client(client_id) do
+      %Client{trusted_authorities: trusted_authorities} -> trusted_authorities
+      _ -> nil
+    end
+  end
+
+  defp trusted_authorities_from_params(_params), do: nil
 end
