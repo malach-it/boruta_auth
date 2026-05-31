@@ -9,7 +9,6 @@ defmodule Boruta.HttpClient do
 
   def get(url, trusted_authorities) when is_binary(trusted_authorities) do
     case parse_trusted_authorities(trusted_authorities) do
-      {:ok, []} -> Finch.build(:get, url) |> Finch.request(OpenIDHttpClient)
       {:ok, cacerts} -> pinned_get(url, cacerts)
       {:error, reason} -> {:error, reason}
     end
@@ -41,14 +40,26 @@ defmodule Boruta.HttpClient do
       {:https, host, port, path, query} ->
         request_path = if query in [nil, ""], do: path, else: "#{path}?#{query}"
 
-        with {:ok, conn} <-
-               Mint.HTTP.connect(:https, host, port,
-                 transport_opts: [cacerts: cacerts],
-                 protocols: [:http1]
-               ),
-             {:ok, conn, request_ref} <-
-               Mint.HTTP.request(conn, "GET", request_path, [{"connection", "close"}], nil) do
-          receive_response(conn, request_ref, %{status: nil, headers: [], body: []})
+        case (with {:ok, conn} <-
+                     Mint.HTTP.connect(:https, host, port,
+                       transport_opts: [cacerts: cacerts],
+                       protocols: [:http1]
+                     ),
+                   {:ok, conn, request_ref} <-
+                     Mint.HTTP.request(conn, "GET", request_path, [{"connection", "close"}], nil) do
+                receive_response(conn, request_ref, %{status: nil, headers: [], body: []})
+              end) do
+          {:error,
+           %Mint.TransportError{
+             reason: {:tls_alert, _}
+           }} ->
+            {:error, "Host certificate is not trusted."}
+
+          {:error, reason} ->
+            {:error, reason}
+
+          response ->
+            response
         end
 
       {:http, _host, _port, _path, _query} ->
