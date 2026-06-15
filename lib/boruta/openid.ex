@@ -26,6 +26,7 @@ defmodule Boruta.Openid do
   > The definition of those callbacks are provided by either `Boruta.Openid.Application` or `Boruta.Openid.JwksApplication` and `Boruta.Openid.UserinfoApplication`
   """
 
+  alias Boruta.AgentTokensAdapter
   alias Boruta.ClientsAdapter
   alias Boruta.CodesAdapter
   alias Boruta.CredentialsAdapter
@@ -104,8 +105,19 @@ defmodule Boruta.Openid do
         %{defered: true} ->
           case CredentialsAdapter.create_credential(credential, token) do
             {:ok, credential} ->
-              response = DeferedCredentialResponse.from_credential(credential, token)
-              module.credential_created(conn, response)
+              with :ok <- revoke_bound_agent_token(token) do
+                response = DeferedCredentialResponse.from_credential(credential, token)
+                module.credential_created(conn, response)
+              else
+                {:error, error} ->
+                  error = %Error{
+                    status: :internal_server_error,
+                    error: :unknown_error,
+                    error_description: inspect(error)
+                  }
+
+                  module.credential_failure(conn, error)
+              end
 
             {:error, error} ->
               error = %Error{
@@ -118,8 +130,19 @@ defmodule Boruta.Openid do
           end
 
         _ ->
-          response = CredentialResponse.from_credential(credential, token)
-          module.credential_created(conn, response)
+          with :ok <- revoke_bound_agent_token(token) do
+            response = CredentialResponse.from_credential(credential, token)
+            module.credential_created(conn, response)
+          else
+            {:error, error} ->
+              error = %Error{
+                status: :internal_server_error,
+                error: :unknown_error,
+                error_description: inspect(error)
+              }
+
+              module.credential_failure(conn, error)
+          end
       end
     else
       {:error, %Error{} = error} ->
@@ -142,6 +165,21 @@ defmodule Boruta.Openid do
         }
 
         module.credential_failure(conn, error)
+    end
+  end
+
+  defp revoke_bound_agent_token(%Token{agent_token: nil}), do: :ok
+
+  defp revoke_bound_agent_token(%Token{agent_token: agent_token}) do
+    case AgentTokensAdapter.get_by(value: agent_token) do
+      %Token{} = token ->
+        case AgentTokensAdapter.revoke(token) do
+          {:ok, _token} -> :ok
+          error -> error
+        end
+
+      nil ->
+        :ok
     end
   end
 
