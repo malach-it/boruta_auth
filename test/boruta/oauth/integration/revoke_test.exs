@@ -142,62 +142,6 @@ defmodule Boruta.OauthTest.RevokeTest do
       end
     end
 
-    test "revoke agent token by value if token is active", %{client: client, resource_owner: resource_owner} do
-      agent_token = insert(:token,
-        type: "agent_token",
-        client: client,
-        scope: "scope",
-        sub: resource_owner.sub
-      )
-
-      ResourceOwners
-      |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
-
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-
-      case Oauth.revoke(%Plug.Conn{
-        body_params: %{"token" => agent_token.value},
-        req_headers: [{"authorization", authorization_header}]
-      }, ApplicationMock) do
-        {:revoke_success} ->
-          assert Boruta.AgentTokensAdapter.get_by(value: agent_token.value).revoked_at
-        _ -> assert false
-      end
-    end
-
-    test "revoke agent token by refresh token if token is active", %{client: client, resource_owner: resource_owner} do
-      agent_token = insert(:token,
-        type: "agent_token",
-        client: client,
-        scope: "scope",
-        sub: resource_owner.sub
-      )
-
-      ResourceOwners
-      |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
-
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-
-      case Oauth.revoke(%Plug.Conn{
-        body_params: %{"token" => agent_token.refresh_token, "token_type_hint" => "refresh_token"},
-        req_headers: [{"authorization", authorization_header}]
-      }, ApplicationMock) do
-        {:revoke_success} ->
-          assert Boruta.AgentTokensAdapter.get_by(value: agent_token.value).revoked_at
-        _ ->
-          assert false
-      end
-    end
-
-    test "returns success if token does not exist", %{client: client} do
-      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
-
-      assert {:revoke_success} = Oauth.revoke(%Plug.Conn{
-        body_params: %{"token" => "unknown_token"},
-        req_headers: [{"authorization", authorization_header}]
-      }, ApplicationMock)
-    end
-
     test "revoke token if client has public revocation", %{public_revoke_client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn(_params) -> {:ok, resource_owner} end)

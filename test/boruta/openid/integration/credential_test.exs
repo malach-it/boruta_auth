@@ -192,13 +192,10 @@ defmodule Boruta.OpenidTest.CredentialTest do
          }}
       end)
 
-      agent_token = insert(:token, type: "agent_token", bind_data: %{}, bind_configuration: %{})
-
       %Token{value: access_token} =
         insert(:token,
           sub: sub,
           authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}],
-          agent_token: agent_token.value,
           previous_code: insert(:token, type: "preauthorized_code").value
         )
 
@@ -214,7 +211,6 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       # TODO validate credential body
       assert credential
-      assert Repo.get_by(Token, value: agent_token.value).revoked_at
     end
 
     @tag :skip

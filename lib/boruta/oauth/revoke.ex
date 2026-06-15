@@ -16,7 +16,9 @@ defmodule Boruta.Oauth.Revoke do
       })
       :ok
   """
-  @spec token(request :: RevokeRequest.t()) ::
+  @spec token(
+          request :: RevokeRequest.t()
+        ) ::
           :ok
           | {:error, error :: Boruta.Oauth.Error.t()}
           | {:error, error :: String.t()}
@@ -32,49 +34,27 @@ defmodule Boruta.Oauth.Revoke do
              source: client_source,
              grant_type: "revoke"
            ) do
-      case token_adapter(token_type_hint, value) do
-        {adapter, token} ->
-          with {:ok, _token} <- adapter.revoke(token) do
-            :ok
-          end
+      token =
+        case token_type_hint do
+          "refresh_token" ->
+            with nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value) do
+              Boruta.AccessTokensAdapter.get_by(value: value)
+            end
 
-        nil ->
-          # return :ok even for unexisting tokens
+          _ ->
+            with nil <- Boruta.AccessTokensAdapter.get_by(value: value) do
+              Boruta.AccessTokensAdapter.get_by(refresh_token: value)
+            end
+        end
+
+      if token do
+        with {:ok, _token} <- Boruta.AccessTokensAdapter.revoke(token) do
           :ok
+        end
+      else
+        # return :ok even for unexisting tokens
+        :ok
       end
-    end
-  end
-
-  defp token_adapter("refresh_token", value) do
-    find_token(:refresh_token, value) ||
-      find_token(:value, value)
-  end
-
-  defp token_adapter(_token_type_hint, value) do
-    find_token(:value, value) ||
-      find_token(:refresh_token, value)
-  end
-
-  defp find_token(field, value) do
-    access_token(field, value) || agent_token(field, value)
-  end
-
-  defp access_token(:value, value),
-    do: token(Boruta.AccessTokensAdapter, "access_token", value: value)
-
-  defp access_token(:refresh_token, value),
-    do: token(Boruta.AccessTokensAdapter, "access_token", refresh_token: value)
-
-  defp agent_token(:value, value),
-    do: token(Boruta.AgentTokensAdapter, "agent_token", value: value)
-
-  defp agent_token(:refresh_token, value),
-    do: token(Boruta.AgentTokensAdapter, "agent_token", refresh_token: value)
-
-  defp token(adapter, type, params) do
-    case adapter.get_by(params) do
-      %{type: ^type} = token -> {adapter, token}
-      _ -> nil
     end
   end
 end
