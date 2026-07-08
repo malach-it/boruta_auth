@@ -314,7 +314,7 @@ defmodule Boruta.Oauth.Authorization.Client do
          } = client,
          _message
        )
-       when alg in ["HS256", "HS364", "HS512"] and is_binary(secret) do
+       when alg in ["HS256", "HS384", "HS512"] and is_binary(secret) do
     signer = Joken.Signer.create(alg, secret)
 
     case {source[:type], Token.verify(source[:value] || "", signer)} do
@@ -341,7 +341,7 @@ defmodule Boruta.Oauth.Authorization.Client do
          } = client,
          _message
        )
-       when alg in ["RS256", "RS364", "RS512"] and is_binary(jwt_public_key) do
+       when alg in ["RS256", "RS384", "RS512"] and is_binary(jwt_public_key) do
     signer = Joken.Signer.create(alg, %{"pem" => jwt_public_key})
     verify = Token.verify(source[:value] || "", signer)
 
