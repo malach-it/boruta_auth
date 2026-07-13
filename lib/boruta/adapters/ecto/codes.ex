@@ -109,6 +109,7 @@ defmodule Boruta.Ecto.Codes do
           response_type: params[:response_type],
           client_id: client_id,
           sub: sub,
+          id_token: params[:id_token],
           redirect_uri: redirect_uri,
           state: state,
           nonce: params[:nonce],
@@ -142,13 +143,14 @@ defmodule Boruta.Ecto.Codes do
   defp changeset_method(%Oauth.Client{pkce: true}), do: :pkce_code_changeset
 
   @impl Boruta.Oauth.Codes
-  def update_sub(%Oauth.Token{id: id}, sub, metadata_policy) do
+  def update_sub(%Oauth.Token{id: id}, sub, metadata_policy, params) do
     with %Token{} = code <-
            repo().one(
              from t in Token,
                where: t.type in ["code", "preauthorized_code"] and t.id == ^id
            ),
-         {:ok, code} <- Token.sub_changeset(code, sub, metadata_policy) |> repo().update(),
+         {:ok, code} <-
+           Token.sub_changeset(code, sub, metadata_policy, params) |> repo().update(),
          {:ok, token} <- TokenStore.put(to_oauth_schema(code)) do
       {:ok, token}
     else

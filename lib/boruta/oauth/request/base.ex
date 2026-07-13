@@ -7,6 +7,7 @@ defmodule Boruta.Oauth.Request.Base do
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.AuthorizationRequest
   alias Boruta.Oauth.ClientCredentialsRequest
+  alias Boruta.Oauth.CodeChainRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.HybridRequest
   alias Boruta.Oauth.IntrospectRequest
@@ -51,6 +52,20 @@ defmodule Boruta.Oauth.Request.Base do
        dpop: params["dpop"],
        bind_data: params["bind_data"],
        bind_configuration: params["bind_configuration"]
+     }}
+  end
+
+  def build_request(%{"grant_type" => "code_chain"} = params) do
+    {:ok,
+     %CodeChainRequest{
+       client_id: params["client_id"],
+       client_authentication: client_authentication_from_params(params),
+       id_token: params["id_token"],
+       authorization_code: params["authorization_code"],
+       scope: params["scope"],
+       dpop: params["dpop"],
+       code_challenge: params["code_challenge"],
+       code_challenge_method: params["code_challenge_method"]
      }}
   end
 
@@ -171,6 +186,7 @@ defmodule Boruta.Oauth.Request.Base do
     request = %CodeRequest{
       client_id: params["client_id"],
       redirect_uri: params["redirect_uri"],
+      code: params["code"],
       resource_owner: params["resource_owner"],
       state: params["state"],
       nonce: params["nonce"],
@@ -207,6 +223,7 @@ defmodule Boruta.Oauth.Request.Base do
       true ->
         request = %HybridRequest{
           client_id: params["client_id"],
+          code: params["code"],
           code_challenge: params["code_challenge"],
           code_challenge_method: params["code_challenge_method"],
           nonce: params["nonce"],

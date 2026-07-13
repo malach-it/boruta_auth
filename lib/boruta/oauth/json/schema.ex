@@ -62,6 +62,36 @@ defmodule Boruta.Oauth.Json.Schema do
     |> Schema.resolve()
   end
 
+  def code_chain do
+    %{
+      "type" => "object",
+      "properties" => %{
+        "grant_type" => %{"type" => "string", "pattern" => "code_chain"},
+        "client_id" => %{
+          "type" => "string"
+        },
+        "client_authentication" => %{
+          "type" => "object",
+          "properties" => %{
+            "type" => %{"type" => "string", "pattern" => "^(basic|post|jwt)$"},
+            "value" => %{"type" => ["string", "null"]}
+          },
+          "required" => ["type", "value"]
+        },
+        "id_token" => %{"type" => "string"},
+        "authorization_code" => %{"type" => "string"},
+        "scope" => %{"type" => "string"},
+        "code_challenge" => %{"type" => "string"},
+        "code_challenge_method" => %{
+          "type" => "string",
+          "pattern" => "plain|S256"
+        }
+      },
+      "required" => ["grant_type", "client_id", "client_authentication", "id_token"]
+    }
+    |> Schema.resolve()
+  end
+
   def password do
     %{
       "type" => "object",
@@ -253,6 +283,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "nonce" => %{"type" => "string"},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"},
+        "code" => %{"type" => "string"},
         "prompt" => %{"type" => "string"},
         "code_challenge" => %{"type" => "string"},
         "code_challenge_method" => %{
@@ -341,7 +372,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "grant_type" => %{
           "type" => "string",
           "pattern" =>
-            "^(client_credentials|agent_credentials|password|agent_code|authorization_code|refresh_token)$"
+            "^(client_credentials|agent_credentials|code_chain|password|agent_code|authorization_code|refresh_token)$"
         }
       },
       "required" => ["grant_type"]

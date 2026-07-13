@@ -154,6 +154,31 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
+    test "returns an error if user is blocked", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+      resource_owner = %{resource_owner | blocked: true}
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_resource_owner,
+                  error_description: "Resource owner is blocked",
+                  status: :unauthorized,
+                  format: :query,
+                  redirect_uri: redirect_uri
+                }}
+    end
+
     test "returns an error from Ecto", %{client: client, resource_owner: resource_owner} do
       resource_owner = %{resource_owner | sub: 1}
 
@@ -284,6 +309,33 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert type == :code
       assert code
+      assert expires_in
+    end
+
+    test "returns a code with previous_code", %{client: client, resource_owner: resource_owner} do
+      redirect_uri = List.first(client.redirect_uris)
+      previous_code = insert(:token, type: "code").value
+
+      assert {:authorize_success,
+              %AuthorizeResponse{
+                type: :code,
+                code: code,
+                expires_in: expires_in
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "code" => previous_code
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert code.previous_code == previous_code
       assert expires_in
     end
 

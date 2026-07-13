@@ -12,7 +12,9 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     setup do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "jwk" => public_jwk_fixture(),
+          "jwk" => jwk_fixture(),
+          "kid" =>
+            "did:jwk:eyJlIjoiQVFBQiIsImt0eSI6IlJTQSIsIm4iOiIxUGFQX2diWGl4NWl0alJDYWVndklfQjNhRk9lb3hsd1BQTHZmTEhHQTRRZkRtVk9mOGNVOE91WkZBWXpMQXJXM1BubndXV3kzOW5WSk94NDJRUlZHQ0dkVUNtVjdzaERIUnNyODYtMkRsTDdwd1VhOVF5SHNUajg0ZkFKbjJGdjloOW1xckl2VXpBdEVZUmxHRnZqVlRHQ3d6RXVsbHBzQjBHSmFmb3BVVEZieThXZFNxM2RHTEpCQjFyLVE4UXRabkF4eHZvbGh3T21Za0Jra2lkZWZtbTQ4WDdoRlhMMmNTSm0yRzd3UXlpbk9leV9VOHhEWjY4bWdUYWtpcVMyUnRqbkZEMGRucEJsNUNZVGU0czZvWktFeUZpRk5pVzRLa1IxR1Zqc0t3WTlvQzJ0cHlRMEFFVU12azlUOVZkSWx0U0lpQXZPS2x3RnpMNDljZ3daRHcifQ",
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -243,6 +245,30 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                )
 
       # TODO validate credential body
+      assert credential
+    end
+
+    test "issues jwt_vc credential with credential_configuration_id", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      credential_params =
+        credential_params
+        |> Map.delete("credential_identifier")
+        |> Map.put("credential_configuration_id", "VerifiableCredential")
+
+      assert {:ok,
+              %{
+                credential: credential,
+                format: "jwt_vc"
+              }} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:token) |> to_oauth_schema(),
+                 %{}
+               )
+
       assert credential
     end
 
@@ -1072,6 +1098,14 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
   def public_jwk_fixture do
     public_key_fixture()
     |> JOSE.JWK.from_pem()
+    |> JOSE.JWK.to_map()
+    |> elem(1)
+  end
+
+  def jwk_fixture do
+    private_key_fixture()
+    |> JOSE.JWK.from_pem()
+    |> JOSE.JWK.to_public()
     |> JOSE.JWK.to_map()
     |> elem(1)
   end

@@ -169,7 +169,7 @@ defmodule Boruta.OpenidTest.CredentialTest do
       credential_params = %{
         "format" => "jwt_vc",
         "proof" => proof,
-        "credential_identifier" => "VerifiableCredential"
+        "credential_configuration_id" => "VerifiableCredential"
       }
 
       sub = SecureRandom.uuid()
@@ -211,6 +211,14 @@ defmodule Boruta.OpenidTest.CredentialTest do
 
       # TODO validate credential body
       assert credential
+
+      assert %Token{
+               type: "credential",
+               previous_code: ^access_token,
+               value: credential_token
+             } = Repo.get_by(Token, type: "credential", previous_code: access_token)
+
+      assert credential_token
     end
 
     @tag :skip
@@ -622,6 +630,14 @@ defmodule Boruta.OpenidTest.CredentialTest do
               }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
 
       assert acceptance_token
+
+      assert %Token{
+               type: "credential",
+               previous_code: ^access_token,
+               value: credential_token
+             } = Repo.get_by(Token, type: "credential", previous_code: access_token)
+
+      assert credential_token
     end
 
     test "gets a defered credential" do

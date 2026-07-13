@@ -289,7 +289,8 @@ defmodule Boruta.Openid.VerifiableCredentials do
          credential_params,
          token_scopes
        ) do
-    identifier == credential_params["credential_identifier"] ||
+    identifier == credential_params["credential_configuration_id"] ||
+      identifier == credential_params["credential_identifier"] ||
       Enum.member?(token_scopes, identifier)
   end
 
@@ -480,6 +481,18 @@ defmodule Boruta.Openid.VerifiableCredentials do
     now = :os.system_time(:seconds)
     credential_id = SecureRandom.uuid()
 
+    sub =
+      case sub do
+        %{} = sub -> sub
+        sub -> sub |> String.split("#") |> List.first()
+      end
+
+    credential_subject_id =
+      case sub do
+        %{} = sub -> sub
+        sub -> "#{sub}##{credential_identifier}"
+      end
+
     payload = %{
       "sub" => sub,
       # TODO store credential
@@ -506,7 +519,7 @@ defmodule Boruta.Openid.VerifiableCredentials do
             claims
             |> Enum.map(&format_claim/1)
             |> Enum.into(%{})
-            |> Map.put("id", "#{sub}##{credential_identifier}")
+            |> Map.put("id", credential_subject_id)
         },
         "credentialSchema" => %{
           "id" =>

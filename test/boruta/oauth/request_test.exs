@@ -11,6 +11,7 @@ defmodule Boruta.Oauth.RequestTest do
 
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.ClientCredentialsRequest
+  alias Boruta.Oauth.CodeChainRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.IntrospectRequest
@@ -309,6 +310,53 @@ defmodule Boruta.Oauth.RequestTest do
               %RevokeRequest{
                 client_authentication: %{type: "post", value: nil}
               }} = Request.revoke_request(conn)
+    end
+  end
+
+  describe "code chain request (token endpoint)" do
+    test "builds a code chain request" do
+      client_id = SecureRandom.uuid()
+      client_secret = "client_secret"
+
+      conn =
+        conn(:post, "/", %{
+          "grant_type" => "code_chain",
+          "client_id" => client_id,
+          "client_secret" => client_secret,
+          "id_token" => "id.jwt.token",
+          "authorization_code" => "previous_code",
+          "scope" => "openid"
+        })
+
+      assert {:ok,
+              %CodeChainRequest{
+                client_id: ^client_id,
+                client_authentication: %{type: "post", value: ^client_secret},
+                id_token: "id.jwt.token",
+                authorization_code: "previous_code",
+                scope: "openid"
+              }} = Request.token_request(conn)
+    end
+  end
+
+  describe "code request (authorize endpoint)" do
+    test "builds a code request with previous code" do
+      client_id = SecureRandom.uuid()
+
+      conn =
+        conn(:get, "/", %{
+          "response_type" => "code",
+          "client_id" => client_id,
+          "redirect_uri" => "https://redirect.uri",
+          "code" => "previous_code"
+        })
+
+      assert {:ok,
+              %CodeRequest{
+                client_id: ^client_id,
+                redirect_uri: "https://redirect.uri",
+                code: "previous_code"
+              }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
   end
 
