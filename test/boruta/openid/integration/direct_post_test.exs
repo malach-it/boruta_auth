@@ -26,7 +26,9 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
+  alias Boruta.Oauth.ApplicationMock, as: OauthApplicationMock
   alias Boruta.Oauth.Client.Crypto
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
@@ -66,6 +68,28 @@ defmodule Boruta.OpenidTest.DirectPostTest do
             %{
               "path" => ["$.vc.credentialSubject.id"],
               "filter" => %{"type" => "string"}
+            }
+          ]
+        }
+      }
+    ]
+  }
+
+  @request_presentation_definition %{
+    "id" => "request-presentation-definition",
+    "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+    "input_descriptors" => [
+      %{
+        "id" => "request-input",
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+        "constraints" => %{
+          "fields" => [
+            %{
+              "path" => ["$.vc.type"],
+              "filter" => %{
+                "type" => "array",
+                "contains" => %{"const" => "VerifiableAttestation"}
+              }
             }
           ]
         }
@@ -243,7 +267,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        policy_code_chain: policy_code_chain,
        id_token: id_token,
        id_token_with_presentation_definition: id_token_with_presentation_definition,
-       vp_token: vp_token}
+       vp_token: vp_token,
+       wallet_did: wallet_did}
     end
 
     test "returns authentication failure without id_token" do
@@ -899,6 +924,67 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.code.value == code.value
       assert response.state == code.state
       assert response.presentation_definition == @presentation_definition
+    end
+
+    test "oid4vp - authenticates with request provided presentation definition", %{
+      vp_token: vp_token,
+      wallet_did: wallet_did
+    } do
+      conn = %Plug.Conn{}
+      insert(:scope, name: "vp_token", public: true)
+
+      assert {:authorize_success, authorize_response} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "vp_token",
+                     "client_id" => wallet_did,
+                     "redirect_uri" => "openid:",
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token",
+                     "presentation_definition" => @request_presentation_definition
+                   }
+                 },
+                 %ResourceOwner{sub: wallet_did, presentation_configuration: %{}},
+                 OauthApplicationMock
+               )
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "request-presentation-submission",
+          "definition_id" => "request-presentation-definition",
+          "descriptor_map" => [
+            %{
+              "id" => "request-input",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "request-input",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: authorize_response.code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+
+      assert response.vp_token
+      assert response.redirect_uri == "openid:"
+      assert response.code.value == authorize_response.code.value
+      assert response.state == authorize_response.code.state
+      assert response.presentation_definition == @request_presentation_definition
+      refute response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - authenticates (jwe)", %{vp_token: vp_token, code: code} do

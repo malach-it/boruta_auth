@@ -1164,6 +1164,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
           nonce: nonce,
           redirect_uri: redirect_uri,
           resource_owner: %ResourceOwner{} = resource_owner,
+          presentation_definition: presentation_definition,
           response_type: response_type,
           scope: requested_scope,
           state: state,
@@ -1176,7 +1177,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            VerifiablePresentations.response_types(
              response_type,
              requested_scope,
-             resource_owner.presentation_configuration
+             resource_owner.presentation_configuration,
+             presentation_definition
            ),
          {:ok, client} <- authorize_presentation_client(client_id, redirect_uri, response_types),
          {:ok, _code} <-
@@ -1189,7 +1191,8 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
            VerifiablePresentations.presentation_definition(
              response_types,
              resource_owner.presentation_configuration,
-             requested_scope
+             requested_scope,
+             presentation_definition
            ),
          {:ok, resource_owner} <- authorize_presentation_agent_token(agent_token, resource_owner),
          {:ok, scope} <-

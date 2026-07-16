@@ -20,7 +20,12 @@ defmodule Boruta.Openid.VerifiablePresentations do
   # TODO perform client metadata checks
   def check_client_metadata(_client_metadata), do: :ok
 
-  def response_types(response_type, scope, presentation_configuration) do
+  def response_types(
+        response_type,
+        scope,
+        presentation_configuration,
+        request_presentation_definition \\ nil
+      ) do
     response_types = String.split(response_type, " ")
 
     case response_types do
@@ -31,9 +36,12 @@ defmodule Boruta.Openid.VerifiablePresentations do
         response_types
 
       ["vp_token" | rest] ->
-        case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
-               Enum.member?(Scope.split(scope), presentation_identifier)
-             end) do
+        has_presentation_configuration? =
+          Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
+            Enum.member?(Scope.split(scope), presentation_identifier)
+          end)
+
+        case has_presentation_configuration? || not is_nil(request_presentation_definition) do
           true -> String.split(response_type, " ")
           false -> ["id_token" | rest]
         end
@@ -43,20 +51,30 @@ defmodule Boruta.Openid.VerifiablePresentations do
     end
   end
 
-  def presentation_definition(["vp_token" | _response_types], presentation_configuration, scope) do
+  def presentation_definition(
+        ["vp_token" | _response_types],
+        presentation_configuration,
+        scope,
+        request_presentation_definition
+      ) do
     case Enum.find(presentation_configuration, fn {identifier, _configuration} ->
            Enum.member?(Scope.split(scope), identifier)
          end) do
       nil ->
-        {:ok, nil, nil}
+        {:ok, nil, request_presentation_definition}
 
       {identifier, configuration} ->
         {:ok, identifier, configuration[:definition]}
     end
   end
 
-  def presentation_definition(_response_types, _presentation_configuration, _scope),
-    do: {:ok, nil, nil}
+  def presentation_definition(
+        _response_types,
+        _presentation_configuration,
+        _scope,
+        request_presentation_definition
+      ),
+      do: {:ok, nil, request_presentation_definition}
 
   def validate_presentation(
         vp_token,

@@ -22,6 +22,7 @@ defmodule Boruta.Oauth.PresentationRequest do
           response_type: String.t(),
           client_metadata: String.t(),
           authorization_details: String.t(),
+          presentation_definition: String.t() | nil,
           client_encryption_key: map() | nil,
           client_encryption_alg: String.t() | nil
         }
@@ -42,6 +43,7 @@ defmodule Boruta.Oauth.PresentationRequest do
             code_challenge_method: "plain",
             authorization_details: "[]",
             client_metadata: "{}",
+            presentation_definition: nil,
             client_encryption_key: nil,
             client_encryption_alg: nil
 end

@@ -274,6 +274,7 @@ defmodule Boruta.Oauth.Request.Base do
       agent_token: params["agent_token"],
       scope: params["scope"],
       client_metadata: client_metadata,
+      presentation_definition: params["presentation_definition"],
       response_type: response_type,
       client_encryption_key: params["client_encryption_key"],
       client_encryption_alg: params["client_encryption_alg"]
