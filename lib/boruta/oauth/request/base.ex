@@ -274,7 +274,7 @@ defmodule Boruta.Oauth.Request.Base do
       agent_token: params["agent_token"],
       scope: params["scope"],
       client_metadata: client_metadata,
-      presentation_definition: params["presentation_definition"],
+      presentation_definition: decode_presentation_definition(params["presentation_definition"]),
       response_type: response_type,
       client_encryption_key: params["client_encryption_key"],
       client_encryption_alg: params["client_encryption_alg"]
@@ -288,6 +288,22 @@ defmodule Boruta.Oauth.Request.Base do
 
     {:ok, request}
   end
+
+  defp decode_presentation_definition(nil), do: nil
+
+  defp decode_presentation_definition(presentation_definition)
+       when is_map(presentation_definition),
+       do: presentation_definition
+
+  defp decode_presentation_definition(presentation_definition)
+       when is_binary(presentation_definition) do
+    case Jason.decode(presentation_definition) do
+      {:ok, decoded_presentation_definition} -> decoded_presentation_definition
+      {:error, _error} -> presentation_definition
+    end
+  end
+
+  defp decode_presentation_definition(presentation_definition), do: presentation_definition
 
   def fetch_unsigned_request(%{query_params: %{"request" => request}}, _client)
       when is_binary(request) do
