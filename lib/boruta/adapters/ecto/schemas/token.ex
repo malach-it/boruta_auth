@@ -358,8 +358,14 @@ defmodule Boruta.Ecto.Token do
   end
 
   @doc false
-  def sub_changeset(code, sub, metadata_policy) do
-    change(code, %{sub: sub, type: "code", metadata_policy: metadata_policy})
+  def sub_changeset(code, sub, claims) do
+    change(code, %{
+      sub: sub,
+      type: "code",
+      metadata_policy: Map.get(claims, "metadata_policy", code.metadata_policy),
+      presentation_definition:
+        Map.get(claims, "presentation_definition", code.presentation_definition)
+    })
   end
 
   @doc false

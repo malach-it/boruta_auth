@@ -13,6 +13,7 @@ defmodule Boruta.Openid.DirectPostResponse do
     :client_encryption_alg,
     :response_types,
     :state,
+    :presentation_definition,
     :error
   ]
 
@@ -26,6 +27,7 @@ defmodule Boruta.Openid.DirectPostResponse do
     client_encryption_alg: String.t() | nil,
     response_types: String.t(),
     state: String.t() | nil,
+    presentation_definition: map() | nil,
     error: Boruta.Oauth.Error.t() | nil
   }
 end

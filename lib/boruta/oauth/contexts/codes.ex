@@ -55,7 +55,7 @@ defmodule Boruta.Oauth.Codes do
   @callback update_sub(
               preauthorized_code :: Boruta.Oauth.Token.t(),
               sub :: String.t(),
-              metadata_policy :: map()
+              claims :: map()
             ) ::
               {:ok, preauthorized_code :: Boruta.Oauth.Token.t()} | {:error, reason :: term()}
 
