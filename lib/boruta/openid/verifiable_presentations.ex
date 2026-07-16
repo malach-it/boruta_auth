@@ -281,6 +281,15 @@ defmodule Boruta.Openid.VerifiablePresentations do
 
   defp validate_constraints(_claims, _descriptor), do: {:error, "descriptor is invalid."}
 
+  defp validate_filter(value, %{"type" => "number", "const" => expected})
+       when is_number(value) and value == expected,
+       do: :ok
+
+  defp validate_filter(_value, %{"type" => "number", "const" => expected}),
+    do: {:error, "does not equal #{inspect(expected)}."}
+
+  defp validate_filter(value, %{"type" => "number"}) when is_number(value), do: :ok
+
   defp validate_filter(value, %{"type" => "array", "contains" => %{"const" => contains}})
        when is_list(value) do
     case Enum.member?(value, contains) do
