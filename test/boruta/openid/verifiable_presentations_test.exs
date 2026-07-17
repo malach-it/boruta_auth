@@ -246,6 +246,84 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
              ) == :ok
     end
 
+    test "returns ok with a vc+sd-jwt credential" do
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk_fixture(),
+          "typ" => "vc+sd-jwt"
+        })
+
+      disclosure = sd_jwt_disclosure(["salt", "firstname", "firstname"])
+
+      {:ok, credential_jwt, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "iss" => "issuer",
+            "exp" => :os.system_time(:second) + 10,
+            "_sd" => [sd_jwt_disclosure_hash(disclosure)]
+          },
+          signer
+        )
+
+      sd_jwt_credential = credential_jwt <> "~" <> disclosure <> "~"
+
+      {:ok, vp_token, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "iss" => did_jwk_fixture(),
+            "vp" => %{
+              "verifiableCredential" => [sd_jwt_credential]
+            }
+          },
+          signer
+        )
+
+      presentation_submission = %{
+        "id" => "test",
+        "definition_id" => "test",
+        "descriptor_map" => [
+          %{
+            "id" => "test",
+            "format" => "jwt_vp",
+            "path" => "$",
+            "path_nested" => %{
+              "id" => "test",
+              "format" => "vc+sd-jwt",
+              "path" => "$.vp.verifiableCredential[0]"
+            }
+          }
+        ]
+      }
+
+      presentation_definition = %{
+        "id" => "test",
+        "format" => %{"vc+sd-jwt" => %{"alg" => ["RS256"]}, "jwt_vp" => %{"alg" => ["RS256"]}},
+        "input_descriptors" => [
+          %{
+            "id" => "test",
+            "format" => %{"vc+sd-jwt" => %{"alg" => ["RS256"]}},
+            "constraints" => %{
+              "fields" => [
+                %{
+                  "path" => ["$.firstname"],
+                  "filter" => %{
+                    "type" => "string",
+                    "pattern" => "first"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+
+      assert VerifiablePresentations.validate_presentation(
+               vp_token,
+               presentation_submission,
+               presentation_definition
+             ) == :ok
+    end
+
     test "returns an error when input descriptor and descriptor map counts do not match", %{
       vp_token: vp_token
     } do
@@ -802,6 +880,79 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
                :ok
     end
+
+    test "validates vc+sd-jwt credential", %{signer: signer} do
+      disclosure = sd_jwt_disclosure(["salt", "firstname", "firstname"])
+
+      {:ok, credential_jwt, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "iss" => "issuer",
+            "exp" => :os.system_time(:second) + 10,
+            "_sd" => [sd_jwt_disclosure_hash(disclosure)]
+          },
+          signer
+        )
+
+      descriptor = %{
+        "id" => "test",
+        "format" => %{"vc+sd-jwt" => %{"alg" => ["RS256"]}},
+        "constraints" => %{
+          "fields" => [
+            %{
+              "path" => ["$.firstname"],
+              "filter" => %{
+                "type" => "string",
+                "pattern" => "first"
+              }
+            }
+          ]
+        }
+      }
+
+      assert VerifiablePresentations.validate_credential(
+               credential_jwt <> "~" <> disclosure <> "~",
+               descriptor,
+               "vc+sd-jwt"
+             ) == :ok
+    end
+
+    test "returns an error with invalid vc+sd-jwt disclosure", %{signer: signer} do
+      disclosure = sd_jwt_disclosure(["salt", "firstname", "firstname"])
+      tampered_disclosure = sd_jwt_disclosure(["salt", "firstname", "tampered"])
+
+      {:ok, credential_jwt, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "iss" => "issuer",
+            "exp" => :os.system_time(:second) + 10,
+            "_sd" => [sd_jwt_disclosure_hash(disclosure)]
+          },
+          signer
+        )
+
+      descriptor = %{
+        "id" => "test",
+        "format" => %{"vc+sd-jwt" => %{"alg" => ["RS256"]}},
+        "constraints" => %{"fields" => []}
+      }
+
+      assert VerifiablePresentations.validate_credential(
+               credential_jwt <> "~" <> tampered_disclosure <> "~",
+               descriptor,
+               "vc+sd-jwt"
+             ) == {:error, "contains an invalid disclosure."}
+    end
+  end
+
+  defp sd_jwt_disclosure(disclosure) do
+    disclosure
+    |> Jason.encode!()
+    |> Base.url_encode64(padding: false)
+  end
+
+  defp sd_jwt_disclosure_hash(disclosure) do
+    :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
   end
 
   describe "validate_signature/1" do

@@ -15,6 +15,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Scope
   alias Boruta.Openid.Json.Schema
+  alias Boruta.Openid.VerifiableCredentials.Status
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   # TODO perform client metadata checks
@@ -180,13 +181,105 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   def validate_credential(
+        credential,
+        descriptor,
+        "vc+sd-jwt",
+        _trusted_authorities,
+        _trusted_hosts
+      ) do
+    with {:ok, jwt, disclosures} <- decode_sd_jwt(credential),
+         {:ok, _jwk, claims} <- validate_signature(jwt),
+         :ok <- validate_expiration(claims),
+         {:ok, disclosed_claims} <- validate_disclosures(claims, disclosures),
+         :ok <- validate_disclosure_statuses(claims, disclosures) do
+      claims
+      |> Map.merge(disclosed_claims)
+      |> validate_constraints(descriptor)
+    end
+  end
+
+  def validate_credential(
         _credential,
         _descriptor,
         format,
         _trusted_authorities,
         _trusted_hosts
       ),
-      do: {:error, "format \"#{format}\" is not supported"}
+    do: {:error, "format \"#{format}\" is not supported"}
+
+  defp decode_sd_jwt(credential) when is_binary(credential) do
+    case String.split(credential, "~") do
+      [jwt | disclosures] when jwt != "" ->
+        disclosures = Enum.reject(disclosures, &(&1 == ""))
+
+        case disclosures do
+          [] -> {:error, "does not contain disclosures."}
+          disclosures -> {:ok, jwt, disclosures}
+        end
+
+      _ ->
+        {:error, "is not a valid SD-JWT credential."}
+    end
+  end
+
+  defp decode_sd_jwt(_credential), do: {:error, "is not a valid SD-JWT credential."}
+
+  defp validate_disclosures(%{"_sd" => sd_hashes}, disclosures) when is_list(sd_hashes) do
+    Enum.reduce_while(disclosures, {:ok, %{}}, fn disclosure, {:ok, claims} ->
+      with :ok <- validate_disclosure_hash(disclosure, sd_hashes),
+           {:ok, [_salt, name, value]} <- decode_disclosure(disclosure) do
+        {:cont, {:ok, put_disclosed_claim(claims, String.split(name, "."), value)}}
+      else
+        {:error, error} -> {:halt, {:error, error}}
+      end
+    end)
+  end
+
+  defp validate_disclosures(_claims, _disclosures), do: {:error, "_sd claim is missing."}
+
+  defp validate_disclosure_hash(disclosure, sd_hashes) do
+    hash = :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
+
+    case Enum.member?(sd_hashes, hash) do
+      true -> :ok
+      false -> {:error, "contains an invalid disclosure."}
+    end
+  end
+
+  defp decode_disclosure(disclosure) do
+    with {:ok, decoded} <- Base.url_decode64(disclosure, padding: false),
+         {:ok, [_salt, name, _value] = disclosure_claim} when is_binary(name) <-
+           Jason.decode(decoded) do
+      {:ok, disclosure_claim}
+    else
+      _ -> {:error, "contains an invalid disclosure."}
+    end
+  end
+
+  defp put_disclosed_claim(claims, [key], value), do: Map.put(claims, key, value)
+
+  defp put_disclosed_claim(claims, [key | rest], value) do
+    Map.put(claims, key, put_disclosed_claim(Map.get(claims, key, %{}), rest, value))
+  end
+
+  defp validate_disclosure_statuses(%{"iss" => iss}, disclosures) do
+    Enum.reduce_while(disclosures, :ok, fn disclosure, :ok ->
+      with {:ok, [status_token, _name, _value]} <- decode_disclosure(disclosure),
+           true <- String.contains?(status_token, "~") do
+        case Status.verify_status_token(iss, status_token) do
+          :valid -> {:cont, :ok}
+          :suspended -> {:halt, {:error, "is suspended."}}
+          :revoked -> {:halt, {:error, "is revoked."}}
+          :expired -> {:halt, {:error, "is expired."}}
+          :invalid -> {:halt, {:error, "has an invalid status."}}
+        end
+      else
+        _ -> {:cont, :ok}
+      end
+    end)
+  end
+
+  defp validate_disclosure_statuses(_claims, _disclosures), do: :ok
 
   defp validate_expiration(%{"exp" => expiry}) do
     case expiry > :os.system_time(:second) do
