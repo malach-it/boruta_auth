@@ -212,6 +212,28 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
                Client.authorize(id: client.id, source: source, grant_type: "client_credentials")
     end
 
+    test "returns an error with expired client secret jwt auth method" do
+      client =
+        insert(:client,
+          token_endpoint_auth_methods: ["client_secret_jwt"],
+          token_endpoint_jwt_auth_alg: "HS512"
+        )
+
+      signer = Joken.Signer.create("HS512", client.secret)
+
+      {:ok, client_assertion, _claims} =
+        Token.encode_and_sign(%{"exp" => Joken.current_time() - 1}, signer)
+
+      source = %{type: "jwt", value: client_assertion}
+
+      assert {:error,
+              %Error{
+                error: :invalid_client,
+                error_description: "The given client secret jwt does not match signature key."
+              }} =
+               Client.authorize(id: client.id, source: source, grant_type: "client_credentials")
+    end
+
     test "authorizes with private key jwt auth method" do
       client =
         insert(:client,
@@ -241,6 +263,29 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       source = %{type: "jwt", value: client_assertion}
 
       assert {:ok, _client} =
+               Client.authorize(id: client.id, source: source, grant_type: "client_credentials")
+    end
+
+    test "returns an error with expired private key jwt auth method" do
+      client =
+        insert(:client,
+          token_endpoint_auth_methods: ["private_key_jwt"],
+          token_endpoint_jwt_auth_alg: "RS512",
+          jwt_public_key: valid_public_key()
+        )
+
+      signer = Joken.Signer.create("RS512", %{"pem" => valid_private_key()})
+
+      {:ok, client_assertion, _claims} =
+        Token.encode_and_sign(%{"exp" => Joken.current_time() - 1}, signer)
+
+      source = %{type: "jwt", value: client_assertion}
+
+      assert {:error,
+              %Error{
+                error: :invalid_client,
+                error_description: "The given client secret jwt does not match signature key."
+              }} =
                Client.authorize(id: client.id, source: source, grant_type: "client_credentials")
     end
 
