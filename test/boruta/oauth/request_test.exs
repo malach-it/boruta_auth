@@ -767,7 +767,8 @@ defmodule Boruta.Oauth.RequestTest do
       assert {:error,
               %Error{
                 error: :invalid_request,
-                error_description: "Invalid trusted hosts configuration."
+                error_description:
+                  "Client must configure trusted hosts or authorities for outbound requests."
               }} = Request.token_request(conn)
     end
 

@@ -11,9 +11,12 @@ defmodule Boruta.HttpClient do
           {:ok, Finch.Response.t()} | {:error, term()}
   def get(url, trusted_authorities \\ "", trusted_hosts \\ [])
 
+  def get(_url, "", []),
+    do: {:error, "Client must configure trusted hosts or authorities for outbound requests."}
+
   def get(url, trusted_authorities, trusted_hosts) do
     with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
-      {:ok, trusted_authorities} <- parse_trusted_authorities(trusted_authorities) do
+         {:ok, trusted_authorities} <- validate_trusted_authorities(trusted_authorities) do
       trusted_get(url, trusted_hosts, trusted_authorities)
     end
   end
@@ -72,7 +75,7 @@ defmodule Boruta.HttpClient do
 
   defp normalize_host(_host), do: :error
 
-  defp parse_trusted_authorities(trusted_authorities) do
+  defp validate_trusted_authorities(trusted_authorities) do
     trusted_authorities
     |> String.trim()
     |> case do
@@ -129,6 +132,7 @@ defmodule Boruta.HttpClient do
       case trusted_authorities do
         [] ->
           {:ok, url, :public_key.cacerts_get()}
+
         trusted_authorities ->
           {:ok, url, trusted_authorities}
       end

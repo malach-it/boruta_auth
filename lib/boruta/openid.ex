@@ -64,7 +64,11 @@ defmodule Boruta.Openid do
   defp parse_registration_params(params, %{jwks_uri: jwks_uri} = acc) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           HttpClient.get(jwks_uri, params[:trusted_authorities] || params["trusted_authorities"]),
+           HttpClient.get(
+             jwks_uri,
+             params[:trusted_authorities] || params["trusted_authorities"] || "",
+             params[:trusted_hosts] || params["trusted_hosts"] || []
+           ),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings) do
       params =
         params
