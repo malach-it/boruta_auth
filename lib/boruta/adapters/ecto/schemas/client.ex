@@ -51,7 +51,8 @@ defmodule Boruta.Ecto.Client do
           public_key: String.t(),
           private_key: String.t(),
           response_mode: String.t(),
-          trusted_authorities: String.t() | nil,
+          trusted_authorities: String.t(),
+          trusted_hosts: list(String.t()),
           signatures_adapter: String.t(),
           key_pair_type: map()
         }
@@ -170,7 +171,8 @@ defmodule Boruta.Ecto.Client do
     field(:metadata, :map, default: %{})
 
     field(:response_mode, :string, default: "direct_post")
-    field(:trusted_authorities, :string)
+    field(:trusted_authorities, :string, default: "")
+    field(:trusted_hosts, {:array, :string}, default: [])
 
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
@@ -216,7 +218,8 @@ defmodule Boruta.Ecto.Client do
       :metadata,
       :response_mode,
       :signatures_adapter,
-      :key_pair_type
+      :key_pair_type,
+      :trusted_hosts
     ])
     |> cast_trusted_authorities(attrs)
     |> validate_required([:redirect_uris, :key_pair_type])
@@ -287,7 +290,8 @@ defmodule Boruta.Ecto.Client do
       :metadata,
       :response_mode,
       :signatures_adapter,
-      :key_pair_type
+      :key_pair_type,
+      :trusted_hosts
     ])
     |> cast_trusted_authorities(attrs)
     |> validate_required([

@@ -212,7 +212,8 @@ defmodule Boruta.Openid do
              maybe_check_presentation(
                direct_post_params,
                code.presentation_definition,
-               code.client.trusted_authorities
+               code.client.trusted_authorities,
+               code.client.trusted_hosts
              ),
            {:ok, code} <-
              CodesAdapter.update_client_encryption(code, %{
@@ -515,7 +516,8 @@ defmodule Boruta.Openid do
   defp maybe_check_presentation(
          %{vp_token: vp_token, presentation_submission: presentation_submission},
          presentation_definition,
-         trusted_authorities
+         trusted_authorities,
+         trusted_hosts
        )
        when not is_nil(vp_token) do
     case Jason.decode(presentation_submission) do
@@ -524,7 +526,8 @@ defmodule Boruta.Openid do
                vp_token,
                presentation_submission,
                presentation_definition,
-               trusted_authorities
+               trusted_authorities,
+               trusted_hosts
              ) do
           :ok ->
             :ok
@@ -555,7 +558,8 @@ defmodule Boruta.Openid do
   defp maybe_check_presentation(
          %{vp_token: vp_token},
          _presentation_definition,
-         _trusted_authorities
+         _trusted_authorities,
+         _trusted_hosts
        )
        when not is_nil(vp_token) do
     {:error,
@@ -567,7 +571,7 @@ defmodule Boruta.Openid do
      }}
   end
 
-  defp maybe_check_presentation(_, _, _), do: :ok
+  defp maybe_check_presentation(_, _, _, _), do: :ok
 
   defp maybe_revoke_code_chain(%{credential: _credential}, code_chain) do
     CodesAdapter.revoke(code_chain)
@@ -609,7 +613,11 @@ defmodule Boruta.Openid do
   defp parse_registration_params(params, %{jwks_uri: jwks_uri} = acc) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           HttpClient.get(jwks_uri, params[:trusted_authorities] || params["trusted_authorities"]),
+           HttpClient.get(
+             jwks_uri,
+             params[:trusted_authorities] || params["trusted_authorities"],
+             params[:trusted_hosts] || params["trusted_hosts"]
+           ),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings) do
       params =
         params

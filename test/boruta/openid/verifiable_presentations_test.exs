@@ -605,7 +605,8 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                credential,
                descriptor,
                "jwt_vc",
-               server.trusted_authorities
+               server.trusted_authorities,
+               ["localhost"]
              ) == :ok
 
       assert VerifiablePresentations.validate_credential(
@@ -613,6 +614,14 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                descriptor,
                "jwt_vc",
                server.wrong_trusted_authorities
+             ) == {:error, "could not get status list."}
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor,
+               "jwt_vc",
+               server.trusted_authorities,
+               ["example.com"]
              ) == {:error, "could not get status list."}
     end
 
