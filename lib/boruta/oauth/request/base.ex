@@ -2,7 +2,6 @@ defmodule Boruta.Oauth.Request.Base do
   @moduledoc false
 
   alias Boruta.BasicAuth
-  alias Boruta.ClientsAdapter
   alias Boruta.HttpClient
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.Client
@@ -136,7 +135,8 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request" => request}}) do
+  def fetch_unsigned_request(%{query_params: %{"request" => request}}, _client)
+      when is_binary(request) do
     case Joken.peek_claims(request) do
       {:ok, params} ->
         {:ok, params}
@@ -146,11 +146,10 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri} = params}) do
+  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}, client) do
     with %URI{scheme: "" <> scheme} when scheme in ["http", "https"] <- URI.parse(request_uri),
-         {trusted_authorities, trusted_hosts} <- outbound_trust_from_params(params),
          {:ok, %Finch.Response{body: request, status: 200}} <-
-           HttpClient.get(request_uri, trusted_authorities, trusted_hosts),
+           client_get(request_uri, client),
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
@@ -162,7 +161,7 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{body_params: %{"request" => request}}) do
+  def fetch_unsigned_request(%{body_params: %{"request" => request}}, _client) do
     case Joken.peek_claims(request) do
       {:ok, params} ->
         {:ok, params}
@@ -172,11 +171,10 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri} = params}) do
+  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri}}, client) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
-         {trusted_authorities, trusted_hosts} <- outbound_trust_from_params(params),
          {:ok, %Finch.Response{body: request, status: 200}} <-
-           HttpClient.get(request_uri, trusted_authorities, trusted_hosts),
+           client_get(request_uri, client),
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
@@ -188,7 +186,7 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(_request) do
+  def fetch_unsigned_request(_request, _client) do
     {:ok, %{}}
   end
 
@@ -302,15 +300,12 @@ defmodule Boruta.Oauth.Request.Base do
     %{type: client_authentication["type"], value: client_authentication["value"]}
   end
 
-  defp outbound_trust_from_params(%{"client_id" => client_id}) do
-    case ClientsAdapter.get_client(client_id) do
-      %Client{trusted_authorities: trusted_authorities, trusted_hosts: trusted_hosts} ->
-        {trusted_authorities, trusted_hosts}
-
-      _ ->
-        {"", []}
-    end
+  defp client_get(
+         url,
+         %Client{trusted_authorities: trusted_authorities, trusted_hosts: trusted_hosts}
+       ) do
+    HttpClient.get(url, trusted_authorities, trusted_hosts)
   end
 
-  defp outbound_trust_from_params(_params), do: {"", []}
+  defp client_get(url, _client), do: HttpClient.get(url)
 end

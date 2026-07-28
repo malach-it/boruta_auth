@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Request.Authorize do
 
   import Boruta.Oauth.Request.Base
 
+  alias Boruta.ClientsAdapter
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.HybridRequest
@@ -24,7 +25,8 @@ defmodule Boruta.Oauth.Request.Authorize do
                | TokenRequest.t()
                | HybridRequest.t()}
   def request(%{query_params: query_params} = request, resource_owner) do
-    with {:ok, unsigned_params} <- fetch_unsigned_request(request),
+    with client <- ClientsAdapter.get_client(query_params["client_id"]),
+         {:ok, unsigned_params} <- fetch_unsigned_request(request, client),
          {:ok, params} <-
            Validator.validate(
              :authorize,

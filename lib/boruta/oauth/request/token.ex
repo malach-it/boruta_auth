@@ -3,6 +3,7 @@ defmodule Boruta.Oauth.Request.Token do
 
   import Boruta.Oauth.Request.Base
 
+  alias Boruta.ClientsAdapter
   alias Boruta.Oauth.AuthorizationCodeRequest
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.Error
@@ -24,7 +25,8 @@ defmodule Boruta.Oauth.Request.Token do
                | ClientCredentialsRequest.t()
                | PasswordRequest.t()}
   def request(%{body_params: body_params} = request) do
-    with {:ok, unsigned_params} <- fetch_unsigned_request(request),
+    with client <- ClientsAdapter.get_client(body_params["client_id"]),
+         {:ok, unsigned_params} <- fetch_unsigned_request(request, client),
          {:ok, client_authentication_params} <- fetch_client_authentication(request),
          {:ok, params} <-
            Validator.validate(
