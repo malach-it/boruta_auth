@@ -31,7 +31,7 @@ defmodule Boruta.HttpClientTest do
   end
 
   test "rejects the request when trusted authorities is empty", %{url: url} do
-    assert {:error, "Host certificate is not trusted."} =
+    assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} =
              HttpClient.get(url, "")
   end
 
@@ -77,7 +77,7 @@ defmodule Boruta.HttpClientTest do
   test "rejects the request when neither trusted hosts nor authorities are configured", %{
     url: url
   } do
-    assert {:error, "Host certificate is not trusted."} =
+    assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} =
              HttpClient.get(url)
   end
 end

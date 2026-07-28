@@ -518,9 +518,9 @@ defmodule Boruta.Oauth.Request.Base do
         {trusted_authorities, trusted_hosts}
 
       _ ->
-        {nil, nil}
+        {"", []}
     end
   end
 
-  defp outbound_trust_from_params(_params), do: {nil, nil}
+  defp outbound_trust_from_params(_params), do: {"", []}
 end

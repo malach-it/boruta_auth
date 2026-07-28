@@ -615,8 +615,8 @@ defmodule Boruta.Openid do
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
            HttpClient.get(
              jwks_uri,
-             params[:trusted_authorities] || params["trusted_authorities"],
-             params[:trusted_hosts] || params["trusted_hosts"]
+             params[:trusted_authorities] || params["trusted_authorities"] || "",
+             params[:trusted_hosts] || params["trusted_hosts"] || []
            ),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings) do
       params =
