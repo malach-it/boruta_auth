@@ -65,7 +65,7 @@ defmodule Boruta.Ecto.Clients do
            repo().get_by(Ecto.Client, id: client_id),
          %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           HttpClient.get(jwks_uri, client.trusted_authorities),
+           HttpClient.get(jwks_uri, client.trusted_authorities, client.trusted_hosts),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings),
          {:ok, %Ecto.Client{jwt_public_key: jwt_public_key}} <-
            Ecto.Client.update_changeset(client, %{

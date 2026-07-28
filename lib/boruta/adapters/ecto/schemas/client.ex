@@ -41,7 +41,8 @@ defmodule Boruta.Ecto.Client do
           jwt_public_key: String.t(),
           public_key: String.t(),
           private_key: String.t(),
-          trusted_authorities: String.t() | nil
+          trusted_authorities: String.t(),
+          trusted_hosts: list(String.t())
         }
 
   @token_endpoint_auth_methods [
@@ -101,7 +102,8 @@ defmodule Boruta.Ecto.Client do
     field(:logo_uri, :string)
     field(:metadata, :map, default: %{})
 
-    field(:trusted_authorities, :string)
+    field(:trusted_authorities, :string, default: "")
+    field(:trusted_hosts, {:array, :string}, default: [])
 
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
@@ -137,7 +139,8 @@ defmodule Boruta.Ecto.Client do
       :id_token_kid,
       :userinfo_signed_response_alg,
       :logo_uri,
-      :metadata
+      :metadata,
+      :trusted_hosts
     ])
     |> cast_trusted_authorities(attrs)
     |> validate_required([:redirect_uris])
@@ -192,7 +195,8 @@ defmodule Boruta.Ecto.Client do
       :id_token_kid,
       :userinfo_signed_response_alg,
       :logo_uri,
-      :metadata
+      :metadata,
+      :trusted_hosts
     ])
     |> cast_trusted_authorities(attrs)
     |> validate_required([

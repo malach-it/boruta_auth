@@ -245,26 +245,31 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
     end
 
     test "authorizes with private key jwt auth method with key rotation" do
-      bypass = Bypass.open()
-      jwks_uri = "http://localhost:#{bypass.port}/jwks"
+      {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
+      jwk = Map.put(jwk, "alg", "RS512")
+
+      {:ok, server} = Boruta.Support.TLSServer.start(Jason.encode!(%{"keys" => [jwk]}))
+
+      on_exit(fn ->
+        Boruta.Support.TLSServer.stop(server)
+      end)
 
       client =
         insert(:client,
           token_endpoint_auth_methods: ["private_key_jwt"],
           token_endpoint_jwt_auth_alg: "RS512",
           jwt_public_key: valid_public_key(),
-          jwks_uri: jwks_uri
+          jwks_uri: "#{server.url}/jwks",
+          trusted_authorities: server.trusted_authorities,
+          trusted_hosts: ["localhost"]
         )
 
       signer = Joken.Signer.create("RS512", %{"pem" => other_valid_private_key()})
-      {:ok, client_assertion, _claims} = Token.encode_and_sign(%{}, signer)
-      source = %{type: "jwt", value: client_assertion}
 
-      {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
-      jwk = Map.put(jwk, "alg", "RS512")
-      Bypass.expect_once(bypass, "GET", "/jwks", fn conn ->
-        Plug.Conn.resp(conn, 200, Jason.encode!(%{"keys" => [jwk]}))
-      end)
+      {:ok, client_assertion, _claims} =
+        Token.encode_and_sign(%{"exp" => Joken.current_time() + 60}, signer)
+
+      source = %{type: "jwt", value: client_assertion}
 
       assert {:ok, _client} =
                Client.authorize(id: client.id, source: source, grant_type: "client_credentials")

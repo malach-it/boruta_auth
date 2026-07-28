@@ -37,7 +37,8 @@ defmodule Boruta.Oauth.Client do
             public_key: nil,
             private_key: nil,
             logo_uri: nil,
-            trusted_authorities: nil,
+            trusted_authorities: "",
+            trusted_hosts: [],
             metadata: %{}
 
   @type t :: %__MODULE__{
@@ -67,6 +68,7 @@ defmodule Boruta.Oauth.Client do
           private_key: String.t(),
           logo_uri: String.t() | nil,
           trusted_authorities: String.t() | nil,
+          trusted_hosts: list(String.t()) | nil,
           metadata: map()
         }
 

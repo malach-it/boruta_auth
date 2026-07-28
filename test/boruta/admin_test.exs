@@ -92,8 +92,12 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
-    test "creates a client with trusted authorities defaulting to nil" do
-      assert {:ok, %Client{trusted_authorities: nil}} = Admin.create_client(@client_valid_attrs)
+    test "creates a client with trusted authorities defaulting to empty" do
+      assert {:ok, %Client{trusted_authorities: ""}} = Admin.create_client(@client_valid_attrs)
+    end
+
+    test "creates a client with trusted hosts defaulting to empty" do
+      assert {:ok, %Client{trusted_hosts: []}} = Admin.create_client(@client_valid_attrs)
     end
 
     test "creates a client with supported_grant_types" do
@@ -202,6 +206,35 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.create_client(
                  Map.merge(@client_valid_attrs, %{
                    trusted_authorities: nil
+                 })
+               )
+    end
+
+    test "creates a client with trusted hosts" do
+      trusted_hosts = ["issuer.example.com", "status.example.com"]
+
+      assert {:ok, %Client{trusted_hosts: ^trusted_hosts}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_hosts: trusted_hosts
+                 })
+               )
+    end
+
+    test "creates a client with empty trusted hosts" do
+      assert {:ok, %Client{trusted_hosts: []}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_hosts: []
+                 })
+               )
+    end
+
+    test "creates a client with nil trusted hosts" do
+      assert {:ok, %Client{trusted_hosts: nil}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_hosts: nil
                  })
                )
     end
@@ -361,6 +394,28 @@ defmodule Boruta.Ecto.AdminTest do
 
       assert {:ok, %Client{trusted_authorities: nil}} =
                Admin.update_client(client, %{"trusted_authorities" => nil})
+    end
+
+    test "updates the client with trusted hosts" do
+      trusted_hosts = ["issuer.example.com", "status.example.com"]
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_hosts: ^trusted_hosts}} =
+               Admin.update_client(client, %{"trusted_hosts" => trusted_hosts})
+    end
+
+    test "updates the client with empty trusted hosts" do
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_hosts: []}} =
+               Admin.update_client(client, %{"trusted_hosts" => []})
+    end
+
+    test "updates the client with nil trusted hosts" do
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_hosts: nil}} =
+               Admin.update_client(client, %{"trusted_hosts" => nil})
     end
 
     test "updates the client with authorized scopes" do

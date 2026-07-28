@@ -3,26 +3,81 @@ defmodule Boruta.HttpClient do
 
   @receive_timeout 15_000
 
-  @spec get(url :: String.t(), trusted_authorities :: String.t() | nil) ::
+  @spec get(
+          url :: String.t(),
+          trusted_authorities :: String.t(),
+          trusted_hosts :: list(String.t())
+        ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
-  def get(url, nil), do: Finch.build(:get, url) |> Finch.request(OpenIDHttpClient)
+  def get(url, trusted_authorities \\ "", trusted_hosts \\ [])
 
-  def get(url, trusted_authorities) when is_binary(trusted_authorities) do
-    case parse_trusted_authorities(trusted_authorities) do
-      {:ok, cacerts} -> pinned_get(url, cacerts)
+  def get(url, trusted_authorities, trusted_hosts) do
+    with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
+      {:ok, trusted_authorities} <- parse_trusted_authorities(trusted_authorities) do
+      trusted_get(url, trusted_hosts, trusted_authorities)
+    end
+  end
+
+  defp validate_trusted_hosts(_url, []),
+    do: {:ok, []}
+
+  defp validate_trusted_hosts(url, trusted_hosts) when is_list(trusted_hosts) do
+    with {:ok, host} <- host_from_url(url),
+         {:ok, trusted_hosts} <- normalize_hosts(trusted_hosts),
+         true <- Enum.member?(trusted_hosts, host) do
+      {:ok, [host]}
+    else
+      false -> {:error, "Host is not trusted for outbound requests."}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  def get(url, _trusted_authorities),
-    do: Finch.build(:get, url) |> Finch.request(OpenIDHttpClient)
+  defp validate_trusted_hosts(_url, _trusted_hosts) do
+    {:error, "Invalid trusted hosts configuration."}
+  end
+
+  defp host_from_url(url) do
+    case Finch.Request.parse_url(url) do
+      {scheme, host, _port, _path, _query} when scheme in [:http, :https] ->
+        case normalize_host(host) do
+          {:ok, normalized_host} -> {:ok, normalized_host}
+          :error -> {:error, "Could not parse outbound request host."}
+        end
+
+      _ ->
+        {:error, "Could not parse outbound request host."}
+    end
+  rescue
+    _error -> {:error, "Could not parse outbound request host."}
+  end
+
+  defp normalize_hosts(trusted_hosts) do
+    Enum.reduce_while(trusted_hosts, {:ok, []}, fn trusted_host, {:ok, normalized_hosts} ->
+      case normalize_host(trusted_host) do
+        {:ok, normalized_host} ->
+          {:cont, {:ok, [normalized_host | normalized_hosts]}}
+
+        :error ->
+          {:halt, {:error, "Invalid trusted hosts configuration."}}
+      end
+    end)
+  end
+
+  defp normalize_host(host) when is_binary(host) do
+    case host |> String.trim() |> String.trim_trailing(".") |> String.downcase() do
+      "" -> :error
+      normalized_host -> {:ok, normalized_host}
+    end
+  end
+
+  defp normalize_host(_host), do: :error
 
   defp parse_trusted_authorities(trusted_authorities) do
     trusted_authorities
     |> String.trim()
     |> case do
       "" ->
-        {:error, "Client do not trust authorities for outbound requests."}
+        {:ok, []}
 
       authorities ->
         case authorities
@@ -35,38 +90,56 @@ defmodule Boruta.HttpClient do
     end
   end
 
-  defp pinned_get(url, cacerts) do
-    case Finch.Request.parse_url(url) do
-      {:https, host, port, path, query} ->
-        request_path = if query in [nil, ""], do: path, else: "#{path}?#{query}"
+  defp trusted_get(url, trusted_hosts, trusted_authorities) do
+    with {:ok, url, cacerts} <- get_cacerts(url, trusted_hosts, trusted_authorities),
+         {:https, host, port, path, _query} <- Finch.Request.parse_url(url) do
+      with {:ok, conn} <-
+             Mint.HTTP.connect(:https, host, port,
+               transport_opts: [cacerts: cacerts],
+               protocols: [:http1]
+             ),
+           {:ok, conn, request_ref} <-
+             Mint.HTTP.request(conn, "GET", path, [{"connection", "close"}], nil) do
+        receive_response(conn, request_ref, %{status: nil, headers: [], body: []})
+      else
+        {:error,
+         %Mint.TransportError{
+           reason: {:tls_alert, _}
+         }} ->
+          {:error, "Host certificate is not trusted."}
 
-        case (with {:ok, conn} <-
-                     Mint.HTTP.connect(:https, host, port,
-                       transport_opts: [cacerts: cacerts],
-                       protocols: [:http1]
-                     ),
-                   {:ok, conn, request_ref} <-
-                     Mint.HTTP.request(conn, "GET", request_path, [{"connection", "close"}], nil) do
-                receive_response(conn, request_ref, %{status: nil, headers: [], body: []})
-              end) do
-          {:error,
-           %Mint.TransportError{
-             reason: {:tls_alert, _}
-           }} ->
-            {:error, "Host certificate is not trusted."}
+        {:error, reason} ->
+          {:error, reason}
 
-          {:error, reason} ->
-            {:error, reason}
-
-          response ->
-            response
-        end
-
+        response ->
+          response
+      end
+    else
       {:http, _host, _port, _path, _query} ->
         {:error, "Certificate pinning requires HTTPS."}
+
+      {:error, error} ->
+        {:error, error}
     end
-  rescue
-    _error -> {:error, "Could not parse trusted authorities."}
+  end
+
+  def get_cacerts(url, trusted_hosts, trusted_authorities) when trusted_hosts != [] do
+    with {:ok, host} <- host_from_url(url),
+         true <- Enum.member?(trusted_hosts, host) do
+      case trusted_authorities do
+        [] ->
+          {:ok, url, :public_key.cacerts_get()}
+        trusted_authorities ->
+          {:ok, url, trusted_authorities}
+      end
+    else
+      false -> {:error, "Request URL host is not trusted."}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def get_cacerts(url, _trusted_hosts, trusted_authorities) do
+    {:ok, url, trusted_authorities}
   end
 
   defp receive_response(conn, request_ref, response) do
