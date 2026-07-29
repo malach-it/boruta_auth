@@ -280,8 +280,6 @@ defmodule Boruta.Did.Crypto do
 
   defp mod_sqrt(value, prime), do: mod_pow(value, div(prime + 1, 4), prime)
 
-  defp mod_pow(_base, 0, _modulus), do: 1
-
   defp mod_pow(base, exponent, modulus) do
     mod_pow(positive_rem(base, modulus), exponent, modulus, 1)
   end
