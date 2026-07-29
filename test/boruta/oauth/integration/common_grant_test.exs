@@ -1,5 +1,5 @@
 defmodule Boruta.OauthTest.CommonGrantTest do
-  use ExUnit.Case
+  use Boruta.DataCase
 
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
@@ -54,7 +54,11 @@ defmodule Boruta.OauthTest.CommonGrantTest do
 
   describe "authorize request" do
     test "returns an error without params" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
+      assert Oauth.authorize(
+               %Plug.Conn{query_params: %{}},
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
@@ -65,7 +69,11 @@ defmodule Boruta.OauthTest.CommonGrantTest do
     end
 
     test "returns an error with empty params" do
-      assert Oauth.authorize(%Plug.Conn{query_params: %{}}, %ResourceOwner{sub: "sub"}, ApplicationMock) ==
+      assert Oauth.authorize(
+               %Plug.Conn{query_params: %{}},
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
