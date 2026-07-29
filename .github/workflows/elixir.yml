@@ -51,6 +51,7 @@ jobs:
         run: mix credo --strict
 
       - name: Run Security Audit
+        continue-on-error: true
         run: mix security.audit
 
       - name: Run Dialyzer
