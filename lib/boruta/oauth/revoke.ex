@@ -34,27 +34,30 @@ defmodule Boruta.Oauth.Revoke do
              source: client_source,
              grant_type: "revoke"
            ) do
-      token =
-        case token_type_hint do
-          "refresh_token" ->
-            with nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value) do
-              Boruta.AccessTokensAdapter.get_by(value: value)
-            end
+      value
+      |> find_token(token_type_hint)
+      |> revoke_token()
+    end
+  end
 
-          _ ->
-            with nil <- Boruta.AccessTokensAdapter.get_by(value: value) do
-              Boruta.AccessTokensAdapter.get_by(refresh_token: value)
-            end
-        end
+  defp find_token(value, "refresh_token") do
+    with nil <- Boruta.AccessTokensAdapter.get_by(refresh_token: value) do
+      Boruta.AccessTokensAdapter.get_by(value: value)
+    end
+  end
 
-      if token do
-        with {:ok, _token} <- Boruta.AccessTokensAdapter.revoke(token) do
-          :ok
-        end
-      else
-        # return :ok even for unexisting tokens
-        :ok
-      end
+  defp find_token(value, _token_type_hint) do
+    with nil <- Boruta.AccessTokensAdapter.get_by(value: value) do
+      Boruta.AccessTokensAdapter.get_by(refresh_token: value)
+    end
+  end
+
+  # Return :ok even for unexisting tokens.
+  defp revoke_token(nil), do: :ok
+
+  defp revoke_token(token) do
+    with {:ok, _token} <- Boruta.AccessTokensAdapter.revoke(token) do
+      :ok
     end
   end
 end

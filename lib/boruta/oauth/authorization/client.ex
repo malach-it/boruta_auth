@@ -171,14 +171,18 @@ defmodule Boruta.Oauth.Authorization.Client do
 
       true ->
         with {:ok, secret} <- extract_secret(source, client) do
-          case Client.check_secret(client, secret) do
-            :ok ->
-              {:ok, client}
-
-            {:error, _error} ->
-              {:error, "Invalid client_id or client_secret."}
-          end
+          check_client_secret(client, secret)
         end
+    end
+  end
+
+  defp check_client_secret(client, secret) do
+    case Client.check_secret(client, secret) do
+      :ok ->
+        {:ok, client}
+
+      {:error, _error} ->
+        {:error, "Invalid client_id or client_secret."}
     end
   end
 

@@ -301,52 +301,61 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.TokenRequest do
       |> Enum.sort_by(fn response_type -> response_type == "id_token" end)
       |> Enum.reduce({:ok, %{}}, fn
         "id_token", {:ok, tokens} when tokens == %{} ->
-          case String.match?(scope, ~r/#{Scope.openid().name}/) do
-            true ->
-              base_token = %Token{
-                type: "base_token",
-                client: client,
-                resource_owner: resource_owner,
-                redirect_uri: redirect_uri,
-                sub: sub,
-                scope: scope,
-                state: state,
-                inserted_at: DateTime.utc_now()
-              }
+          base_token = %Token{
+            type: "base_token",
+            client: client,
+            resource_owner: resource_owner,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            state: state,
+            inserted_at: DateTime.utc_now()
+          }
 
-              id_token = IdToken.generate(%{base_token: base_token}, nonce)
-              {:ok, %{id_token: id_token}}
-
-            false ->
-              {:ok, %{}}
-          end
+          maybe_generate_base_id_token(scope, base_token, nonce)
 
         "id_token", {:ok, tokens} ->
-          case String.match?(scope, ~r/#{Scope.openid().name}/) do
-            true ->
-              id_token = IdToken.generate(tokens, nonce)
-              {:ok, Map.put(tokens, :id_token, id_token)}
-
-            false ->
-              {:ok, tokens}
-          end
+          maybe_generate_id_token(scope, tokens, nonce)
 
         "token", {:ok, tokens} ->
-          with {:ok, access_token} <-
-                 AccessTokensAdapter.create(
-                   %{
-                     client: client,
-                     redirect_uri: redirect_uri,
-                     sub: sub,
-                     scope: scope,
-                     state: state,
-                     resource_owner: resource_owner
-                   },
-                   refresh_token: false
-                 ) do
-            {:ok, Map.put(tokens, :token, access_token)}
-          end
+          create_access_token(tokens, %{
+            client: client,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            state: state,
+            resource_owner: resource_owner
+          })
       end)
+    end
+  end
+
+  defp create_access_token(tokens, attributes) do
+    with {:ok, access_token} <-
+           AccessTokensAdapter.create(attributes, refresh_token: false) do
+      {:ok, Map.put(tokens, :token, access_token)}
+    end
+  end
+
+  defp maybe_generate_base_id_token(scope, base_token, nonce) do
+    case String.match?(scope, ~r/#{Scope.openid().name}/) do
+      true ->
+        id_token = IdToken.generate(%{base_token: base_token}, nonce)
+        {:ok, %{id_token: id_token}}
+
+      false ->
+        {:ok, %{}}
+    end
+  end
+
+  defp maybe_generate_id_token(scope, tokens, nonce) do
+    case String.match?(scope, ~r/#{Scope.openid().name}/) do
+      true ->
+        id_token = IdToken.generate(tokens, nonce)
+        {:ok, Map.put(tokens, :id_token, id_token)}
+
+      false ->
+        {:ok, tokens}
     end
   end
 end
@@ -500,47 +509,30 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
       |> Enum.sort_by(fn response_type -> response_type == "id_token" end)
       |> Enum.reduce({:ok, %{}}, fn
         "code", {:ok, tokens} when tokens == %{} ->
-          with {:ok, code} <-
-                 CodesAdapter.create(%{
-                   client: client,
-                   resource_owner: resource_owner,
-                   redirect_uri: redirect_uri,
-                   sub: sub,
-                   scope: scope,
-                   state: state,
-                   nonce: nonce,
-                   code_challenge: code_challenge,
-                   code_challenge_method: code_challenge_method
-                 }) do
-            {:ok, Map.put(tokens, :code, code)}
-          end
+          create_code(tokens, %{
+            client: client,
+            resource_owner: resource_owner,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            state: state,
+            nonce: nonce,
+            code_challenge: code_challenge,
+            code_challenge_method: code_challenge_method
+          })
 
         "id_token", {:ok, tokens} ->
-          case String.match?(scope, ~r/#{Scope.openid().name}/) do
-            true ->
-              id_token = IdToken.generate(tokens, nonce)
-
-              {:ok, Map.put(tokens, :id_token, id_token)}
-
-            false ->
-              {:ok, tokens}
-          end
+          maybe_generate_id_token(scope, tokens, nonce)
 
         "token", {:ok, tokens} ->
-          with {:ok, access_token} <-
-                 AccessTokensAdapter.create(
-                   %{
-                     client: client,
-                     resource_owner: resource_owner,
-                     redirect_uri: redirect_uri,
-                     sub: sub,
-                     scope: scope,
-                     state: state
-                   },
-                   refresh_token: false
-                 ) do
-            {:ok, Map.put(tokens, :token, access_token)}
-          end
+          create_access_token(tokens, %{
+            client: client,
+            resource_owner: resource_owner,
+            redirect_uri: redirect_uri,
+            sub: sub,
+            scope: scope,
+            state: state
+          })
 
         _, {:error, error} ->
           {:error,
@@ -550,6 +542,30 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.HybridRequest do
              error_description: "An error occurred during token creation: #{inspect(error)}."
            }}
       end)
+    end
+  end
+
+  defp create_access_token(tokens, attributes) do
+    with {:ok, access_token} <-
+           AccessTokensAdapter.create(attributes, refresh_token: false) do
+      {:ok, Map.put(tokens, :token, access_token)}
+    end
+  end
+
+  defp create_code(tokens, attributes) do
+    with {:ok, code} <- CodesAdapter.create(attributes) do
+      {:ok, Map.put(tokens, :code, code)}
+    end
+  end
+
+  defp maybe_generate_id_token(scope, tokens, nonce) do
+    case String.match?(scope, ~r/#{Scope.openid().name}/) do
+      true ->
+        id_token = IdToken.generate(tokens, nonce)
+        {:ok, Map.put(tokens, :id_token, id_token)}
+
+      false ->
+        {:ok, tokens}
     end
   end
 end
