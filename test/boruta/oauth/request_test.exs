@@ -366,6 +366,51 @@ defmodule Boruta.Oauth.RequestTest do
     end
   end
 
+  describe "JWT profile client authentication in query params" do
+    test "returns an error with a bad JWT" do
+      assert {:error, "Could not decode client assertion JWT."} =
+               Request.Base.fetch_client_authentication(%{
+                 query_params: %{
+                   "client_assertion_type" =>
+                     "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                   "client_assertion" => "bad jwt"
+                 }
+               })
+    end
+
+    test "extracts the client authentication" do
+      client_id = SecureRandom.uuid()
+      signer = Joken.Signer.create("HS512", "my secret")
+
+      {:ok, client_assertion, _claims} =
+        Token.encode_and_sign(
+          %{
+            "aud" => "boruta",
+            "iss" => "issuer",
+            "sub" => client_id,
+            "exp" => DateTime.utc_now() |> DateTime.to_unix()
+          },
+          signer
+        )
+
+      assert {:ok,
+              %{
+                "client_id" => ^client_id,
+                "client_authentication" => %{
+                  "type" => "jwt",
+                  "value" => ^client_assertion
+                }
+              }} =
+               Request.Base.fetch_client_authentication(%{
+                 query_params: %{
+                   "client_assertion_type" =>
+                     "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                   "client_assertion" => client_assertion
+                 }
+               })
+    end
+  end
+
   describe "JWT profile client authentication and authorization grants (introspect endpoint)" do
     test "returns an error with a bad JWT" do
       conn =

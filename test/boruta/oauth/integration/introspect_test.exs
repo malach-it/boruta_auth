@@ -7,9 +7,11 @@ defmodule Boruta.OauthTest.IntrospectTest do
 
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.Error
   alias Boruta.Oauth.IntrospectResponse
   alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Token
   alias Boruta.Support.ResourceOwners
   alias Boruta.Support.User
 
@@ -248,6 +250,30 @@ defmodule Boruta.OauthTest.IntrospectTest do
         _ ->
           assert false
       end
+    end
+
+    test "builds an active response without a resource owner" do
+      inserted_at = DateTime.utc_now()
+
+      response =
+        IntrospectResponse.from_token(%Token{
+          type: "access_token",
+          client: %Client{id: "client-id", private_key: "private-key"},
+          expires_at: DateTime.to_unix(inserted_at) + 60,
+          inserted_at: inserted_at,
+          resource_owner: nil,
+          scope: "scope",
+          sub: "subject"
+        })
+
+      assert %IntrospectResponse{
+               active: true,
+               client_id: "client-id",
+               username: nil,
+               scope: "scope",
+               sub: "subject",
+               private_key: "private-key"
+             } = response
     end
   end
 
