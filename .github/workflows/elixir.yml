@@ -17,7 +17,7 @@ jobs:
       matrix:
         container:
           - elixir:1.14.5-otp-25
-          - elixir:1.18.4-otp-25
+          - elixir:1.20.2-otp-29
     container:
       image: ${{ matrix.container }}
 
@@ -44,9 +44,13 @@ jobs:
             # - name: Check Code Format
             #   run: mix format --check-formatted
 
-      - name: Copy mix lockfile
-        run: |
-          cp mix.lock.test mix.lock
+      - name: Copy Elixir 1.14.5 mix lockfile
+        if: startsWith(matrix.container, 'elixir:1.14')
+        run: cp mix.lock.elixir-1.14.5 mix.lock
+
+      - name: Copy Elixir 1.20.2 mix lockfile
+        if: startsWith(matrix.container, 'elixir:1.20')
+        run: cp mix.lock.elixir-1.20.2 mix.lock
 
       - name: Elixir prerequisites
         run: |
@@ -71,7 +75,7 @@ jobs:
       matrix:
         container:
           - elixir:1.14.5-otp-25
-          - elixir:1.18.4-otp-25
+          - elixir:1.20.2-otp-29
     container:
       image: ${{ matrix.container }}
 
@@ -97,9 +101,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Copy mix lockfile
-        run: |
-          cp mix.lock.test mix.lock
+      - name: Copy Elixir 1.14.5 mix lockfile
+        if: startsWith(matrix.container, 'elixir:1.14')
+        run: cp mix.lock.elixir-1.14.5 mix.lock
+
+      - name: Copy Elixir 1.20.2 mix lockfile
+        if: startsWith(matrix.container, 'elixir:1.20')
+        run: cp mix.lock.elixir-1.20.2 mix.lock
 
       - name: Elixir prerequisites
         run: |

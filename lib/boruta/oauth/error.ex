@@ -138,6 +138,7 @@ defmodule Boruta.Oauth.Error do
       {_key, nil} -> false
       _ -> true
     end)
+    |> Enum.sort()
     |> URI.encode_query()
   end
 

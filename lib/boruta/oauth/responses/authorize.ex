@@ -218,6 +218,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
       (redirect_uri.query || "")
       |> URI.decode_query()
       |> Map.merge(params)
+      |> Enum.sort()
       |> URI.encode_query()
 
     URI.to_string(%{redirect_uri | query: query})
@@ -225,7 +226,7 @@ defmodule Boruta.Oauth.AuthorizeResponse do
 
   defp add_fragment_to_redirect_uri(redirect_uri, params) do
     redirect_uri = URI.parse(redirect_uri)
-    fragment = URI.encode_query(params)
+    fragment = params |> Enum.sort() |> URI.encode_query()
 
     URI.to_string(%{redirect_uri | fragment: fragment})
   end
