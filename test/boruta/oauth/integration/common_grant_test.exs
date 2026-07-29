@@ -1,5 +1,5 @@
 defmodule Boruta.OauthTest.CommonGrantTest do
-  use ExUnit.Case
+  use Boruta.DataCase
 
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
@@ -111,8 +111,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
                {:authorize_error,
                 %Error{
                   error: :invalid_request,
-                  error_description:
-                    "Invalid response_type param.",
+                  error_description: "Invalid response_type param.",
                   status: :bad_request
                 }}
     end
