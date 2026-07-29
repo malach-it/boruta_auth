@@ -56,6 +56,7 @@ jobs:
         run: mix security.audit
 
       - name: Run Dialyzer
+        if: ${{ !startsWith(matrix.container, 'elixir:1.14') }}
         run: mix dialyzer
 
   unit_tests:
