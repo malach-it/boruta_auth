@@ -23,9 +23,12 @@ defmodule Boruta.Ecto.Clients do
   defp get_client(:from_cache, id), do: ClientStore.get_client(id)
 
   defp get_client(:from_database, id) do
-    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
+    with {:ok, id} <- Elixir.Ecto.UUID.cast(id),
+         %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put() do
       client
+    else
+      _error -> nil
     end
   end
 
