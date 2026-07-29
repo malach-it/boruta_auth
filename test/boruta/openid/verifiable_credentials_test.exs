@@ -247,7 +247,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     end
 
     test "issues credential selected by configuration scopes", %{
-      resource_owner: resource_owner,
+      resource_owner: %ResourceOwner{} = resource_owner,
       credential_params: credential_params
     } do
       jwk =
@@ -306,7 +306,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     end
 
     test "issues credential selected by configuration scopes from code chain", %{
-      resource_owner: resource_owner,
+      resource_owner: %ResourceOwner{} = resource_owner,
       credential_params: credential_params
     } do
       jwk =
@@ -367,7 +367,7 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
     end
 
     test "returns an error when configuration scope is not authorized", %{
-      resource_owner: resource_owner,
+      resource_owner: %ResourceOwner{} = resource_owner,
       credential_params: credential_params
     } do
       resource_owner = %ResourceOwner{
