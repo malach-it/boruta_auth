@@ -120,7 +120,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     ]
 
     copy_modules(otp_app, assigns)
-    copy_raw_files(otp_app, assigns)
+    copy_raw_files(otp_app)
     copy_test_files(otp_app, assigns)
 
     IO.puts("""
@@ -195,7 +195,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
     end)
   end
 
-  defp copy_raw_files(otp_app, assigns) do
+  defp copy_raw_files(otp_app) do
     Enum.zip([raw_file_paths(@raw_file_paths), @raw_file_paths])
     |> Enum.map(fn {source, controller_path} ->
       target =
@@ -203,7 +203,7 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
         |> Mix.Phoenix.web_path()
         |> Path.join(controller_path)
 
-      copy_file(source, target, assigns)
+      copy_file(source, target)
     end)
   end
 
