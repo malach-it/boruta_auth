@@ -55,6 +55,22 @@ defmodule Boruta.HttpClientTest do
              HttpClient.get(url, "", ["localhost"])
   end
 
+  test "adds the issuer host to trusted hosts", %{url: url} do
+    oauth_config = Application.get_env(:boruta, Boruta.Oauth)
+
+    Application.put_env(
+      :boruta,
+      Boruta.Oauth,
+      Keyword.put(oauth_config, :issuer, url)
+    )
+
+    on_exit(fn ->
+      Application.put_env(:boruta, Boruta.Oauth, oauth_config)
+    end)
+
+    assert {:error, "Host certificate is not trusted."} = HttpClient.get(url)
+  end
+
   test "rejects the request when the host is not trusted", %{
     url: url,
     trusted_authorities: trusted_authorities

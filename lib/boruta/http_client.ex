@@ -1,6 +1,8 @@
 defmodule Boruta.HttpClient do
   @moduledoc false
 
+  alias Boruta.Config
+
   @receive_timeout 15_000
 
   @spec get(
@@ -9,17 +11,32 @@ defmodule Boruta.HttpClient do
           trusted_hosts :: list(String.t())
         ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
-  def get(url, trusted_authorities \\ "", trusted_hosts \\ [])
+  def get(url, trusted_authorities \\ "", trusted_hosts \\ []) do
+    trusted_hosts = add_issuer_host(trusted_hosts)
 
-  def get(_url, "", []),
+    get_with_trust(url, trusted_authorities, trusted_hosts)
+  end
+
+  defp get_with_trust(_url, "", []),
     do: {:error, "Client must configure trusted hosts or authorities for outbound requests."}
 
-  def get(url, trusted_authorities, trusted_hosts) do
+  defp get_with_trust(url, trusted_authorities, trusted_hosts) do
     with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
          {:ok, trusted_authorities} <- validate_trusted_authorities(trusted_authorities) do
       trusted_get(url, trusted_hosts, trusted_authorities)
     end
   end
+
+  defp add_issuer_host(trusted_hosts) when is_list(trusted_hosts) do
+    case URI.parse(Config.issuer()) do
+      %URI{host: host} when is_binary(host) -> [host | trusted_hosts]
+      _issuer -> trusted_hosts
+    end
+  rescue
+    _error -> trusted_hosts
+  end
+
+  defp add_issuer_host(trusted_hosts), do: trusted_hosts
 
   defp validate_trusted_hosts(_url, []),
     do: {:ok, []}
