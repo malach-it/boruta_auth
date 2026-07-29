@@ -140,9 +140,10 @@ defmodule Boruta.Ecto.Client do
       :userinfo_signed_response_alg,
       :logo_uri,
       :metadata,
+      :trusted_authorities,
       :trusted_hosts
     ])
-    |> cast_trusted_authorities(attrs)
+    |> validate_required_allow_empty([:trusted_authorities, :trusted_hosts])
     |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
@@ -196,9 +197,10 @@ defmodule Boruta.Ecto.Client do
       :userinfo_signed_response_alg,
       :logo_uri,
       :metadata,
+      :trusted_authorities,
       :trusted_hosts
     ])
-    |> cast_trusted_authorities(attrs)
+    |> validate_required_allow_empty([:trusted_authorities, :trusted_hosts])
     |> validate_required([
       :authorization_code_ttl,
       :access_token_ttl,
@@ -285,10 +287,6 @@ defmodule Boruta.Ecto.Client do
       |> Enum.reject(&is_nil/1)
       |> Enum.map(fn error -> {field, error} end)
     end)
-  end
-
-  defp cast_trusted_authorities(changeset, attrs) do
-    cast(changeset, attrs, [:trusted_authorities], empty_values: [])
   end
 
   defp validate_jwks_uri_fetch(changeset, attrs) do
@@ -382,5 +380,14 @@ defmodule Boruta.Ecto.Client do
       :error ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
     end
+  end
+
+  defp validate_required_allow_empty(changeset, fields) do
+    Enum.reduce(fields, changeset, fn field, changeset ->
+      case fetch_change(changeset, field) do
+        {:ok, nil} -> add_error(changeset, field, "can't be nil")
+        _result -> changeset
+      end
+    end)
   end
 end
