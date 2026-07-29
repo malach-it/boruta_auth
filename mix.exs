@@ -53,7 +53,7 @@ defmodule Boruta.MixProject do
       {:owl, "~> 0.8.0 or ~> 0.9.0 or ~> 0.10.0 or ~> 0.11.0 or ~> 0.12.0"},
       {:jason, "~> 1.4"},
       {:joken, "~> 2.0"},
-      {:jose, "~> 1.10.0"},
+      {:jose, "~> 1.11"},
       {:mox, "~> 0.5", only: :test},
       {:nebulex, "~> 3.0"},
       {:nebulex_distributed, "~> 3.2"},
