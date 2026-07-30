@@ -9,6 +9,7 @@ defmodule Boruta.Ecto.Clients do
 
   alias Boruta.Ecto
   alias Boruta.Ecto.ClientStore
+  alias Boruta.HttpClient
   alias Boruta.Oauth
 
   @impl Boruta.Oauth.Clients
@@ -22,9 +23,12 @@ defmodule Boruta.Ecto.Clients do
   defp get_client(:from_cache, id), do: ClientStore.get_client(id)
 
   defp get_client(:from_database, id) do
-    with %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
+    with {:ok, id} <- Elixir.Ecto.UUID.cast(id),
+         %Ecto.Client{} = client <- repo().get_by(Ecto.Client, id: id),
          {:ok, client} <- client |> to_oauth_schema() |> ClientStore.put() do
       client
+    else
+      _error -> nil
     end
   end
 
@@ -64,7 +68,7 @@ defmodule Boruta.Ecto.Clients do
            repo().get_by(Ecto.Client, id: client_id),
          %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           Finch.build(:get, jwks_uri) |> Finch.request(OpenIDHttpClient),
+           HttpClient.get(jwks_uri, client.trusted_authorities, client.trusted_hosts),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings),
          {:ok, %Ecto.Client{jwt_public_key: jwt_public_key}} <-
            Ecto.Client.update_changeset(client, %{
@@ -74,6 +78,9 @@ defmodule Boruta.Ecto.Clients do
            |> repo().update() do
       {:ok, jwt_public_key}
     else
+      {:error, error} ->
+        {:error, error}
+
       _ ->
         {:error, "Could not refresh client jwk with jwks_uri."}
     end

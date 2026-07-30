@@ -142,6 +142,20 @@ defmodule Boruta.OauthTest.RevokeTest do
       end
     end
 
+    test "returns success when the token does not exist", %{client: client} do
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert {:revoke_success} =
+               Oauth.revoke(
+                 %Plug.Conn{
+                   body_params: %{"token" => "unknown-token"},
+                   req_headers: [{"authorization", authorization_header}]
+                 },
+                 ApplicationMock
+               )
+    end
+
     test "revoke token if client has public revocation", %{public_revoke_client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 2, fn(_params) -> {:ok, resource_owner} end)

@@ -1,7 +1,8 @@
 defmodule Boruta.Oauth.RequestTest do
-  use ExUnit.Case
+  use Boruta.DataCase
 
-  use Plug.Test
+  import Plug.Test
+  import Boruta.Factory
 
   defmodule Token do
     @moduledoc false
@@ -16,6 +17,7 @@ defmodule Boruta.Oauth.RequestTest do
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Oauth.RevokeRequest
   alias Boruta.Oauth.TokenRequest
+  alias Boruta.Support.TLSServer
 
   describe "Basic client authentication (token endpoint)" do
     test "returns an error with bad basic header" do
@@ -364,6 +366,51 @@ defmodule Boruta.Oauth.RequestTest do
     end
   end
 
+  describe "JWT profile client authentication in query params" do
+    test "returns an error with a bad JWT" do
+      assert {:error, "Could not decode client assertion JWT."} =
+               Request.Base.fetch_client_authentication(%{
+                 query_params: %{
+                   "client_assertion_type" =>
+                     "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                   "client_assertion" => "bad jwt"
+                 }
+               })
+    end
+
+    test "extracts the client authentication" do
+      client_id = SecureRandom.uuid()
+      signer = Joken.Signer.create("HS512", "my secret")
+
+      {:ok, client_assertion, _claims} =
+        Token.encode_and_sign(
+          %{
+            "aud" => "boruta",
+            "iss" => "issuer",
+            "sub" => client_id,
+            "exp" => DateTime.utc_now() |> DateTime.to_unix()
+          },
+          signer
+        )
+
+      assert {:ok,
+              %{
+                "client_id" => ^client_id,
+                "client_authentication" => %{
+                  "type" => "jwt",
+                  "value" => ^client_assertion
+                }
+              }} =
+               Request.Base.fetch_client_authentication(%{
+                 query_params: %{
+                   "client_assertion_type" =>
+                     "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                   "client_assertion" => client_assertion
+                 }
+               })
+    end
+  end
+
   describe "JWT profile client authentication and authorization grants (introspect endpoint)" do
     test "returns an error with a bad JWT" do
       conn =
@@ -669,7 +716,11 @@ defmodule Boruta.Oauth.RequestTest do
           "request" => "bad_jwt"
         })
 
-      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Unsigned request jwt param is malformed."
+              }} =
                Request.token_request(conn)
     end
 
@@ -701,7 +752,11 @@ defmodule Boruta.Oauth.RequestTest do
           "request" => "bad_jwt"
         })
 
-      assert {:error, %Error{error: :invalid_request, error_description: "Unsigned request jwt param is malformed."}} =
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Unsigned request jwt param is malformed."
+              }} =
                Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
 
@@ -735,12 +790,6 @@ defmodule Boruta.Oauth.RequestTest do
   end
 
   describe "unsigned requests from uri" do
-    setup do
-      bypass = Bypass.open()
-
-      {:ok, bypass: bypass}
-    end
-
     test "returns an error with malformed uri (token endpoint)" do
       conn =
         conn(:post, "/", %{
@@ -754,16 +803,33 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.token_request(conn)
     end
 
-    test "returns an error if cannot fetch (token endpoint)", %{bypass: bypass} do
-      request_uri = "http://localhost:#{bypass.port}/request"
+    test "returns an OAuth error without trusted hosts or authorities" do
+      conn =
+        conn(:post, "/", %{
+          "request_uri" => "https://request.example.com/request"
+        })
 
-      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
-        Plug.Conn.resp(conn, 400, "")
-      end)
+      assert {:error,
+              %Error{
+                error: :invalid_request,
+                error_description:
+                  "Client must configure trusted hosts or authorities for outbound requests."
+              }} = Request.token_request(conn)
+    end
+
+    test "returns an error if cannot fetch (token endpoint)" do
+      server = start_tls_server("", status: 400)
+
+      client =
+        insert(:client,
+          trusted_authorities: server.trusted_authorities,
+          trusted_hosts: ["localhost"]
+        )
 
       conn =
         conn(:post, "/", %{
-          "request_uri" => request_uri
+          "client_id" => client.id,
+          "request_uri" => "#{server.url}/request"
         })
 
       assert {:error,
@@ -773,16 +839,19 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.token_request(conn)
     end
 
-    test "returns an error with bad jwt (token endpoint)", %{bypass: bypass} do
-      request_uri = "http://localhost:#{bypass.port}/request"
+    test "returns an error with bad jwt (token endpoint)" do
+      server = start_tls_server("bad_jwt")
 
-      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
-        Plug.Conn.resp(conn, 200, "bad_jwt")
-      end)
+      client =
+        insert(:client,
+          trusted_authorities: server.trusted_authorities,
+          trusted_hosts: ["localhost"]
+        )
 
       conn =
         conn(:post, "/", %{
-          "request_uri" => request_uri
+          "client_id" => client.id,
+          "request_uri" => "#{server.url}/request"
         })
 
       assert {:error,
@@ -792,9 +861,8 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.token_request(conn)
     end
 
-    test "parse unsigned request (token endpoint)", %{bypass: bypass} do
+    test "parse unsigned request (token endpoint)" do
       signer = Joken.Signer.create("HS512", "my secret")
-
       client_id = SecureRandom.uuid()
 
       {:ok, request, _claims} =
@@ -806,15 +874,18 @@ defmodule Boruta.Oauth.RequestTest do
           signer
         )
 
-      request_uri = "http://localhost:#{bypass.port}/request"
+      server = start_tls_server(request)
 
-      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
-        Plug.Conn.resp(conn, 200, request)
-      end)
+      insert(:client,
+        id: client_id,
+        trusted_authorities: server.trusted_authorities,
+        trusted_hosts: ["localhost"]
+      )
 
       conn =
         conn(:post, "/", %{
-          "request_uri" => request_uri
+          "client_id" => client_id,
+          "request_uri" => "#{server.url}/request"
         })
 
       assert {:ok, %ClientCredentialsRequest{client_id: ^client_id}} = Request.token_request(conn)
@@ -833,16 +904,19 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
 
-    test "returns an error if cannot fetch (authorize endpoint)", %{bypass: bypass} do
-      request_uri = "http://localhost:#{bypass.port}/request"
+    test "returns an error if cannot fetch (authorize endpoint)" do
+      server = start_tls_server("", status: 400)
 
-      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
-        Plug.Conn.resp(conn, 400, "")
-      end)
+      client =
+        insert(:client,
+          trusted_authorities: server.trusted_authorities,
+          trusted_hosts: ["localhost"]
+        )
 
       conn =
         conn(:get, "/", %{
-          "request_uri" => request_uri
+          "client_id" => client.id,
+          "request_uri" => "#{server.url}/request"
         })
 
       assert {:error,
@@ -852,16 +926,19 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
 
-    test "returns an error with bad jwt (authorize endpoint)", %{bypass: bypass} do
-      request_uri = "http://localhost:#{bypass.port}/request"
+    test "returns an error with bad jwt (authorize endpoint)" do
+      server = start_tls_server("bad_jwt")
 
-      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
-        Plug.Conn.resp(conn, 200, "bad_jwt")
-      end)
+      client =
+        insert(:client,
+          trusted_authorities: server.trusted_authorities,
+          trusted_hosts: ["localhost"]
+        )
 
       conn =
         conn(:get, "/", %{
-          "request_uri" => request_uri
+          "client_id" => client.id,
+          "request_uri" => "#{server.url}/request"
         })
 
       assert {:error,
@@ -871,9 +948,8 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.authorize_request(conn, %ResourceOwner{sub: "sub"})
     end
 
-    test "parse unsigned request (authorize endpoint)", %{bypass: bypass} do
+    test "parse unsigned request (authorize endpoint)" do
       signer = Joken.Signer.create("HS512", "my secret")
-
       client_id = SecureRandom.uuid()
       redirect_uri = "http://redirect.uri"
 
@@ -887,15 +963,18 @@ defmodule Boruta.Oauth.RequestTest do
           signer
         )
 
-      request_uri = "http://localhost:#{bypass.port}/request"
+      server = start_tls_server(request)
 
-      Bypass.expect_once(bypass, "GET", "/request", fn conn ->
-        Plug.Conn.resp(conn, 200, request)
-      end)
+      insert(:client,
+        id: client_id,
+        trusted_authorities: server.trusted_authorities,
+        trusted_hosts: ["localhost"]
+      )
 
       conn =
         conn(:get, "/", %{
-          "request_uri" => request_uri
+          "client_id" => client_id,
+          "request_uri" => "#{server.url}/request"
         })
 
       assert {:ok,
@@ -909,5 +988,15 @@ defmodule Boruta.Oauth.RequestTest do
   defp using_basic_auth(username, password) do
     authorization_header = "Basic " <> Base.encode64("#{username}:#{password}")
     %{req_headers: [{"authorization", authorization_header}]}
+  end
+
+  defp start_tls_server(body, opts \\ []) do
+    {:ok, server} = TLSServer.start(body, opts)
+
+    on_exit(fn ->
+      TLSServer.stop(server)
+    end)
+
+    server
   end
 end

@@ -92,6 +92,14 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{}} = Admin.create_client(@client_valid_attrs)
     end
 
+    test "creates a client with trusted authorities defaulting to empty" do
+      assert {:ok, %Client{trusted_authorities: ""}} = Admin.create_client(@client_valid_attrs)
+    end
+
+    test "creates a client with trusted hosts defaulting to empty" do
+      assert {:ok, %Client{trusted_hosts: []}} = Admin.create_client(@client_valid_attrs)
+    end
+
     test "creates a client with supported_grant_types" do
       assert {:ok, %Client{supported_grant_types: ["client_credentials"]}} =
                Admin.create_client(
@@ -171,6 +179,68 @@ defmodule Boruta.Ecto.AdminTest do
                    metadata: metadata
                  })
                )
+    end
+
+    test "creates a client with trusted authorities" do
+      trusted_authorities = "<pem certificate>"
+
+      assert {:ok, %Client{trusted_authorities: ^trusted_authorities}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_authorities: trusted_authorities
+                 })
+               )
+    end
+
+    test "creates a client with empty trusted authorities" do
+      assert {:ok, %Client{trusted_authorities: ""}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_authorities: ""
+                 })
+               )
+    end
+
+    test "rejects nil trusted authorities when creating a client" do
+      assert {:error, changeset} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_authorities: nil
+                 })
+               )
+
+      assert {"can't be nil", _} = changeset.errors[:trusted_authorities]
+    end
+
+    test "creates a client with trusted hosts" do
+      trusted_hosts = ["issuer.example.com", "status.example.com"]
+
+      assert {:ok, %Client{trusted_hosts: ^trusted_hosts}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_hosts: trusted_hosts
+                 })
+               )
+    end
+
+    test "creates a client with empty trusted hosts" do
+      assert {:ok, %Client{trusted_hosts: []}} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_hosts: []
+                 })
+               )
+    end
+
+    test "rejects nil trusted hosts" do
+      assert {:error, changeset} =
+               Admin.create_client(
+                 Map.merge(@client_valid_attrs, %{
+                   trusted_hosts: nil
+                 })
+               )
+
+      assert {"can't be nil", _} = changeset.errors[:trusted_hosts]
     end
 
     test "creates a client with authorized scopes by id" do
@@ -306,6 +376,54 @@ defmodule Boruta.Ecto.AdminTest do
     test "updates the client" do
       client = client_fixture()
       assert {:ok, %Client{}} = Admin.update_client(client, @client_update_attrs)
+    end
+
+    test "updates the client with trusted authorities" do
+      trusted_authorities = "did:example:issuer"
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_authorities: ^trusted_authorities}} =
+               Admin.update_client(client, %{"trusted_authorities" => trusted_authorities})
+    end
+
+    test "updates the client with empty trusted authorities" do
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_authorities: ""}} =
+               Admin.update_client(client, %{"trusted_authorities" => ""})
+    end
+
+    test "rejects nil trusted authorities when updating a client" do
+      client = client_fixture()
+
+      assert {:error, changeset} =
+               Admin.update_client(client, %{"trusted_authorities" => nil})
+
+      assert {"can't be nil", _} = changeset.errors[:trusted_authorities]
+    end
+
+    test "updates the client with trusted hosts" do
+      trusted_hosts = ["issuer.example.com", "status.example.com"]
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_hosts: ^trusted_hosts}} =
+               Admin.update_client(client, %{"trusted_hosts" => trusted_hosts})
+    end
+
+    test "updates the client with empty trusted hosts" do
+      client = client_fixture()
+
+      assert {:ok, %Client{trusted_hosts: []}} =
+               Admin.update_client(client, %{"trusted_hosts" => []})
+    end
+
+    test "rejects nil trusted hosts when updating a client" do
+      client = client_fixture()
+
+      assert {:error, changeset} =
+               Admin.update_client(client, %{"trusted_hosts" => nil})
+
+      assert {"can't be nil", _} = changeset.errors[:trusted_hosts]
     end
 
     test "updates the client with authorized scopes" do

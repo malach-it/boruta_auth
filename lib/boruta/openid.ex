@@ -14,6 +14,7 @@ defmodule Boruta.Openid do
   """
 
   alias Boruta.ClientsAdapter
+  alias Boruta.HttpClient
   alias Boruta.Oauth.Authorization.AccessToken
   alias Boruta.Oauth.BearerToken
   alias Boruta.Oauth.Token
@@ -63,7 +64,11 @@ defmodule Boruta.Openid do
   defp parse_registration_params(params, %{jwks_uri: jwks_uri} = acc) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(jwks_uri),
          {:ok, %Finch.Response{body: jwks, status: 200}} <-
-           Finch.build(:get, jwks_uri) |> Finch.request(OpenIDHttpClient),
+           HttpClient.get(
+             jwks_uri,
+             params[:trusted_authorities] || params["trusted_authorities"] || "",
+             params[:trusted_hosts] || params["trusted_hosts"] || []
+           ),
          {:ok, %{"keys" => [jwk]}} <- Jason.decode(jwks, keys: :strings) do
       params =
         params
@@ -76,6 +81,12 @@ defmodule Boruta.Openid do
         Map.delete(acc, :jwks_uri)
       )
     else
+      {:error, "" <> error} ->
+        params
+        |> Map.put(:jwks_uri, jwks_uri)
+        |> Map.put(:jwks_uri_fetch_error, error)
+        |> parse_registration_params(Map.delete(acc, :jwks_uri))
+
       _ ->
         parse_registration_params(
           params,

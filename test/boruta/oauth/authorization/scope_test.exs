@@ -8,10 +8,15 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
   import Mox
 
   alias Boruta.Oauth.Authorization.Scope
+  alias Boruta.Oauth.Scope, as: OauthScope
   alias Boruta.Oauth.ResourceOwner
   alias Boruta.Support.ResourceOwners
 
   setup :verify_on_exit!
+
+  test "splits a nil scope into an empty list" do
+    assert OauthScope.split(nil) == []
+  end
 
   describe "with empty scope" do
     test "returns an empty string if nil given" do

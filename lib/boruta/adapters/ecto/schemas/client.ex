@@ -40,7 +40,9 @@ defmodule Boruta.Ecto.Client do
           userinfo_signed_response_alg: String.t() | nil,
           jwt_public_key: String.t(),
           public_key: String.t(),
-          private_key: String.t()
+          private_key: String.t(),
+          trusted_authorities: String.t(),
+          trusted_hosts: list(String.t())
         }
 
   @token_endpoint_auth_methods [
@@ -86,7 +88,10 @@ defmodule Boruta.Ecto.Client do
     field(:public_key, :string)
     field(:private_key, :string)
 
-    field(:token_endpoint_auth_methods, {:array, :string}, default: ["client_secret_basic", "client_secret_post"])
+    field(:token_endpoint_auth_methods, {:array, :string},
+      default: ["client_secret_basic", "client_secret_post"]
+    )
+
     field(:token_endpoint_jwt_auth_alg, :string, default: "HS256")
     field(:jwt_public_key, :string)
     field(:jwk, :map, virtual: true)
@@ -96,6 +101,9 @@ defmodule Boruta.Ecto.Client do
 
     field(:logo_uri, :string)
     field(:metadata, :map, default: %{})
+
+    field(:trusted_authorities, :string, default: "")
+    field(:trusted_hosts, {:array, :string}, default: [])
 
     many_to_many :authorized_scopes, Scope,
       join_through: "oauth_clients_scopes",
@@ -131,8 +139,11 @@ defmodule Boruta.Ecto.Client do
       :id_token_kid,
       :userinfo_signed_response_alg,
       :logo_uri,
-      :metadata
+      :metadata,
+      :trusted_authorities,
+      :trusted_hosts
     ])
+    |> validate_required_allow_empty([:trusted_authorities, :trusted_hosts])
     |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
@@ -140,6 +151,7 @@ defmodule Boruta.Ecto.Client do
     |> change_id_token_ttl()
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
+    |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
@@ -184,8 +196,11 @@ defmodule Boruta.Ecto.Client do
       :id_token_kid,
       :userinfo_signed_response_alg,
       :logo_uri,
-      :metadata
+      :metadata,
+      :trusted_authorities,
+      :trusted_hosts
     ])
+    |> validate_required_allow_empty([:trusted_authorities, :trusted_hosts])
     |> validate_required([
       :authorization_code_ttl,
       :access_token_ttl,
@@ -206,6 +221,7 @@ defmodule Boruta.Ecto.Client do
       Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
     )
     |> validate_redirect_uris()
+    |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
@@ -271,6 +287,13 @@ defmodule Boruta.Ecto.Client do
       |> Enum.reject(&is_nil/1)
       |> Enum.map(fn error -> {field, error} end)
     end)
+  end
+
+  defp validate_jwks_uri_fetch(changeset, attrs) do
+    case attrs[:jwks_uri_fetch_error] || attrs["jwks_uri_fetch_error"] do
+      error when is_binary(error) -> add_error(changeset, :jwks_uri, error)
+      _value -> changeset
+    end
   end
 
   defp validate_supported_grant_types(changeset) do
@@ -357,5 +380,14 @@ defmodule Boruta.Ecto.Client do
       :error ->
         put_change(changeset, :secret, token_generator().secret(struct(data, changes)))
     end
+  end
+
+  defp validate_required_allow_empty(changeset, fields) do
+    Enum.reduce(fields, changeset, fn field, changeset ->
+      case fetch_change(changeset, field) do
+        {:ok, nil} -> add_error(changeset, field, "can't be nil")
+        _result -> changeset
+      end
+    end)
   end
 end

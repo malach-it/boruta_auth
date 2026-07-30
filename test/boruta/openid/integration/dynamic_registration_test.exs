@@ -4,14 +4,9 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
   alias Boruta.Oauth
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
+  alias Boruta.Support.TLSServer
 
   describe "client registration" do
-    setup do
-      bypass = Bypass.open()
-
-      {:ok, bypass: bypass}
-    end
-
     test "returns an error" do
       redirect_uris = nil
 
@@ -112,7 +107,7 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
       assert JOSE.JWK.from_pem(jwt_public_key).kty == JOSE.JWK.from_map(jwk).kty
     end
 
-    test "registers a client with a jwks_uri", %{bypass: bypass} do
+    test "registers a client with a jwks_uri" do
       jwk = %{
         "kty" => "RSA",
         "e" => "AQAB",
@@ -124,15 +119,17 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
 
       redirect_uris = ["http://redirect.uri"]
 
-      jwks_uri = "http://localhost:#{bypass.port}/jwks"
+      {:ok, server} = TLSServer.start(Jason.encode!(%{"keys" => [jwk]}))
 
-      Bypass.expect_once(bypass, "GET", "/jwks", fn conn ->
-        Plug.Conn.resp(conn, 200, Jason.encode!(%{"keys" => [jwk]}))
+      on_exit(fn ->
+        TLSServer.stop(server)
       end)
 
       registration_params = %{
         redirect_uris: redirect_uris,
-        jwks_uri: jwks_uri
+        jwks_uri: "#{server.url}/jwks",
+        trusted_authorities: server.trusted_authorities,
+        trusted_hosts: ["localhost"]
       }
 
       assert {:client_registered,
@@ -143,6 +140,64 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
               }} = Openid.register_client(:context, registration_params, ApplicationMock)
 
       assert JOSE.JWK.from_pem(jwt_public_key).kty == JOSE.JWK.from_map(jwk).kty
+    end
+
+    test "returns a registration error when jwks_uri certificate is invalid" do
+      jwk = %{
+        "kty" => "RSA",
+        "e" => "AQAB",
+        "use" => "sig",
+        "alg" => "RS256",
+        "n" =>
+          "iN2CZVIKWB--I5yxqQtwLWncQR_N7u7Ge0bE3zqj4tqKVSHgBEE3xobV-nOKisAJzCy1QhJb7Cy9MQYxBZ09HbAXvZVHVFRtrTcFk87ZcB_7H8T_Nh_uydJEjiW--ryP1klNefa9V4t3WCwmNgX1ipP0ZHhNenemOT9BASQyF-_5Gm7KsDxJ8DkZH_OQhl5xdqXwZOh5Y7Cc25ZB1sr9xRse4vah9uiS5YgwTFbGRzS-yIDKuSB8BY1cBT0uwBLICamgI7gV0oZkQ29_ptXPZC1tw3X41eNaPU-G2ocF2vKZwBdGO8weTMfQngjPZ_xKv_y9_Y7P5aF-L3F05eKVjQ"
+      }
+
+      {:ok, server} = TLSServer.start(Jason.encode!(%{"keys" => [jwk]}))
+
+      on_exit(fn ->
+        TLSServer.stop(server)
+      end)
+
+      registration_params = %{
+        redirect_uris: ["http://redirect.uri"],
+        jwks_uri: server.url,
+        trusted_authorities: server.wrong_trusted_authorities,
+        trusted_hosts: []
+      }
+
+      assert {:registration_failure, %Ecto.Changeset{} = changeset} =
+               Openid.register_client(:context, registration_params, ApplicationMock)
+
+      assert {:jwks_uri, {"Host certificate is not trusted.", []}} in changeset.errors
+    end
+
+    test "returns a registration error when jwks_uri host is not trusted" do
+      jwk = %{
+        "kty" => "RSA",
+        "e" => "AQAB",
+        "use" => "sig",
+        "alg" => "RS256",
+        "n" =>
+          "iN2CZVIKWB--I5yxqQtwLWncQR_N7u7Ge0bE3zqj4tqKVSHgBEE3xobV-nOKisAJzCy1QhJb7Cy9MQYxBZ09HbAXvZVHVFRtrTcFk87ZcB_7H8T_Nh_uydJEjiW--ryP1klNefa9V4t3WCwmNgX1ipP0ZHhNenemOT9BASQyF-_5Gm7KsDxJ8DkZH_OQhl5xdqXwZOh5Y7Cc25ZB1sr9xRse4vah9uiS5YgwTFbGRzS-yIDKuSB8BY1cBT0uwBLICamgI7gV0oZkQ29_ptXPZC1tw3X41eNaPU-G2ocF2vKZwBdGO8weTMfQngjPZ_xKv_y9_Y7P5aF-L3F05eKVjQ"
+      }
+
+      {:ok, server} = TLSServer.start(Jason.encode!(%{"keys" => [jwk]}))
+
+      on_exit(fn ->
+        TLSServer.stop(server)
+      end)
+
+      registration_params = %{
+        redirect_uris: ["http://redirect.uri"],
+        jwks_uri: server.url,
+        trusted_authorities: server.trusted_authorities,
+        trusted_hosts: ["example.com"]
+      }
+
+      assert {:registration_failure, %Ecto.Changeset{} = changeset} =
+               Openid.register_client(:context, registration_params, ApplicationMock)
+
+      assert {:jwks_uri, {"Host is not trusted for outbound requests.", []}} in changeset.errors
     end
   end
 end

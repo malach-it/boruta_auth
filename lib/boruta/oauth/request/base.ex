@@ -2,7 +2,9 @@ defmodule Boruta.Oauth.Request.Base do
   @moduledoc false
 
   alias Boruta.BasicAuth
+  alias Boruta.HttpClient
   alias Boruta.Oauth.AuthorizationCodeRequest
+  alias Boruta.Oauth.Client
   alias Boruta.Oauth.ClientCredentialsRequest
   alias Boruta.Oauth.CodeRequest
   alias Boruta.Oauth.HybridRequest
@@ -133,7 +135,8 @@ defmodule Boruta.Oauth.Request.Base do
      }}
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request" => request}}) do
+  def fetch_unsigned_request(%{query_params: %{"request" => request}}, _client)
+      when is_binary(request) do
     case Joken.peek_claims(request) do
       {:ok, params} ->
         {:ok, params}
@@ -143,19 +146,22 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}) do
-    with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
+  def fetch_unsigned_request(%{query_params: %{"request_uri" => request_uri}}, client) do
+    with %URI{scheme: "" <> scheme} when scheme in ["http", "https"] <- URI.parse(request_uri),
          {:ok, %Finch.Response{body: request, status: 200}} <-
-           Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient),
+           client_get(request_uri, client),
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
+      {:error, "" <> error} ->
+        {:error, error}
+
       _ ->
         {:error, "Could not fetch unsigned request parameter from given URI."}
     end
   end
 
-  def fetch_unsigned_request(%{body_params: %{"request" => request}}) do
+  def fetch_unsigned_request(%{body_params: %{"request" => request}}, _client) do
     case Joken.peek_claims(request) do
       {:ok, params} ->
         {:ok, params}
@@ -165,19 +171,22 @@ defmodule Boruta.Oauth.Request.Base do
     end
   end
 
-  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri}}) do
+  def fetch_unsigned_request(%{body_params: %{"request_uri" => request_uri}}, client) do
     with %URI{scheme: "" <> _scheme} <- URI.parse(request_uri),
          {:ok, %Finch.Response{body: request, status: 200}} <-
-           Finch.build(:get, request_uri) |> Finch.request(OpenIDHttpClient),
+           client_get(request_uri, client),
          {:ok, params} <- Joken.peek_claims(request) do
       {:ok, params}
     else
+      {:error, "" <> error} ->
+        {:error, error}
+
       _ ->
         {:error, "Could not fetch unsigned request parameter from given URI."}
     end
   end
 
-  def fetch_unsigned_request(_request) do
+  def fetch_unsigned_request(_request, _client) do
     {:ok, %{}}
   end
 
@@ -290,4 +299,13 @@ defmodule Boruta.Oauth.Request.Base do
   defp client_authentication_from_params(%{"client_authentication" => client_authentication}) do
     %{type: client_authentication["type"], value: client_authentication["value"]}
   end
+
+  defp client_get(
+         url,
+         %Client{trusted_authorities: trusted_authorities, trusted_hosts: trusted_hosts}
+       ) do
+    HttpClient.get(url, trusted_authorities, trusted_hosts)
+  end
+
+  defp client_get(url, _client), do: HttpClient.get(url)
 end
