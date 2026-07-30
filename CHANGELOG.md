@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Note that you must run the `boruta.gen.migration` task to add the client trust configuration fields.
+
 ### Added
 
+- up to Elixir 1.20 and OTP 29 support
+- per-client trusted certificate authorities and host allowlists for outbound requests
 - oauth resource indicators support
 - `form_post` response mode support
 - path wildcard (`**`) for `redirect_uris`
@@ -26,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `alg` in exposed jwks keys
 - oauth clients rsa modulus size validation
 - automated security audits
+- OAuth, OpenID Connect, OpenID4VP, and OpenID4VCI business rules documentation
 
 ### Changed
 
@@ -40,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `HS384` and `RS384` JWT client authentication algorithms
+- client refresh-token TTL validation
+- generated controller callback assigns
 - only include nonce claim in id_token when provided in auth request
 - verifiable presentation response type parsing
 - direct post handler types
@@ -60,6 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- require HTTPS and explicit client trust configuration for outbound request-object, JWKS, and status-list retrieval
+- validate JWT client assertion expiration
+- restrict dynamic client registration to an allowlist of public registration attributes and safer default grant types
 - avoid code chains replay attacks
 - code chains validation in direct post requests
 - revoke code chain at credential issuance
