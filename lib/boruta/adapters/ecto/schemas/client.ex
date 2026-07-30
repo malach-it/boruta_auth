@@ -83,7 +83,9 @@ defmodule Boruta.Ecto.Client do
     :token_endpoint_jwt_auth_alg,
     :jwk,
     :jwks_uri,
-    :logo_uri
+    :logo_uri,
+    :trusted_authorities,
+    :trusted_hosts
   ]
 
   @default_grant_types [
@@ -278,7 +280,8 @@ defmodule Boruta.Ecto.Client do
     client
     |> repo().preload(:authorized_scopes)
     |> cast(attrs, @registration_attributes)
-    |> validate_required([:redirect_uris, :key_pair_type])
+    |> validate_required_allow_empty([:trusted_authorities, :trusted_hosts])
+    |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey)
     |> change_access_token_ttl()
     |> change_agent_token_ttl()
@@ -287,6 +290,7 @@ defmodule Boruta.Ecto.Client do
     |> change_id_token_ttl()
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
+    |> validate_jwks_uri_fetch(attrs)
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> validate_inclusion(:response_mode, @response_modes)
