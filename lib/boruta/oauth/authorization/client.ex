@@ -8,7 +8,14 @@ defmodule Boruta.Oauth.Authorization.Client do
 
     use Joken.Config
 
-    def token_config, do: %{}
+    def token_config do
+      %{}
+      |> add_claim(
+        "exp",
+        nil,
+        &(is_number(&1) and &1 > Joken.current_time())
+      )
+    end
   end
 
   alias Boruta.ClientsAdapter
@@ -317,7 +324,7 @@ defmodule Boruta.Oauth.Authorization.Client do
        when alg in ["HS256", "HS384", "HS512"] and is_binary(secret) do
     signer = Joken.Signer.create(alg, secret)
 
-    case {source[:type], Token.verify(source[:value] || "", signer)} do
+    case {source[:type], Token.verify_and_validate(source[:value] || "", signer)} do
       {"jwt", {:ok, _claims}} ->
         {:ok, secret}
 
@@ -343,7 +350,7 @@ defmodule Boruta.Oauth.Authorization.Client do
        )
        when alg in ["RS256", "RS384", "RS512"] and is_binary(jwt_public_key) do
     signer = Joken.Signer.create(alg, %{"pem" => jwt_public_key})
-    verify = Token.verify(source[:value] || "", signer)
+    verify = Token.verify_and_validate(source[:value] || "", signer)
 
     verify_secret_result(client, source, verify, false)
   end
@@ -373,7 +380,7 @@ defmodule Boruta.Oauth.Authorization.Client do
     with {:ok, jwt_public_key} <- ClientsAdapter.refresh_jwk_from_jwks_uri(client_id),
          signer <- Joken.Signer.create(alg, %{"pem" => jwt_public_key}),
          {"jwt", {:ok, _claims}} <-
-           {source[:type], Token.verify(source[:value] || "", signer)} do
+           {source[:type], Token.verify_and_validate(source[:value] || "", signer)} do
       {:ok, secret}
     else
       _ ->
