@@ -61,6 +61,21 @@ defmodule Boruta.Ecto.Client do
     :HS512
   ]
 
+  @registration_attributes [
+    :name,
+    :redirect_uris,
+    :token_endpoint_auth_methods,
+    :token_endpoint_jwt_auth_alg,
+    :jwk,
+    :jwks_uri,
+    :logo_uri
+  ]
+
+  @default_grant_types [
+    "client_credentials",
+    "authorization_code"
+  ]
+
   @primary_key {:id, Ecto.UUID, autogenerate: true}
   @foreign_key_type :binary_id
   @timestamps_opts type: :utc_datetime
@@ -71,7 +86,7 @@ defmodule Boruta.Ecto.Client do
     field(:authorize_scope, :boolean, default: false)
     field(:redirect_uris, {:array, :string}, default: [])
 
-    field(:supported_grant_types, {:array, :string}, default: Oauth.Client.grant_types())
+    field(:supported_grant_types, {:array, :string}, default: @default_grant_types)
 
     field(:pkce, :boolean, default: false)
     field(:public_refresh_token, :boolean, default: false)
@@ -152,6 +167,36 @@ defmodule Boruta.Ecto.Client do
     |> change_refresh_token_ttl()
     |> validate_redirect_uris()
     |> validate_jwks_uri_fetch(attrs)
+    |> validate_supported_grant_types()
+    |> validate_id_token_signature_alg()
+    |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
+    |> validate_inclusion(
+      :token_endpoint_jwt_auth_alg,
+      Enum.map(@token_endpoint_jwt_auth_algs, &Atom.to_string/1)
+    )
+    |> validate_inclusion(
+      :userinfo_signed_response_alg,
+      Enum.map(Client.Crypto.signature_algorithms(), &Atom.to_string/1)
+    )
+    |> put_assoc(:authorized_scopes, parse_authorized_scopes(attrs))
+    |> translate_jwk()
+    |> generate_key_pair()
+    |> put_secret()
+    |> validate_required(:secret)
+  end
+
+  @doc false
+  def registration_changeset(client, attrs) do
+    client
+    |> repo().preload(:authorized_scopes)
+    |> cast(attrs, @registration_attributes)
+    |> validate_required([:redirect_uris])
+    |> unique_constraint(:id, name: :clients_pkey)
+    |> change_access_token_ttl()
+    |> change_authorization_code_ttl()
+    |> change_id_token_ttl()
+    |> change_refresh_token_ttl()
+    |> validate_redirect_uris()
     |> validate_supported_grant_types()
     |> validate_id_token_signature_alg()
     |> validate_subset(:token_endpoint_auth_methods, @token_endpoint_auth_methods)
