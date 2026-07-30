@@ -557,7 +557,6 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
              ) == {:error, "could not get status list."}
     end
 
-    @tag :skip
     test "validates status", %{signer: signer} do
       {:ok, credential, _claims} =
         VerifiablePresentations.Token.generate_and_sign(

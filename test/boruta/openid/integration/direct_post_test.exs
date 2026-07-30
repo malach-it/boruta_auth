@@ -760,11 +760,23 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                )
     end
 
-    @tag :skip
     test "oid4vp - returns an error with bad public client", %{
+      client: client,
       vp_token: vp_token,
       bad_public_client_code: code
     } do
+      on_exit(fn ->
+        ClientStore.invalidate(client)
+        ClientStore.invalidate_public()
+      end)
+
+      {:ok, client} =
+        client
+        |> Ecto.Changeset.change(%{check_public_client_id: true})
+        |> Repo.update()
+
+      :ok = ClientStore.invalidate(client)
+
       conn = %Plug.Conn{}
 
       presentation_submission =
@@ -931,7 +943,6 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.state == code.state
     end
 
-    @tag :skip
     test "oid4vp - authenticates with a code chain (last valid)", %{
       vp_token: vp_token,
       last_valid_code_chain: [code | _code_chain]

@@ -344,8 +344,19 @@ defmodule Boruta.OpenidTest.CredentialTest do
       assert credential
     end
 
-    @tag :skip
     test "returns an error with invalid code chain", %{public_client: client} do
+      on_exit(fn ->
+        ClientStore.invalidate(client)
+        ClientStore.invalidate_public()
+      end)
+
+      {:ok, client} =
+        client
+        |> Ecto.Changeset.change(%{check_public_client_id: true})
+        |> Repo.update()
+
+      :ok = ClientStore.invalidate(client)
+
       {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
 
       signer =
@@ -394,14 +405,17 @@ defmodule Boruta.OpenidTest.CredentialTest do
          }}
       end)
 
+      first_code = SecureRandom.uuid()
+      second_code = SecureRandom.uuid()
+
       invalid_code_chain = [
         insert(
           :token,
-          [{:type, "code"}, {:previous_code, "invalid_code_2"}, {:value, "invalid_code_1"}]
+          [{:type, "code"}, {:previous_code, second_code}, {:value, first_code}]
         ),
         insert(
           :token,
-          [{:type, "code"}, {:sub, "did:key:invalid"}, {:value, "invalid_code_2"}]
+          [{:type, "code"}, {:sub, "did:key:invalid"}, {:value, second_code}]
         )
       ]
 

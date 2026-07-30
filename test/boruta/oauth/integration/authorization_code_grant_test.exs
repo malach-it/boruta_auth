@@ -2286,6 +2286,15 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
   describe "agent code grant - token" do
     setup do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          supported_grant_types: Oauth.Client.grant_types()
+        })
+
+      Ecto.ClientStore.invalidate_public()
+
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client)
@@ -3358,7 +3367,6 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                code.authorization_details
     end
 
-    @tag :skip
     test "returns a token with siopv2", %{siopv2_code: code} do
       assert {:token_success,
               %TokenResponse{
