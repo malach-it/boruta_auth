@@ -810,17 +810,24 @@ OpenID4VCI pre-authorized code flow described below.
 ## Test traceability
 
 This inventory covers every active test under `test/boruta/oauth` and
-`test/boruta/openid` at the time it was generated. Several tests exercise the
-same rule with different inputs, so the number of rule bullets is deliberately
-smaller than the number of test cases.
+`test/boruta/openid`, plus the shared outbound-trust tests in
+`test/boruta/http_client_test.exs`, at the time it was generated. Several tests
+exercise the same rule with different inputs, so the number of rule bullets is
+deliberately smaller than the number of test cases.
 
-| Test layer | OAuth | OpenID | Total |
-|---|---:|---:|---:|
-| Active integration and flow cases | 260 | 105 | 365 |
-| Active supporting unit cases | 190 | 73 | 263 |
-| **All active cases represented by this guide** | **450** | **178** | **628** |
-| Skipped cases, not asserted as implemented rules | 1 | 5 | 6 |
-| **All discovered cases** | **451** | **183** | **634** |
+| Test layer | OAuth | OpenID | Shared trust | Total |
+|---|---:|---:|---:|---:|
+| Active integration and flow cases | 260 | 107 | 0 | 367 |
+| Active supporting unit cases | 193 | 73 | 10 | 276 |
+| **All active cases represented by this guide** | **453** | **180** | **10** | **643** |
+| Skipped cases, not asserted as implemented rules | 1 | 6 | 0 | 7 |
+| **All discovered cases** | **454** | **186** | **10** | **650** |
+
+Outbound request trust is exercised by 28 active cases across the shared HTTP
+client, OAuth request-object and client-authentication tests, dynamic
+registration, and credential status-list validation. Fourteen additional
+administration tests cover persistence and validation of client trust
+configuration outside this guide's protocol-rule inventory.
 
 The integration and flow rules are exercised by:
 
@@ -854,7 +861,7 @@ directly under `test/boruta/oauth` and `test/boruta/openid`, including:
 
 ### Skipped expectations
 
-The following six skipped cases are excluded from the business-rule inventory
+The following seven skipped cases are excluded from the business-rule inventory
 because the test suite does not currently assert that they work:
 
 - Authorization code: reject a SIOPv2 request without a nonce.
@@ -864,6 +871,11 @@ because the test suite does not currently assert that they work:
 - OpenID4VP direct post: reject replay of a previously processed response.
 - OpenID4VP direct post: reject replay when the valid DID is in the middle of a
   code chain.
+- VP-token validation: validate revocation against the external EBSI
+  status-list example.
+
+The full test suite has one additional skipped administration case for creating
+a client with a universal key; it is outside this protocol-rule inventory.
 
 When tests and this guide disagree, update the guide together with the behavior
 and its tests.
