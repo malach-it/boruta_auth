@@ -591,7 +591,38 @@ OpenID4VCI pre-authorized code flow described later.
 | Presentation request | `GET` or `POST` | `/openid/authorize` | `Boruta.Oauth.authorize/3` | `Boruta.Oauth.AuthorizeApplication` |
 | Presentation response | `POST` | `/openid/direct_post` | `Boruta.Openid.direct_post/3` | `Boruta.Openid.DirectPostApplication` |
 
-### Rules
+### Presentation authorization rules
+
+- Presentation authorization supports response types beginning with `code`,
+  `id_token`, or `vp_token`; unsupported response types are rejected.
+- A `vp_token` response is authorized only when the requested scope selects an
+  entry in the resource owner's presentation configuration. Without such an
+  entry, the response falls back to `id_token`.
+- A DID client ID uses Boruta's configured public client. Other client IDs must
+  identify a registered client whose redirect URI and grant type are valid.
+- The resource owner must be authorized. An agent token can authorize the
+  resource owner and contributes its claims to scope authorization.
+- Public, client-authorized, resource-owner-authorized, and selected
+  presentation scopes are retained. Unknown and unauthorized scopes are
+  filtered from the authorized scope and recorded as requested scopes.
+- Authorization details are validated before a presentation code is created.
+- An optional existing code must be active and valid. It is linked as the
+  previous code, forming the code chain used by later presentation checks.
+- The selected presentation definition, nonce, state, scopes, redirect URI,
+  public client ID, agent token, PKCE data, and client-encryption parameters are
+  bound to the created code.
+- A resource-owner code verifier overrides request PKCE parameters and is
+  stored as a plain code challenge.
+- Agent-token and client-encryption data from a previous code take precedence
+  when the new code is created.
+- Requests beginning with `vp_token` produce a verifiable-presentation
+  response. Requests beginning with `code` or `id_token` produce a SIOPv2
+  response.
+- The response uses the client's configured response mode. The tested
+  `direct_post` and `post` modes return the stored code and presentation
+  request data to the wallet.
+
+### Direct-post rules
 
 - A valid signed VP token and an existing, active code are required.
 - PKCE-enabled clients must provide the matching verifier.
@@ -611,14 +642,8 @@ OpenID4VCI pre-authorized code flow described later.
 Skipped replay and subject-mismatch cases are intentionally not documented as
 enforced rules.
 
-### Presentation-definition and VP-token rules
+### VP-token validation rules
 
-- OAuth response types are preserved while unsupported response types are
-  rejected.
-- `vp_token` is retained only when the request selects a scope with a
-  presentation configuration.
-- The presentation definition is selected from the requested, configured
-  presentation scope.
 - The VP token must be a string containing a valid, unexpired signed JWT;
   malformed values and signature failures are rejected.
 - A JWT carrying an embedded key is rejected when that key does not verify its
