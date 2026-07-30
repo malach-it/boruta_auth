@@ -710,14 +710,14 @@ defmodule Boruta.Ecto.AdminTest do
     test "deletes inactive tokens (no given date)" do
       now = :os.system_time(:second)
 
-      _active_token = insert(:token, expires_at: now)
-      _expired_token = insert(:token, expires_at: now - 1)
+      _active_token = insert(:token, expires_at: now + 10)
+      _expired_token = insert(:token, expires_at: now - 10)
 
       _active_revoked_token =
-        insert(:token, expires_at: now, revoked_at: DateTime.from_unix!(now))
+        insert(:token, expires_at: now + 10, revoked_at: DateTime.from_unix!(now))
 
       _expired_revoked_token =
-        insert(:token, expires_at: now - 1, revoked_at: DateTime.from_unix!(now))
+        insert(:token, expires_at: now - 10, revoked_at: DateTime.from_unix!(now))
 
       assert Admin.delete_inactive_tokens() == {2, nil}
     end

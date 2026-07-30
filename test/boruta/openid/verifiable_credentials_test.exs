@@ -1,6 +1,14 @@
 defmodule Boruta.Openid.VerifiableCredentialsTest do
   use Boruta.DataCase, async: true
 
+  defmodule FailingSignatures do
+    @behaviour Boruta.Openid.Signatures
+
+    @impl Boruta.Openid.Signatures
+    def verifiable_credential_sign(_payload, _client, _format),
+      do: {:error, "signing failed"}
+  end
+
   import Boruta.Factory
   import Boruta.Ecto.OauthMapper, only: [to_oauth_schema: 1]
 
@@ -197,6 +205,41 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                VerifiableCredentials.validate_signature(token)
 
       assert jwk == public_jwk_fixture()
+    end
+
+    test "issues a credential from a proof with a did:key header", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      {:ok, did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "kid" => did <> "#key",
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{
+            "aud" => Config.issuer(),
+            "iat" => :os.system_time(:seconds)
+          },
+          signer
+        )
+
+      credential_params =
+        Map.put(credential_params, "proof", %{"proof_type" => "jwt", "jwt" => jwt})
+
+      assert {:ok, %{format: "jwt_vc", credential: credential}} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:token) |> to_oauth_schema(),
+                 %{}
+               )
+
+      assert credential
     end
 
     test "verifies proof - must have required claims", %{
@@ -945,6 +988,218 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
                  div(:os.system_time(:seconds), 3600) + 55
                )
     end
+
+    test "uses the default credential configuration for DID resource owners", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      default_configuration = resource_owner.credential_configuration
+      resource_owner = %{resource_owner | sub: "did:example:resource-owner"}
+
+      assert {:ok, %{format: "jwt_vc", credential: credential}} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:token) |> to_oauth_schema(),
+                 default_configuration
+               )
+
+      assert credential
+    end
+
+    test "selects a version 11 credential by types", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      configuration =
+        resource_owner.credential_configuration["VerifiableCredential"]
+        |> Map.merge(%{version: "11", types: ["VerifiableCredential"]})
+
+      resource_owner = %{
+        resource_owner
+        | credential_configuration: %{"LegacyCredential" => configuration}
+      }
+
+      credential_params =
+        credential_params
+        |> Map.delete("credential_identifier")
+        |> Map.put("types", ["VerifiableCredential"])
+
+      assert {:ok, %{format: "jwt_vc", credential: credential}} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 insert(:token) |> to_oauth_schema(),
+                 %{}
+               )
+
+      assert credential
+    end
+
+    test "selects a version 13 credential from the token scope", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      credential_params = Map.put(credential_params, "credential_identifier", "other")
+      token = insert(:token, scope: "VerifiableCredential") |> to_oauth_schema()
+
+      assert {:ok, %{format: "jwt_vc", credential: credential}} =
+               VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 token,
+                 %{}
+               )
+
+      assert credential
+    end
+
+    test "ignores credential configurations with unknown versions", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      configuration =
+        resource_owner.credential_configuration["VerifiableCredential"]
+        |> Map.put(:version, "unknown")
+
+      resource_owner = %{
+        resource_owner
+        | credential_configuration: %{"VerifiableCredential" => configuration}
+      }
+
+      assert VerifiableCredentials.issue_verifiable_credential(
+               resource_owner,
+               credential_params,
+               insert(:token) |> to_oauth_schema(),
+               %{}
+             ) == {:error, "Credential not found."}
+    end
+
+    test "rejects a malformed proof JWT", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      credential_params =
+        Map.put(credential_params, "proof", %{
+          "proof_type" => "jwt",
+          "jwt" => "not-a-jwt"
+        })
+
+      assert VerifiableCredentials.issue_verifiable_credential(
+               resource_owner,
+               credential_params,
+               insert(:token) |> to_oauth_schema(),
+               %{}
+             ) ==
+               {:error, "Proof does not contain valid JWT headers, `alg` and `typ` are required."}
+    end
+
+    test "rejects unsupported credential formats", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      configuration =
+        resource_owner.credential_configuration["VerifiableCredential"]
+        |> Map.put(:format, "unsupported")
+
+      resource_owner = %{
+        resource_owner
+        | credential_configuration: %{"VerifiableCredential" => configuration}
+      }
+
+      assert VerifiableCredentials.issue_verifiable_credential(
+               resource_owner,
+               credential_params,
+               insert(:token) |> to_oauth_schema(),
+               %{}
+             ) == {:error, "Unkown format."}
+    end
+
+    test "propagates signing failures for each supported format", %{
+      resource_owner: resource_owner,
+      credential_params: credential_params
+    } do
+      token = token_with_signatures_adapter(FailingSignatures)
+
+      for format <- ["jwt_vc", "jwt_vc_json", "vc+sd-jwt"] do
+        configuration =
+          resource_owner.credential_configuration["VerifiableCredential"]
+          |> Map.put(:format, format)
+
+        resource_owner = %{
+          resource_owner
+          | credential_configuration: %{"VerifiableCredential" => configuration}
+        }
+
+        assert VerifiableCredentials.issue_verifiable_credential(
+                 resource_owner,
+                 credential_params,
+                 token,
+                 %{}
+               ) == {:error, "signing failed"}
+      end
+    end
+  end
+
+  describe "validate_authorization_details/1" do
+    test "accepts valid credential authorization details" do
+      authorization_details =
+        Jason.encode!([
+          %{
+            "type" => "openid_credential",
+            "format" => "jwt_vc",
+            "credential_definition" => %{
+              "type" => ["VerifiableCredential"]
+            }
+          }
+        ])
+
+      assert VerifiableCredentials.validate_authorization_details(authorization_details) == :ok
+    end
+
+    test "rejects authorization details that do not match the schema" do
+      assert {:error, reason} =
+               VerifiableCredentials.validate_authorization_details(
+                 Jason.encode!([%{"type" => "openid_credential"}])
+               )
+
+      assert reason =~ "authorization_details validation failed."
+      assert reason =~ "Required property format is missing"
+    end
+
+    test "rejects malformed authorization details JSON" do
+      assert {:error, reason} =
+               VerifiableCredentials.validate_authorization_details("not-json")
+
+      assert reason =~ "authorization_details validation failed."
+      assert reason =~ "Jason.DecodeError"
+    end
+  end
+
+  describe "validate_signature/1" do
+    test "rejects malformed and non-string proofs" do
+      assert {:error, _reason} = VerifiableCredentials.validate_signature("not-a-jwt")
+
+      assert VerifiableCredentials.validate_signature(nil) ==
+               {:error, "Proof does not contain a valid JWT."}
+    end
+
+    test "rejects a proof whose embedded key does not match its signature" do
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" =>
+            JOSE.JWK.generate_key({:rsa, 2048})
+            |> JOSE.JWK.to_public()
+            |> JOSE.JWK.to_map()
+            |> elem(1)
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(%{"aud" => "test", "iat" => 1}, signer)
+
+      assert VerifiableCredentials.validate_signature(jwt) ==
+               {:error, "Bad proof signature"}
+    end
   end
 
   describe "Status.generate_status/3" do
@@ -1063,6 +1318,11 @@ defmodule Boruta.Openid.VerifiableCredentialsTest do
       assert VerifiableCredentials.Status.verify_status_token("secret", "invalid salt") ==
                :invalid
     end
+  end
+
+  defp token_with_signatures_adapter(adapter) do
+    client = insert(:client, signatures_adapter: Atom.to_string(adapter))
+    insert(:token, client: client) |> to_oauth_schema()
   end
 
   def public_key_fixture do

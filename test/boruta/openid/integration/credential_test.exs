@@ -68,6 +68,27 @@ defmodule Boruta.OpenidTest.CredentialTest do
               }} = Openid.credential(conn, %{}, %{}, ApplicationMock)
     end
 
+    test "returns credential_failure with a malformed encrypted request" do
+      %Token{value: access_token} = insert(:token)
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_failure,
+              %Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "Could not decrypt the given payload."
+              }} =
+               Openid.credential(
+                 conn,
+                 %{"encrypted_request" => "not-a-jwe"},
+                 %{},
+                 ApplicationMock
+               )
+    end
+
     test "returns an error with a valid bearer" do
       credential_params = %{}
       %Token{value: access_token} = insert(:token)
@@ -192,12 +213,22 @@ defmodule Boruta.OpenidTest.CredentialTest do
          }}
       end)
 
-      %Token{value: access_token} =
+      %Token{value: access_token, client: client} =
         insert(:token,
           sub: sub,
           authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}],
           previous_code: insert(:token, type: "preauthorized_code").value
         )
+
+      encrypted_request =
+        client.public_key
+        |> JOSE.JWK.from_pem()
+        |> JOSE.JWE.block_encrypt(Jason.encode!(credential_params), %{
+          "alg" => "RSA-OAEP",
+          "enc" => "A256GCM"
+        })
+        |> JOSE.JWE.compact()
+        |> elem(1)
 
       conn =
         %Plug.Conn{}
@@ -207,7 +238,13 @@ defmodule Boruta.OpenidTest.CredentialTest do
               %CredentialResponse{
                 format: "jwt_vc",
                 credential: credential
-              }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+              }} =
+               Openid.credential(
+                 conn,
+                 %{"encrypted_request" => encrypted_request},
+                 %{},
+                 ApplicationMock
+               )
 
       # TODO validate credential body
       assert credential
@@ -471,6 +508,43 @@ defmodule Boruta.OpenidTest.CredentialTest do
   end
 
   describe "deliver defered verifiable credentials" do
+    test "returns an error when fetching without an access token" do
+      assert {:credential_failure,
+              %Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "Invalid bearer from Authorization header."
+              }} = Openid.defered_credential(%Plug.Conn{}, ApplicationMock)
+    end
+
+    test "returns an error when fetching with an invalid access token" do
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer bad_token")
+
+      assert {:credential_failure,
+              %Error{
+                status: :bad_request,
+                error: :invalid_access_token,
+                error_description: "Given access token is invalid, revoked, or expired."
+              }} = Openid.defered_credential(conn, ApplicationMock)
+    end
+
+    test "returns an error when no credential matches the acceptance token" do
+      %Token{value: access_token} = insert(:token)
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_failure,
+              %Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "Credential not found."
+              }} = Openid.defered_credential(conn, ApplicationMock)
+    end
+
     test "returns an error with no access token" do
       conn = %Plug.Conn{}
 

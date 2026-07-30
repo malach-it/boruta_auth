@@ -346,6 +346,9 @@ defmodule Boruta.Oauth.Client do
         {:error, _} ->
           {:error, "Could not decrypt the given payload."}
       end
+    rescue
+      ArgumentError ->
+        {:error, "Could not decrypt the given payload."}
     end
   end
 end

@@ -2,6 +2,61 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
   alias Boruta.Openid.VerifiablePresentations
   use ExUnit.Case
 
+  describe "response type and presentation definition selection" do
+    test "keeps OAuth response types and rejects unsupported response types" do
+      assert VerifiablePresentations.check_client_metadata(%{"anything" => true}) == :ok
+
+      assert VerifiablePresentations.response_types("code id_token", "", %{}) == [
+               "code",
+               "id_token"
+             ]
+
+      assert VerifiablePresentations.response_types("id_token vp_token", "", %{}) == [
+               "id_token",
+               "vp_token"
+             ]
+
+      assert VerifiablePresentations.response_types("unsupported", "", %{}) == []
+    end
+
+    test "keeps vp_token only when its presentation scope is configured" do
+      configuration = %{"employee" => %{definition: %{"id" => "employee"}}}
+
+      assert VerifiablePresentations.response_types(
+               "vp_token",
+               "openid employee",
+               configuration
+             ) == ["vp_token"]
+
+      assert VerifiablePresentations.response_types("vp_token", "openid", configuration) == [
+               "id_token"
+             ]
+    end
+
+    test "selects a scoped presentation definition" do
+      definition = %{"id" => "employee"}
+      configuration = %{"employee" => %{definition: definition}}
+
+      assert VerifiablePresentations.presentation_definition(
+               ["vp_token"],
+               configuration,
+               "openid employee"
+             ) == {:ok, "employee", definition}
+
+      assert VerifiablePresentations.presentation_definition(
+               ["vp_token"],
+               configuration,
+               "openid"
+             ) == {:ok, nil, nil}
+
+      assert VerifiablePresentations.presentation_definition(
+               ["id_token"],
+               configuration,
+               "employee"
+             ) == {:ok, nil, nil}
+    end
+  end
+
   describe "validate_presentation/3" do
     setup do
       signer =
@@ -236,6 +291,25 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                presentation_definition
              ) == {:error, "Input descriptor count does not match descriptor map count."}
     end
+
+    test "returns an error when no credentials are presented", %{vp_token: vp_token} do
+      presentation_submission = %{
+        "id" => "test",
+        "definition_id" => "test",
+        "descriptor_map" => []
+      }
+
+      presentation_definition = %{
+        "id" => "test",
+        "input_descriptors" => []
+      }
+
+      assert VerifiablePresentations.validate_presentation(
+               vp_token,
+               presentation_submission,
+               presentation_definition
+             ) == {:error, "No credentials presented."}
+    end
   end
 
   describe "validate_credential/3" do
@@ -330,6 +404,48 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                {:error, "is expired."}
     end
 
+    test "returns an error when credential expiration is missing", %{signer: signer} do
+      credential =
+        sign_credential(signer, %{
+          "vc" => %{
+            "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601()
+          }
+        })
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == {:error, "Credential exp claim is missing."}
+    end
+
+    test "accepts a root validFrom claim", %{signer: signer} do
+      credential =
+        sign_credential(signer, %{
+          "exp" => :os.system_time(:second) + 10,
+          "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601()
+        })
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == :ok
+    end
+
+    test "returns an error when validFrom is missing", %{signer: signer} do
+      credential =
+        sign_credential(signer, %{
+          "exp" => :os.system_time(:second) + 10
+        })
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == {:error, "is invalid"}
+    end
+
     test "returns an error when not yet valid", %{signer: signer} do
       {:ok, credential, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
@@ -369,6 +485,76 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
 
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
                {:error, "is not yet valid."}
+    end
+
+    test "accepts a credential with a valid status-list entry", %{signer: signer} do
+      bypass = Bypass.open()
+      status_credential = status_list_credential(signer)
+
+      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
+        Plug.Conn.resp(conn, 200, status_credential)
+      end)
+
+      credential =
+        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == :ok
+    end
+
+    test "rejects a credential with a revoked status-list entry", %{signer: signer} do
+      bypass = Bypass.open()
+      status_credential = status_list_credential(signer)
+
+      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
+        Plug.Conn.resp(conn, 200, status_credential)
+      end)
+
+      credential =
+        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "2")
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == {:error, "is revoked."}
+    end
+
+    test "rejects an invalid status-list credential", %{signer: signer} do
+      bypass = Bypass.open()
+
+      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
+        Plug.Conn.resp(conn, 200, "not-a-jwt")
+      end)
+
+      credential =
+        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == {:error, "has an invalid status list credential."}
+    end
+
+    test "rejects a credential when its status list cannot be fetched", %{signer: signer} do
+      bypass = Bypass.open()
+
+      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
+        Plug.Conn.resp(conn, 500, "")
+      end)
+
+      credential =
+        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([]),
+               "jwt_vc"
+             ) == {:error, "could not get status list."}
     end
 
     @tag :skip
@@ -485,6 +671,44 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                {:error, "descriptor test does not contain pattern \"non-existing\"."}
     end
 
+    test "accepts a constraint without a filter", %{signer: signer} do
+      credential =
+        sign_credential(signer, %{
+          "exp" => :os.system_time(:second) + 10,
+          "vc" => %{
+            "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
+            "test" => "value"
+          }
+        })
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([
+                 %{"path" => ["$.vc.test"], "filter" => nil}
+               ]),
+               "jwt_vc"
+             ) == :ok
+    end
+
+    test "rejects an unknown constraint filter", %{signer: signer} do
+      credential =
+        sign_credential(signer, %{
+          "exp" => :os.system_time(:second) + 10,
+          "vc" => %{
+            "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
+            "test" => "value"
+          }
+        })
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor_with_fields([
+                 %{"path" => ["$.vc.test"], "filter" => %{"type" => "number"}}
+               ]),
+               "jwt_vc"
+             ) == {:error, "descriptor test has an invalid or unknown filter."}
+    end
+
     test "is valid", %{signer: signer} do
       {:ok, credential, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
@@ -525,6 +749,87 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       assert VerifiablePresentations.validate_credential(credential, descriptor, "jwt_vc") ==
                :ok
     end
+  end
+
+  describe "validate_signature/1" do
+    test "rejects malformed and non-string tokens" do
+      assert {:error, _reason} = VerifiablePresentations.validate_signature("not-a-jwt")
+
+      assert VerifiablePresentations.validate_signature(nil) ==
+               {:error, "Proof does not contain a valid JWT."}
+    end
+
+    test "rejects a token whose embedded key does not match its signature" do
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" =>
+            JOSE.JWK.generate_key({:rsa, 2048})
+            |> JOSE.JWK.to_public()
+            |> JOSE.JWK.to_map()
+            |> elem(1)
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(%{"exp" => 1}, signer)
+
+      assert VerifiablePresentations.validate_signature(jwt) ==
+               {:error, "Bad proof signature"}
+    end
+
+    test "validates a token with a did:key header" do
+      {:ok, did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "kid" => did <> "#key"
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(%{"exp" => 1}, signer)
+
+      assert {:ok, jwk, %{"exp" => 1}} =
+               VerifiablePresentations.validate_signature(jwt)
+
+      assert jwk == public_jwk_fixture()
+    end
+  end
+
+  defp sign_credential(signer, claims) do
+    {:ok, credential, _claims} =
+      VerifiablePresentations.Token.generate_and_sign(claims, signer)
+
+    credential
+  end
+
+  defp descriptor_with_fields(fields) do
+    %{
+      "id" => "test",
+      "constraints" => %{"fields" => fields}
+    }
+  end
+
+  defp credential_with_status(signer, status_url, status_index) do
+    sign_credential(signer, %{
+      "exp" => :os.system_time(:second) + 10,
+      "vc" => %{
+        "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
+        "credentialStatus" => %{
+          "statusListCredential" => status_url,
+          "statusListIndex" => status_index
+        }
+      }
+    })
+  end
+
+  defp status_list_credential(signer) do
+    sign_credential(signer, %{
+      "vc" => %{
+        "credentialSubject" => %{
+          "encodedList" => "2",
+          "statusPurpose" => "revocation"
+        }
+      }
+    })
   end
 
   def public_key_fixture do

@@ -155,6 +155,15 @@ defmodule Boruta.Openid do
       {:error, %Error{} = error} ->
         module.credential_failure(conn, error)
 
+      nil ->
+        error = %Error{
+          status: :bad_request,
+          error: :invalid_request,
+          error_description: "Credential not found."
+        }
+
+        module.credential_failure(conn, error)
+
       {:error, reason} ->
         error = %Error{
           status: :bad_request,
