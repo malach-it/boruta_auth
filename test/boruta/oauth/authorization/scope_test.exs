@@ -8,8 +8,8 @@ defmodule Boruta.Oauth.Authorization.ScopeTest do
   import Mox
 
   alias Boruta.Oauth.Authorization.Scope
-  alias Boruta.Oauth.Scope, as: OauthScope
   alias Boruta.Oauth.ResourceOwner
+  alias Boruta.Oauth.Scope, as: OauthScope
   alias Boruta.Support.ResourceOwners
 
   setup :verify_on_exit!

@@ -93,20 +93,23 @@ defmodule Boruta.HttpClient do
   defp normalize_host(_host), do: :error
 
   defp validate_trusted_authorities(trusted_authorities) do
-    trusted_authorities
-    |> String.trim()
-    |> case do
+    case String.trim(trusted_authorities) do
       "" ->
         {:ok, []}
 
       authorities ->
-        case authorities
-             |> :public_key.pem_decode()
-             |> Enum.filter(&match?({:Certificate, _, :not_encrypted}, &1))
-             |> Enum.map(fn {:Certificate, der, :not_encrypted} -> der end) do
-          [] -> {:error, "Trusted authorities must contain PEM certificates."}
-          cacerts -> {:ok, cacerts}
-        end
+        decode_trusted_authorities(authorities)
+    end
+  end
+
+  defp decode_trusted_authorities(authorities) do
+    authorities
+    |> :public_key.pem_decode()
+    |> Enum.filter(&match?({:Certificate, _, :not_encrypted}, &1))
+    |> Enum.map(fn {:Certificate, der, :not_encrypted} -> der end)
+    |> case do
+      [] -> {:error, "Trusted authorities must contain PEM certificates."}
+      cacerts -> {:ok, cacerts}
     end
   end
 

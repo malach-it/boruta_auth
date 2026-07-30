@@ -11,6 +11,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
 
   alias Boruta.Oauth.Authorization.Client
   alias Boruta.Oauth.Error
+  alias Boruta.Support.TLSServer
 
   describe "authorize/1" do
     test "returns an error with bad auth method (client_secret_post)" do
@@ -248,10 +249,10 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       {_, jwk} = JOSE.JWK.from_pem(other_valid_public_key()) |> JOSE.JWK.to_map()
       jwk = Map.put(jwk, "alg", "RS512")
 
-      {:ok, server} = Boruta.Support.TLSServer.start(Jason.encode!(%{"keys" => [jwk]}))
+      {:ok, server} = TLSServer.start(Jason.encode!(%{"keys" => [jwk]}))
 
       on_exit(fn ->
-        Boruta.Support.TLSServer.stop(server)
+        TLSServer.stop(server)
       end)
 
       client =
