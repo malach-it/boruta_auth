@@ -144,5 +144,27 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
 
       assert JOSE.JWK.from_pem(jwt_public_key).kty == JOSE.JWK.from_map(jwk).kty
     end
+
+    test "registers a client without JWKS data when jwks_uri cannot be fetched", %{
+      bypass: bypass
+    } do
+      jwks_uri = "http://localhost:#{bypass.port}/jwks"
+
+      Bypass.expect_once(bypass, "GET", "/jwks", fn conn ->
+        Plug.Conn.resp(conn, 503, "")
+      end)
+
+      assert {:client_registered,
+              %Oauth.Client{
+                jwks_uri: ^jwks_uri,
+                jwt_public_key: nil,
+                token_endpoint_jwt_auth_alg: "HS256"
+              }} =
+               Openid.register_client(
+                 :context,
+                 %{client_name: "client", jwks_uri: jwks_uri},
+                 ApplicationMock
+               )
+    end
   end
 end

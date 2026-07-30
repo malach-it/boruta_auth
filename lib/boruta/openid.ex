@@ -163,15 +163,6 @@ defmodule Boruta.Openid do
         }
 
         module.credential_failure(conn, error)
-
-      {:error, reason} ->
-        error = %Error{
-          status: :bad_request,
-          error: :invalid_request,
-          error_description: reason
-        }
-
-        module.credential_failure(conn, error)
     end
   end
 
@@ -234,18 +225,6 @@ defmodule Boruta.Openid do
           client_encryption_alg: claims["client_encryption_alg"]
         })
       else
-        {:continue, code_chain, error} ->
-          code = List.first(code_chain)
-
-          module.direct_post_success(conn, %DirectPostResponse{
-            id_token: direct_post_params[:id_token],
-            error: error,
-            code: code,
-            code_chain: code_chain,
-            redirect_uri: code.redirect_uri,
-            state: code.state
-          })
-
         {:error, "" <> error} ->
           module.authentication_failure(conn, %Error{
             error: :unknown_error,
@@ -316,8 +295,6 @@ defmodule Boruta.Openid do
     end
   end
 
-  defp do_check_client_metadata_policy([], _policy, _code_chain), do: :ok
-
   defp do_check_client_metadata_policy(
          params,
          %{
@@ -377,15 +354,8 @@ defmodule Boruta.Openid do
        when is_binary(jwt),
        do: {:ok, jwt}
 
-  defp metadata_policy_jwt(%{proof: %{"proof_type" => "jwt", "jwt" => jwt}})
-       when is_binary(jwt),
-       do: {:ok, jwt}
-
-  defp metadata_policy_jwt(%{"id_token" => jwt}) when is_binary(jwt), do: {:ok, jwt}
   defp metadata_policy_jwt(%{id_token: jwt}) when is_binary(jwt), do: {:ok, jwt}
-  defp metadata_policy_jwt(%{"vp_token" => jwt}) when is_binary(jwt), do: {:ok, jwt}
   defp metadata_policy_jwt(%{vp_token: jwt}) when is_binary(jwt), do: {:ok, jwt}
-  defp metadata_policy_jwt(_), do: {:error, :jwt_not_found}
 
   defp check_id_token_client(%{vp_token: vp_token}) when not is_nil(vp_token) do
     case VerifiablePresentations.validate_signature(vp_token) do
@@ -445,22 +415,14 @@ defmodule Boruta.Openid do
          _client
        )
        when not is_nil(vp_token) do
-    with {:ok, %{"alg" => alg}} <- Joken.peek_header(vp_token) do
-      case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
-        {:ok, _jwk, _claims} ->
-          check_public_client_id_in_chain(code_chain, last.public_client_id)
+    {:ok, %{"alg" => alg}} = Joken.peek_header(vp_token)
 
-        _ ->
-          verify_token_against_chain(code_chain, vp_token, alg)
-      end
-    else
-      {:error, _error} ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_request,
-           error_description: "VP token is invalid."
-         }}
+    case VerifiablePresentations.verify_jwt({:did, last.public_client_id}, alg, vp_token) do
+      {:ok, _jwk, _claims} ->
+        check_public_client_id_in_chain(code_chain, last.public_client_id)
+
+      _ ->
+        verify_token_against_chain(code_chain, vp_token, alg)
     end
   end
 
@@ -497,27 +459,10 @@ defmodule Boruta.Openid do
 
   defp maybe_verify_public_client_id(
          _direct_post_params,
-         [
-           %Token{
-             public_client_id: public_client_id
-           }
-           | _codes
-         ],
+         [%Token{} | _codes],
          _client
-       ) do
-    case public_client_id do
-      "did:" <> _key ->
-        {:error,
-         %Error{
-           status: :bad_request,
-           error: :invalid_client,
-           error_description: "Authorization client_id do not match vp_token signature."
-         }}
-
-      _client_id ->
-        :ok
-    end
-  end
+       ),
+       do: :ok
 
   def check_public_client_id_in_chain(code_chain, public_client_id) do
     case Enum.find(code_chain, fn

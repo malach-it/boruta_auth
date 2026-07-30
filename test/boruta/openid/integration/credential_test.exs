@@ -1,6 +1,20 @@
 defmodule Boruta.OpenidTest.CredentialTest do
   use Boruta.DataCase, async: false
 
+  defmodule FailingCredentials do
+    @behaviour Boruta.Openid.Credentials
+
+    @impl Boruta.Openid.Credentials
+    def create_credential(_credential, _token), do: {:error, :storage_unavailable}
+
+    @impl Boruta.Openid.Credentials
+    def get_by(_params), do: nil
+  end
+
+  defmodule MissingCodes do
+    def get_by(_params), do: nil
+  end
+
   import Boruta.Factory
   import Plug.Conn
   import Mox
@@ -27,6 +41,8 @@ defmodule Boruta.OpenidTest.CredentialTest do
         Repo.get_by(Client, public_client_id: Boruta.Config.issuer())
         |> Ecto.Changeset.change(%{check_public_client_id: false})
         |> Repo.update()
+
+      :ok = ClientStore.invalidate(client)
 
       {:ok, public_client: client}
     end
@@ -133,6 +149,84 @@ defmodule Boruta.OpenidTest.CredentialTest do
                   error: :invalid_request,
                   error_description: "Code not found."
                 }}
+    end
+
+    test "returns an error when the codes adapter cannot find the previous code" do
+      configure_context(:codes, MissingCodes)
+
+      credential_params = %{
+        "credential_identifier" => "identifier",
+        "format" => "jwt_vc",
+        "proof" => %{"proof_type" => "jwt", "jwt" => ""}
+      }
+
+      sub = SecureRandom.uuid()
+
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
+        {:ok, %ResourceOwner{sub: sub}}
+      end)
+
+      %Token{value: access_token} =
+        insert(:token, sub: sub, previous_code: "missing-code")
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_failure,
+              %Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "Previous code not found."
+              }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+    end
+
+    test "returns an error for a malformed proof from a public client", %{
+      public_client: client
+    } do
+      on_exit(fn ->
+        ClientStore.invalidate(client)
+        ClientStore.invalidate_public()
+      end)
+
+      {:ok, client} =
+        client
+        |> Ecto.Changeset.change(%{check_public_client_id: true})
+        |> Repo.update()
+
+      :ok = ClientStore.invalidate(client)
+
+      sub = SecureRandom.uuid()
+
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
+        {:ok, %ResourceOwner{sub: sub}}
+      end)
+
+      code = insert(:token, type: "code", client: client)
+
+      %Token{value: access_token} =
+        insert(:token, client: client, sub: sub, previous_code: code.value)
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_failure,
+              %Error{
+                status: :bad_request,
+                error: :invalid_request,
+                error_description: "VP token is invalid."
+              }} =
+               Openid.credential(
+                 conn,
+                 %{
+                   "credential_identifier" => "identifier",
+                   "format" => "jwt_vc",
+                   "proof" => %{"proof_type" => "jwt", "jwt" => "not-a-jwt"}
+                 },
+                 %{},
+                 ApplicationMock
+               )
     end
 
     test "returns an error with an invalid types" do
@@ -505,6 +599,103 @@ defmodule Boruta.OpenidTest.CredentialTest do
       # TODO validate credential body
       assert credential
     end
+
+    test "returns a credential after proof and metadata-policy public-client checks", %{
+      public_client: client
+    } do
+      on_exit(fn ->
+        ClientStore.invalidate(client)
+        ClientStore.invalidate_public()
+      end)
+
+      {:ok, client} =
+        client
+        |> Ecto.Changeset.change(%{check_public_client_id: true})
+        |> Repo.update()
+
+      {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
+      {:ok, wallet_did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk)
+
+      proof_client_id =
+        "did:jwk:" <> (Jason.encode!(public_jwk) |> Base.url_encode64(padding: false))
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk,
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{"aud" => Config.issuer(), "iat" => :os.system_time(:seconds)},
+          signer
+        )
+
+      credential_params = %{
+        "format" => "jwt_vc",
+        "proof" => %{"proof_type" => "jwt", "jwt" => jwt},
+        "credential_identifier" => "VerifiableCredential"
+      }
+
+      sub = SecureRandom.uuid()
+
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
+        {:ok,
+         %ResourceOwner{
+           sub: sub,
+           credential_configuration: %{
+             "VerifiableCredential" => %{
+               version: "13",
+               format: "jwt_vc",
+               time_to_live: 3600,
+               claims: ["family_name"]
+             }
+           },
+           extra_claims: %{"family_name" => "family_name"}
+         }}
+      end)
+
+      oldest =
+        insert(:token,
+          type: "code",
+          client: client,
+          sub: wallet_did,
+          metadata_policy: %{"client_id" => %{"one_of" => [proof_client_id]}}
+        )
+
+      policy_code =
+        insert(:token,
+          type: "code",
+          client: client,
+          sub: wallet_did,
+          previous_code: oldest.value
+        )
+
+      current =
+        insert(:token,
+          type: "code",
+          client: client,
+          sub: wallet_did,
+          previous_code: policy_code.value
+        )
+
+      %Token{value: access_token} =
+        insert(:token,
+          client: client,
+          sub: sub,
+          authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}],
+          previous_code: current.value
+        )
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_created, %CredentialResponse{credential: credential}} =
+               Openid.credential(conn, credential_params, %{}, ApplicationMock)
+
+      assert credential
+    end
   end
 
   describe "deliver defered verifiable credentials" do
@@ -698,6 +889,67 @@ defmodule Boruta.OpenidTest.CredentialTest do
       assert acceptance_token
     end
 
+    test "returns an internal error when a defered credential cannot be persisted" do
+      configure_context(:credentials, FailingCredentials)
+
+      {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
+
+      signer =
+        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
+          "jwk" => public_jwk,
+          "typ" => "openid4vci-proof+jwt"
+        })
+
+      {:ok, jwt, _claims} =
+        VerifiableCredentials.Token.generate_and_sign(
+          %{"aud" => Config.issuer(), "iat" => :os.system_time(:seconds)},
+          signer
+        )
+
+      credential_params = %{
+        "format" => "jwt_vc",
+        "proof" => %{"proof_type" => "jwt", "jwt" => jwt},
+        "credential_identifier" => "VerifiableCredential"
+      }
+
+      sub = SecureRandom.uuid()
+
+      expect(Boruta.Support.ResourceOwners, :get_by, fn sub: ^sub, scope: _scope ->
+        {:ok,
+         %ResourceOwner{
+           sub: sub,
+           credential_configuration: %{
+             "VerifiableCredential" => %{
+               defered: true,
+               version: "13",
+               format: "jwt_vc",
+               time_to_live: 3600,
+               claims: ["family_name"]
+             }
+           },
+           extra_claims: %{"family_name" => "family_name"}
+         }}
+      end)
+
+      %Token{value: access_token} =
+        insert(:token,
+          sub: sub,
+          authorization_details: [%{"credential_identifiers" => ["VerifiableCredential"]}],
+          previous_code: insert(:token, type: "preauthorized_code").value
+        )
+
+      conn =
+        %Plug.Conn{}
+        |> put_req_header("authorization", "Bearer #{access_token}")
+
+      assert {:credential_failure,
+              %Error{
+                status: :internal_server_error,
+                error: :unknown_error,
+                error_description: ":storage_unavailable"
+              }} = Openid.credential(conn, credential_params, %{}, ApplicationMock)
+    end
+
     test "gets a defered credential" do
       {_, public_jwk} = public_key_fixture() |> JOSE.JWK.from_pem() |> JOSE.JWK.to_map()
 
@@ -776,6 +1028,19 @@ defmodule Boruta.OpenidTest.CredentialTest do
       # TODO validate credential body
       assert credential
     end
+  end
+
+  defp configure_context(context, adapter) do
+    original_config = Application.get_env(:boruta, Boruta.Oauth, [])
+    contexts = Keyword.get(original_config, :contexts, [])
+
+    Application.put_env(
+      :boruta,
+      Boruta.Oauth,
+      Keyword.put(original_config, :contexts, Keyword.put(contexts, context, adapter))
+    )
+
+    on_exit(fn -> Application.put_env(:boruta, Boruta.Oauth, original_config) end)
   end
 
   def public_key_fixture do
