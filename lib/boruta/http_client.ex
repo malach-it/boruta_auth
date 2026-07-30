@@ -113,6 +113,7 @@ defmodule Boruta.HttpClient do
     end
   end
 
+  @dialyzer {:no_opaque, trusted_get: 3}
   defp trusted_get(url, trusted_hosts, trusted_authorities) do
     with {:ok, url, cacerts} <- get_cacerts(url, trusted_hosts, trusted_authorities),
          {:https, host, port, path, _query} <- Finch.Request.parse_url(url) do
