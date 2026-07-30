@@ -1,7 +1,8 @@
 defmodule Boruta.Openid.VerifiablePresentationsTest do
-  alias Boruta.Support.TLSServer
-  alias Boruta.Openid.VerifiablePresentations
   use ExUnit.Case
+
+  alias Boruta.Openid.VerifiablePresentations
+  alias Boruta.Support.TLSServer
 
   describe "response type and presentation definition selection" do
     test "keeps OAuth response types and rejects unsupported response types" do
