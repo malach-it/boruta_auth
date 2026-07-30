@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Note that you must run the `boruta.gen.migration` task to add the client trust configuration fields.
+
+### Added
+
+- support Elixir 1.20 and OTP 29 in continuous integration
+- add per-client trusted certificate authorities and host allowlists for outbound requests
+
+### Fixed
+
+- support `HS384` and `RS384` JWT client authentication algorithms
+- generate controller callback assigns correctly
+
 ### Security
 
 - update oauth clients rsa private key modulus size
+- require HTTPS and explicit client trust configuration for outbound request and JWKS retrieval
+- validate JWT client assertion expiration
+- restrict dynamic client registration to an allowlist of public registration attributes and safer default grant types
 
 ## [2.3.6] - 2026-04-17
 
