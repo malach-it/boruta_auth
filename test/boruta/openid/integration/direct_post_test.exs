@@ -2,18 +2,22 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   use Boruta.DataCase, async: false
 
   defmodule StringFailingCodes do
-    def get_by(params), do: Boruta.Ecto.Codes.get_by(params)
-    def update_sub(code, sub, policy), do: Boruta.Ecto.Codes.update_sub(code, sub, policy)
-    def code_chain(code), do: Boruta.Ecto.Codes.code_chain(code)
+    alias Boruta.Ecto.Codes
+
+    def get_by(params), do: Codes.get_by(params)
+    def update_sub(code, sub, policy), do: Codes.update_sub(code, sub, policy)
+    def code_chain(code), do: Codes.code_chain(code)
 
     def update_client_encryption(_code, _params),
       do: {:error, "client encryption update failed"}
   end
 
   defmodule TermFailingCodes do
-    def get_by(params), do: Boruta.Ecto.Codes.get_by(params)
-    def update_sub(code, sub, policy), do: Boruta.Ecto.Codes.update_sub(code, sub, policy)
-    def code_chain(code), do: Boruta.Ecto.Codes.code_chain(code)
+    alias Boruta.Ecto.Codes
+
+    def get_by(params), do: Codes.get_by(params)
+    def update_sub(code, sub, policy), do: Codes.update_sub(code, sub, policy)
+    def code_chain(code), do: Codes.code_chain(code)
     def update_client_encryption(_code, _params), do: {:error, :storage_unavailable}
   end
 

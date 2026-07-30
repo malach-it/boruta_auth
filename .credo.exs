@@ -71,10 +71,9 @@
         {Credo.Check.Design.AliasUsage,
          [priority: :low, if_nested_deeper_than: 2, if_called_more_often_than: 1]},
         # You can also customize the exit_status of each check.
-        # If you don't want TODO comments to cause `mix credo` to fail, just
-        # set this value to 0 (zero).
-        #
-        {Credo.Check.Design.TagTODO, [exit_status: 0]},
+        # TODO comments track the implementation backlog and are not lint
+        # findings.
+        {Credo.Check.Design.TagTODO, false},
         {Credo.Check.Design.TagFIXME, []},
 
         #
@@ -109,7 +108,8 @@
         {Credo.Check.Refactor.CyclomaticComplexity, [max_complexity: 10]},
         {Credo.Check.Refactor.FunctionArity, []},
         {Credo.Check.Refactor.LongQuoteBlocks, []},
-        {Credo.Check.Refactor.MapInto, []},
+        # This check supports Elixir versions before 1.8 only.
+        {Credo.Check.Refactor.MapInto, false},
         {Credo.Check.Refactor.MatchInCondition, []},
         {Credo.Check.Refactor.NegatedConditionsInUnless, []},
         {Credo.Check.Refactor.NegatedConditionsWithElse, []},
@@ -124,7 +124,8 @@
         {Credo.Check.Warning.ExpensiveEmptyEnumCheck, []},
         {Credo.Check.Warning.IExPry, []},
         {Credo.Check.Warning.IoInspect, []},
-        {Credo.Check.Warning.LazyLogging, []},
+        # This check supports Elixir versions before 1.7 only.
+        {Credo.Check.Warning.LazyLogging, false},
         {Credo.Check.Warning.OperationOnSameValues, []},
         {Credo.Check.Warning.OperationWithConstantResult, []},
         {Credo.Check.Warning.RaiseInsideRescue, []},
