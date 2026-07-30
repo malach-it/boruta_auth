@@ -148,7 +148,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
                Client.authorize(id: client.id, source: source, grant_type: "client_credentials")
     end
 
-    test "authorizes with client secret jwt auth method" do
+    test "authorizes with client secret jwt auth method (HS512)" do
       client =
         insert(:client,
           token_endpoint_auth_methods: ["client_secret_jwt"],
@@ -236,7 +236,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
                Client.authorize(id: client.id, source: source, grant_type: "client_credentials")
     end
 
-    test "authorizes with private key jwt auth method" do
+    test "authorizes with private key jwt auth method (RS512)" do
       client =
         insert(:client,
           token_endpoint_auth_methods: ["private_key_jwt"],

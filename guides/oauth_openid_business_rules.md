@@ -64,9 +64,9 @@ responses, errors, or forms.
 - A valid secret supplied through a disallowed authentication method is still
   rejected.
 - `client_secret_jwt` is supported with the configured HMAC algorithm,
-  including the tested HS256 and HS384 algorithms.
+  including the tested HS256, HS384, and HS512 algorithms.
 - `private_key_jwt` is supported with the configured RSA algorithm, including
-  the tested RS256 and RS384 algorithms.
+  the tested RS256, RS384, and RS512 algorithms.
 - Private-key JWT authentication can refresh a rotated verification key from
   the client's JWKS URI.
 - Nil, malformed, incorrectly signed, or incorrectly keyed client assertions
