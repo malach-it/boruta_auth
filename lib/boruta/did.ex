@@ -26,7 +26,7 @@ defmodule Boruta.Did do
   end
 
   def resolve("did:ebsi" <> _key = did) do
-    resolver_url = "#{ebsi_did_resolver_base_url()}/identifiers/#{did}"
+    resolver_url = "#{ebsi_did_resolver_base_url()}/identifiers/#{encode_path_segment(did)}"
 
     case Finch.build(:get, resolver_url)
          |> Finch.request(OpenIDHttpClient) do
@@ -51,7 +51,7 @@ defmodule Boruta.Did do
   end
 
   def resolve(did) do
-    resolver_url = "#{did_resolver_base_url()}/identifiers/#{did}"
+    resolver_url = "#{did_resolver_base_url()}/identifiers/#{encode_path_segment(did)}"
 
     with {:ok, %Finch.Response{body: body, status: 200}} <-
            Finch.build(:get, resolver_url, [
@@ -126,6 +126,8 @@ defmodule Boruta.Did do
   @spec controller(did :: String.t() | nil) :: controller :: String.t() | nil
   def controller(nil), do: nil
   def controller(did), do: String.split(did, "#") |> List.first()
+
+  defp encode_path_segment(value), do: value |> to_string() |> URI.encode(&URI.char_unreserved?/1)
 
   defp key_did_document(did, fingerprint, jwk) do
     verification_method_id = did <> "#" <> fingerprint

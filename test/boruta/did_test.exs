@@ -3,6 +3,14 @@ defmodule Boruta.DidTest do
 
   alias Boruta.Did
 
+  describe "controller/1" do
+    test "removes verification method fragments and preserves nil" do
+      assert Did.controller("did:example:123#key-1") == "did:example:123"
+      assert Did.controller("did:example:123") == "did:example:123"
+      assert Did.controller(nil) == nil
+    end
+  end
+
   describe "resolve/1" do
     test "resolves did:key Ed25519 documents locally" do
       did = "did:key:z6MkiTBzpb9TgRh9pMBC3y4f9Ldia1nq5QWa3tFdbwfBjPCi"
