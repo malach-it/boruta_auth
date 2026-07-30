@@ -27,7 +27,8 @@ defmodule Boruta.Oauth.Request.Token do
                | PasswordRequest.t()}
   def request(%{body_params: body_params} = request) do
     with {:ok, body_params} <- decrypt_request(body_params),
-         {:ok, unsigned_params} <- fetch_unsigned_request(request),
+         client <- ClientsAdapter.get_client(body_params["client_id"]),
+         {:ok, unsigned_params} <- fetch_unsigned_request(request, client),
          {:ok, client_authentication_params} <- fetch_client_authentication(request),
          {:ok, dpop} <- fetch_dpop(request),
          {:ok, params} <-
@@ -50,7 +51,8 @@ defmodule Boruta.Oauth.Request.Token do
     end
   end
 
-  def decrypt_request(%{"client_id" => client_id, "encrypted_request" => request} = params) when is_binary(request) do
+  def decrypt_request(%{"client_id" => client_id, "encrypted_request" => request} = params)
+      when is_binary(request) do
     with %Oauth.Client{} = client <- ClientsAdapter.get_client(client_id),
          {:ok, request_params} <- Oauth.Client.Crypto.decrypt(request, client) do
       {:ok, Map.merge(params, request_params)}
@@ -69,6 +71,7 @@ defmodule Boruta.Oauth.Request.Token do
     else
       {"dpop", _dpop} ->
         {:error, "More than one DPoP header present in the request."}
+
       _ ->
         {:ok, nil}
     end

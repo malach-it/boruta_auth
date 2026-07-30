@@ -1,4 +1,5 @@
 defmodule Boruta.Openid.VerifiablePresentationsTest do
+  alias Boruta.Support.TLSServer
   alias Boruta.Openid.VerifiablePresentations
   use ExUnit.Case
 
@@ -488,75 +489,127 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
     end
 
     test "accepts a credential with a valid status-list entry", %{signer: signer} do
-      bypass = Bypass.open()
       status_credential = status_list_credential(signer)
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 200, status_credential)
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+      server = start_tls_server(status_credential)
+      credential = credential_with_status(signer, server.url, "0")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == :ok
     end
 
     test "rejects a credential with a revoked status-list entry", %{signer: signer} do
-      bypass = Bypass.open()
       status_credential = status_list_credential(signer)
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 200, status_credential)
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "2")
+      server = start_tls_server(status_credential)
+      credential = credential_with_status(signer, server.url, "2")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == {:error, "is revoked."}
     end
 
     test "rejects an invalid status-list credential", %{signer: signer} do
-      bypass = Bypass.open()
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 200, "not-a-jwt")
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+      server = start_tls_server("not-a-jwt")
+      credential = credential_with_status(signer, server.url, "0")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == {:error, "has an invalid status list credential."}
     end
 
     test "rejects a credential when its status list cannot be fetched", %{signer: signer} do
-      bypass = Bypass.open()
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 500, "")
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+      server = start_tls_server("", status: 500)
+      credential = credential_with_status(signer, server.url, "0")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == {:error, "could not get status list."}
     end
 
+    test "validates status list with trusted authorities", %{signer: signer} do
+      {:ok, status_list_credential, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "vc" => %{
+              "credentialSubject" => %{
+                "encodedList" => <<1>>,
+                "statusPurpose" => "revocation"
+              }
+            }
+          },
+          signer
+        )
+
+      {:ok, server} = TLSServer.start(status_list_credential)
+
+      on_exit(fn ->
+        TLSServer.stop(server)
+      end)
+
+      {:ok, credential, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "exp" => :os.system_time(:second) + 10,
+            "vc" => %{
+              "validFrom" => DateTime.utc_now() |> DateTime.add(-10) |> DateTime.to_iso8601(),
+              "type" => ["VerifiableAttestation"],
+              "credentialStatus" => %{
+                "statusListCredential" => server.url,
+                "statusListIndex" => "0"
+              }
+            }
+          },
+          signer
+        )
+
+      descriptor = %{
+        "id" => "test",
+        "constraints" => %{
+          "fields" => []
+        }
+      }
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor,
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
+             ) == :ok
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor,
+               "jwt_vc",
+               server.wrong_trusted_authorities
+             ) == {:error, "could not get status list."}
+
+      assert VerifiablePresentations.validate_credential(
+               credential,
+               descriptor,
+               "jwt_vc",
+               server.trusted_authorities,
+               ["example.com"]
+             ) == {:error, "could not get status list."}
+    end
+
+    @tag :skip
     test "validates status", %{signer: signer} do
       {:ok, credential, _claims} =
         VerifiablePresentations.Token.generate_and_sign(
@@ -829,6 +882,12 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
         }
       }
     })
+  end
+
+  defp start_tls_server(body, opts \\ []) do
+    {:ok, server} = TLSServer.start(body, opts)
+    on_exit(fn -> TLSServer.stop(server) end)
+    server
   end
 
   def public_key_fixture do
