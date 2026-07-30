@@ -72,6 +72,7 @@ responses, errors, or forms.
 - Nil, malformed, incorrectly signed, or incorrectly keyed client assertions
   are rejected.
 - A client assertion must contain `iss`, `aud`, and `exp`.
+- The assertion expiration must be numeric and in the future.
 - The assertion audience must equal the configured Boruta issuer.
 - The assertion issuer supplies the client ID when the request does not carry a
   separate client ID.
@@ -139,8 +140,29 @@ responses, errors, or forms.
 - A request object can be fetched from `request_uri`.
 - A malformed request URI, an HTTP fetch failure, or a fetched malformed JWT is
   rejected.
+- A request URI is fetched using the requesting client's trusted authorities
+  and trusted hosts.
 - Successfully fetched request objects are parsed the same way as inline
   request objects.
+
+## Outbound HTTP trust rules
+
+These rules apply when Boruta retrieves request objects, client JWKS, and
+credential status lists.
+
+- Outbound retrieval requires HTTPS.
+- Retrieval requires PEM-encoded trusted certificate authorities, an exact
+  trusted host, or the configured Boruta issuer host.
+- When trusted authorities are configured, the remote certificate must chain
+  to one of those authorities.
+- When only a trusted host is configured, the system certificate authorities
+  are used.
+- Trusted hosts are normalized by trimming whitespace, a trailing dot, and
+  letter case before exact comparison. Host wildcards are not supported.
+- The configured Boruta issuer host is implicitly trusted.
+- When none of those trust sources accepts the destination, or when trust
+  metadata is malformed or the certificate is untrusted, retrieval is
+  rejected.
 
 ## Redirect URI matching rules
 
@@ -530,13 +552,17 @@ These rules apply to authorization endpoints that redirect to a client.
 - Invalid registration data is rejected.
 - Registration uses a dedicated changeset that only accepts client name,
   redirect URIs, token endpoint authentication metadata, JWKS metadata, and
-  logo URI. Administrative client attributes are ignored.
+  logo URI, plus the trusted authorities and trusted hosts required for JWKS
+  retrieval. Other administrative client attributes are ignored.
+- Dynamically registered clients default to the `client_credentials` and
+  `authorization_code` grants.
 - Redirect URIs containing fragments are rejected.
 - Client name and token endpoint authentication method are persisted.
 - Inline JWKS input selects the advertised public key and signing algorithm.
-- A reachable `jwks_uri` is fetched and its key is stored.
-- If `jwks_uri` cannot be fetched successfully, registration continues without
-  imported JWKS data while preserving the URI.
+- A reachable and trusted `jwks_uri` is fetched and its key is stored.
+- An untrusted host or certificate, insufficient trust configuration, or
+  another `jwks_uri` fetch failure rejects registration with a changeset
+  error.
 
 ## SIOPv2 direct post
 
@@ -642,8 +668,9 @@ enforced rules.
 - A credential must contain an expiration date and must not be expired.
 - A credential must contain `validFrom`, either at the root or in its supported
   nested representation, and that date must not be in the future.
-- Status-list credentials are fetched and verified. Revoked entries, invalid
-  status-list credentials, and fetch failures reject the presentation.
+- Status-list credentials are fetched using the client's outbound trust
+  configuration and verified. Revoked entries, invalid status-list
+  credentials, and fetch or trust failures reject the presentation.
 - Presentation-exchange constraints support `contains` and regular-expression
   `pattern` filters.
 - A constraint without a filter is accepted; an unknown filter type is
