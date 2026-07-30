@@ -82,6 +82,10 @@ defmodule Boruta.Oauth.Request do
                | %Boruta.Oauth.HybridRequest{}}
   defdelegate authorize_request(conn, resource_owner), to: Request.Authorize, as: :request
 
+  @doc """
+  Creates an authorization request from pushed-authorization request
+  parameters.
+  """
   @spec pushed_request(conn :: Plug.Conn.t() | %{body_params: map()}) ::
           {:ok,
            oauth_request ::

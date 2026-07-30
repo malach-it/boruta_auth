@@ -202,6 +202,13 @@ defmodule Boruta.Oauth do
   alias Boruta.ClientsAdapter
   alias Boruta.RequestsAdapter
 
+  @doc """
+  Stores a validated pushed authorization request.
+
+  The given application module receives either
+  `c:Boruta.Oauth.PushedAuthorizationRequestApplication.request_stored/2` or
+  `c:Boruta.Oauth.PushedAuthorizationRequestApplication.pushed_authorization_error/2`.
+  """
   @spec pushed_authorization_request(conn :: Plug.Conn.t() | map(), module :: atom()) :: any()
   @impl true
   def pushed_authorization_request(conn, module) do

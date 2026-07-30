@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `Boruta.Oauth.IdToken.generate/2` returns a tuple
-- `Boruta.Oauth.ResourceOwners.get_by/1` is invoked with token scope as additional parameter
+- <code>Boruta.Oauth.ResourceOwners.get_by/1</code> is invoked with token scope as additional parameter
 - resource owners extra_claims appear in id_token with a definition format
 
 ### Security
@@ -285,7 +285,8 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 ### Added
 
 - expose `Boruta.Oauth.Client.grant_types/0`
-- expose `Boruta.Oauth.IdToken.signature_alg/0` and `Boruta.Oauth.IdToken.hash_alg/0`
+- expose <code>Boruta.Oauth.IdToken.signature_alg/0</code> and
+  <code>Boruta.Oauth.IdToken.hash_alg/0</code>
 
 ### Changed
 
@@ -302,7 +303,7 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 - `Boruta.Ecto.Admin.get_scopes_by_names/1`
 - `Boruta.Ecto.Admin.regenerate_client_secret/1,2`
 - `Boruta.Ecto.Admin.delete_inactive_tokens/0,1`
-- `Boruta.Ecto.Client.grant_types/0`
+- <code>Boruta.Ecto.Client.grant_types/0</code>
 - ability to insert/update clients with given id/secret
 - inserting/updating a client inserts non existing authorized_scopes
 - `oauth_module` injection in `boruta.gen.controllers` generated controllers default to `Boruta.Oauth`
@@ -311,7 +312,8 @@ Note that you must run the `boruta.gen.migration` task to keep your database sch
 
 - store previous token while refreshing access tokens (need to run `boruta.gen.migration` mix task to be up to date)
 - `Boruta.Ecto.Admin.list_active_tokens/0,1` returns query result instead of an `Ecto.Query`
-- `Boruta.Oauth.ResourceOwners.claims/2` callback takes a `Boruta.Oauth.ResourceOwner` struct instead of `sub` as parameter
+- <code>Boruta.Oauth.ResourceOwners.claims/2</code> callback takes a
+  `Boruta.Oauth.ResourceOwner` struct instead of `sub` as parameter
 
 ## [2.0.0-rc.1] - 2021-11-17
 

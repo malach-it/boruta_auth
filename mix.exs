@@ -5,7 +5,7 @@ defmodule Boruta.MixProject do
     [
       name: "Boruta core",
       app: :boruta,
-      version: "3.0.0-beta.4",
+      version: "3.0.0-master",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -77,8 +77,10 @@ defmodule Boruta.MixProject do
         "guides/authorize_requests.md",
         "guides/pkce.md",
         "guides/confidential_clients.md",
+        "guides/oauth_openid_business_rules.md",
         "guides/migration.md",
         "guides/migration-v3.md",
+        "CODE_OF_CONDUCT.md",
         "CHANGELOG.md"
       ],
       groups_for_modules: [
@@ -100,6 +102,7 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.AuthorizeResponse,
           Boruta.Oauth.TokenResponse,
           Boruta.Oauth.PushedAuthorizationResponse,
+          Boruta.Oauth.FormPostResponse,
           Boruta.Openid.CredentialOfferResponse,
           Boruta.Openid.CredentialResponse,
           Boruta.Openid.DeferedCredentialResponse,

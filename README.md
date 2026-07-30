@@ -64,4 +64,5 @@ This product community follows the code of conduct available [here](CODE_OF_COND
 
 ## License
 
-This code is released under the [MIT](LICENSE.md) license.
+This code is released under the
+[MIT](https://github.com/malach-it/boruta_auth/blob/master/LICENSE) license.

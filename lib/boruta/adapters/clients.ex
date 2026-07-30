@@ -13,6 +13,8 @@ defmodule Boruta.ClientsAdapter do
   def public!, do: clients().public!()
   def authorized_scopes(params), do: clients().authorized_scopes(params)
   def list_clients_jwk, do: clients().list_clients_jwk()
+  @doc false
   def create_client(registration_params), do: clients().create_client(registration_params)
+  @doc false
   def refresh_jwk_from_jwks_uri(client_id), do: clients().refresh_jwk_from_jwks_uri(client_id)
 end
