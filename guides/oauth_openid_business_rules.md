@@ -495,7 +495,8 @@ These rules apply to authorization endpoints that redirect to a client.
 - The applicable code and access-token hashes are included for the tested
   response shape.
 - Resource-owner extra claims are added to the ID token.
-- RS256, RS384, HS256, HS384, and HS512 signing configurations are supported.
+- ES256, ES384, ES512, RS256, RS384, HS256, HS384, and HS512 signing
+  configurations are supported.
 - A nil or empty nonce is omitted from the claims.
 - A nonempty nonce is included unchanged.
 - Claim values that are already valid JSON values are preserved.
