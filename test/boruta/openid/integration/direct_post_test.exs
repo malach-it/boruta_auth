@@ -1439,93 +1439,100 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  ApplicationMock
                )
     end
-  end
 
-  describe "public client code-chain verification" do
-    test "finds an active public client in the code chain" do
-      public_client_id = "did:example:wallet"
+    test "oid4vp - rejects a current public client absent from the code chain", %{
+      code: base_code,
+      vp_token: vp_token
+    } do
+      {:ok, wallet_did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
+      client = insert(:client, check_public_client_id: true)
 
-      assert Openid.check_public_client_id_in_chain(
-               [
-                 %Boruta.Oauth.Token{type: "code", sub: "did:example:other"},
-                 %Boruta.Oauth.Token{type: "code", sub: public_client_id}
-               ],
-               public_client_id
-             ) == :ok
+      [code | _code_chain] =
+        public_client_code_chain(
+          client,
+          wallet_did,
+          "did:example:other",
+          base_code.presentation_definition
+        )
+
+      assert_public_client_failure(
+        code,
+        vp_token,
+        "Could not find client_id in code chain."
+      )
     end
 
-    test "returns an error when a public client is absent from the code chain" do
-      assert {:error,
-              %Boruta.Oauth.Error{
-                status: :bad_request,
-                error: :invalid_client,
-                error_description: "Could not find client_id in code chain."
-              }} =
-               Openid.check_public_client_id_in_chain(
-                 [%Boruta.Oauth.Token{type: "code", sub: "did:example:other"}],
-                 "did:example:wallet"
-               )
+    test "oid4vp - ignores a revoked public client in the code chain", %{
+      code: base_code,
+      vp_token: vp_token
+    } do
+      {:ok, wallet_did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
+      client = insert(:client, check_public_client_id: true)
+
+      [code, previous] =
+        public_client_code_chain(
+          client,
+          wallet_did,
+          wallet_did,
+          base_code.presentation_definition
+        )
+
+      previous
+      |> Ecto.Changeset.change(revoked_at: DateTime.utc_now())
+      |> Repo.update!()
+
+      assert_public_client_failure(
+        code,
+        vp_token,
+        "Could not find client_id in code chain."
+      )
     end
 
-    test "ignores revoked codes while searching for a public client" do
-      assert {:error, %Boruta.Oauth.Error{error: :invalid_client}} =
-               Openid.check_public_client_id_in_chain(
-                 [
-                   %Boruta.Oauth.Token{
-                     type: "code",
-                     sub: "did:example:wallet",
-                     revoked_at: DateTime.utc_now()
-                   }
-                 ],
-                 "did:example:wallet"
-               )
+    test "oid4vp - does not verify against a revoked earlier DID", %{
+      code: base_code,
+      vp_token: vp_token
+    } do
+      {:ok, wallet_did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
+      client = insert(:client, check_public_client_id: true)
+
+      [code, previous] =
+        public_client_code_chain(
+          client,
+          "did:example:current",
+          wallet_did,
+          base_code.presentation_definition
+        )
+
+      previous
+      |> Ecto.Changeset.change(revoked_at: DateTime.utc_now())
+      |> Repo.update!()
+
+      assert_public_client_failure(
+        code,
+        vp_token,
+        "Could not verify given token in code chain."
+      )
     end
 
-    test "verifies a token against an active DID in the code chain" do
-      {:ok, did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
+    test "oid4vp - rejects a token unmatched by every active DID", %{
+      code: base_code,
+      vp_token: vp_token
+    } do
+      client = insert(:client, check_public_client_id: true)
 
-      signer =
-        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()})
+      [code | _code_chain] =
+        public_client_code_chain(
+          client,
+          "did:example:current",
+          "did:example:previous",
+          base_code.presentation_definition
+        )
 
-      {:ok, token, _claims} =
-        VerifiablePresentations.Token.generate_and_sign(%{"sub" => "subject"}, signer)
-
-      assert Openid.verify_token_against_chain(
-               [%Boruta.Oauth.Token{type: "code", sub: did}],
-               token,
-               "RS256"
-             ) == :ok
-    end
-
-    test "returns an error when no active DID verifies the token" do
-      assert {:error,
-              %Boruta.Oauth.Error{
-                status: :bad_request,
-                error: :invalid_client,
-                error_description: "Could not verify given token in code chain."
-              }} =
-               Openid.verify_token_against_chain(
-                 [
-                   %Boruta.Oauth.Token{
-                     type: "code",
-                     sub: "did:example:ignored",
-                     revoked_at: DateTime.utc_now()
-                   }
-                 ],
-                 "not-a-token",
-                 "RS256"
-               )
-    end
-
-    test "tries and rejects an invalid token for an active DID" do
-      {:ok, did, _public_jwk} = Boruta.Did.Crypto.did_key(public_jwk_fixture())
-
-      assert {:error, %Boruta.Oauth.Error{error: :invalid_client}} =
-               Openid.verify_token_against_chain(
-                 [%Boruta.Oauth.Token{type: "code", sub: did}],
-                 "not-a-token",
-                 "RS256"
-               )
+      assert_public_client_failure(
+        code,
+        vp_token,
+        "Could not verify given token in code chain."
+      )
     end
   end
 
@@ -1606,6 +1613,27 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         }
       ]
     })
+  end
+
+  defp assert_public_client_failure(code, vp_token, description) do
+    assert {:authentication_failure,
+            %Boruta.Oauth.Error{
+              status: :bad_request,
+              error: :invalid_client,
+              error_description: ^description,
+              format: :query,
+              redirect_uri: "http://redirect.uri",
+              state: "state"
+            }} =
+             Openid.direct_post(
+               %Plug.Conn{},
+               %{
+                 code_id: code.id,
+                 vp_token: vp_token,
+                 presentation_submission: valid_presentation_submission()
+               },
+               ApplicationMock
+             )
   end
 
   defp configure_codes_adapter(adapter) do

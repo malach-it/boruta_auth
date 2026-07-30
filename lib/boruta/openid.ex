@@ -464,7 +464,7 @@ defmodule Boruta.Openid do
        ),
        do: :ok
 
-  def check_public_client_id_in_chain(code_chain, public_client_id) do
+  defp check_public_client_id_in_chain(code_chain, public_client_id) do
     case Enum.find(code_chain, fn
            %Token{revoked_at: nil, sub: sub} -> sub == public_client_id
            _ -> false
@@ -482,7 +482,7 @@ defmodule Boruta.Openid do
     end
   end
 
-  def verify_token_against_chain(code_chain, token, alg) do
+  defp verify_token_against_chain(code_chain, token, alg) do
     case Enum.any?(code_chain, fn
            %Token{sub: sub, revoked_at: nil} ->
              case VerifiablePresentations.verify_jwt({:did, sub}, alg, token) do
