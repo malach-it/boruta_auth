@@ -56,6 +56,38 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
                Openid.register_client(:context, registration_params, ApplicationMock)
     end
 
+    test "does not register administrative client attributes" do
+      registration_params = %{
+        client_name: "client",
+        redirect_uris: ["https://client.example/callback"],
+        confidential: true,
+        authorize_scope: true,
+        supported_grant_types: ["client_credentials"],
+        access_token_ttl: 1,
+        public_refresh_token: true,
+        public_revoke: true
+      }
+
+      assert {:client_registered,
+              %Oauth.Client{
+                name: "client",
+                redirect_uris: ["https://client.example/callback"],
+                confidential: false,
+                authorize_scope: false,
+                supported_grant_types: supported_grant_types,
+                access_token_ttl: access_token_ttl,
+                public_refresh_token: false,
+                public_revoke: false
+              }} = Openid.register_client(:context, registration_params, ApplicationMock)
+
+      assert supported_grant_types == [
+               "client_credentials",
+               "authorization_code"
+             ]
+
+      assert access_token_ttl == Boruta.Config.access_token_max_ttl()
+    end
+
     test "registers a client" do
       jwk = %{
         "kty" => "RSA",

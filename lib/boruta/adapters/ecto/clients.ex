@@ -52,7 +52,7 @@ defmodule Boruta.Ecto.Clients do
   def create_client(registration_params) do
     with {:ok, client} <-
            %Ecto.Client{}
-           |> Ecto.Client.create_changeset(registration_params)
+           |> Ecto.Client.registration_changeset(registration_params)
            |> repo().insert() do
       client |> to_oauth_schema() |> ClientStore.put()
     end
