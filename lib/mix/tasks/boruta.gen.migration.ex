@@ -7,9 +7,6 @@ defmodule Mix.Tasks.Boruta.Gen.Migration do
   > __Note__: This task will create migration files to keep your integration up to date by checking migration file and module names to create missing ones.
   > Thus it is not recommended to change naming since it will recreate the migration in further runs.
 
-  ## Usage statistics gathering
-  This task will trigger a REPL to gather statistical info from your usage of the library. The owners are thankful to you for providing those informations since it helps better maintain the product.
-
   ## Examples
   ```
   mix boruta.gen.migration
