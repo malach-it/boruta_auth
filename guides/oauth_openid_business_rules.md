@@ -528,6 +528,9 @@ These rules apply to authorization endpoints that redirect to a client.
 ### Rules
 
 - Invalid registration data is rejected.
+- Registration uses a dedicated changeset that only accepts client name,
+  redirect URIs, token endpoint authentication metadata, JWKS metadata, and
+  logo URI. Administrative client attributes are ignored.
 - Redirect URIs containing fragments are rejected.
 - Client name and token endpoint authentication method are persisted.
 - Inline JWKS input selects the advertised public key and signing algorithm.
