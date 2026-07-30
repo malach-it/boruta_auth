@@ -406,26 +406,6 @@ These rules apply to authorization endpoints that redirect to a client.
 - DID wallet clients can use `agent_code`; the public client must advertise the
   grant.
 
-## Preauthorization
-
-This is Boruta's OAuth preauthorization response flow, distinct from the
-OpenID4VCI pre-authorized code flow described later.
-
-### Endpoints
-
-| Stage | Method | Suggested endpoint | Boruta entry point | Application behaviour |
-|---|---|---|---|---|
-| Preauthorize | `GET` or `POST` | `/oauth/preauthorize` | `Boruta.Oauth.preauthorize/3` | `Boruta.Oauth.AuthorizeApplication` |
-
-### Rules
-
-- Client, redirect URI, resource owner, scope, and grant are validated.
-- Wildcard redirect URIs are supported.
-- Public or authorized scopes are accepted.
-- Unknown or unauthorized scopes are rejected.
-- A successful request can produce the tested preauthorization response and
-  token.
-
 ## Token introspection
 
 ### Endpoints
@@ -665,6 +645,26 @@ enforced rules.
   `pattern` filters.
 - A constraint without a filter is accepted; an unknown filter type is
   rejected.
+
+## Preauthorization
+
+This is Boruta's OAuth preauthorization response flow, distinct from the
+OpenID4VCI pre-authorized code flow described below.
+
+### Endpoints
+
+| Stage | Method | Suggested endpoint | Boruta entry point | Application behaviour |
+|---|---|---|---|---|
+| Preauthorize | `GET` or `POST` | `/oauth/preauthorize` | `Boruta.Oauth.preauthorize/3` | `Boruta.Oauth.AuthorizeApplication` |
+
+### Rules
+
+- Client, redirect URI, resource owner, scope, and grant are validated.
+- Wildcard redirect URIs are supported.
+- Public or authorized scopes are accepted.
+- Unknown or unauthorized scopes are rejected.
+- A successful request can produce the tested preauthorization response and
+  token.
 
 ## OpenID4VCI pre-authorized code flow
 
