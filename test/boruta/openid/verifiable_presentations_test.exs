@@ -489,72 +489,56 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
     end
 
     test "accepts a credential with a valid status-list entry", %{signer: signer} do
-      bypass = Bypass.open()
       status_credential = status_list_credential(signer)
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 200, status_credential)
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+      server = start_tls_server(status_credential)
+      credential = credential_with_status(signer, server.url, "0")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == :ok
     end
 
     test "rejects a credential with a revoked status-list entry", %{signer: signer} do
-      bypass = Bypass.open()
       status_credential = status_list_credential(signer)
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 200, status_credential)
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "2")
+      server = start_tls_server(status_credential)
+      credential = credential_with_status(signer, server.url, "2")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == {:error, "is revoked."}
     end
 
     test "rejects an invalid status-list credential", %{signer: signer} do
-      bypass = Bypass.open()
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 200, "not-a-jwt")
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+      server = start_tls_server("not-a-jwt")
+      credential = credential_with_status(signer, server.url, "0")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == {:error, "has an invalid status list credential."}
     end
 
     test "rejects a credential when its status list cannot be fetched", %{signer: signer} do
-      bypass = Bypass.open()
-
-      Bypass.expect_once(bypass, "GET", "/status", fn conn ->
-        Plug.Conn.resp(conn, 500, "")
-      end)
-
-      credential =
-        credential_with_status(signer, "http://localhost:#{bypass.port}/status", "0")
+      server = start_tls_server("", status: 500)
+      credential = credential_with_status(signer, server.url, "0")
 
       assert VerifiablePresentations.validate_credential(
                credential,
                descriptor_with_fields([]),
-               "jwt_vc"
+               "jwt_vc",
+               server.trusted_authorities,
+               ["localhost"]
              ) == {:error, "could not get status list."}
     end
 
@@ -898,6 +882,12 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
         }
       }
     })
+  end
+
+  defp start_tls_server(body, opts \\ []) do
+    {:ok, server} = TLSServer.start(body, opts)
+    on_exit(fn -> TLSServer.stop(server) end)
+    server
   end
 
   def public_key_fixture do
