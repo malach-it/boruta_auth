@@ -5,7 +5,7 @@ defmodule Boruta.Migrations.ClientsTrustedHosts do
     quote do
       def change do
         alter table(:oauth_clients) do
-          add(:trusted_hosts, {:array, :text}, default: nil)
+          add(:trusted_hosts, {:array, :text}, default: [], null: false)
         end
       end
     end
