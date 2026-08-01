@@ -53,6 +53,13 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   def presentation_definition(
+        response_types,
+        presentation_configuration,
+        scope,
+        request_presentation_definition \\ nil
+      )
+
+  def presentation_definition(
         ["vp_token" | _response_types],
         presentation_configuration,
         scope,
@@ -205,7 +212,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
         _trusted_authorities,
         _trusted_hosts
       ),
-    do: {:error, "format \"#{format}\" is not supported"}
+      do: {:error, "format \"#{format}\" is not supported"}
 
   defp decode_sd_jwt(credential) when is_binary(credential) do
     case String.split(credential, "~") do
