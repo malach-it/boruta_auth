@@ -45,7 +45,7 @@ defmodule Boruta.Openid.Json.Schema do
                 "type" => "object",
                 "properties" => %{
                   "id" => %{"type" => "string"},
-                  "format" => %{"type" => "string", "pattern" => "^jwt_vc$"},
+                  "format" => %{"type" => "string", "pattern" => "^(jwt_vc|vc\\+sd-jwt)$"},
                   "path" => %{"type" => "string"}
                 },
                 "required" => ["id", "format", "path"]

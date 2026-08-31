@@ -675,10 +675,10 @@ defmodule Boruta.Openid.VerifiableCredentials do
     iss =
       case client.did do
         nil ->
-          Client.Crypto.kid_from_private_key(client.private_key)
+          Config.issuer()
 
         did ->
-          did <> "#" <> String.replace(did, "did:key:", "")
+          Did.controller(did)
       end
 
     [

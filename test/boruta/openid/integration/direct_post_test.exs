@@ -26,11 +26,76 @@ defmodule Boruta.OpenidTest.DirectPostTest do
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
+  alias Boruta.Oauth.ApplicationMock, as: OauthApplicationMock
   alias Boruta.Oauth.Client.Crypto
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
   alias Boruta.Repo
+
+  @presentation_definition %{
+    "id" => "test",
+    "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+    "input_descriptors" => [
+      %{
+        "id" => "test",
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+        "constraints" => %{
+          "fields" => [
+            %{
+              "path" => ["$.vc.type"],
+              "filter" => %{
+                "type" => "array",
+                "contains" => %{"const" => "VerifiableAttestation"}
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+
+  @id_token_presentation_definition %{
+    "id" => "id-token-presentation-definition",
+    "format" => %{"jwt_vp" => %{"alg" => ["ES256K"]}},
+    "input_descriptors" => [
+      %{
+        "id" => "id-token-input",
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256K"]}},
+        "constraints" => %{
+          "fields" => [
+            %{
+              "path" => ["$.vc.credentialSubject.id"],
+              "filter" => %{"type" => "string"}
+            }
+          ]
+        }
+      }
+    ]
+  }
+
+  @request_presentation_definition %{
+    "id" => "request-presentation-definition",
+    "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
+    "input_descriptors" => [
+      %{
+        "id" => "request-input",
+        "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
+        "constraints" => %{
+          "fields" => [
+            %{
+              "path" => ["$.vc.type"],
+              "filter" => %{
+                "type" => "array",
+                "contains" => %{"const" => "VerifiableAttestation"}
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
 
   describe "authenticates with direct post response" do
     setup do
@@ -51,27 +116,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         redirect_uri: "http://redirect.uri",
         state: "state",
         sub: wallet_did,
-        presentation_definition: %{
-          "id" => "test",
-          "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
-          "input_descriptors" => [
-            %{
-              "id" => "test",
-              "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
-              "constraints" => %{
-                "fields" => [
-                  %{
-                    "path" => ["$.vc.type"],
-                    "filter" => %{
-                      "type" => "array",
-                      "contains" => %{"const" => "VerifiableAttestation"}
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
+        presentation_definition: @presentation_definition
       ]
 
       code = insert(:token, [{:public_client_id, wallet_did} | code_params])
@@ -160,27 +205,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           redirect_uri: "http://redirect.uri",
           state: "state",
           sub: wallet_did,
-          presentation_definition: %{
-            "id" => "test",
-            "format" => %{"jwt_vc" => %{"alg" => ["ES256'"]}, "jwt_vp" => %{"alg" => ["ES256"]}},
-            "input_descriptors" => [
-              %{
-                "id" => "test",
-                "format" => %{"jwt_vc" => %{"alg" => ["ES256"]}},
-                "constraints" => %{
-                  "fields" => [
-                    %{
-                      "path" => ["$.vc.type"],
-                      "filter" => %{
-                        "type" => "array",
-                        "contains" => %{"const" => "VerifiableAttestation"}
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          }
+          presentation_definition: @presentation_definition
         )
 
       signer =
@@ -193,6 +218,15 @@ defmodule Boruta.OpenidTest.DirectPostTest do
         VerifiablePresentations.Token.generate_and_sign(
           %{
             "iss" => wallet_did
+          },
+          signer
+        )
+
+      {:ok, id_token_with_presentation_definition, _claims} =
+        VerifiablePresentations.Token.generate_and_sign(
+          %{
+            "iss" => wallet_did,
+            "presentation_definition" => @id_token_presentation_definition
           },
           signer
         )
@@ -232,7 +266,9 @@ defmodule Boruta.OpenidTest.DirectPostTest do
        invalid_policy_code_chain: invalid_policy_code_chain,
        policy_code_chain: policy_code_chain,
        id_token: id_token,
-       vp_token: vp_token}
+       id_token_with_presentation_definition: id_token_with_presentation_definition,
+       vp_token: vp_token,
+       wallet_did: wallet_did}
     end
 
     test "returns authentication failure without id_token" do
@@ -440,6 +476,33 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
+    end
+
+    test "siopv2 - authenticates with presentation definition from id_token", %{
+      id_token_with_presentation_definition: id_token,
+      code: code
+    } do
+      conn = %Plug.Conn{}
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+
+      code = Repo.reload(code)
+      assert response.id_token
+      assert response.redirect_uri == code.redirect_uri
+      assert response.code.value == code.value
+      assert response.state == code.state
+      assert response.presentation_definition == code.presentation_definition
+      assert response.presentation_definition == @id_token_presentation_definition
+      refute response.presentation_definition == @presentation_definition
     end
 
     test "siopv2 - authenticates (jwe)", %{id_token: id_token, code: code} do
@@ -466,6 +529,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "siopv2 - authenticates with public client", %{
@@ -488,6 +552,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "siopv2 - authenticates with code verifier (plain code challenge)", %{
@@ -511,6 +576,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - returns not found with a bad id_token" do
@@ -857,6 +923,68 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
+    end
+
+    test "oid4vp - authenticates with request provided presentation definition", %{
+      vp_token: vp_token,
+      wallet_did: wallet_did
+    } do
+      conn = %Plug.Conn{}
+      insert(:scope, name: "vp_token", public: true)
+
+      assert {:authorize_success, authorize_response} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "vp_token",
+                     "client_id" => wallet_did,
+                     "redirect_uri" => "openid:",
+                     "client_metadata" => "{}",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token",
+                     "presentation_definition" => @request_presentation_definition
+                   }
+                 },
+                 %ResourceOwner{sub: wallet_did, presentation_configuration: %{}},
+                 OauthApplicationMock
+               )
+
+      presentation_submission =
+        Jason.encode!(%{
+          "id" => "request-presentation-submission",
+          "definition_id" => "request-presentation-definition",
+          "descriptor_map" => [
+            %{
+              "id" => "request-input",
+              "format" => "jwt_vp",
+              "path" => "$",
+              "path_nested" => %{
+                "id" => "request-input",
+                "format" => "jwt_vc",
+                "path" => "$.vp.verifiableCredential[0]"
+              }
+            }
+          ]
+        })
+
+      assert {:direct_post_success, response} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: authorize_response.code.id,
+                   vp_token: vp_token,
+                   presentation_submission: presentation_submission
+                 },
+                 ApplicationMock
+               )
+
+      assert response.vp_token
+      assert response.redirect_uri == "openid:"
+      assert response.code.value == authorize_response.code.value
+      assert response.state == authorize_response.code.state
+      assert response.presentation_definition == @request_presentation_definition
+      refute response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - authenticates (jwe)", %{vp_token: vp_token, code: code} do
@@ -904,6 +1032,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - authenticates with a public client", %{
@@ -945,6 +1074,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - authenticates with a code chain (last valid)", %{
@@ -987,6 +1117,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.code.value == code.value
       assert Enum.count(response.code_chain) == 3
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - returns an error with a code chain (policy invalid)", %{
@@ -1059,7 +1190,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           ]
         })
 
-      assert {:direct_post_success, _response} =
+      assert {:direct_post_success, response} =
                Openid.direct_post(
                  conn,
                  %{
@@ -1069,6 +1200,8 @@ defmodule Boruta.OpenidTest.DirectPostTest do
                  },
                  ApplicationMock
                )
+
+      assert response.presentation_definition == @presentation_definition
     end
 
     @tag :skip
@@ -1113,6 +1246,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.code.value == code.value
       assert Enum.count(response.code_chain) == 3
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
 
       assert {
                :authentication_failure,
@@ -1176,6 +1310,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
       assert response.state == code.state
+      assert response.presentation_definition == @presentation_definition
     end
 
     test "oid4vp - returns an error without a presentation submission", %{

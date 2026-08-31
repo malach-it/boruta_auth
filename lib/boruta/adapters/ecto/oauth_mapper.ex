@@ -34,6 +34,15 @@ defimpl Boruta.Ecto.OauthMapper, for: Boruta.Ecto.Token do
         end
 
     resource_owner =
+      case {resource_owner, client} do
+        {%ResourceOwner{} = resource_owner, %Oauth.Client{id: client_id}} ->
+          %{resource_owner | client_id: client_id}
+
+        _ ->
+          resource_owner
+      end
+
+    resource_owner =
       with "" <> agent_token <- token.agent_token,
            %Oauth.Token{} = token <- AgentTokens.get_by(value: agent_token),
            {:ok, claims} <- AgentTokens.claims_from_agent_token(token) do

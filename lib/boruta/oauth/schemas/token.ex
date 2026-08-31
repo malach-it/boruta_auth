@@ -172,9 +172,13 @@ defmodule Boruta.Oauth.Token do
     :crypto.hash(:sha512, string) |> Base.encode16()
   end
 
-  def userinfo(%Token{resource_owner: %ResourceOwner{} = resource_owner, scope: scope}) do
+  def userinfo(%Token{
+        resource_owner: %ResourceOwner{} = resource_owner,
+        client: %Client{id: client_id},
+        scope: scope
+      }) do
     userinfo =
-      resource_owner
+      %{resource_owner | client_id: client_id}
       |> resource_owners().claims(scope)
       |> Map.merge(IdToken.format_claims(resource_owner.extra_claims))
       |> Map.put(:sub, resource_owner.sub)

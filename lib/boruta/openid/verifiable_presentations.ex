@@ -15,12 +15,18 @@ defmodule Boruta.Openid.VerifiablePresentations do
   alias Boruta.Oauth.Client
   alias Boruta.Oauth.Scope
   alias Boruta.Openid.Json.Schema
+  alias Boruta.Openid.VerifiableCredentials.Status
   alias ExJsonSchema.Validator.Error.BorutaFormatter
 
   # TODO perform client metadata checks
   def check_client_metadata(_client_metadata), do: :ok
 
-  def response_types(response_type, scope, presentation_configuration) do
+  def response_types(
+        response_type,
+        scope,
+        presentation_configuration,
+        request_presentation_definition \\ nil
+      ) do
     response_types = String.split(response_type, " ")
 
     case response_types do
@@ -31,9 +37,12 @@ defmodule Boruta.Openid.VerifiablePresentations do
         response_types
 
       ["vp_token" | rest] ->
-        case Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
-               Enum.member?(Scope.split(scope), presentation_identifier)
-             end) do
+        has_presentation_configuration? =
+          Enum.any?(Map.keys(presentation_configuration), fn presentation_identifier ->
+            Enum.member?(Scope.split(scope), presentation_identifier)
+          end)
+
+        case has_presentation_configuration? || not is_nil(request_presentation_definition) do
           true -> String.split(response_type, " ")
           false -> ["id_token" | rest]
         end
@@ -43,20 +52,37 @@ defmodule Boruta.Openid.VerifiablePresentations do
     end
   end
 
-  def presentation_definition(["vp_token" | _response_types], presentation_configuration, scope) do
+  def presentation_definition(
+        response_types,
+        presentation_configuration,
+        scope,
+        request_presentation_definition \\ nil
+      )
+
+  def presentation_definition(
+        ["vp_token" | _response_types],
+        presentation_configuration,
+        scope,
+        request_presentation_definition
+      ) do
     case Enum.find(presentation_configuration, fn {identifier, _configuration} ->
            Enum.member?(Scope.split(scope), identifier)
          end) do
       nil ->
-        {:ok, nil, nil}
+        {:ok, nil, request_presentation_definition}
 
       {identifier, configuration} ->
         {:ok, identifier, configuration[:definition]}
     end
   end
 
-  def presentation_definition(_response_types, _presentation_configuration, _scope),
-    do: {:ok, nil, nil}
+  def presentation_definition(
+        _response_types,
+        _presentation_configuration,
+        _scope,
+        request_presentation_definition
+      ),
+      do: {:ok, nil, request_presentation_definition}
 
   def validate_presentation(
         vp_token,
@@ -162,6 +188,24 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   def validate_credential(
+        credential,
+        descriptor,
+        "vc+sd-jwt",
+        _trusted_authorities,
+        _trusted_hosts
+      ) do
+    with {:ok, jwt, disclosures} <- decode_sd_jwt(credential),
+         {:ok, _jwk, claims} <- validate_signature(jwt),
+         :ok <- validate_expiration(claims),
+         {:ok, disclosed_claims} <- validate_disclosures(claims, disclosures),
+         :ok <- validate_disclosure_statuses(claims, disclosures) do
+      claims
+      |> Map.merge(disclosed_claims)
+      |> validate_constraints(descriptor)
+    end
+  end
+
+  def validate_credential(
         _credential,
         _descriptor,
         format,
@@ -169,6 +213,80 @@ defmodule Boruta.Openid.VerifiablePresentations do
         _trusted_hosts
       ),
       do: {:error, "format \"#{format}\" is not supported"}
+
+  defp decode_sd_jwt(credential) when is_binary(credential) do
+    case String.split(credential, "~") do
+      [jwt | disclosures] when jwt != "" ->
+        disclosures = Enum.reject(disclosures, &(&1 == ""))
+
+        case disclosures do
+          [] -> {:error, "does not contain disclosures."}
+          disclosures -> {:ok, jwt, disclosures}
+        end
+
+      _ ->
+        {:error, "is not a valid SD-JWT credential."}
+    end
+  end
+
+  defp decode_sd_jwt(_credential), do: {:error, "is not a valid SD-JWT credential."}
+
+  defp validate_disclosures(%{"_sd" => sd_hashes}, disclosures) when is_list(sd_hashes) do
+    Enum.reduce_while(disclosures, {:ok, %{}}, fn disclosure, {:ok, claims} ->
+      with :ok <- validate_disclosure_hash(disclosure, sd_hashes),
+           {:ok, [_salt, name, value]} <- decode_disclosure(disclosure) do
+        {:cont, {:ok, put_disclosed_claim(claims, String.split(name, "."), value)}}
+      else
+        {:error, error} -> {:halt, {:error, error}}
+      end
+    end)
+  end
+
+  defp validate_disclosures(_claims, _disclosures), do: {:error, "_sd claim is missing."}
+
+  defp validate_disclosure_hash(disclosure, sd_hashes) do
+    hash = :crypto.hash(:sha256, disclosure) |> Base.url_encode64(padding: false)
+
+    case Enum.member?(sd_hashes, hash) do
+      true -> :ok
+      false -> {:error, "contains an invalid disclosure."}
+    end
+  end
+
+  defp decode_disclosure(disclosure) do
+    with {:ok, decoded} <- Base.url_decode64(disclosure, padding: false),
+         {:ok, [_salt, name, _value] = disclosure_claim} when is_binary(name) <-
+           Jason.decode(decoded) do
+      {:ok, disclosure_claim}
+    else
+      _ -> {:error, "contains an invalid disclosure."}
+    end
+  end
+
+  defp put_disclosed_claim(claims, [key], value), do: Map.put(claims, key, value)
+
+  defp put_disclosed_claim(claims, [key | rest], value) do
+    Map.put(claims, key, put_disclosed_claim(Map.get(claims, key, %{}), rest, value))
+  end
+
+  defp validate_disclosure_statuses(%{"iss" => iss}, disclosures) do
+    Enum.reduce_while(disclosures, :ok, fn disclosure, :ok ->
+      with {:ok, [status_token, _name, _value]} <- decode_disclosure(disclosure),
+           true <- String.contains?(status_token, "~") do
+        case Status.verify_status_token(iss, status_token) do
+          :valid -> {:cont, :ok}
+          :suspended -> {:halt, {:error, "is suspended."}}
+          :revoked -> {:halt, {:error, "is revoked."}}
+          :expired -> {:halt, {:error, "is expired."}}
+          :invalid -> {:halt, {:error, "has an invalid status."}}
+        end
+      else
+        _ -> {:cont, :ok}
+      end
+    end)
+  end
+
+  defp validate_disclosure_statuses(_claims, _disclosures), do: :ok
 
   defp validate_expiration(%{"exp" => expiry}) do
     case expiry > :os.system_time(:second) do
@@ -262,6 +380,15 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   defp validate_constraints(_claims, _descriptor), do: {:error, "descriptor is invalid."}
+
+  defp validate_filter(value, %{"type" => "number", "const" => expected})
+       when is_number(value) and value == expected,
+       do: :ok
+
+  defp validate_filter(_value, %{"type" => "number", "const" => expected}),
+    do: {:error, "does not equal #{inspect(expected)}."}
+
+  defp validate_filter(value, %{"type" => "number"}) when is_number(value), do: :ok
 
   defp validate_filter(value, %{"type" => "array", "contains" => %{"const" => contains}})
        when is_list(value) do
