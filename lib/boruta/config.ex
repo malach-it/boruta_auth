@@ -23,6 +23,8 @@ defmodule Boruta.Config do
     token_generator: Boruta.TokenGenerator,
     issuer: "boruta"
   ```
+
+  `Boruta.Cache` is started with the application only when it is the configured `cache_backend`; another backend is started by the host application.
   """
 
   @defaults cache_backend: Boruta.Cache,

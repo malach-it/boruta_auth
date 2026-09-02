@@ -6,11 +6,15 @@ defmodule Boruta.Application do
   use Application
 
   def start(_type, _args) do
-    children = [
-      Boruta.Cache,
-      {Finch, name: OpenIDHttpClient}
-    ]
+    children = cache_children() ++ [{Finch, name: OpenIDHttpClient}]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Boruta.Supervisor)
+  end
+
+  defp cache_children do
+    case Boruta.Config.cache_backend() do
+      Boruta.Cache -> [Boruta.Cache]
+      _other_backend -> []
+    end
   end
 end
