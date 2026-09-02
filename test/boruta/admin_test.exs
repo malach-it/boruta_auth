@@ -17,6 +17,12 @@ defmodule Boruta.Ecto.AdminTest do
     redirect_uri: ["https://updated.redirect.uri"]
   }
 
+  defp insert_scope_with_id(id) do
+    %Scope{id: id}
+    |> Scope.changeset(%{name: "scope-#{SecureRandom.hex(4)}"})
+    |> Repo.insert()
+  end
+
   # clients
   def client_fixture(attrs \\ %{}) do
     {:ok, client} =
@@ -68,6 +74,17 @@ defmodule Boruta.Ecto.AdminTest do
     end
 
     test "return an error if id already exists" do
+      id = SecureRandom.uuid()
+
+      assert {:ok, %Client{id: ^id}} = Admin.create_client(%{id: id})
+      assert {:error, %Ecto.Changeset{}} = Admin.create_client(%{id: id})
+    end
+
+    test "return an error if id already exists with the pre-rename constraint name" do
+      Repo.query!(
+        "ALTER TABLE oauth_clients RENAME CONSTRAINT oauth_clients_pkey TO clients_pkey"
+      )
+
       id = SecureRandom.uuid()
 
       assert {:ok, %Client{id: ^id}} = Admin.create_client(%{id: id})
@@ -739,6 +756,21 @@ defmodule Boruta.Ecto.AdminTest do
   end
 
   describe "create_scope/1" do
+    test "return an error if id already exists" do
+      id = SecureRandom.uuid()
+
+      assert {:ok, %Scope{id: ^id}} = insert_scope_with_id(id)
+      assert {:error, %Ecto.Changeset{}} = insert_scope_with_id(id)
+    end
+
+    test "return an error if id already exists with the pre-rename constraint name" do
+      Repo.query!("ALTER TABLE oauth_scopes RENAME CONSTRAINT oauth_scopes_pkey TO scopes_pkey")
+      id = SecureRandom.uuid()
+
+      assert {:ok, %Scope{id: ^id}} = insert_scope_with_id(id)
+      assert {:error, %Ecto.Changeset{}} = insert_scope_with_id(id)
+    end
+
     test "returns error changeset with name missing" do
       assert {:error, %Ecto.Changeset{}} = Admin.create_scope(%{name: nil})
       assert {:error, %Ecto.Changeset{}} = Admin.create_scope(%{name: ""})

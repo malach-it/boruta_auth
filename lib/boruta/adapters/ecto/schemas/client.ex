@@ -244,7 +244,8 @@ defmodule Boruta.Ecto.Client do
       :redirect_uris,
       :key_pair_type
     ])
-    |> unique_constraint(:id, name: :oauth_clients_pkey)
+    |> validate_required([:redirect_uris])
+    |> unique_constraint(:id, name: :clients_pkey, match: :suffix)
     |> change_access_token_ttl()
     |> change_agent_token_ttl()
     |> change_authorization_code_ttl()
@@ -282,7 +283,7 @@ defmodule Boruta.Ecto.Client do
     |> cast(attrs, @registration_attributes)
     |> validate_required_allow_empty([:trusted_authorities, :trusted_hosts])
     |> validate_required([:redirect_uris])
-    |> unique_constraint(:id, name: :oauth_clients_pkey)
+    |> unique_constraint(:id, name: :clients_pkey, match: :suffix)
     |> change_access_token_ttl()
     |> change_agent_token_ttl()
     |> change_authorization_code_ttl()
