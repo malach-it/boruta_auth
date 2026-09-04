@@ -3391,6 +3391,157 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
   end
 
+  describe "code grants with the issuer client" do
+    setup do
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+      redirect_uri = "https://redirect.uri"
+
+      server_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, server_client} =
+        Ecto.Admin.update_client(server_client, %{
+          confidential: false,
+          redirect_uris: [redirect_uri],
+          supported_grant_types: Oauth.Client.grant_types()
+        })
+
+      authorization_code =
+        insert(:token,
+          type: "code",
+          client: server_client,
+          sub: resource_owner.sub,
+          redirect_uri: redirect_uri
+        )
+
+      agent_code =
+        insert(:token,
+          type: "code",
+          client: server_client,
+          sub: resource_owner.sub,
+          redirect_uri: redirect_uri
+        )
+
+      on_exit(fn ->
+        Ecto.ClientStore.invalidate(%Oauth.Client{id: server_client.id})
+        Ecto.ClientStore.invalidate_public()
+      end)
+
+      {:ok,
+       resource_owner: resource_owner,
+       redirect_uri: redirect_uri,
+       server_client: server_client,
+       authorization_code: authorization_code,
+       agent_code: agent_code}
+    end
+
+    test "rejects an invalid secret when exchanging an authorization code", %{
+      server_client: client,
+      authorization_code: code,
+      redirect_uri: redirect_uri
+    } do
+      assert {:token_error,
+              %Error{
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri.",
+                status: :unauthorized
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "client_secret" => "bad_secret",
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "exchanges an authorization code with the issuer client's secret", %{
+      server_client: client,
+      authorization_code: code,
+      redirect_uri: redirect_uri,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success, %TokenResponse{access_token: access_token}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "authorization_code",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert access_token
+    end
+
+    test "rejects an invalid secret when exchanging an agent code", %{
+      server_client: client,
+      agent_code: code,
+      redirect_uri: redirect_uri
+    } do
+      assert {:token_error,
+              %Error{
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri.",
+                status: :unauthorized
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "client_secret" => "bad_secret",
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "exchanges an agent code with the issuer client's secret", %{
+      server_client: client,
+      agent_code: code,
+      redirect_uri: redirect_uri,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success, %TokenResponse{agent_token: agent_token}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "agent_code",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "code" => code.value,
+                     "redirect_uri" => redirect_uri,
+                     "bind_data" => "{}",
+                     "bind_configuration" => "{}"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert agent_token
+    end
+  end
+
   def valid_public_key do
     "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEA1PaP/gbXix5itjRCaegvI/B3aFOeoxlwPPLvfLHGA4QfDmVOf8cU\n8OuZFAYzLArW3PnnwWWy39nVJOx42QRVGCGdUCmV7shDHRsr86+2DlL7pwUa9QyH\nsTj84fAJn2Fv9h9mqrIvUzAtEYRlGFvjVTGCwzEullpsB0GJafopUTFby8WdSq3d\nGLJBB1r+Q8QtZnAxxvolhwOmYkBkkidefmm48X7hFXL2cSJm2G7wQyinOey/U8xD\nZ68mgTakiqS2RtjnFD0dnpBl5CYTe4s6oZKEyFiFNiW4KkR1GVjsKwY9oC2tpyQ0\nAEUMvk9T9VdIltSIiAvOKlwFzL49cgwZDwIDAQAB\n-----END RSA PUBLIC KEY-----\n\n"
   end

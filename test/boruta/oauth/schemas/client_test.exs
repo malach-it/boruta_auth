@@ -305,4 +305,32 @@ defmodule Boruta.Oauth.ClientTest do
                Client.check_redirect_uri(client_with_double, "https://example.com/#{long_path}")
     end
   end
+
+  describe "should_check_secret?/2 for non-confidential clients" do
+    test "checks the secret when the public client ID matches the issuer" do
+      client = %Client{
+        id: "issuer-client",
+        confidential: false,
+        public_client_id: Boruta.Config.issuer()
+      }
+
+      assert Client.should_check_secret?(client, "password")
+    end
+
+    test "does not check the secret for an external public client ID" do
+      client = %Client{
+        id: "external-client",
+        confidential: false,
+        public_client_id: "did:key:external-client"
+      }
+
+      refute Client.should_check_secret?(client, "password")
+    end
+
+    test "checks the secret when confidentiality is not explicitly configured" do
+      client = %Client{id: "client"}
+
+      assert Client.should_check_secret?(client, "password")
+    end
+  end
 end

@@ -5,6 +5,7 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
   import Boruta.Factory
   import Mox
 
+  alias Boruta.Ecto
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
   alias Boruta.Oauth.Error
@@ -385,6 +386,139 @@ defmodule Boruta.OauthTest.ResourceOwnerPasswordCredentialsGrantTest do
                   error_description: "Client do not support given grant type.",
                   status: :bad_request
                 }}
+    end
+  end
+
+  describe "resource owner password credentials grant with a public client ID" do
+    setup do
+      user = %User{}
+      resource_owner = %ResourceOwner{sub: user.id, username: user.email}
+
+      server_client =
+        Repo.get_by!(Ecto.Client, public_client_id: Boruta.Config.issuer())
+
+      {:ok, server_client} =
+        Ecto.Admin.update_client(server_client, %{confidential: false})
+
+      external_public_client =
+        insert(:client,
+          confidential: false,
+          public_client_id: "did:key:external-public-client"
+        )
+
+      confidential_public_client =
+        insert(:client,
+          confidential: true,
+          public_client_id: "did:key:confidential-public-client"
+        )
+
+      on_exit(fn ->
+        [server_client, external_public_client, confidential_public_client]
+        |> Enum.each(fn client ->
+          Ecto.ClientStore.invalidate(%Oauth.Client{id: client.id})
+        end)
+
+        Ecto.ClientStore.invalidate_public()
+      end)
+
+      {:ok,
+       resource_owner: resource_owner,
+       server_client: server_client,
+       external_public_client: external_public_client,
+       confidential_public_client: confidential_public_client}
+    end
+
+    test "rejects an invalid secret for the issuer client", %{server_client: client} do
+      assert {:token_error,
+              %Error{
+                error: :invalid_client,
+                error_description: "Invalid client_id or client_secret.",
+                status: :unauthorized
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "password",
+                     "client_id" => client.id,
+                     "client_secret" => "bad_secret",
+                     "username" => "username",
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "returns a token for the issuer client with its secret", %{
+      server_client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:check_password, fn _resource_owner, _password -> :ok end)
+
+      assert {:token_success, %TokenResponse{access_token: access_token}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "password",
+                     "client_id" => client.id,
+                     "client_secret" => client.secret,
+                     "username" => resource_owner.username,
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert access_token
+    end
+
+    test "returns a token without a secret for an external public client", %{
+      external_public_client: client,
+      resource_owner: resource_owner
+    } do
+      ResourceOwners
+      |> expect(:get_by, 2, fn _params -> {:ok, resource_owner} end)
+      |> expect(:check_password, fn _resource_owner, _password -> :ok end)
+
+      assert {:token_success, %TokenResponse{access_token: access_token}} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "password",
+                     "client_id" => client.id,
+                     "username" => resource_owner.username,
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert access_token
+    end
+
+    test "rejects an invalid secret for a confidential client with a public client ID", %{
+      confidential_public_client: client
+    } do
+      assert {:token_error,
+              %Error{
+                error: :invalid_client,
+                error_description: "Invalid client_id or client_secret.",
+                status: :unauthorized
+              }} =
+               Oauth.token(
+                 %Plug.Conn{
+                   body_params: %{
+                     "grant_type" => "password",
+                     "client_id" => client.id,
+                     "client_secret" => "bad_secret",
+                     "username" => "username",
+                     "password" => "password"
+                   }
+                 },
+                 ApplicationMock
+               )
     end
   end
 
