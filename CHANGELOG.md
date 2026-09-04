@@ -70,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- require secret authentication for issuer-bound and incompletely configured clients
+- require secret authentication for credentials grants and introspection, including public clients, and require issuer-binding for them
 - require HTTPS and explicit client trust configuration for outbound request-object, JWKS, status-list, DID resolution and registration requests
 - validate JWT client assertion expiration
 - restrict dynamic client registration to an allowlist of public registration attributes and safer default grant types
