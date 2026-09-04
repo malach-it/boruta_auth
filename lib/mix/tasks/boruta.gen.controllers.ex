@@ -1,3 +1,32 @@
+# Portions of this file are based on the Phoenix Framework's Mix generator tasks:
+# https://github.com/phoenixframework/phoenix
+#
+# MIT License
+#
+# Copyright (c) 2014 Chris McCord
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# This file has been modified for Boruta. Boruta's modifications are licensed
+# under the MIT License found in the repository's LICENSE file.
+
 defmodule Mix.Tasks.Boruta.Gen.Controllers do
   @moduledoc """
   This task will help creation of a basic OAuth/OpenID Connect server by providing needed phoenix controllers, views and templates to expose OAuth endpoints.
@@ -108,7 +137,9 @@ defmodule Mix.Tasks.Boruta.Gen.Controllers do
 
   def run(_args) do
     if Mix.Project.umbrella?() do
-      Mix.raise "mix boruta.gen.controllers must be invoked from within your *_web application root directory"
+      Mix.raise(
+        "mix boruta.gen.controllers must be invoked from within your *_web application root directory"
+      )
     end
 
     otp_app = Mix.Phoenix.context_app()
