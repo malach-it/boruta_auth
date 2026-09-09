@@ -15,6 +15,33 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
   alias Boruta.Support.TLSServer
 
   describe "authorize/1" do
+    test "does not require a secret for an issuer public client" do
+      client = %Boruta.Oauth.Client{
+        id: "public",
+        confidential: true,
+        public_client_id: Boruta.Config.issuer()
+      }
+
+      refute Boruta.Oauth.Client.should_check_secret?(client, "id_token")
+      refute Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
+      refute Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
+      refute Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
+      refute Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
+    end
+
+    test "requires a secret for a non-issuer public client" do
+      client = %Boruta.Oauth.Client{
+        id: "public",
+        public_client_id: "https://other.issuer.example"
+      }
+
+      assert Boruta.Oauth.Client.should_check_secret?(client, "id_token")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
+    end
+
     test "returns an error with bad auth method (client_secret_post)" do
       client = insert(:client, token_endpoint_auth_methods: ["client_secret_post"])
       source = %{type: "basic", value: client.secret}

@@ -4,6 +4,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
   import Boruta.Factory
   import Mox
 
+  alias Boruta.ClientsAdapter
   alias Boruta.Ecto
   alias Boruta.Oauth
   alias Boruta.Oauth.ApplicationMock
@@ -19,6 +20,21 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
   describe "preauthorization code grant - authorize" do
     setup do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          redirect_uris: ["https://redirect.uri"],
+          supported_grant_types: Oauth.Client.grant_types()
+        })
+
+      Ecto.ClientStore.invalidate_public()
+
+      on_exit(fn ->
+        Ecto.ClientStore.invalidate(%Oauth.Client{id: public_client.id})
+        Ecto.ClientStore.invalidate_public()
+      end)
+
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
       client = insert(:client, redirect_uris: ["https://redirect.uri"])
@@ -87,6 +103,130 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
                   format: nil,
                   redirect_uri: nil
                 }}
+    end
+
+    test "returns an error with an invalid response type", %{client: client} do
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "invalid_response_type",
+                   "client_id" => client.id,
+                   "redirect_uri" => "http://redirect.uri"
+                 }
+               },
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Invalid response_type param.",
+                  status: :bad_request,
+                  format: nil,
+                  redirect_uri: nil
+                }}
+    end
+
+    test "returns an error with a public client and an invalid redirect URI" do
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                   "client_id" => ClientsAdapter.public!().id,
+                   "redirect_uri" => "http://redirect.uri"
+                 }
+               },
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_client,
+                  error_description: "Invalid client_id or redirect_uri.",
+                  status: :unauthorized,
+                  format: nil,
+                  redirect_uri: nil
+                }}
+    end
+
+    test "returns a credential offer with a DID client", %{resource_owner: resource_owner} do
+      redirect_uri = "https://redirect.uri"
+
+      assert {:authorize_success,
+              %CredentialOfferResponse{
+                redirect_uri: ^redirect_uri,
+                grants: %{
+                  "urn:ietf:params:oauth:grant-type:pre-authorized_code" => %{
+                    "pre-authorized_code" => preauthorized_code
+                  }
+                }
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => redirect_uri
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+
+      assert preauthorized_code
+    end
+
+    test "returns an error with a DID client and an invalid redirect URI", %{
+      resource_owner: resource_owner
+    } do
+      assert {:authorize_error,
+              %Error{
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri.",
+                status: :unauthorized
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => "https://invalid.redirect.uri"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with a DID client when the grant is not supported", %{
+      resource_owner: resource_owner
+    } do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          supported_grant_types: Oauth.Client.grant_types() -- ["preauthorized_code"]
+        })
+
+      Ecto.ClientStore.invalidate_public()
+
+      assert {:authorize_error,
+              %Error{
+                error: :unsupported_grant_type,
+                error_description: "Client do not support given grant type.",
+                status: :bad_request
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code",
+                     "client_id" => "did:key:test",
+                     "redirect_uri" => "https://redirect.uri"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns an error if user is invalid", %{client: client} do

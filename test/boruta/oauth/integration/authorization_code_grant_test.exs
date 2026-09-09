@@ -35,10 +35,16 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       {:ok, _client} =
         Ecto.Admin.update_client(public_client, %{
+          redirect_uris: ["https://redirect.uri"],
           supported_grant_types: Oauth.Client.grant_types()
         })
 
       Ecto.ClientStore.invalidate_public()
+
+      on_exit(fn ->
+        Ecto.ClientStore.invalidate(%Oauth.Client{id: public_client.id})
+        Ecto.ClientStore.invalidate_public()
+      end)
 
       user = %User{}
       resource_owner = %ResourceOwner{sub: user.id, username: user.email}
@@ -254,6 +260,152 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                      "response_type" => "code",
                      "client_id" => "did:key:test",
                      "redirect_uri" => "http://redirect.uri"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with a DID presentation client and an invalid redirect URI", %{
+      resource_owner: resource_owner
+    } do
+      assert {:authorize_error,
+              %Error{
+                status: :unauthorized,
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => "https://invalid.redirect.uri",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with a DID presentation client when the grant is not supported", %{
+      resource_owner: resource_owner
+    } do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          supported_grant_types:
+            Oauth.Client.grant_types() -- ["authorization_code", "agent_code"]
+        })
+
+      Ecto.ClientStore.invalidate_public()
+
+      assert {:authorize_error,
+              %Error{
+                status: :bad_request,
+                error: :unsupported_grant_type,
+                error_description: "Client do not support given grant type."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => "https://redirect.uri",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns a response with a DID client for the id_token presentation flow" do
+      redirect_uri = "https://redirect.uri"
+
+      assert {:authorize_success,
+              %SiopV2Response{
+                client_id: "did:key:test",
+                response_type: "id_token",
+                redirect_uri: ^redirect_uri,
+                issuer: issuer
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "id_token",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => redirect_uri,
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 %ResourceOwner{sub: "did:key:test"},
+                 ApplicationMock
+               )
+
+      assert issuer == Boruta.Config.issuer()
+    end
+
+    test "returns an error with a DID client and invalid redirect for the id_token presentation flow",
+         %{resource_owner: resource_owner} do
+      assert {:authorize_error,
+              %Error{
+                status: :unauthorized,
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "id_token",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => "https://invalid.redirect.uri",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with a DID client and unsupported id_token presentation grant", %{
+      resource_owner: resource_owner
+    } do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          supported_grant_types: Oauth.Client.grant_types() -- ["id_token"]
+        })
+
+      Ecto.ClientStore.invalidate_public()
+
+      assert {:authorize_error,
+              %Error{
+                status: :bad_request,
+                error: :unsupported_grant_type,
+                error_description: "Client do not support given grant type."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "id_token",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => "https://redirect.uri",
+                     "nonce" => "nonce",
+                     "scope" => "openid"
                    }
                  },
                  resource_owner,
@@ -954,7 +1106,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     test "returns a code with siopv2 (direct_post - jwe)" do
       client_private_key = JOSE.JWK.generate_key({:ec, "P-256"})
       client_public_key = JOSE.JWK.to_public(client_private_key)
-      redirect_uri = "openid:"
+      redirect_uri = "https://redirect.uri"
 
       assert {:authorize_success,
               %SiopV2Response{
@@ -1009,7 +1161,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with siopv2 (direct_post - jwt)" do
-      redirect_uri = "openid:"
+      redirect_uri = "https://redirect.uri"
 
       assert {:authorize_success,
               %SiopV2Response{
@@ -1067,7 +1219,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with siopv2 - previous_code (direct_post)" do
-      redirect_uri = "openid:"
+      redirect_uri = "https://redirect.uri"
       code = insert(:token, type: "code").value
 
       assert {:authorize_success,
@@ -1142,7 +1294,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
     end
 
     test "returns a code with verifiable presentation (direct_post)" do
-      redirect_uri = "openid:"
+      redirect_uri = "https://redirect.uri"
       insert(:scope, name: "vp_token", public: true)
 
       resource_owner = %ResourceOwner{
@@ -1186,6 +1338,79 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       assert VerifiablePresentationResponse.redirect_to_deeplink(response, fn code -> code end) =~
                ~r"#{redirect_uri}"
+    end
+
+    test "returns an error with a DID client and invalid redirect for the vp_token presentation flow" do
+      resource_owner = %ResourceOwner{
+        sub: "did:key:test",
+        presentation_configuration: %{
+          "vp_token" => %{
+            definition: %{"test" => true}
+          }
+        }
+      }
+
+      assert {:authorize_error,
+              %Error{
+                status: :unauthorized,
+                error: :invalid_client,
+                error_description: "Invalid client_id or redirect_uri."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "vp_token",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => "https://invalid.redirect.uri",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error with a DID client and unsupported vp_token presentation grant" do
+      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+
+      {:ok, _client} =
+        Ecto.Admin.update_client(public_client, %{
+          supported_grant_types: Oauth.Client.grant_types() -- ["vp_token"]
+        })
+
+      Ecto.ClientStore.invalidate_public()
+
+      resource_owner = %ResourceOwner{
+        sub: "did:key:test",
+        presentation_configuration: %{
+          "vp_token" => %{
+            definition: %{"test" => true}
+          }
+        }
+      }
+
+      assert {:authorize_error,
+              %Error{
+                status: :bad_request,
+                error: :unsupported_grant_type,
+                error_description: "Client do not support given grant type."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "vp_token",
+                     "client_id" => "did:key:test",
+                     "client_metadata" => "{}",
+                     "redirect_uri" => "https://redirect.uri",
+                     "nonce" => "nonce",
+                     "scope" => "openid vp_token"
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
     end
 
     test "returns a code with verifiable presentation (post)" do
@@ -3435,29 +3660,29 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
        agent_code: agent_code}
     end
 
-    test "rejects an invalid secret when exchanging an authorization code", %{
+    test "exchanges an authorization code without the issuer client's secret", %{
       server_client: client,
       authorization_code: code,
-      redirect_uri: redirect_uri
+      redirect_uri: redirect_uri,
+      resource_owner: resource_owner
     } do
-      assert {:token_error,
-              %Error{
-                error: :invalid_client,
-                error_description: "Invalid client_id or redirect_uri.",
-                status: :unauthorized
-              }} =
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success, %TokenResponse{access_token: access_token}} =
                Oauth.token(
                  %Plug.Conn{
                    body_params: %{
                      "grant_type" => "authorization_code",
                      "client_id" => client.id,
-                     "client_secret" => "bad_secret",
                      "code" => code.value,
                      "redirect_uri" => redirect_uri
                    }
                  },
                  ApplicationMock
                )
+
+      assert access_token
     end
 
     test "exchanges an authorization code with the issuer client's secret", %{
@@ -3486,23 +3711,21 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       assert access_token
     end
 
-    test "rejects an invalid secret when exchanging an agent code", %{
+    test "exchanges an agent code without the issuer client's secret", %{
       server_client: client,
       agent_code: code,
-      redirect_uri: redirect_uri
+      redirect_uri: redirect_uri,
+      resource_owner: resource_owner
     } do
-      assert {:token_error,
-              %Error{
-                error: :invalid_client,
-                error_description: "Invalid client_id or redirect_uri.",
-                status: :unauthorized
-              }} =
+      ResourceOwners
+      |> expect(:get_by, 1, fn _params -> {:ok, resource_owner} end)
+
+      assert {:token_success, %TokenResponse{agent_token: agent_token}} =
                Oauth.token(
                  %Plug.Conn{
                    body_params: %{
                      "grant_type" => "agent_code",
                      "client_id" => client.id,
-                     "client_secret" => "bad_secret",
                      "code" => code.value,
                      "redirect_uri" => redirect_uri,
                      "bind_data" => "{}",
@@ -3511,6 +3734,8 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                  },
                  ApplicationMock
                )
+
+      assert agent_token
     end
 
     test "exchanges an agent code with the issuer client's secret", %{

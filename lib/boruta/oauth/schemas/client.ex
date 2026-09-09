@@ -202,14 +202,14 @@ defmodule Boruta.Oauth.Client do
     not apply(__MODULE__, :"public_#{grant_type}?", [client])
   end
 
+  def should_check_secret?(%__MODULE__{public_client_id: "" <> client_id}, _grant_type),
+    do: client_id != issuer()
+
   def should_check_secret?(%__MODULE__{confidential: true}, _grant_type), do: true
 
   def should_check_secret?(_client, grant_type)
       when grant_type in ["client_credentials", "agent_credentials", "introspect"],
       do: true
-
-  def should_check_secret?(%__MODULE__{public_client_id: "" <> client_id}, _grant_type),
-    do: client_id == issuer()
 
   def should_check_secret?(%__MODULE__{confidential: false}, _grant_type), do: false
 

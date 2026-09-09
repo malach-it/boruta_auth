@@ -852,7 +852,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
     with {:ok, client} <-
            (case client_id do
               "did:" <> _key ->
-                {:ok, ClientsAdapter.public!()}
+                Authorization.Client.authorize(
+                  id: ClientsAdapter.public!().id,
+                  source: nil,
+                  redirect_uri: redirect_uri,
+                  grant_type: grant_type
+                )
 
               _ ->
                 Authorization.Client.authorize(
@@ -1293,8 +1298,13 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PresentationRequest do
     end
   end
 
-  defp authorize_presentation_client("did:" <> _key, _redirect_uri, _response_types) do
-    {:ok, ClientsAdapter.public!()}
+  defp authorize_presentation_client("did:" <> _key, redirect_uri, response_types) do
+    Authorization.Client.authorize(
+      id: ClientsAdapter.public!().id,
+      source: nil,
+      redirect_uri: redirect_uri,
+      grant_type: List.first(response_types)
+    )
   end
 
   defp authorize_presentation_client(client_id, redirect_uri, response_types) do
