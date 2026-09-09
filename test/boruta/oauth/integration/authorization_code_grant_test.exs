@@ -35,6 +35,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
 
       {:ok, _client} =
         Ecto.Admin.update_client(public_client, %{
+          confidential: false,
           redirect_uris: ["https://redirect.uri"],
           supported_grant_types: Oauth.Client.grant_types()
         })

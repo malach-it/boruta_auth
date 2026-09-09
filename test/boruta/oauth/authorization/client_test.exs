@@ -18,7 +18,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
     test "does not require a secret for an issuer public client" do
       client = %Boruta.Oauth.Client{
         id: "public",
-        confidential: true,
+        confidential: false,
         public_client_id: Boruta.Config.issuer()
       }
 
@@ -26,7 +26,21 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       refute Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
       refute Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
       refute Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
-      refute Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
+    end
+
+    test "requires a secret for a confidential issuer public client" do
+      client = %Boruta.Oauth.Client{
+        id: "public",
+        confidential: true,
+        public_client_id: Boruta.Config.issuer()
+      }
+
+      assert Boruta.Oauth.Client.should_check_secret?(client, "id_token")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
     end
 
     test "requires a secret for a non-issuer public client" do
