@@ -8,6 +8,7 @@ defmodule Boruta.Factory do
   def client_factory do
     %Ecto.Client{
       secret: SecureRandom.urlsafe_base64(),
+      confidential: false,
       redirect_uris: ["https://redirect.uri"],
       supported_grant_types: Boruta.Oauth.Client.grant_types(),
       access_token_ttl: 3600,

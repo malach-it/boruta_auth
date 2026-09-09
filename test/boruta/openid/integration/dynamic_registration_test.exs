@@ -68,7 +68,7 @@ defmodule Boruta.OpenidTest.DynamicRegistrationTest do
               %Oauth.Client{
                 name: "client",
                 redirect_uris: ["https://client.example/callback"],
-                confidential: false,
+                confidential: true,
                 authorize_scope: false,
                 supported_grant_types: supported_grant_types,
                 access_token_ttl: access_token_ttl,

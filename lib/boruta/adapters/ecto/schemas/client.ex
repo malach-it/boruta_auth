@@ -134,7 +134,7 @@ defmodule Boruta.Ecto.Client do
     field(:public_client_id, :string)
     field(:name, :string)
     field(:secret, :string)
-    field(:confidential, :boolean, default: false)
+    field(:confidential, :boolean, default: true)
     field(:authorize_scope, :boolean, default: false)
     field(:enforce_tx_code, :boolean, default: false)
     field(:enforce_dpop, :boolean, default: false)
