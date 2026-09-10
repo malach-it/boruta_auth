@@ -307,6 +307,59 @@ defmodule Boruta.Oauth.ClientTest do
   end
 
   describe "should_check_secret?/2 for non-confidential clients" do
+    test "applies the client and grant type matrix" do
+      issuer = Boruta.Config.issuer()
+
+      clients = [
+        {"non-confidential client", %Client{id: "client", confidential: false}, true},
+        {"confidential client", %Client{id: "client", confidential: true}, false},
+        {"client with unset confidentiality", %Client{id: "client"}, false},
+        {"non-confidential issuer public client",
+         %Client{id: "client", confidential: false, public_client_id: issuer}, true},
+        {"confidential issuer public client",
+         %Client{id: "client", confidential: true, public_client_id: issuer}, false},
+        {"issuer public client with unset confidentiality",
+         %Client{id: "client", public_client_id: issuer}, false},
+        {"non-confidential external public client",
+         %Client{id: "client", confidential: false, public_client_id: "did:key:external"}, false},
+        {"confidential external public client",
+         %Client{id: "client", confidential: true, public_client_id: "did:key:external"}, false}
+      ]
+
+      grant_types = Enum.uniq(["code" | Client.grant_types()])
+      always_authenticated = ["client_credentials", "agent_credentials", "introspect"]
+      always_secret_free = ["implicit", "code"]
+
+      for {client_name, client, public_authorization?} <- clients,
+          public_refresh_and_revoke? <- [false, true] do
+        client = %{
+          client
+          | public_refresh_token: public_refresh_and_revoke?,
+            public_revoke: public_refresh_and_revoke?
+        }
+
+        client_secret_free =
+          if public_authorization? do
+            (grant_types -- always_authenticated) -- ["refresh_token", "revoke"]
+          else
+            []
+          end
+
+        configurable_secret_free =
+          if public_refresh_and_revoke?, do: ["refresh_token", "revoke"], else: []
+
+        secret_free =
+          Enum.uniq(always_secret_free ++ client_secret_free ++ configurable_secret_free)
+
+        for grant_type <- grant_types do
+          assert Client.should_check_secret?(client, grant_type) ==
+                   grant_type not in secret_free,
+                 "unexpected result for #{client_name}, grant #{grant_type}, " <>
+                   "public refresh/revoke: #{public_refresh_and_revoke?}"
+        end
+      end
+    end
+
     test "does not check the secret when the public client ID matches the issuer" do
       client = %Client{
         id: "issuer-client",

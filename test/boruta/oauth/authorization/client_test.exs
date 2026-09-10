@@ -25,6 +25,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       refute Boruta.Oauth.Client.should_check_secret?(client, "id_token")
       refute Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
       refute Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
+      refute Boruta.Oauth.Client.should_check_secret?(client, "preauthorized_code")
       refute Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
       assert Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
     end
@@ -39,6 +40,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       assert Boruta.Oauth.Client.should_check_secret?(client, "id_token")
       assert Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
       assert Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "preauthorized_code")
       assert Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
       assert Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
     end
@@ -52,6 +54,7 @@ defmodule Boruta.Oauth.Authorization.ClientTest do
       assert Boruta.Oauth.Client.should_check_secret?(client, "id_token")
       assert Boruta.Oauth.Client.should_check_secret?(client, "vp_token")
       assert Boruta.Oauth.Client.should_check_secret?(client, "authorization_code")
+      assert Boruta.Oauth.Client.should_check_secret?(client, "preauthorized_code")
       assert Boruta.Oauth.Client.should_check_secret?(client, "agent_code")
       assert Boruta.Oauth.Client.should_check_secret?(client, "client_credentials")
     end

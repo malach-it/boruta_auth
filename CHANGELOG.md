@@ -70,9 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- validate DID public clients against the issuer, registered redirect URIs, and supported grant types
-- require secret authentication for client and agent credentials grants and introspection, including public clients
-- allow decentralized non-confidential public-client grants without a secret only when issuer-bound
+- validate DID clients using the issuer public client's registered redirect URIs and supported grant types
+- require secret authentication for client credentials, agent credentials, and introspection, including for public clients
+- allow non-confidential public clients to use other grants without a secret only when their public client ID matches the issuer
 - require HTTPS and explicit client trust configuration for outbound request-object, JWKS, status-list, DID resolution and registration requests
 - validate JWT client assertion expiration
 - restrict dynamic client registration to an allowlist of public registration attributes and safer default grant types
