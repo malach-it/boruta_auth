@@ -5,7 +5,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     alias Boruta.Ecto.Codes
 
     def get_by(params), do: Codes.get_by(params)
-    def update_sub(code, sub, policy), do: Codes.update_sub(code, sub, policy)
+    def update_sub(code, sub, policy, params), do: Codes.update_sub(code, sub, policy, params)
     def code_chain(code), do: Codes.code_chain(code)
 
     def update_client_encryption(_code, _params),
@@ -16,21 +16,27 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     alias Boruta.Ecto.Codes
 
     def get_by(params), do: Codes.get_by(params)
-    def update_sub(code, sub, policy), do: Codes.update_sub(code, sub, policy)
+    def update_sub(code, sub, policy, params), do: Codes.update_sub(code, sub, policy, params)
     def code_chain(code), do: Codes.code_chain(code)
     def update_client_encryption(_code, _params), do: {:error, :storage_unavailable}
   end
 
   import Boruta.Factory
+  import Mox
 
   alias Boruta.Ecto.Client
   alias Boruta.Ecto.ClientStore
   alias Boruta.Oauth
   alias Boruta.Oauth.Client.Crypto
+  alias Boruta.Oauth.Error
+  alias Boruta.Oauth.ResourceOwner
   alias Boruta.Openid
   alias Boruta.Openid.ApplicationMock
   alias Boruta.Openid.VerifiablePresentations
   alias Boruta.Repo
+  alias Boruta.Support.ResourceOwners
+
+  setup :verify_on_exit!
 
   describe "authenticates with direct post response" do
     setup do
@@ -183,9 +189,17 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           }
         )
 
+      jwk =
+        private_key_fixture()
+        |> JOSE.JWK.from_pem()
+        |> JOSE.JWK.to_public()
+        |> JOSE.JWK.to_map()
+        |> elem(1)
+
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "jwk" => public_jwk_fixture(),
+          "jwk" => jwk,
+          "kid" => wallet_did,
           "typ" => "openid4vci-proof+jwt"
         })
 
@@ -219,6 +233,12 @@ defmodule Boruta.OpenidTest.DirectPostTest do
           },
           signer
         )
+
+      ResourceOwners
+      |> stub(:get_by, fn
+        id_token: _id_token, scope: _scope -> {:ok, %ResourceOwner{sub: wallet_did}}
+        _params -> {:error, "Resource owner is invalid."}
+      end)
 
       {:ok,
        client: client,
@@ -439,7 +459,69 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.id_token
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
+      assert response.code.id_token == id_token
+      assert Repo.reload(code).id_token == id_token
       assert response.state == code.state
+    end
+
+    test "siopv2 - returns an error when resource owner validation fails", %{
+      id_token: id_token,
+      code: code
+    } do
+      conn = %Plug.Conn{}
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^id_token, scope: "" ->
+        {:error, "Resource owner is invalid."}
+      end)
+
+      assert {:authentication_failure,
+              %Error{
+                status: :unauthorized,
+                error: :invalid_resource_owner,
+                error_description: "Resource owner is invalid.",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
+    end
+
+    test "siopv2 - returns an error when resource owner is blocked", %{
+      id_token: id_token,
+      code: code
+    } do
+      conn = %Plug.Conn{}
+
+      ResourceOwners
+      |> expect(:get_by, fn id_token: ^id_token, scope: "" ->
+        {:ok, %ResourceOwner{sub: code.sub, blocked: true}}
+      end)
+
+      assert {:authentication_failure,
+              %Error{
+                status: :unauthorized,
+                error: :invalid_resource_owner,
+                error_description: "Resource owner is blocked",
+                format: :query,
+                redirect_uri: "http://redirect.uri",
+                state: "state"
+              }} =
+               Openid.direct_post(
+                 conn,
+                 %{
+                   code_id: code.id,
+                   id_token: id_token
+                 },
+                 ApplicationMock
+               )
     end
 
     test "siopv2 - authenticates (jwe)", %{id_token: id_token, code: code} do
@@ -856,7 +938,10 @@ defmodule Boruta.OpenidTest.DirectPostTest do
       assert response.vp_token
       assert response.redirect_uri == code.redirect_uri
       assert response.code.value == code.value
+      refute Map.has_key?(response.code, :vp_token)
+      refute Map.has_key?(Repo.reload(code), :vp_token)
       assert response.state == code.state
+      refute Repo.reload(code).revoked_at
     end
 
     test "oid4vp - authenticates (jwe)", %{vp_token: vp_token, code: code} do

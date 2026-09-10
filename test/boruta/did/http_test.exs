@@ -40,7 +40,6 @@ defmodule Boruta.Did.HttpTest do
       |> Keyword.put(:contexts, contexts)
       |> Keyword.put(:ebsi_did_resolver_base_url, server.url)
       |> Keyword.put(:did_resolver_base_url, server.url)
-      |> Keyword.put(:did_registrar_base_url, server.url)
       |> Keyword.put(:universal_did_auth, %{type: "bearer", token: "resolver-token"})
     )
 
@@ -164,43 +163,6 @@ defmodule Boruta.Did.HttpTest do
 
       assert {:error, ~s(Invalid resolver response: "%{"unexpected" => true}")} =
                Did.resolve(did)
-    end
-  end
-
-  describe "create/2 with a universal registrar" do
-    test "creates a DID and resolves its public JWK", %{expectations: expectations} do
-      did = "did:example:created"
-      jwk = %{"kty" => "OKP", "crv" => "Ed25519", "x" => "public-key"}
-
-      expect(expectations, fn conn ->
-        assert conn.method == "POST"
-        assert conn.request_path == "/create"
-        assert conn.query_string == "method=key"
-        assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer resolver-token"]
-        assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
-
-        {:ok, body, conn} = Plug.Conn.read_body(conn)
-        assert Jason.decode!(body)["options"]["keyType"] == "Ed25519"
-
-        Plug.Conn.resp(conn, 201, Jason.encode!(%{"didState" => %{"did" => did}}))
-      end)
-
-      expect(expectations, fn conn ->
-        assert conn.method == "GET"
-        assert conn.request_path == "/identifiers/#{encoded(did)}"
-        document = %{"verificationMethod" => [%{"publicKeyJwk" => jwk}]}
-        Plug.Conn.resp(conn, 200, Jason.encode!(%{"didDocument" => document}))
-      end)
-
-      assert {:ok, ^did, ^jwk} = Did.create("key")
-    end
-
-    test "returns a stable error when registration fails", %{expectations: expectations} do
-      expect(expectations, fn conn ->
-        Plug.Conn.resp(conn, 400, "invalid")
-      end)
-
-      assert {:error, "Could not create did."} = Did.create("key")
     end
   end
 

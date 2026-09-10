@@ -20,7 +20,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
 
   describe "preauthorization code grant - authorize" do
     setup do
-      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+      public_client = Repo.get_by!(Ecto.Client, public_client_id: Boruta.Config.issuer())
 
       {:ok, _client} =
         Ecto.Admin.update_client(public_client, %{
@@ -201,7 +201,7 @@ defmodule Boruta.OauthTest.PreauthorizedCodeGrantTest do
     test "returns an error with a DID client when the grant is not supported", %{
       resource_owner: resource_owner
     } do
-      public_client = Ecto.Admin.get_client!(ClientsAdapter.public!().id)
+      public_client = Repo.get_by!(Ecto.Client, public_client_id: Boruta.Config.issuer())
 
       {:ok, _client} =
         Ecto.Admin.update_client(public_client, %{

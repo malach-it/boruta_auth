@@ -10,6 +10,7 @@ defmodule Boruta.Oauth.HybridRequest do
   """
   @type t :: %__MODULE__{
           client_id: String.t(),
+          code: String.t() | nil,
           code_challenge: String.t(),
           code_challenge_method: String.t(),
           grant_type: String.t(),
@@ -25,6 +26,7 @@ defmodule Boruta.Oauth.HybridRequest do
         }
   @enforce_keys [:client_id, :redirect_uri, :resource_owner]
   defstruct client_id: nil,
+            code: nil,
             code_challenge: "",
             code_challenge_method: "plain",
             grant_type: "authorization_code",

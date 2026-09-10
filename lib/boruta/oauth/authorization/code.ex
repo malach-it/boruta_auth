@@ -23,6 +23,7 @@ defmodule Boruta.Oauth.Authorization.Code do
             redirect_uri: String.t()
           }
           | %{value: String.t()}
+          | %{value: String.t(), client: Client.t()}
           | %{value: String.t(), code_verifier: String.t() | nil}
         ) ::
           {:error,
@@ -98,6 +99,22 @@ defmodule Boruta.Oauth.Authorization.Code do
            error_description: "Code verifier is invalid."
          }}
 
+      _ ->
+        {:error,
+         %Error{
+           status: :bad_request,
+           error: :invalid_grant,
+           error_description: "Given authorization code is invalid, revoked, or expired."
+         }}
+    end
+  end
+
+  def authorize(%{value: value, client: %Client{id: client_id}}) do
+    with %Token{client: %Client{id: ^client_id}} = token <-
+           CodesAdapter.get_by(value: value),
+         :ok <- Token.ensure_valid(token) do
+      {:ok, token}
+    else
       _ ->
         {:error,
          %Error{
