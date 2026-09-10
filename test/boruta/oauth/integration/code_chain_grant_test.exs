@@ -68,7 +68,9 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       id_token = id_token(client, "agent")
 
       ResourceOwners
-      |> expect(:get_by, fn id_token: ^id_token, scope: nil -> {:ok, %ResourceOwner{sub: "agent"}} end)
+      |> expect(:get_by, fn id_token: ^id_token, scope: nil ->
+        {:ok, %ResourceOwner{sub: "agent"}}
+      end)
 
       assert {:token_success,
               %TokenResponse{
@@ -162,8 +164,12 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
       id_token = id_token(client, "agent")
 
       ResourceOwners
-      |> expect(:get_by, fn id_token: ^id_token, scope: "credential:read" -> {:ok, %ResourceOwner{sub: "agent"}} end)
-      |> expect(:authorized_scopes, fn _resource_owner -> [%Oauth.Scope{name: "credential:read"}] end)
+      |> expect(:get_by, fn id_token: ^id_token, scope: "credential:read" ->
+        {:ok, %ResourceOwner{sub: "agent"}}
+      end)
+      |> expect(:authorized_scopes, fn _resource_owner ->
+        [%Oauth.Scope{name: "credential:read"}]
+      end)
 
       assert {:token_success, %TokenResponse{authorization_code: authorization_code}} =
                Oauth.token(
@@ -200,27 +206,80 @@ defmodule Boruta.OauthTest.CodeChainGrantTest do
              ) ==
                {:token_error,
                 %Error{
-                  error: :invalid_resource_owner,
-                  error_description: "{:error, :token_malformed}",
-                  status: :unauthorized
+                  error: :invalid_grant,
+                  error_description: "id_token must be a jwt.",
+                  status: :bad_request
                 }}
+    end
+
+    test "returns an error if id_token claims are missing", %{client: client} do
+      assert_invalid_id_token(client, %{}, "id_token iat and exp are required.")
+    end
+
+    test "returns an error if id_token subject is missing", %{client: client} do
+      now = :os.system_time(:second)
+
+      assert_invalid_id_token(
+        client,
+        %{"iat" => now, "exp" => now + 60},
+        "id_token sub is required."
+      )
+    end
+
+    test "returns an error if id_token is expired", %{client: client} do
+      now = :os.system_time(:second)
+
+      assert_invalid_id_token(
+        client,
+        %{"sub" => "agent", "iat" => now - 120, "exp" => now - 60},
+        "id_token is expired."
+      )
+    end
+
+    test "returns an error if id_token iat is in the future", %{client: client} do
+      now = :os.system_time(:second)
+
+      assert_invalid_id_token(
+        client,
+        %{"sub" => "agent", "iat" => now + 60, "exp" => now + 120},
+        "id_token iat must not be in the future."
+      )
     end
   end
 
-  defp id_token(client, sub) do
+  defp assert_invalid_id_token(client, claims, description) do
+    id_token = id_token(client, claims)
+
+    assert {:token_error,
+            %Error{
+              error: :invalid_grant,
+              error_description: ^description,
+              status: :bad_request
+            }} =
+             Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "code_chain",
+                   "client_id" => client.id,
+                   "client_secret" => client.secret,
+                   "id_token" => id_token
+                 }
+               },
+               ApplicationMock
+             )
+  end
+
+  defp id_token(client, sub) when is_binary(sub) do
+    now = :os.system_time(:second)
+    id_token(client, %{"sub" => sub, "iat" => now, "exp" => now + 60})
+  end
+
+  defp id_token(client, claims) when is_map(claims) do
     {_, jwk} = JOSE.JWK.from_pem(client.public_key) |> JOSE.JWK.to_map()
     signer = Joken.Signer.create("RS512", %{"pem" => client.private_key}, %{"jwk" => jwk})
-    now = :os.system_time(:seconds)
 
     {:ok, id_token, _claims} =
-      Token.encode_and_sign(
-        %{
-          "sub" => sub,
-          "iat" => now,
-          "exp" => now + 60
-        },
-        signer
-      )
+      Token.encode_and_sign(claims, signer)
 
     id_token
   end

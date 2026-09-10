@@ -279,6 +279,7 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.CodeChainRequest do
              source: client_source,
              grant_type: grant_type
            ),
+         {:ok, _id_token_claims} <- Authorization.IdToken.authorize(id_token),
          {:ok, resource_owner} <-
            Authorization.ResourceOwner.authorize(id_token: id_token, scope: scope),
          :ok <- Dpop.validate(dpop, client),
