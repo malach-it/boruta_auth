@@ -583,14 +583,6 @@ defmodule Boruta.Openid do
 
       {:error, %Error{} = error} ->
         {:error, error}
-
-      {:error, error} ->
-        {:error,
-         %Error{
-           status: :unauthorized,
-           error: :invalid_resource_owner,
-           error_description: error
-         }}
     end
   end
 

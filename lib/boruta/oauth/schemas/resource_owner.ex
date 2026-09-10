@@ -46,7 +46,7 @@ defmodule Boruta.Oauth.ResourceOwner do
           }
         }
 
-  def agent_sub(), do: "from_agent_token"
+  def agent_sub, do: "from_agent_token"
 
   def ensure_valid(%__MODULE__{blocked: true}), do: {:error, "Resource owner is blocked"}
   def ensure_valid(_resource_owner), do: :ok

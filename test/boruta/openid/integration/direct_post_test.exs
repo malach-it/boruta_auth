@@ -5,7 +5,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     alias Boruta.Ecto.Codes
 
     def get_by(params), do: Codes.get_by(params)
-    def update_sub(code, sub, policy), do: Codes.update_sub(code, sub, policy)
+    def update_sub(code, sub, policy, params), do: Codes.update_sub(code, sub, policy, params)
     def code_chain(code), do: Codes.code_chain(code)
 
     def update_client_encryption(_code, _params),
@@ -16,7 +16,7 @@ defmodule Boruta.OpenidTest.DirectPostTest do
     alias Boruta.Ecto.Codes
 
     def get_by(params), do: Codes.get_by(params)
-    def update_sub(code, sub, policy), do: Codes.update_sub(code, sub, policy)
+    def update_sub(code, sub, policy, params), do: Codes.update_sub(code, sub, policy, params)
     def code_chain(code), do: Codes.code_chain(code)
     def update_client_encryption(_code, _params), do: {:error, :storage_unavailable}
   end
