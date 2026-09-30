@@ -177,15 +177,6 @@ defmodule Boruta.DidTest do
       assert {:ok, "did:key:z2dmz" <> _key, ^jwk} = Did.create("key", jwk)
     end
 
-    test "creates a local did:key and public JWK when no JWK is given" do
-      assert {:ok, "did:key:z" <> key, jwk} = Did.create("key")
-
-      assert byte_size(key) > 0
-      assert %{"crv" => "Ed25519", "kty" => "OKP", "x" => x} = jwk
-      assert is_binary(x)
-      refute Map.has_key?(jwk, "d")
-    end
-
     test "only exposes the public part of a private JWK" do
       jwk = %{
         "crv" => "Ed25519",

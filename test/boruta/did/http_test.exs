@@ -40,6 +40,7 @@ defmodule Boruta.Did.HttpTest do
       |> Keyword.put(:contexts, contexts)
       |> Keyword.put(:ebsi_did_resolver_base_url, server.url)
       |> Keyword.put(:did_resolver_base_url, server.url)
+      |> Keyword.put(:did_registrar_base_url, server.url)
       |> Keyword.put(:universal_did_auth, %{type: "bearer", token: "resolver-token"})
     )
 
@@ -163,6 +164,49 @@ defmodule Boruta.Did.HttpTest do
 
       assert {:error, ~s(Invalid resolver response: "%{"unexpected" => true}")} =
                Did.resolve(did)
+    end
+  end
+
+  describe "create/2 with the universal registrar" do
+    test "creates and stores a did:key in GoDiddy", %{expectations: expectations} do
+      did = "did:key:z6MkiTBzpb9TgRh9pMBC3y4f9Ldia1nq5QWa3tFdbwfBjPCi"
+
+      expect(expectations, fn conn ->
+        assert conn.method == "POST"
+        assert conn.request_path == "/create"
+        assert conn.query_string == "method=key"
+        assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer resolver-token"]
+        assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
+
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert Jason.decode!(body) == %{
+                 "didDocument" => %{
+                   "@context" => ["https://www.w3.org/ns/did/v1"],
+                   "service" => []
+                 },
+                 "options" => %{
+                   "keyType" => "Ed25519",
+                   "jwkJcsPub" => true
+                 },
+                 "secret" => %{}
+               }
+
+        Plug.Conn.resp(conn, 201, Jason.encode!(%{"didState" => %{"did" => did}}))
+      end)
+
+      assert {:ok, ^did, %{"crv" => "Ed25519", "kty" => "OKP", "x" => x}} =
+               Did.create("key", nil)
+
+      assert is_binary(x)
+    end
+
+    test "returns an error when GoDiddy rejects the creation", %{expectations: expectations} do
+      expect(expectations, fn conn ->
+        Plug.Conn.resp(conn, 400, Jason.encode!(%{"didState" => %{"state" => "failed"}}))
+      end)
+
+      assert {:error, "Could not create did."} = Did.create("key", nil)
     end
   end
 

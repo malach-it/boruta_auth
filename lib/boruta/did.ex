@@ -8,7 +8,8 @@ defmodule Boruta.Did do
     only: [
       universal_did_auth: 0,
       ebsi_did_resolver_base_url: 0,
-      did_resolver_base_url: 0
+      did_resolver_base_url: 0,
+      did_registrar_base_url: 0
     ]
 
   alias Boruta.{ClientsAdapter, HttpClient}
@@ -79,13 +80,34 @@ defmodule Boruta.Did do
           {:ok, did :: String.t(), jwk :: map()} | {:error, reason :: String.t()}
   def create(method, jwk \\ nil)
 
-  def create("key", nil) do
-    jwk =
-      JOSE.JWK.generate_key({:okp, :Ed25519})
-      |> JOSE.JWK.to_public()
-      |> jwk_to_map()
+  def create("key" = method, nil) do
+    payload = %{
+      "didDocument" => %{
+        "@context" => ["https://www.w3.org/ns/did/v1"],
+        "service" => []
+      },
+      "options" => %{
+        "keyType" => "Ed25519",
+        "jwkJcsPub" => true
+      },
+      "secret" => %{}
+    }
 
-    create("key", jwk)
+    with {:ok, %Finch.Response{status: 201, body: body}} <-
+           http_post(
+             did_registrar_base_url() <> "/create?method=#{method}",
+             Jason.encode!(payload),
+             [
+               {"Authorization", "Bearer #{universal_did_auth()[:token]}"},
+               {"Content-Type", "application/json"}
+             ]
+    ),
+         {:ok, %{"didState" => %{"did" => did}}} <- Jason.decode(body),
+         {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => jwk} | _]}} <- resolve(did) do
+      {:ok, did, jwk}
+    else
+      _ -> {:error, "Could not create did."}
+    end
   end
 
   def create("key", jwk) when is_map(jwk) do
@@ -107,12 +129,16 @@ defmodule Boruta.Did do
     end
   end
 
-  defp encode_path_segment(value), do: value |> to_string() |> URI.encode(&URI.char_unreserved?/1)
-
-  defp jwk_to_map(jwk) do
-    {_fields, jwk} = JOSE.JWK.to_map(jwk)
-    jwk
+  defp http_post(url, body, headers) do
+    with %Client{trusted_authorities: trusted_authorities, trusted_hosts: trusted_hosts} <-
+           ClientsAdapter.public!() do
+      HttpClient.post(url, body, headers, trusted_authorities, trusted_hosts)
+    else
+      _client -> {:error, "No public client configured."}
+    end
   end
+
+  defp encode_path_segment(value), do: value |> to_string() |> URI.encode(&URI.char_unreserved?/1)
 
   defp key_did_document(did, fingerprint, jwk) do
     verification_method_id = did <> "#" <> fingerprint
