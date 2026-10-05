@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.HybridRequest do
   @moduledoc """
   Hybrid request
+
+  ## Implementation architecture
+
+  ![Hybrid request authorization graph](assets/phi-algebra/hybrid_request.svg)
   """
 
   @typedoc """

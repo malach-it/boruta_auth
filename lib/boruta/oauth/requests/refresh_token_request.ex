@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.RefreshTokenRequest do
   @moduledoc """
   Refresh token request
+
+  ## Implementation architecture
+
+  ![Refresh token request authorization graph](assets/phi-algebra/refresh_token_request.svg)
   """
 
   @typedoc """

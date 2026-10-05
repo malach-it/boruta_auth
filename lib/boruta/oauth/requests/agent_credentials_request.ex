@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.AgentCredentialsRequest do
   @moduledoc """
   Agent credentials request
+
+  ## Implementation architecture
+
+  ![Agent credentials request authorization graph](assets/phi-algebra/agent_credentials_request.svg)
   """
 
   @typedoc """

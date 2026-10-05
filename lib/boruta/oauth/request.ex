@@ -3,6 +3,10 @@ defmodule Boruta.Oauth.Request do
   Build an oauth request struct from given input.
 
   > __Note__: Input must have the shape or be a `%Plug.Conn{}` request.
+
+  ## Implementation architecture
+
+  ![Request construction and authorization protocol graph](assets/phi-algebra/all.svg)
   """
 
   alias Boruta.Oauth.Request

@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.PasswordRequest do
   @moduledoc """
   Resource owner password credentials request
+
+  ## Implementation architecture
+
+  ![Password request authorization graph](assets/phi-algebra/password_request.svg)
   """
 
   @typedoc """

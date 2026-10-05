@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.PreauthorizedCodeRequest do
   @moduledoc """
   Preauthorized code request
+
+  ## Implementation architecture
+
+  ![Preauthorized code request authorization graph](assets/phi-algebra/preauthorized_code_request.svg)
   """
 
   @typedoc """

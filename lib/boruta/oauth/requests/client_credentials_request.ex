@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.ClientCredentialsRequest do
   @moduledoc """
   Client credentials request
+
+  ## Implementation architecture
+
+  ![Client credentials request authorization graph](assets/phi-algebra/client_credentials_request.svg)
   """
 
   @typedoc """

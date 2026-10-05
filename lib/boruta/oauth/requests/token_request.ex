@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.TokenRequest do
   @moduledoc """
   Implicit request
+
+  ## Implementation architecture
+
+  ![Implicit token request authorization graph](assets/phi-algebra/token_request.svg)
   """
 
   @typedoc """

@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.CodeChainRequest do
   @moduledoc """
   Code chain request
+
+  ## Implementation architecture
+
+  ![Code chain request authorization graph](assets/phi-algebra/code_chain_request.svg)
   """
 
   @typedoc """

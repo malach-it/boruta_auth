@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.PresentationRequest do
   @moduledoc """
   Code request
+
+  ## Implementation architecture
+
+  ![Presentation request authorization graph](assets/phi-algebra/presentation_request.svg)
   """
 
   @typedoc """

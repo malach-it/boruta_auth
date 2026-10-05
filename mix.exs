@@ -70,6 +70,7 @@ defmodule Boruta.MixProject do
       main: "readme",
       source_url: "https://github.com/malach-it/boruta_auth",
       source_ref: "master",
+      assets: %{"images/phi-algebra" => "assets/phi-algebra"},
       extras: [
         "README.md",
         "guides/provider_integration.md",

@@ -1,6 +1,10 @@
 defmodule Boruta.Oauth.AuthorizationRequest do
   @moduledoc """
   Authorization request and utilities
+
+  ## Implementation architecture
+
+  ![Pushed authorization request authorization graph](assets/phi-algebra/authorization_request.svg)
   """
 
   defstruct id: nil,
