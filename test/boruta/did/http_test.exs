@@ -206,7 +206,7 @@ defmodule Boruta.Did.HttpTest do
         Plug.Conn.resp(conn, 400, Jason.encode!(%{"didState" => %{"state" => "failed"}}))
       end)
 
-      assert {:error, "Could not create did."} = Did.create("key", nil)
+      assert {:error, "{\"didState\":{\"state\":\"failed\"}}"} = Did.create("key", nil)
     end
   end
 

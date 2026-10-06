@@ -22,8 +22,11 @@ defmodule Boruta.Did do
     did = controller(did_url)
     "did:key:" <> fingerprint = did
 
-    with {:ok, jwk} <- Crypto.public_key_jwk(fingerprint) do
-      {:ok, key_did_document(did, fingerprint, jwk)}
+    case Crypto.public_key_jwk(fingerprint) do
+      {:ok, jwk} ->
+        {:ok, key_did_document(did, fingerprint, jwk)}
+      _ ->
+        resolve_universal(did)
     end
   end
 
@@ -66,6 +69,9 @@ defmodule Boruta.Did do
       {:ok, %Finch.Response{body: body}} ->
         {:error, body}
 
+      {:error, "" <> error} ->
+        {:error, error}
+
       {:error, error} ->
         {:error, inspect(error)}
 
@@ -106,6 +112,8 @@ defmodule Boruta.Did do
          {:ok, %{"verificationMethod" => [%{"publicKeyJwk" => jwk} | _]}} <- resolve(did) do
       {:ok, did, jwk}
     else
+      {:ok, %Finch.Response{body: body}} ->
+        {:error, body}
       _ -> {:error, "Could not create did."}
     end
   end

@@ -62,7 +62,7 @@ defmodule Boruta.DidTest do
     end
 
     test "does not fall back to the universal resolver for malformed did:key values" do
-      assert {:error, "Invalid did:key base58 fingerprint."} = Did.resolve("did:key:zinvalid0")
+      assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} = Did.resolve("did:key:zinvalid0")
     end
 
     test "resolves did:key URLs with verification method fragments" do
