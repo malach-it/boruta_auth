@@ -285,7 +285,7 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                    query_params: %{
                      "response_type" => "code",
                      "client_id" => "did:key:test",
-                     "redirect_uri" => "http://redirect.uri"
+                     "redirect_uri" => "https://redirect.uri"
                    }
                  },
                  resource_owner,

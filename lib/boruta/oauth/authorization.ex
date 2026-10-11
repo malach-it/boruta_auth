@@ -941,23 +941,12 @@ defimpl Boruta.Oauth.Authorization, for: Boruta.Oauth.PreauthorizedCodeRequest d
         grant_type: grant_type
       }) do
     with {:ok, client} <-
-           (case client_id do
-              "did:" <> _key ->
-                Authorization.Client.authorize(
-                  id: ClientsAdapter.public!().id,
-                  source: nil,
-                  redirect_uri: redirect_uri,
-                  grant_type: grant_type
-                )
-
-              _ ->
-                Authorization.Client.authorize(
-                  id: client_id,
-                  source: nil,
-                  redirect_uri: redirect_uri,
-                  grant_type: grant_type
-                )
-            end),
+           Authorization.Client.authorize(
+             id: client_id,
+             source: nil,
+             redirect_uri: redirect_uri,
+             grant_type: grant_type
+           ),
          {:ok, code} <-
            (case previous_code do
               nil -> {:ok, nil}
