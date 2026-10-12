@@ -97,11 +97,13 @@ defmodule Boruta.Ecto.Client do
     "type" => "object",
     "properties" => %{
       "type" => %{"type" => "string", "pattern" => "^ec|rsa|universal$"},
+      "method" => %{"type" => "string"},
       "modulus_size" => %{"type" => "string"},
       "exponent_size" => %{"type" => "string"},
       "curve" => %{"type" => "string", "pattern" => "^P-256|P-384|P-512$"}
     },
-    "required" => ["type"]
+    "required" => ["type"],
+    "additional_properties" => false
   }
 
   @key_pair_type_jwt_algs %{
@@ -664,33 +666,14 @@ defmodule Boruta.Ecto.Client do
   end
 
   defp generate_key_pair(changeset) do
-    private_key =
-      case get_field(changeset, :key_pair_type) do
-        %{"type" => "rsa", "modulus_size" => modulus_size, "exponent_size" => exponent_size} ->
-          case parse_rsa_modulus_size(modulus_size) do
-            {:ok, modulus_size} when modulus_size >= @minimum_rsa_modulus_size ->
-              JOSE.JWK.generate_key({:rsa, modulus_size, String.to_integer(exponent_size)})
-
-            _ ->
-              nil
-          end
-
-        %{"type" => "ec", "curve" => curve} ->
-          JOSE.JWK.generate_key({:ec, curve})
-
-        %{"type" => "universal"} ->
-          "universal"
-
-        _ ->
-          nil
-      end
+    private_key = generate_private_key(changeset)
 
     case private_key do
       nil ->
         add_error(changeset, :private_key, "private_key_type is invalid")
 
-      "universal" ->
-        with {:ok, did, jwk} <- Did.create("key"),
+      {"universal", method} ->
+        with {:ok, did, jwk} <- Did.create(method),
              {:ok, key_id} <- Universal.Signatures.SigningKey.get_key_by_did(did) do
           public_key = JOSE.JWK.from_map(jwk)
           {_type, public_pem} = JOSE.JWK.to_pem(public_key)
@@ -717,6 +700,28 @@ defmodule Boruta.Ecto.Client do
         |> put_change(:public_key, public_pem)
         |> put_change(:private_key, private_pem)
         |> put_change(:signatures_adapter, Boruta.Internal.Signatures |> Atom.to_string())
+    end
+  end
+
+  defp generate_private_key(changeset) do
+    case get_field(changeset, :key_pair_type) do
+      %{"type" => "rsa", "modulus_size" => modulus_size, "exponent_size" => exponent_size} ->
+        case parse_rsa_modulus_size(modulus_size) do
+          {:ok, modulus_size} when modulus_size >= @minimum_rsa_modulus_size ->
+            JOSE.JWK.generate_key({:rsa, modulus_size, String.to_integer(exponent_size)})
+
+          _ ->
+            nil
+        end
+
+      %{"type" => "ec", "curve" => curve} ->
+        JOSE.JWK.generate_key({:ec, curve})
+
+      %{"type" => "universal"} = key_pair_type ->
+        {"universal", key_pair_type["method"] || "key"}
+
+      _ ->
+        nil
     end
   end
 

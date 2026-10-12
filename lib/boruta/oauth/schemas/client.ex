@@ -329,6 +329,9 @@ defmodule Boruta.Oauth.Client do
     @spec encryption_alg(client :: Client.t()) :: encryption_alg :: String.t()
     def encryption_alg(%Client{key_pair_type: %{"type" => "ec"}}), do: "ECDH-ES"
 
+    def encryption_alg(%Client{key_pair_type: %{"type" => "universal", "method" => "key"}}),
+      do: "ECDH-ES"
+
     def encryption_alg(%Client{key_pair_type: %{"type" => "rsa"}}), do: "RSA-OAEP"
 
     @spec encrypt(

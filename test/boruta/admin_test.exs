@@ -116,6 +116,16 @@ defmodule Boruta.Ecto.AdminTest do
       assert {:ok, %Client{trusted_hosts: []}} = Admin.create_client(@client_valid_attrs)
     end
 
+    test "defaults universal keys to did:key method" do
+      changeset =
+        Client.create_changeset(
+          %Client{},
+          Map.put(@client_valid_attrs, :key_pair_type, %{"type" => "universal"})
+        )
+
+      assert get_field(changeset, :key_pair_type) == %{"type" => "universal"}
+    end
+
     # TODO create an universal mock adapter
     @tag :skip
     test "creates a client with universal key" do
@@ -625,6 +635,16 @@ defmodule Boruta.Ecto.AdminTest do
                )
 
       assert key_pair_type == %{"curve" => "P-256", "type" => "ec"}
+    end
+
+    test "defaults universal keys to did:key method" do
+      client = client_fixture()
+
+      assert {:ok, %Client{key_pair_type: key_pair_type}} =
+               Admin.update_client(client, %{"key_pair_type" => %{"type" => "universal"}})
+
+      assert key_pair_type == %{"type" => "universal"}
+      assert Admin.get_client!(client.id).key_pair_type == key_pair_type
     end
 
     test "returns an error with an invalid rsa modulus size" do
