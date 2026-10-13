@@ -13,10 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - primary keys and the `oauth_clients_scopes` sequence carry the `oauth_` prefixed names; duplicate client and scope ids are reported as changeset errors whichever name the constraint has
 
-## [2.3.7] - 2026-07-30
-
-- Note that you must run the `boruta.gen.migration` task to add the client trust configuration fields.
-
 ### Added
 
 - up to Elixir 1.20 and OTP 29 support
