@@ -29,6 +29,7 @@ defmodule Boruta.Support.TLSServer do
     wrong_certificates = generate_certificates!(tmp_dir, "wrong")
 
     with {:ok, server} <- start_https_server(server_certificates, body, opts) do
+      :public_key.cacerts_load(server_certificates[:ca_certfile])
       {:ok,
        Map.merge(server, %{
          tmp_dir: tmp_dir,

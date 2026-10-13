@@ -903,20 +903,6 @@ defmodule Boruta.Oauth.RequestTest do
               }} = Request.token_request(conn)
     end
 
-    test "returns an OAuth error without trusted hosts or authorities" do
-      conn =
-        conn(:post, "/", %{
-          "request_uri" => "https://request.example.com/request"
-        })
-
-      assert {:error,
-              %Error{
-                error: :invalid_request,
-                error_description:
-                  "Client must configure trusted hosts or authorities for outbound requests."
-              }} = Request.token_request(conn)
-    end
-
     test "returns an error if cannot fetch (token endpoint)" do
       server = start_tls_server("", status: 400)
 

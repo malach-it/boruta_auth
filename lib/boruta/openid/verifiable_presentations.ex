@@ -206,6 +206,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
        ) do
     case HttpClient.get(
            status["statusListCredential"],
+           [],
            trusted_authorities,
            trusted_hosts
          ) do

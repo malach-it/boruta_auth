@@ -534,7 +534,7 @@ defmodule Boruta.Oauth.Request.Base do
          url,
          %Client{trusted_authorities: trusted_authorities, trusted_hosts: trusted_hosts}
        ) do
-    HttpClient.get(url, trusted_authorities, trusted_hosts)
+    HttpClient.get(url, [], trusted_authorities, trusted_hosts)
   end
 
   defp client_get(url, _client), do: HttpClient.get(url)

@@ -6,15 +6,20 @@ defmodule Boruta.HttpClient do
   @receive_timeout 15_000
 
   @spec get(
-          url :: String.t(),
-          trusted_authorities :: String.t(),
-          trusted_hosts :: list(String.t())
+          url :: String.t()
         ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
-  def get(url, trusted_authorities \\ "", trusted_hosts \\ []) do
-    request_with_trust("GET", url, [], nil, trusted_authorities, trusted_hosts)
-  end
-
+  @spec get(
+          url :: String.t(),
+          headers :: Finch.Request.headers()
+        ) ::
+          {:ok, Finch.Response.t()} | {:error, term()}
+  @spec get(
+          url :: String.t(),
+          headers :: Finch.Request.headers(),
+          trusted_authorities :: String.t()
+        ) ::
+          {:ok, Finch.Response.t()} | {:error, term()}
   @spec get(
           url :: String.t(),
           headers :: Finch.Request.headers(),
@@ -22,7 +27,7 @@ defmodule Boruta.HttpClient do
           trusted_hosts :: list(String.t())
         ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
-  def get(url, headers, trusted_authorities, trusted_hosts) do
+  def get(url, headers \\ [], trusted_authorities \\ "", trusted_hosts \\ []) do
     request_with_trust("GET", url, headers, nil, trusted_authorities, trusted_hosts)
   end
 
@@ -39,60 +44,18 @@ defmodule Boruta.HttpClient do
   end
 
   defp request_with_trust(method, url, headers, body, trusted_authorities, trusted_hosts) do
-    trusted_hosts = add_default_host(url, add_issuer_host(trusted_hosts))
-
-    if trusted_authorities == "" and trusted_hosts == [] do
-      {:error, "Client must configure trusted hosts or authorities for outbound requests."}
-    else
-      with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
-           {:ok, trusted_authorities} <- validate_trusted_authorities(trusted_authorities) do
-        trusted_request(method, url, headers, body, trusted_hosts, trusted_authorities)
-      end
+    with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
+         {:ok, trusted_authorities} <- validate_trusted_authorities(trusted_authorities) do
+      trusted_request(method, url, headers, body, trusted_hosts, trusted_authorities)
     end
   end
-
-  defp add_default_host(url, trusted_hosts) when is_list(trusted_hosts) do
-    case host_from_url(url) do
-      {:ok, host} ->
-        if host in did_service_hosts(), do: [host | trusted_hosts], else: trusted_hosts
-
-      {:error, _reason} ->
-        trusted_hosts
-    end
-  end
-
-  defp add_default_host(_url, trusted_hosts), do: trusted_hosts
-
-  defp did_service_hosts do
-    [
-      Config.ebsi_did_resolver_base_url(),
-      Config.did_resolver_base_url(),
-      Config.did_registrar_base_url()
-    ]
-    |> Enum.flat_map(fn url ->
-      case host_from_url(url) do
-        {:ok, host} -> [host]
-        {:error, _reason} -> []
-      end
-    end)
-    |> Enum.uniq()
-  end
-
-  defp add_issuer_host(trusted_hosts) when is_list(trusted_hosts) do
-    case URI.parse(Config.issuer()) do
-      %URI{host: host} when is_binary(host) -> [host | trusted_hosts]
-      _issuer -> trusted_hosts
-    end
-  rescue
-    _error -> trusted_hosts
-  end
-
-  defp add_issuer_host(trusted_hosts), do: trusted_hosts
 
   defp validate_trusted_hosts(_url, []),
     do: {:ok, []}
 
   defp validate_trusted_hosts(url, trusted_hosts) when is_list(trusted_hosts) do
+    trusted_hosts = trusted_hosts ++ configuration_hosts()
+
     with {:ok, host} <- host_from_url(url),
          {:ok, trusted_hosts} <- normalize_hosts(trusted_hosts),
          true <- Enum.member?(trusted_hosts, host) do
@@ -107,9 +70,25 @@ defmodule Boruta.HttpClient do
     {:error, "Invalid trusted hosts configuration."}
   end
 
+  defp configuration_hosts do
+    [
+      Config.ebsi_did_resolver_base_url(),
+      Config.did_resolver_base_url(),
+      Config.did_registrar_base_url(),
+      Config.issuer()
+    ]
+    |> Enum.flat_map(fn url ->
+      case host_from_url(url) do
+        {:ok, host} -> [host]
+        {:error, _reason} -> []
+      end
+    end)
+    |> Enum.uniq()
+  end
+
   defp host_from_url(url) do
-    case Finch.Request.parse_url(url) do
-      {scheme, host, _port, _path, _query} when scheme in [:http, :https] ->
+    case URI.parse(url) do
+      %URI{scheme: scheme, host: host} when scheme in ["http", "https"] ->
         case normalize_host(host) do
           {:ok, normalized_host} -> {:ok, normalized_host}
           :error -> {:error, "Could not parse outbound request host."}
@@ -170,7 +149,7 @@ defmodule Boruta.HttpClient do
              Mint.HTTP.connect(:https, host, port,
                transport_opts: [cacerts: cacerts],
                protocols: [:http1]
-             ),
+           ),
            {:ok, conn, request_ref} <-
              Mint.HTTP.request(
                conn,
@@ -203,6 +182,8 @@ defmodule Boruta.HttpClient do
   end
 
   def get_cacerts(url, trusted_hosts, trusted_authorities) when trusted_hosts != [] do
+    trusted_hosts = trusted_hosts ++ configuration_hosts()
+
     with {:ok, host} <- host_from_url(url),
          true <- Enum.member?(trusted_hosts, host) do
       case trusted_authorities do
@@ -219,7 +200,19 @@ defmodule Boruta.HttpClient do
   end
 
   def get_cacerts(url, _trusted_hosts, trusted_authorities) do
-    {:ok, url, trusted_authorities}
+    with {:ok, host} <- host_from_url(url),
+         true <- Enum.member?(configuration_hosts(), host) do
+      case trusted_authorities do
+        [] ->
+          {:ok, url, :public_key.cacerts_get()}
+
+        trusted_authorities ->
+          {:ok, url, trusted_authorities}
+      end
+    else
+      false -> {:ok, url, trusted_authorities}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp receive_response(conn, request_ref, response) do

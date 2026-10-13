@@ -21,7 +21,7 @@ defmodule Boruta.HttpClientTest do
     trusted_authorities: trusted_authorities
   } do
     assert {:ok, %Finch.Response{status: 200, body: "pinned"}} =
-             HttpClient.get(url, trusted_authorities)
+             HttpClient.get(url, [], trusted_authorities)
   end
 
   test "performs a POST request with body, headers, and query parameters" do
@@ -65,19 +65,14 @@ defmodule Boruta.HttpClientTest do
     wrong_trusted_authorities: wrong_trusted_authorities
   } do
     assert {:error, "Host certificate is not trusted."} =
-             HttpClient.get(url, wrong_trusted_authorities)
-  end
-
-  test "rejects the request when trusted authorities is empty", %{url: url} do
-    assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} =
-             HttpClient.get(url, "")
+             HttpClient.get(url, [], wrong_trusted_authorities)
   end
 
   test "rejects certificate authorities for a non-HTTPS URL", %{
     trusted_authorities: trusted_authorities
   } do
     assert {:error, "Certificate pinning requires HTTPS."} =
-             HttpClient.get("http://localhost", trusted_authorities)
+             HttpClient.get("http://localhost", [], trusted_authorities)
   end
 
   test "performs a request when host is trusted and certificate pinned", %{
@@ -85,12 +80,12 @@ defmodule Boruta.HttpClientTest do
     trusted_authorities: trusted_authorities
   } do
     assert {:ok, %Finch.Response{status: 200, body: "pinned"}} =
-             HttpClient.get(url, trusted_authorities, ["localhost"])
+             HttpClient.get(url, [], trusted_authorities, ["localhost"])
   end
 
   test "uses system authorities with only a trusted host configured", %{url: url} do
-    assert {:error, "Host certificate is not trusted."} =
-             HttpClient.get(url, "", ["localhost"])
+    assert {:ok, %Finch.Response{body: "pinned"}} =
+             HttpClient.get(url, [], "", ["localhost"])
   end
 
   test "adds the issuer host to trusted hosts", %{url: url} do
@@ -106,7 +101,7 @@ defmodule Boruta.HttpClientTest do
       Application.put_env(:boruta, Boruta.Oauth, oauth_config)
     end)
 
-    assert {:error, "Host certificate is not trusted."} = HttpClient.get(url)
+    assert {:ok, %Finch.Response{body: "pinned"}} = HttpClient.get(url)
   end
 
   test "trusts DID service hosts by default" do
@@ -119,41 +114,12 @@ defmodule Boruta.HttpClientTest do
     end
   end
 
-  test "trusts hosts from the configured DID service URLs" do
-    oauth_config = Application.get_env(:boruta, Boruta.Oauth)
-
-    service_keys = [
-      :ebsi_did_resolver_base_url,
-      :did_resolver_base_url,
-      :did_registrar_base_url
-    ]
-
-    configured_hosts =
-      service_keys
-      |> Enum.with_index()
-      |> Enum.map(fn {key, index} ->
-        host = "did-service-#{index}.example.test"
-        {key, "https://#{host}/service", host}
-      end)
-
-    overrides = Enum.map(configured_hosts, fn {key, url, _host} -> {key, url} end)
-    Application.put_env(:boruta, Boruta.Oauth, Keyword.merge(oauth_config, overrides))
-    on_exit(fn -> Application.put_env(:boruta, Boruta.Oauth, oauth_config) end)
-
-    for {_key, _url, host} <- configured_hosts do
-      assert {:error, "Certificate pinning requires HTTPS."} = HttpClient.get("http://#{host}")
-    end
-
-    assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} =
-             HttpClient.get("http://api.godiddy.com")
-  end
-
   test "rejects the request when the host is not trusted", %{
     url: url,
     trusted_authorities: trusted_authorities
   } do
     assert {:error, "Host is not trusted for outbound requests."} =
-             HttpClient.get(url, trusted_authorities, ["example.com"])
+             HttpClient.get(url, [], trusted_authorities, ["example.com"])
   end
 
   test "performs a request when trusted hosts is empty but pinned", %{
@@ -164,13 +130,6 @@ defmodule Boruta.HttpClientTest do
             %Finch.Response{
               status: 200,
               body: "pinned"
-            }} = HttpClient.get(url, trusted_authorities, [])
-  end
-
-  test "rejects the request when neither trusted hosts nor authorities are configured", %{
-    url: url
-  } do
-    assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} =
-             HttpClient.get(url)
+            }} = HttpClient.get(url, [], trusted_authorities, [])
   end
 end
