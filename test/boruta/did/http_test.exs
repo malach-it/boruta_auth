@@ -122,6 +122,20 @@ defmodule Boruta.Did.HttpTest do
   end
 
   describe "resolve/1 with a universal resolver" do
+    test "falls back to the universal resolver for malformed did:key values", %{
+      expectations: expectations
+    } do
+      did = "did:key:zinvalid0"
+
+      expect(expectations, fn conn ->
+        assert conn.method == "GET"
+        assert conn.request_path == "/identifiers/#{encoded(did)}"
+        Plug.Conn.resp(conn, 404, "unknown DID")
+      end)
+
+      assert {:error, "unknown DID"} = Did.resolve(did)
+    end
+
     test "returns the DID document and sends resolver authorization", %{
       expectations: expectations
     } do

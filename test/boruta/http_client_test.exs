@@ -109,6 +109,45 @@ defmodule Boruta.HttpClientTest do
     assert {:error, "Host certificate is not trusted."} = HttpClient.get(url)
   end
 
+  test "trusts DID service hosts by default" do
+    for host <- ["api.godiddy.com", "api-conformance.ebsi.eu"] do
+      assert {:error, "Certificate pinning requires HTTPS."} =
+               HttpClient.get("http://#{host}/identifiers/did:example:test")
+
+      assert {:error, "Certificate pinning requires HTTPS."} =
+               HttpClient.post("http://#{host}/create", "{}")
+    end
+  end
+
+  test "trusts hosts from the configured DID service URLs" do
+    oauth_config = Application.get_env(:boruta, Boruta.Oauth)
+
+    service_keys = [
+      :ebsi_did_resolver_base_url,
+      :did_resolver_base_url,
+      :did_registrar_base_url
+    ]
+
+    configured_hosts =
+      service_keys
+      |> Enum.with_index()
+      |> Enum.map(fn {key, index} ->
+        host = "did-service-#{index}.example.test"
+        {key, "https://#{host}/service", host}
+      end)
+
+    overrides = Enum.map(configured_hosts, fn {key, url, _host} -> {key, url} end)
+    Application.put_env(:boruta, Boruta.Oauth, Keyword.merge(oauth_config, overrides))
+    on_exit(fn -> Application.put_env(:boruta, Boruta.Oauth, oauth_config) end)
+
+    for {_key, _url, host} <- configured_hosts do
+      assert {:error, "Certificate pinning requires HTTPS."} = HttpClient.get("http://#{host}")
+    end
+
+    assert {:error, "Client must configure trusted hosts or authorities for outbound requests."} =
+             HttpClient.get("http://api.godiddy.com")
+  end
+
   test "rejects the request when the host is not trusted", %{
     url: url,
     trusted_authorities: trusted_authorities

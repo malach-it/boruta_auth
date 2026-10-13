@@ -12,8 +12,6 @@ defmodule Boruta.HttpClient do
         ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
   def get(url, trusted_authorities \\ "", trusted_hosts \\ []) do
-    trusted_hosts = add_issuer_host(trusted_hosts)
-
     request_with_trust("GET", url, [], nil, trusted_authorities, trusted_hosts)
   end
 
@@ -25,8 +23,6 @@ defmodule Boruta.HttpClient do
         ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
   def get(url, headers, trusted_authorities, trusted_hosts) do
-    trusted_hosts = add_issuer_host(trusted_hosts)
-
     request_with_trust("GET", url, headers, nil, trusted_authorities, trusted_hosts)
   end
 
@@ -39,19 +35,47 @@ defmodule Boruta.HttpClient do
         ) ::
           {:ok, Finch.Response.t()} | {:error, term()}
   def post(url, body, headers \\ [], trusted_authorities \\ "", trusted_hosts \\ []) do
-    trusted_hosts = add_issuer_host(trusted_hosts)
-
     request_with_trust("POST", url, headers, body, trusted_authorities, trusted_hosts)
   end
 
-  defp request_with_trust(_method, _url, _headers, _body, "", []),
-    do: {:error, "Client must configure trusted hosts or authorities for outbound requests."}
-
   defp request_with_trust(method, url, headers, body, trusted_authorities, trusted_hosts) do
-    with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
-         {:ok, trusted_authorities} <- validate_trusted_authorities(trusted_authorities) do
-      trusted_request(method, url, headers, body, trusted_hosts, trusted_authorities)
+    trusted_hosts = add_default_host(url, add_issuer_host(trusted_hosts))
+
+    if trusted_authorities == "" and trusted_hosts == [] do
+      {:error, "Client must configure trusted hosts or authorities for outbound requests."}
+    else
+      with {:ok, trusted_hosts} <- validate_trusted_hosts(url, trusted_hosts),
+           {:ok, trusted_authorities} <- validate_trusted_authorities(trusted_authorities) do
+        trusted_request(method, url, headers, body, trusted_hosts, trusted_authorities)
+      end
     end
+  end
+
+  defp add_default_host(url, trusted_hosts) when is_list(trusted_hosts) do
+    case host_from_url(url) do
+      {:ok, host} ->
+        if host in did_service_hosts(), do: [host | trusted_hosts], else: trusted_hosts
+
+      {:error, _reason} ->
+        trusted_hosts
+    end
+  end
+
+  defp add_default_host(_url, trusted_hosts), do: trusted_hosts
+
+  defp did_service_hosts do
+    [
+      Config.ebsi_did_resolver_base_url(),
+      Config.did_resolver_base_url(),
+      Config.did_registrar_base_url()
+    ]
+    |> Enum.flat_map(fn url ->
+      case host_from_url(url) do
+        {:ok, host} -> [host]
+        {:error, _reason} -> []
+      end
+    end)
+    |> Enum.uniq()
   end
 
   defp add_issuer_host(trusted_hosts) when is_list(trusted_hosts) do
