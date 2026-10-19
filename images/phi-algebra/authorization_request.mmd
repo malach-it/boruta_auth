@@ -1,0 +1,47 @@
+---
+title: AuthorizationRequest Authorization Protocol Algebra
+---
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+subgraph c1["preauthorize/1 · clause 1"]
+  direction LR
+    c1_input["preauthorize.input"]
+    c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+    c1_p2(["φ2 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+    c1_p3(["φ3 check_code_challenge\nwith output: :ok"])
+    c1_p4(["φ4 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+    c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, redirect_uri: redirect_uri, scope: scope, resource: re…"]
+    c1_input -->|"client_id"| c1_p1
+    c1_input -->|"client_authentication"| c1_p1
+    c1_input -->|"redirect_uri"| c1_p1
+    c1_input -->|"scope"| c1_p2
+    c1_p1 -->|"client"| c1_p2
+    c1_p1 -->|"client"| c1_p3
+    c1_input -->|"code_challenge"| c1_p3
+    c1_input -->|"code_challenge_method"| c1_p3
+    c1_p2 -->|"scope"| c1_p3
+    c1_input -->|"resource"| c1_p4
+    c1_p1 -->|"client"| c1_p4
+    c1_p3 -->|"code_challenge_validation"| c1_p4
+    c1_p1 -->|"client"| c1_result
+    c1_input -->|"redirect_uri"| c1_result
+    c1_p2 -->|"scope"| c1_result
+    c1_p4 -->|"resource"| c1_result
+    c1_input -->|"state"| c1_result
+    c1_input -->|"code_challenge"| c1_result
+    c1_input -->|"code_challenge_method"| c1_result
+end
+
+subgraph c2["token/1 · clause 1"]
+  direction LR
+    c2_input["token.input"]
+    c2_result["token.result\nraise 'Not implemented'"]
+    c2_input -->|"result"| c2_result
+end
+
+classDef context fill:#eef2ff,stroke:#3730a3,color:#111827
+classDef operation fill:#ecfeff,stroke:#0e7490,color:#164e63,stroke-width:2px
+classDef result fill:#ecfdf5,stroke:#047857,color:#111827
+class c1_input,c2_input context
+class c1_p1,c1_p2,c1_p3,c1_p4 operation
+class c1_result,c2_result result

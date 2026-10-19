@@ -1,0 +1,67 @@
+---
+title: HybridRequest response creation Authorization Protocol Algebra
+---
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+  input["creation.input\nsorted response_types, {:ok, tokens}"]
+  branch{"Current response_type"}
+  input --> branch
+
+  subgraph code["token/1 · code reducer · nested with"]
+    direction TB
+    code_input["code.input\n{:ok, tokens}, tokens == %{}"]
+    code_p1(["φ1 CodesAdapter.create\nwith output: {:ok, code}"])
+    code_result["code.result\n{:ok, Map.put(tokens, :code, code)}"]
+    code_input -->|"creation params"| code_p1
+    code_p1 -->|"code"| code_result
+    code_input -->|"tokens"| code_result
+  end
+
+  subgraph access["token/1 · token reducer · nested with"]
+    direction TB
+    access_input["token.input\n{:ok, tokens}"]
+    access_p1(["φ1 AccessTokensAdapter.create\nrefresh_token: false; output: {:ok, access_token}"])
+    access_result["token.result\n{:ok, Map.put(tokens, :token, access_token)}"]
+    access_input -->|"creation params"| access_p1
+    access_p1 -->|"access_token"| access_result
+    access_input -->|"tokens"| access_result
+  end
+
+  subgraph id["token/1 · id_token reducer · case branch"]
+    direction TB
+    id_input["id_token.input\n{:ok, tokens}, scope, nonce"]
+    id_match(["String.match?(scope, openid pattern)"])
+    id_generate(["IdToken.generate(tokens, nonce)\noutput: %Token{type: id_token}"])
+    id_result["id_token.result\n{:ok, Map.put(tokens, :id_token, id_token)}"]
+    id_skip["id_token.result\n{:ok, tokens} unchanged"]
+    id_input -->|"scope"| id_match
+    id_match -->|"true"| id_generate
+    id_match -->|"false"| id_skip
+    id_input -->|"tokens, nonce"| id_generate
+    id_generate -->|"id_token"| id_result
+    id_input -->|"tokens"| id_result
+    id_input -->|"tokens"| id_skip
+  end
+
+  branch -->|"code; tokens empty"| code_input
+  branch -->|"token"| access_input
+  branch -->|"id_token"| id_input
+  branch -->|"_, {:error, error}"| wrap["Replace accumulator with internal_server_error / unknown_error"]
+  branch -->|"code with nonempty tokens or unknown type"| unmatched["No reducer clause matches"]
+  code_result --> next{"More response_types?"}
+  access_result --> next
+  id_result --> next
+  id_skip --> next
+  wrap --> next
+  next -->|"next response_type"| branch
+  next -->|"none left"| final_result["token.result\nReturn reducer accumulator"]
+
+  classDef context fill:#eef2ff,stroke:#3730a3,color:#111827
+  classDef operation fill:#ecfeff,stroke:#0e7490,color:#164e63,stroke-width:2px
+  classDef result fill:#ecfdf5,stroke:#047857,color:#111827
+  classDef error fill:#fef2f2,stroke:#b91c1c,color:#7f1d1d
+  class input,code_input,access_input,id_input context
+  class branch,code_p1,access_p1,id_match,id_generate operation
+  class next operation
+  class code_result,access_result,id_result,id_skip,final_result result
+  class wrap,unmatched error

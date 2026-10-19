@@ -1,0 +1,15 @@
+{
+  "theme": "base",
+  "look": "classic",
+  "fontFamily": "Arial, sans-serif",
+  "maxTextSize": 250000,
+  "maxEdges": 5000,
+  "flowchart": {
+    "curve": "basis",
+    "htmlLabels": false,
+    "nodeSpacing": 45,
+    "rankSpacing": 55,
+    "useMaxWidth": false,
+    "wrappingWidth": 280
+  }
+}

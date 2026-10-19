@@ -1,0 +1,69 @@
+---
+title: PreauthorizedCodeRequest Authorization Protocol Algebra
+---
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+subgraph c1["preauthorize/1 · clause 1"]
+  direction LR
+    c1_input["preauthorize.input"]
+    c1_p1(["φ1 case.resolve\nwith output: {:ok, client}"])
+    c1_p2(["φ2 case.resolve\nwith output: {:ok, code}"])
+    c1_p3(["φ3 Authorization.Scope.filter\nwith output: {:ok, scope}"])
+    c1_p4(["φ4 Authorization.AgentToken.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+    c1_p5(["φ5 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+    c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, redirect_uri: redirect_uri, code: code, sub: sub, scop…"]
+    c1_input -->|"client_id"| c1_p1
+    c1_input -->|"redirect_uri"| c1_p1
+    c1_input -->|"grant_type"| c1_p1
+    c1_input -->|"previous_code"| c1_p2
+    c1_p1 -->|"client"| c1_p2
+    c1_input -->|"scope"| c1_p3
+    c1_p1 -->|"client"| c1_p3
+    c1_input -->|"resource_owner"| c1_p3
+    c1_p2 -->|"code"| c1_p3
+    c1_p2 -->|"code"| c1_p4
+    c1_input -->|"agent_token"| c1_p4
+    c1_input -->|"resource_owner"| c1_p4
+    c1_p3 -->|"scope"| c1_p4
+    c1_input -->|"resource"| c1_p5
+    c1_p1 -->|"client"| c1_p5
+    c1_p4 -->|"sub"| c1_p5
+    c1_p4 -->|"resource_owner"| c1_p5
+    c1_p1 -->|"client"| c1_result
+    c1_input -->|"redirect_uri"| c1_result
+    c1_p2 -->|"code"| c1_result
+    c1_p4 -->|"sub"| c1_result
+    c1_p3 -->|"scope"| c1_result
+    c1_p5 -->|"resource"| c1_result
+    c1_input -->|"state"| c1_result
+    c1_p4 -->|"resource_owner"| c1_result
+    c1_input -->|"agent_token"| c1_result
+end
+
+subgraph c2["token/1 · clause 1"]
+  direction LR
+    c2_input["token.input"]
+    c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, resource…"])
+    c2_p2(["φ2 PreauthorizedCodesAdapter.create\nwith output: {:ok, preauthorized_code}"])
+    c2_result["token.result\n{:ok, %{preauthorized_code: preauthorized_code}}"]
+    c2_input -->|"request"| c2_p1
+    c2_p1 -->|"code"| c2_p2
+    c2_p1 -->|"client"| c2_p2
+    c2_p1 -->|"resource_owner"| c2_p2
+    c2_p1 -->|"redirect_uri"| c2_p2
+    c2_p1 -->|"sub"| c2_p2
+    c2_p1 -->|"scope"| c2_p2
+    c2_p1 -->|"resource"| c2_p2
+    c2_p1 -->|"state"| c2_p2
+    c2_p1 -->|"nonce"| c2_p2
+    c2_p1 -->|"agent_token"| c2_p2
+    c2_p1 -->|"authorization_details"| c2_p2
+    c2_p2 -->|"preauthorized_code"| c2_result
+end
+
+classDef context fill:#eef2ff,stroke:#3730a3,color:#111827
+classDef operation fill:#ecfeff,stroke:#0e7490,color:#164e63,stroke-width:2px
+classDef result fill:#ecfdf5,stroke:#047857,color:#111827
+class c1_input,c2_input context
+class c1_p1,c1_p2,c1_p3,c1_p4,c1_p5,c2_p1,c2_p2 operation
+class c1_result,c2_result result

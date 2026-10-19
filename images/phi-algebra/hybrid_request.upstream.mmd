@@ -1,0 +1,49 @@
+---
+title: HybridRequest Authorization Protocol Algebra
+---
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+subgraph c1["preauthorize/1 · clause 1"]
+  direction LR
+    c1_input["preauthorize.input"]
+    c1_p1(["φ1 Authorization.preauthorize\nwith output: {:ok, authorization}"])
+    c1_result["preauthorize.result\n{:ok, %{authorization | response_types: response_types}}"]
+    c1_input -->|"request"| c1_p1
+    c1_p1 -->|"authorization"| c1_result
+    c1_input -->|"response_types"| c1_result
+end
+
+subgraph c2["token/1 · clause 1"]
+  direction LR
+    c2_input["token.input"]
+    c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ response_types: response…"])
+    c2_result["token.result\nresponse_types |> Enum.sort_by(fn response_type -> response_type == 'id_token' end) |> Enum.reduce(…"]
+    c2_input -->|"request"| c2_p1
+    c2_p1 -->|"response_types"| c2_result
+    c2_input -->|"response_type"| c2_result
+    c2_input -->|"tokens"| c2_result
+    c2_input -->|"code"| c2_result
+    c2_p1 -->|"client"| c2_result
+    c2_p1 -->|"resource_owner"| c2_result
+    c2_p1 -->|"redirect_uri"| c2_result
+    c2_p1 -->|"sub"| c2_result
+    c2_p1 -->|"scope"| c2_result
+    c2_p1 -->|"resource"| c2_result
+    c2_p1 -->|"state"| c2_result
+    c2_p1 -->|"nonce"| c2_result
+    c2_p1 -->|"code_challenge"| c2_result
+    c2_p1 -->|"code_challenge_method"| c2_result
+    c2_p1 -->|"previous_code"| c2_result
+    c2_p1 -->|"authorization_details"| c2_result
+    c2_input -->|"binary"| c2_result
+    c2_input -->|"id_token"| c2_result
+    c2_input -->|"access_token"| c2_result
+    c2_input -->|"error"| c2_result
+end
+
+classDef context fill:#eef2ff,stroke:#3730a3,color:#111827
+classDef operation fill:#ecfeff,stroke:#0e7490,color:#164e63,stroke-width:2px
+classDef result fill:#ecfdf5,stroke:#047857,color:#111827
+class c1_input,c2_input context
+class c1_p1,c2_p1 operation
+class c1_result,c2_result result

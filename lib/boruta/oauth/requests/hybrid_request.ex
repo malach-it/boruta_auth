@@ -4,7 +4,11 @@ defmodule Boruta.Oauth.HybridRequest do
 
   ## Implementation architecture
 
-  ![Hybrid request authorization graph](assets/phi-algebra/hybrid_request.svg)
+  ![Hybrid request preauthorization](assets/phi-algebra/hybrid_request.svg)
+
+  ![Hybrid request token flow](assets/phi-algebra/hybrid_request_token.svg)
+
+  ![Hybrid request code, access token, and ID token creation](assets/phi-algebra/hybrid_request_creation.svg)
   """
 
   @typedoc """

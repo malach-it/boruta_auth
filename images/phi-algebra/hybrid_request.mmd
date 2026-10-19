@@ -1,0 +1,61 @@
+---
+title: HybridRequest preauthorize/1 Authorization Protocol Algebra
+---
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+  hybrid_input["preauthorize.input\n%HybridRequest{response_types: response_types}"]
+  convert(["struct(CodeRequest, Map.from_struct(request))"])
+  hybrid_result["preauthorize.result\n{:ok, %{authorization | response_types: response_types}}"]
+  hybrid_input -->|"request"| convert
+
+  subgraph code["CodeRequest.preauthorize/1 · delegated with"]
+    direction TB
+    code_input["code_request.input\n%CodeRequest{}"]
+    p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+    p2(["φ2 Authorization.ResourceOwner.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+    p3(["φ3 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+    p4(["φ4 Authorization.Nonce.authorize\nwith output: :ok"])
+    p5(["φ5 VerifiableCredentials.validate_authorization_details\nwith output: :ok"])
+    p6(["φ6 code case / Authorization.Code.authorize\nwith output: {:ok, previous_code}"])
+    p7(["φ7 check_code_challenge\nwith output: :ok"])
+    p8(["φ8 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+    code_result["code_request.result\n{:ok, %AuthorizationSuccess{...}}"]
+
+    code_input -->|"client_id"| p1
+    code_input -->|"redirect_uri"| p1
+    p1 --> p2
+    code_input -->|"resource_owner"| p2
+    p2 -->|"resource_owner"| p3
+    p1 -->|"client"| p3
+    code_input -->|"scope"| p3
+    p3 --> p4
+    code_input -->|"request"| p4
+    p4 --> p5
+    code_input -->|"authorization_details"| p5
+    p5 --> p6
+    code_input -->|"code"| p6
+    p6 --> p7
+    p1 -->|"client"| p7
+    code_input -->|"code_challenge"| p7
+    code_input -->|"code_challenge_method"| p7
+    p7 --> p8
+    p1 -->|"client"| p8
+    code_input -->|"resource"| p8
+    p8 -->|"resource"| code_result
+    p1 -->|"client"| code_result
+    p2 -->|"resource_owner, sub"| code_result
+    p3 -->|"scope"| code_result
+    p6 -->|"previous_code"| code_result
+    code_input -->|"request fields"| code_result
+  end
+
+  convert -->|"code_request"| code_input
+  code_result -->|"authorization"| hybrid_result
+  hybrid_input -->|"response_types"| hybrid_result
+
+  classDef context fill:#eef2ff,stroke:#3730a3,color:#111827
+  classDef operation fill:#ecfeff,stroke:#0e7490,color:#164e63,stroke-width:2px
+  classDef result fill:#ecfdf5,stroke:#047857,color:#111827
+  class hybrid_input,code_input context
+  class convert,p1,p2,p3,p4,p5,p6,p7,p8 operation
+  class code_result,hybrid_result result

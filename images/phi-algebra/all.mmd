@@ -1,0 +1,1053 @@
+---
+title: Boruta Authorization Request Construction and Protocol Algebra
+---
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+subgraph client_credentials_request["ClientCredentialsRequest"]
+  direction TB
+  client_credentials_request_params["request.parameters"]
+  client_credentials_request_build(["Request.Base.build_request\n%{'grant_type' => 'client_credentials'} = params"])
+  client_credentials_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    client_credentials_request_params -->|"client_id"| client_credentials_request_build
+    client_credentials_request_params -->|"client_authentication"| client_credentials_request_build
+    client_credentials_request_params -->|"scope"| client_credentials_request_build
+    client_credentials_request_params -->|"resource"| client_credentials_request_build
+    client_credentials_request_params -->|"dpop"| client_credentials_request_build
+  client_credentials_request_build -->|"ClientCredentialsRequest"| client_credentials_request_protocol
+    client_credentials_request_protocol -->|"request"| client_credentials_request_c1_input
+    client_credentials_request_protocol -->|"request"| client_credentials_request_c2_input
+  subgraph client_credentials_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      client_credentials_request_c1_input["preauthorize.input"]
+      client_credentials_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      client_credentials_request_c1_p2(["φ2 Dpop.validate\nwith output: :ok"])
+      client_credentials_request_c1_p3(["φ3 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      client_credentials_request_c1_p4(["φ4 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      client_credentials_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{client: client, scope: scope, resource: resource}}"]
+      client_credentials_request_c1_input -->|"client_id"| client_credentials_request_c1_p1
+      client_credentials_request_c1_input -->|"client_source"| client_credentials_request_c1_p1
+      client_credentials_request_c1_input -->|"grant_type"| client_credentials_request_c1_p1
+      client_credentials_request_c1_input -->|"dpop"| client_credentials_request_c1_p2
+      client_credentials_request_c1_p1 -->|"client"| client_credentials_request_c1_p2
+      client_credentials_request_c1_input -->|"scope"| client_credentials_request_c1_p3
+      client_credentials_request_c1_p1 -->|"client"| client_credentials_request_c1_p3
+      client_credentials_request_c1_p2 -->|"dpop_validation"| client_credentials_request_c1_p3
+      client_credentials_request_c1_input -->|"resource"| client_credentials_request_c1_p4
+      client_credentials_request_c1_p1 -->|"client"| client_credentials_request_c1_p4
+      client_credentials_request_c1_p3 -->|"scope"| client_credentials_request_c1_p4
+      client_credentials_request_c1_p1 -->|"client"| client_credentials_request_c1_result
+      client_credentials_request_c1_p3 -->|"scope"| client_credentials_request_c1_result
+      client_credentials_request_c1_p4 -->|"resource"| client_credentials_request_c1_result
+  end
+
+  subgraph client_credentials_request_c2["token/1 · clause 1"]
+    direction LR
+      client_credentials_request_c2_input["token.input"]
+      client_credentials_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{client: client, scope: sc…"])
+      client_credentials_request_c2_p2(["φ2 AccessTokensAdapter.create\nwith output: {:ok, access_token}"])
+      client_credentials_request_c2_result["token.result\n{:ok, %{token: access_token}}"]
+      client_credentials_request_c2_input -->|"request"| client_credentials_request_c2_p1
+      client_credentials_request_c2_p1 -->|"client"| client_credentials_request_c2_p2
+      client_credentials_request_c2_p1 -->|"scope"| client_credentials_request_c2_p2
+      client_credentials_request_c2_p1 -->|"resource"| client_credentials_request_c2_p2
+      client_credentials_request_c2_p2 -->|"access_token"| client_credentials_request_c2_result
+  end
+
+
+end
+
+subgraph code_chain_request["CodeChainRequest"]
+  direction TB
+  code_chain_request_params["request.parameters"]
+  code_chain_request_build(["Request.Base.build_request\n%{'grant_type' => 'code_chain'} = params"])
+  code_chain_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    code_chain_request_params -->|"client_id"| code_chain_request_build
+    code_chain_request_params -->|"client_authentication"| code_chain_request_build
+    code_chain_request_params -->|"id_token"| code_chain_request_build
+    code_chain_request_params -->|"authorization_code"| code_chain_request_build
+    code_chain_request_params -->|"scope"| code_chain_request_build
+    code_chain_request_params -->|"dpop"| code_chain_request_build
+    code_chain_request_params -->|"code_challenge"| code_chain_request_build
+    code_chain_request_params -->|"code_challenge_method"| code_chain_request_build
+  code_chain_request_build -->|"CodeChainRequest"| code_chain_request_protocol
+    code_chain_request_protocol -->|"request"| code_chain_request_c1_input
+    code_chain_request_protocol -->|"request"| code_chain_request_c2_input
+  subgraph code_chain_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      code_chain_request_c1_input["preauthorize.input"]
+      code_chain_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      code_chain_request_c1_p2(["φ2 Authorization.IdToken.authorize\nwith output: {:ok, _id_token_claims}"])
+      code_chain_request_c1_p3(["φ3 Authorization.ResourceOwner.authorize\nwith output: {:ok, resource_owner}"])
+      code_chain_request_c1_p4(["φ4 Dpop.validate\nwith output: :ok"])
+      code_chain_request_c1_p5(["φ5 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      code_chain_request_c1_p6(["φ6 case.resolve\nwith output: {:ok, previous_code}"])
+      code_chain_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, code: previous_code, redirect_uri: nil, sub: resource_…"]
+      code_chain_request_c1_input -->|"client_id"| code_chain_request_c1_p1
+      code_chain_request_c1_input -->|"client_source"| code_chain_request_c1_p1
+      code_chain_request_c1_input -->|"grant_type"| code_chain_request_c1_p1
+      code_chain_request_c1_input -->|"id_token"| code_chain_request_c1_p2
+      code_chain_request_c1_p1 -->|"client"| code_chain_request_c1_p2
+      code_chain_request_c1_input -->|"id_token"| code_chain_request_c1_p3
+      code_chain_request_c1_input -->|"scope"| code_chain_request_c1_p3
+      code_chain_request_c1_p2 -->|"id_token_authorization"| code_chain_request_c1_p3
+      code_chain_request_c1_input -->|"dpop"| code_chain_request_c1_p4
+      code_chain_request_c1_p1 -->|"client"| code_chain_request_c1_p4
+      code_chain_request_c1_p3 -->|"resource_owner"| code_chain_request_c1_p4
+      code_chain_request_c1_input -->|"scope"| code_chain_request_c1_p5
+      code_chain_request_c1_p1 -->|"client"| code_chain_request_c1_p5
+      code_chain_request_c1_p3 -->|"resource_owner"| code_chain_request_c1_p5
+      code_chain_request_c1_p4 -->|"dpop_validation"| code_chain_request_c1_p5
+      code_chain_request_c1_input -->|"authorization_code"| code_chain_request_c1_p6
+      code_chain_request_c1_p1 -->|"client"| code_chain_request_c1_p6
+      code_chain_request_c1_p5 -->|"scope"| code_chain_request_c1_p6
+      code_chain_request_c1_p1 -->|"client"| code_chain_request_c1_result
+      code_chain_request_c1_p6 -->|"previous_code"| code_chain_request_c1_result
+      code_chain_request_c1_p3 -->|"resource_owner"| code_chain_request_c1_result
+      code_chain_request_c1_input -->|"id_token"| code_chain_request_c1_result
+      code_chain_request_c1_p5 -->|"scope"| code_chain_request_c1_result
+      code_chain_request_c1_input -->|"code_challenge"| code_chain_request_c1_result
+      code_chain_request_c1_input -->|"code_challenge_method"| code_chain_request_c1_result
+  end
+
+  subgraph code_chain_request_c2["token/1 · clause 1"]
+    direction LR
+      code_chain_request_c2_input["token.input"]
+      code_chain_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, code: pr…"])
+      code_chain_request_c2_p2(["φ2 CodesAdapter.create\nwith output: {:ok, code}"])
+      code_chain_request_c2_result["token.result\n{:ok, %{authorization_code: code}}"]
+      code_chain_request_c2_input -->|"request"| code_chain_request_c2_p1
+      code_chain_request_c2_p1 -->|"client"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"redirect_uri"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"sub"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"id_token"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"resource_owner"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"scope"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"code_challenge"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"code_challenge_method"| code_chain_request_c2_p2
+      code_chain_request_c2_p1 -->|"previous_code"| code_chain_request_c2_p2
+      code_chain_request_c2_p2 -->|"code"| code_chain_request_c2_result
+  end
+
+
+end
+
+subgraph agent_credentials_request["AgentCredentialsRequest"]
+  direction TB
+  agent_credentials_request_params["request.parameters"]
+  agent_credentials_request_build(["Request.Base.build_request\n%{'grant_type' => 'agent_credentials'} = params"])
+  agent_credentials_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    agent_credentials_request_params -->|"client_id"| agent_credentials_request_build
+    agent_credentials_request_params -->|"client_authentication"| agent_credentials_request_build
+    agent_credentials_request_params -->|"scope"| agent_credentials_request_build
+    agent_credentials_request_params -->|"resource"| agent_credentials_request_build
+    agent_credentials_request_params -->|"dpop"| agent_credentials_request_build
+    agent_credentials_request_params -->|"bind_data"| agent_credentials_request_build
+    agent_credentials_request_params -->|"bind_configuration"| agent_credentials_request_build
+  agent_credentials_request_build -->|"AgentCredentialsRequest"| agent_credentials_request_protocol
+    agent_credentials_request_protocol -->|"request"| agent_credentials_request_c1_input
+    agent_credentials_request_protocol -->|"request"| agent_credentials_request_c2_input
+  subgraph agent_credentials_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      agent_credentials_request_c1_input["preauthorize.input"]
+      agent_credentials_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      agent_credentials_request_c1_p2(["φ2 Dpop.validate\nwith output: :ok"])
+      agent_credentials_request_c1_p3(["φ3 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      agent_credentials_request_c1_p4(["φ4 Authorization.Data.authorize\nwith output: {:ok, bind_data, bind_configuration}"])
+      agent_credentials_request_c1_p5(["φ5 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      agent_credentials_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, scope: scope, resource: resource, bind_data: bind_data…"]
+      agent_credentials_request_c1_input -->|"client_id"| agent_credentials_request_c1_p1
+      agent_credentials_request_c1_input -->|"client_source"| agent_credentials_request_c1_p1
+      agent_credentials_request_c1_input -->|"grant_type"| agent_credentials_request_c1_p1
+      agent_credentials_request_c1_input -->|"dpop"| agent_credentials_request_c1_p2
+      agent_credentials_request_c1_p1 -->|"client"| agent_credentials_request_c1_p2
+      agent_credentials_request_c1_input -->|"scope"| agent_credentials_request_c1_p3
+      agent_credentials_request_c1_p1 -->|"client"| agent_credentials_request_c1_p3
+      agent_credentials_request_c1_p2 -->|"dpop_validation"| agent_credentials_request_c1_p3
+      agent_credentials_request_c1_input -->|"bind_data"| agent_credentials_request_c1_p4
+      agent_credentials_request_c1_input -->|"bind_configuration"| agent_credentials_request_c1_p4
+      agent_credentials_request_c1_p3 -->|"scope"| agent_credentials_request_c1_p4
+      agent_credentials_request_c1_input -->|"resource"| agent_credentials_request_c1_p5
+      agent_credentials_request_c1_p1 -->|"client"| agent_credentials_request_c1_p5
+      agent_credentials_request_c1_p4 -->|"bind_data"| agent_credentials_request_c1_p5
+      agent_credentials_request_c1_p4 -->|"bind_configuration"| agent_credentials_request_c1_p5
+      agent_credentials_request_c1_p1 -->|"client"| agent_credentials_request_c1_result
+      agent_credentials_request_c1_p3 -->|"scope"| agent_credentials_request_c1_result
+      agent_credentials_request_c1_p5 -->|"resource"| agent_credentials_request_c1_result
+      agent_credentials_request_c1_p4 -->|"bind_data"| agent_credentials_request_c1_result
+      agent_credentials_request_c1_p4 -->|"bind_configuration"| agent_credentials_request_c1_result
+  end
+
+  subgraph agent_credentials_request_c2["token/1 · clause 1"]
+    direction LR
+      agent_credentials_request_c2_input["token.input"]
+      agent_credentials_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, scope: s…"])
+      agent_credentials_request_c2_p2(["φ2 AgentTokensAdapter.create\nwith output: {:ok, agent_token}"])
+      agent_credentials_request_c2_result["token.result\n{:ok, %{agent_token: agent_token}}"]
+      agent_credentials_request_c2_input -->|"request"| agent_credentials_request_c2_p1
+      agent_credentials_request_c2_p1 -->|"client"| agent_credentials_request_c2_p2
+      agent_credentials_request_c2_p1 -->|"scope"| agent_credentials_request_c2_p2
+      agent_credentials_request_c2_p1 -->|"resource"| agent_credentials_request_c2_p2
+      agent_credentials_request_c2_p1 -->|"bind_data"| agent_credentials_request_c2_p2
+      agent_credentials_request_c2_p1 -->|"bind_configuration"| agent_credentials_request_c2_p2
+      agent_credentials_request_c2_p2 -->|"agent_token"| agent_credentials_request_c2_result
+  end
+
+
+end
+
+subgraph password_request["PasswordRequest"]
+  direction TB
+  password_request_params["request.parameters"]
+  password_request_build(["Request.Base.build_request\n%{'grant_type' => 'password'} = params"])
+  password_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    password_request_params -->|"client_id"| password_request_build
+    password_request_params -->|"client_authentication"| password_request_build
+    password_request_params -->|"username"| password_request_build
+    password_request_params -->|"password"| password_request_build
+    password_request_params -->|"scope"| password_request_build
+    password_request_params -->|"resource"| password_request_build
+  password_request_build -->|"PasswordRequest"| password_request_protocol
+    password_request_protocol -->|"request"| password_request_c1_input
+    password_request_protocol -->|"request"| password_request_c2_input
+  subgraph password_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      password_request_c1_input["preauthorize.input"]
+      password_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      password_request_c1_p2(["φ2 Authorization.ResourceOwner.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+      password_request_c1_p3(["φ3 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      password_request_c1_p4(["φ4 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      password_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{client: client, sub: sub, scope: scope, resource: resource}}"]
+      password_request_c1_input -->|"client_id"| password_request_c1_p1
+      password_request_c1_input -->|"client_source"| password_request_c1_p1
+      password_request_c1_input -->|"grant_type"| password_request_c1_p1
+      password_request_c1_input -->|"username"| password_request_c1_p2
+      password_request_c1_input -->|"password"| password_request_c1_p2
+      password_request_c1_p1 -->|"client"| password_request_c1_p2
+      password_request_c1_input -->|"scope"| password_request_c1_p3
+      password_request_c1_p1 -->|"client"| password_request_c1_p3
+      password_request_c1_p2 -->|"resource_owner"| password_request_c1_p3
+      password_request_c1_p2 -->|"sub"| password_request_c1_p3
+      password_request_c1_input -->|"resource"| password_request_c1_p4
+      password_request_c1_p1 -->|"client"| password_request_c1_p4
+      password_request_c1_p3 -->|"scope"| password_request_c1_p4
+      password_request_c1_p1 -->|"client"| password_request_c1_result
+      password_request_c1_p2 -->|"sub"| password_request_c1_result
+      password_request_c1_p3 -->|"scope"| password_request_c1_result
+      password_request_c1_p4 -->|"resource"| password_request_c1_result
+  end
+
+  subgraph password_request_c2["token/1 · clause 1"]
+    direction LR
+      password_request_c2_input["token.input"]
+      password_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{client: client, sub: sub,…"])
+      password_request_c2_p2(["φ2 AccessTokensAdapter.create\nwith output: {:ok, access_token}"])
+      password_request_c2_result["token.result\n{:ok, %{token: access_token}}"]
+      password_request_c2_input -->|"request"| password_request_c2_p1
+      password_request_c2_p1 -->|"client"| password_request_c2_p2
+      password_request_c2_p1 -->|"sub"| password_request_c2_p2
+      password_request_c2_p1 -->|"scope"| password_request_c2_p2
+      password_request_c2_p1 -->|"resource"| password_request_c2_p2
+      password_request_c2_p2 -->|"access_token"| password_request_c2_result
+  end
+
+
+end
+
+subgraph authorization_code_request["AuthorizationCodeRequest"]
+  direction TB
+  authorization_code_request_params["request.parameters"]
+  authorization_code_request_build(["Request.Base.build_request\n%{'grant_type' => 'authorization_code'} = params"])
+  authorization_code_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    authorization_code_request_params -->|"client_id"| authorization_code_request_build
+    authorization_code_request_params -->|"client_authentication"| authorization_code_request_build
+    authorization_code_request_params -->|"code"| authorization_code_request_build
+    authorization_code_request_params -->|"redirect_uri"| authorization_code_request_build
+    authorization_code_request_params -->|"resource"| authorization_code_request_build
+    authorization_code_request_params -->|"code_verifier"| authorization_code_request_build
+    authorization_code_request_params -->|"dpop"| authorization_code_request_build
+  authorization_code_request_build -->|"AuthorizationCodeRequest"| authorization_code_request_protocol
+    authorization_code_request_protocol -->|"request"| authorization_code_request_c1_input
+    authorization_code_request_protocol -->|"request"| authorization_code_request_c2_input
+  subgraph authorization_code_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      authorization_code_request_c1_input["preauthorize.input"]
+      authorization_code_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      authorization_code_request_c1_p2(["φ2 Dpop.validate\nwith output: :ok"])
+      authorization_code_request_c1_p3(["φ3 Authorization.Code.authorize\nwith output: {:ok, code}"])
+      authorization_code_request_c1_p4(["φ4 CodesAdapter.code_chain\nwith output: code_chain"])
+      authorization_code_request_c1_p5(["φ5 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      authorization_code_request_c1_p6(["φ6 Authorization.ResourceOwner.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+      authorization_code_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, code: code, redirect_uri: redirect_uri, sub: sub, reso…"]
+      authorization_code_request_c1_input -->|"client_id"| authorization_code_request_c1_p1
+      authorization_code_request_c1_input -->|"client_source"| authorization_code_request_c1_p1
+      authorization_code_request_c1_input -->|"redirect_uri"| authorization_code_request_c1_p1
+      authorization_code_request_c1_input -->|"grant_type"| authorization_code_request_c1_p1
+      authorization_code_request_c1_input -->|"code_verifier"| authorization_code_request_c1_p1
+      authorization_code_request_c1_input -->|"dpop"| authorization_code_request_c1_p2
+      authorization_code_request_c1_p1 -->|"client"| authorization_code_request_c1_p2
+      authorization_code_request_c1_input -->|"code"| authorization_code_request_c1_p3
+      authorization_code_request_c1_input -->|"redirect_uri"| authorization_code_request_c1_p3
+      authorization_code_request_c1_p1 -->|"client"| authorization_code_request_c1_p3
+      authorization_code_request_c1_input -->|"code_verifier"| authorization_code_request_c1_p3
+      authorization_code_request_c1_p2 -->|"dpop_validation"| authorization_code_request_c1_p3
+      authorization_code_request_c1_p3 -->|"code"| authorization_code_request_c1_p4
+      authorization_code_request_c1_input -->|"resource"| authorization_code_request_c1_p5
+      authorization_code_request_c1_p1 -->|"client"| authorization_code_request_c1_p5
+      authorization_code_request_c1_p3 -->|"code"| authorization_code_request_c1_p5
+      authorization_code_request_c1_p4 -->|"code_chain"| authorization_code_request_c1_p5
+      authorization_code_request_c1_p3 -->|"code"| authorization_code_request_c1_p6
+      authorization_code_request_c1_p5 -->|"resource"| authorization_code_request_c1_p6
+      authorization_code_request_c1_p1 -->|"client"| authorization_code_request_c1_result
+      authorization_code_request_c1_p3 -->|"code"| authorization_code_request_c1_result
+      authorization_code_request_c1_input -->|"redirect_uri"| authorization_code_request_c1_result
+      authorization_code_request_c1_p6 -->|"sub"| authorization_code_request_c1_result
+      authorization_code_request_c1_p6 -->|"resource_owner"| authorization_code_request_c1_result
+      authorization_code_request_c1_p4 -->|"code_chain"| authorization_code_request_c1_result
+      authorization_code_request_c1_p5 -->|"resource"| authorization_code_request_c1_result
+  end
+
+  subgraph authorization_code_request_c2["token/1 · clause 1"]
+    direction LR
+      authorization_code_request_c2_input["token.input"]
+      authorization_code_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, code: co…"])
+      authorization_code_request_c2_p2(["φ2 AccessTokensAdapter.create\nwith output: {:ok, access_token}"])
+      authorization_code_request_c2_p3(["φ3 CodesAdapter.revoke\nwith output: {:ok, _code}"])
+      authorization_code_request_c2_result["token.result\ncase {Client.public?(client), String.match?(scope, ~r/#{Scope.openid().name}/)} do {true, _} -> {:o…"]
+      authorization_code_request_c2_input -->|"request"| authorization_code_request_c2_p1
+      authorization_code_request_c2_p1 -->|"client"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"redirect_uri"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"code"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"sub"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"resource_owner"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"scope"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"resource"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"authorization_details"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"nonce"| authorization_code_request_c2_p2
+      authorization_code_request_c2_p1 -->|"code"| authorization_code_request_c2_p3
+      authorization_code_request_c2_p2 -->|"access_token"| authorization_code_request_c2_p3
+      authorization_code_request_c2_p1 -->|"client"| authorization_code_request_c2_result
+      authorization_code_request_c2_p1 -->|"scope"| authorization_code_request_c2_result
+      authorization_code_request_c2_input -->|"binary"| authorization_code_request_c2_result
+      authorization_code_request_c2_p2 -->|"access_token"| authorization_code_request_c2_result
+      authorization_code_request_c2_input -->|"id_token"| authorization_code_request_c2_result
+      authorization_code_request_c2_p1 -->|"nonce"| authorization_code_request_c2_result
+      authorization_code_request_c2_p3 -->|"code_revocation"| authorization_code_request_c2_result
+  end
+
+
+end
+
+subgraph agent_code_request["AgentCodeRequest"]
+  direction TB
+  agent_code_request_params["request.parameters"]
+  agent_code_request_build(["Request.Base.build_request\n%{'grant_type' => 'agent_code'} = params"])
+  agent_code_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    agent_code_request_params -->|"client_id"| agent_code_request_build
+    agent_code_request_params -->|"client_authentication"| agent_code_request_build
+    agent_code_request_params -->|"code"| agent_code_request_build
+    agent_code_request_params -->|"redirect_uri"| agent_code_request_build
+    agent_code_request_params -->|"resource"| agent_code_request_build
+    agent_code_request_params -->|"code_verifier"| agent_code_request_build
+    agent_code_request_params -->|"dpop"| agent_code_request_build
+    agent_code_request_params -->|"bind_data"| agent_code_request_build
+    agent_code_request_params -->|"bind_configuration"| agent_code_request_build
+  agent_code_request_build -->|"AgentCodeRequest"| agent_code_request_protocol
+    agent_code_request_protocol -->|"request"| agent_code_request_c1_input
+    agent_code_request_protocol -->|"request"| agent_code_request_c2_input
+  subgraph agent_code_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      agent_code_request_c1_input["preauthorize.input"]
+      agent_code_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      agent_code_request_c1_p2(["φ2 Dpop.validate\nwith output: :ok"])
+      agent_code_request_c1_p3(["φ3 Authorization.Code.authorize\nwith output: {:ok, code}"])
+      agent_code_request_c1_p4(["φ4 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      agent_code_request_c1_p5(["φ5 Authorization.ResourceOwner.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+      agent_code_request_c1_p6(["φ6 Authorization.Data.authorize\nwith output: {:ok, bind_data, bind_configuration}"])
+      agent_code_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, code: code, redirect_uri: redirect_uri, sub: sub, reso…"]
+      agent_code_request_c1_input -->|"client_id"| agent_code_request_c1_p1
+      agent_code_request_c1_input -->|"client_source"| agent_code_request_c1_p1
+      agent_code_request_c1_input -->|"redirect_uri"| agent_code_request_c1_p1
+      agent_code_request_c1_input -->|"grant_type"| agent_code_request_c1_p1
+      agent_code_request_c1_input -->|"code_verifier"| agent_code_request_c1_p1
+      agent_code_request_c1_input -->|"dpop"| agent_code_request_c1_p2
+      agent_code_request_c1_p1 -->|"client"| agent_code_request_c1_p2
+      agent_code_request_c1_input -->|"code"| agent_code_request_c1_p3
+      agent_code_request_c1_input -->|"redirect_uri"| agent_code_request_c1_p3
+      agent_code_request_c1_p1 -->|"client"| agent_code_request_c1_p3
+      agent_code_request_c1_input -->|"code_verifier"| agent_code_request_c1_p3
+      agent_code_request_c1_p2 -->|"dpop_validation"| agent_code_request_c1_p3
+      agent_code_request_c1_input -->|"resource"| agent_code_request_c1_p4
+      agent_code_request_c1_p1 -->|"client"| agent_code_request_c1_p4
+      agent_code_request_c1_p3 -->|"code"| agent_code_request_c1_p4
+      agent_code_request_c1_p3 -->|"code"| agent_code_request_c1_p5
+      agent_code_request_c1_p4 -->|"resource"| agent_code_request_c1_p5
+      agent_code_request_c1_input -->|"bind_data"| agent_code_request_c1_p6
+      agent_code_request_c1_input -->|"bind_configuration"| agent_code_request_c1_p6
+      agent_code_request_c1_p5 -->|"resource_owner"| agent_code_request_c1_p6
+      agent_code_request_c1_p5 -->|"sub"| agent_code_request_c1_p6
+      agent_code_request_c1_p1 -->|"client"| agent_code_request_c1_result
+      agent_code_request_c1_p3 -->|"code"| agent_code_request_c1_result
+      agent_code_request_c1_input -->|"redirect_uri"| agent_code_request_c1_result
+      agent_code_request_c1_p5 -->|"sub"| agent_code_request_c1_result
+      agent_code_request_c1_p5 -->|"resource_owner"| agent_code_request_c1_result
+      agent_code_request_c1_p4 -->|"resource"| agent_code_request_c1_result
+      agent_code_request_c1_p6 -->|"bind_data"| agent_code_request_c1_result
+      agent_code_request_c1_p6 -->|"bind_configuration"| agent_code_request_c1_result
+  end
+
+  subgraph agent_code_request_c2["token/1 · clause 1"]
+    direction LR
+      agent_code_request_c2_input["token.input"]
+      agent_code_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, code: co…"])
+      agent_code_request_c2_p2(["φ2 AgentTokensAdapter.create\nwith output: {:ok, agent_token}"])
+      agent_code_request_c2_p3(["φ3 CodesAdapter.revoke\nwith output: {:ok, _code}"])
+      agent_code_request_c2_result["token.result\ncase {Client.public?(client), String.match?(scope, ~r/#{Scope.openid().name}/)} do {true, _} -> {:o…"]
+      agent_code_request_c2_input -->|"request"| agent_code_request_c2_p1
+      agent_code_request_c2_p1 -->|"client"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"redirect_uri"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"code"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"sub"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"resource_owner"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"scope"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"resource"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"authorization_details"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"bind_data"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"bind_configuration"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"nonce"| agent_code_request_c2_p2
+      agent_code_request_c2_p1 -->|"code"| agent_code_request_c2_p3
+      agent_code_request_c2_p2 -->|"agent_token"| agent_code_request_c2_p3
+      agent_code_request_c2_p1 -->|"client"| agent_code_request_c2_result
+      agent_code_request_c2_p1 -->|"scope"| agent_code_request_c2_result
+      agent_code_request_c2_input -->|"binary"| agent_code_request_c2_result
+      agent_code_request_c2_p2 -->|"agent_token"| agent_code_request_c2_result
+      agent_code_request_c2_input -->|"id_token"| agent_code_request_c2_result
+      agent_code_request_c2_p1 -->|"nonce"| agent_code_request_c2_result
+      agent_code_request_c2_p3 -->|"code_revocation"| agent_code_request_c2_result
+  end
+
+
+end
+
+subgraph preauthorization_code_request["PreauthorizationCodeRequest"]
+  direction TB
+  preauthorization_code_request_params["request.parameters"]
+  preauthorization_code_request_build(["Request.Base.build_request\n%{'grant_type' => 'urn:ietf:params:oauth:grant-type:pre-authorized_code'} = params"])
+  preauthorization_code_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    preauthorization_code_request_params -->|"preauthorized_code"| preauthorization_code_request_build
+    preauthorization_code_request_params -->|"tx_code"| preauthorization_code_request_build
+    preauthorization_code_request_params -->|"resource"| preauthorization_code_request_build
+    preauthorization_code_request_params -->|"code_verifier"| preauthorization_code_request_build
+  preauthorization_code_request_build -->|"PreauthorizationCodeRequest"| preauthorization_code_request_protocol
+    preauthorization_code_request_protocol -->|"request"| preauthorization_code_request_c1_input
+    preauthorization_code_request_protocol -->|"request"| preauthorization_code_request_c2_input
+  subgraph preauthorization_code_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      preauthorization_code_request_c1_input["preauthorize.input"]
+      preauthorization_code_request_c1_p1(["φ1 Authorization.Code.authorize\nwith output: {:ok, code}"])
+      preauthorization_code_request_c1_p2(["φ2 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      preauthorization_code_request_c1_p3(["φ3 maybe_check_tx_code\nwith output: :ok"])
+      preauthorization_code_request_c1_p4(["φ4 case.resolve\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+      preauthorization_code_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: code.client, code: code, sub: sub, resource_owner: resource_ow…"]
+      preauthorization_code_request_c1_input -->|"preauthorized_code"| preauthorization_code_request_c1_p1
+      preauthorization_code_request_c1_input -->|"resource"| preauthorization_code_request_c1_p2
+      preauthorization_code_request_c1_p1 -->|"code"| preauthorization_code_request_c1_p2
+      preauthorization_code_request_c1_input -->|"tx_code"| preauthorization_code_request_c1_p3
+      preauthorization_code_request_c1_p1 -->|"code"| preauthorization_code_request_c1_p3
+      preauthorization_code_request_c1_p2 -->|"resource"| preauthorization_code_request_c1_p3
+      preauthorization_code_request_c1_p1 -->|"code"| preauthorization_code_request_c1_p4
+      preauthorization_code_request_c1_p3 -->|"transaction_code_validation"| preauthorization_code_request_c1_p4
+      preauthorization_code_request_c1_p1 -->|"code"| preauthorization_code_request_c1_result
+      preauthorization_code_request_c1_p4 -->|"sub"| preauthorization_code_request_c1_result
+      preauthorization_code_request_c1_p4 -->|"resource_owner"| preauthorization_code_request_c1_result
+      preauthorization_code_request_c1_p2 -->|"resource"| preauthorization_code_request_c1_result
+  end
+
+  subgraph preauthorization_code_request_c2["token/1 · clause 1"]
+    direction LR
+      preauthorization_code_request_c2_input["token.input"]
+      preauthorization_code_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, code: co…"])
+      preauthorization_code_request_c2_p2(["φ2 AccessTokensAdapter.create\nwith output: {:ok, access_token}"])
+      preauthorization_code_request_c2_p3(["φ3 CodesAdapter.revoke\nwith output: {:ok, _code}"])
+      preauthorization_code_request_c2_result["token.result\ncase String.match?(scope, ~r/#{Scope.openid().name}/) do true -> id_token = IdToken.generate(%{toke…"]
+      preauthorization_code_request_c2_input -->|"request"| preauthorization_code_request_c2_p1
+      preauthorization_code_request_c2_p1 -->|"client"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"code"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"sub"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"resource_owner"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"scope"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"resource"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"authorization_details"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"agent_token"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"nonce"| preauthorization_code_request_c2_p2
+      preauthorization_code_request_c2_p1 -->|"code"| preauthorization_code_request_c2_p3
+      preauthorization_code_request_c2_p2 -->|"access_token"| preauthorization_code_request_c2_p3
+      preauthorization_code_request_c2_p1 -->|"scope"| preauthorization_code_request_c2_result
+      preauthorization_code_request_c2_input -->|"binary"| preauthorization_code_request_c2_result
+      preauthorization_code_request_c2_input -->|"id_token"| preauthorization_code_request_c2_result
+      preauthorization_code_request_c2_p2 -->|"access_token"| preauthorization_code_request_c2_result
+      preauthorization_code_request_c2_p1 -->|"nonce"| preauthorization_code_request_c2_result
+      preauthorization_code_request_c2_p3 -->|"code_revocation"| preauthorization_code_request_c2_result
+  end
+
+
+end
+
+subgraph token_request["TokenRequest"]
+  direction TB
+  token_request_params["request.parameters"]
+  token_request_build(["Request.Base.build_request\n%{'response_type' => response_type} = params"])
+  token_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    token_request_params -->|"client_id"| token_request_build
+    token_request_params -->|"nonce"| token_request_build
+    token_request_params -->|"prompt"| token_request_build
+    token_request_params -->|"redirect_uri"| token_request_build
+    token_request_params -->|"resource_owner"| token_request_build
+    token_request_params -->|"response_types"| token_request_build
+    token_request_params -->|"response_mode"| token_request_build
+    token_request_params -->|"scope"| token_request_build
+    token_request_params -->|"resource"| token_request_build
+    token_request_params -->|"state"| token_request_build
+  token_request_build -->|"TokenRequest"| token_request_protocol
+    token_request_protocol -->|"request"| token_request_c1_input
+    token_request_protocol -->|"request"| token_request_c2_input
+  subgraph token_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      token_request_c1_input["preauthorize.input"]
+      token_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      token_request_c1_p2(["φ2 Authorization.ResourceOwner.authorize\nwith output: {:ok, %ResourceOwner{sub: sub}}"])
+      token_request_c1_p3(["φ3 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      token_request_c1_p4(["φ4 Authorization.Nonce.authorize\nwith output: :ok"])
+      token_request_c1_p5(["φ5 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      token_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ response_types: response_types, resource_owner: resource_owner, client…"]
+      token_request_c1_input -->|"client_id"| token_request_c1_p1
+      token_request_c1_input -->|"redirect_uri"| token_request_c1_p1
+      token_request_c1_input -->|"grant_type"| token_request_c1_p1
+      token_request_c1_input -->|"resource_owner"| token_request_c1_p2
+      token_request_c1_p1 -->|"client"| token_request_c1_p2
+      token_request_c1_input -->|"scope"| token_request_c1_p3
+      token_request_c1_p1 -->|"client"| token_request_c1_p3
+      token_request_c1_input -->|"resource_owner"| token_request_c1_p3
+      token_request_c1_p2 -->|"sub"| token_request_c1_p3
+      token_request_c1_input -->|"request"| token_request_c1_p4
+      token_request_c1_p3 -->|"scope"| token_request_c1_p4
+      token_request_c1_input -->|"resource"| token_request_c1_p5
+      token_request_c1_p1 -->|"client"| token_request_c1_p5
+      token_request_c1_p4 -->|"nonce_authorization"| token_request_c1_p5
+      token_request_c1_input -->|"response_types"| token_request_c1_result
+      token_request_c1_input -->|"resource_owner"| token_request_c1_result
+      token_request_c1_p1 -->|"client"| token_request_c1_result
+      token_request_c1_input -->|"redirect_uri"| token_request_c1_result
+      token_request_c1_p2 -->|"sub"| token_request_c1_result
+      token_request_c1_p3 -->|"scope"| token_request_c1_result
+      token_request_c1_p5 -->|"resource"| token_request_c1_result
+      token_request_c1_input -->|"state"| token_request_c1_result
+      token_request_c1_input -->|"nonce"| token_request_c1_result
+  end
+
+  subgraph token_request_c2["token/1 · clause 1"]
+    direction LR
+      token_request_c2_input["token.input"]
+      token_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ response_types: response…"])
+      token_request_c2_result["token.result\nresponse_types |> Enum.sort_by(fn response_type -> response_type == 'id_token' end) |> Enum.reduce(…"]
+      token_request_c2_input -->|"request"| token_request_c2_p1
+      token_request_c2_p1 -->|"response_types"| token_request_c2_result
+      token_request_c2_input -->|"response_type"| token_request_c2_result
+      token_request_c2_input -->|"tokens"| token_request_c2_result
+      token_request_c2_p1 -->|"scope"| token_request_c2_result
+      token_request_c2_input -->|"binary"| token_request_c2_result
+      token_request_c2_input -->|"base_token"| token_request_c2_result
+      token_request_c2_p1 -->|"client"| token_request_c2_result
+      token_request_c2_p1 -->|"resource_owner"| token_request_c2_result
+      token_request_c2_p1 -->|"redirect_uri"| token_request_c2_result
+      token_request_c2_p1 -->|"sub"| token_request_c2_result
+      token_request_c2_p1 -->|"resource"| token_request_c2_result
+      token_request_c2_p1 -->|"state"| token_request_c2_result
+      token_request_c2_input -->|"id_token"| token_request_c2_result
+      token_request_c2_p1 -->|"nonce"| token_request_c2_result
+      token_request_c2_input -->|"access_token"| token_request_c2_result
+  end
+
+
+end
+
+subgraph preauthorized_code_request["PreauthorizedCodeRequest"]
+  direction TB
+  preauthorized_code_request_params["request.parameters"]
+  preauthorized_code_request_build(["Request.Base.build_request\n%{'response_type' => 'urn:ietf:params:oauth:response-type:pre-authorized_code'} = params"])
+  preauthorized_code_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    preauthorized_code_request_params -->|"agent_token"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"code"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"client_id"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"redirect_uri"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"resource_owner"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"state"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"prompt"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"scope"| preauthorized_code_request_build
+    preauthorized_code_request_params -->|"resource"| preauthorized_code_request_build
+  preauthorized_code_request_build -->|"PreauthorizedCodeRequest"| preauthorized_code_request_protocol
+    preauthorized_code_request_protocol -->|"request"| preauthorized_code_request_c1_input
+    preauthorized_code_request_protocol -->|"request"| preauthorized_code_request_c2_input
+  subgraph preauthorized_code_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      preauthorized_code_request_c1_input["preauthorize.input"]
+      preauthorized_code_request_c1_p1(["φ1 case.resolve\nwith output: {:ok, client}"])
+      preauthorized_code_request_c1_p2(["φ2 case.resolve\nwith output: {:ok, code}"])
+      preauthorized_code_request_c1_p3(["φ3 Authorization.Scope.filter\nwith output: {:ok, scope}"])
+      preauthorized_code_request_c1_p4(["φ4 Authorization.AgentToken.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+      preauthorized_code_request_c1_p5(["φ5 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      preauthorized_code_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, redirect_uri: redirect_uri, code: code, sub: sub, scop…"]
+      preauthorized_code_request_c1_input -->|"client_id"| preauthorized_code_request_c1_p1
+      preauthorized_code_request_c1_input -->|"redirect_uri"| preauthorized_code_request_c1_p1
+      preauthorized_code_request_c1_input -->|"grant_type"| preauthorized_code_request_c1_p1
+      preauthorized_code_request_c1_input -->|"previous_code"| preauthorized_code_request_c1_p2
+      preauthorized_code_request_c1_p1 -->|"client"| preauthorized_code_request_c1_p2
+      preauthorized_code_request_c1_input -->|"scope"| preauthorized_code_request_c1_p3
+      preauthorized_code_request_c1_p1 -->|"client"| preauthorized_code_request_c1_p3
+      preauthorized_code_request_c1_input -->|"resource_owner"| preauthorized_code_request_c1_p3
+      preauthorized_code_request_c1_p2 -->|"code"| preauthorized_code_request_c1_p3
+      preauthorized_code_request_c1_p2 -->|"code"| preauthorized_code_request_c1_p4
+      preauthorized_code_request_c1_input -->|"agent_token"| preauthorized_code_request_c1_p4
+      preauthorized_code_request_c1_input -->|"resource_owner"| preauthorized_code_request_c1_p4
+      preauthorized_code_request_c1_p3 -->|"scope"| preauthorized_code_request_c1_p4
+      preauthorized_code_request_c1_input -->|"resource"| preauthorized_code_request_c1_p5
+      preauthorized_code_request_c1_p1 -->|"client"| preauthorized_code_request_c1_p5
+      preauthorized_code_request_c1_p4 -->|"sub"| preauthorized_code_request_c1_p5
+      preauthorized_code_request_c1_p4 -->|"resource_owner"| preauthorized_code_request_c1_p5
+      preauthorized_code_request_c1_p1 -->|"client"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_input -->|"redirect_uri"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_p2 -->|"code"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_p4 -->|"sub"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_p3 -->|"scope"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_p5 -->|"resource"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_input -->|"state"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_p4 -->|"resource_owner"| preauthorized_code_request_c1_result
+      preauthorized_code_request_c1_input -->|"agent_token"| preauthorized_code_request_c1_result
+  end
+
+  subgraph preauthorized_code_request_c2["token/1 · clause 1"]
+    direction LR
+      preauthorized_code_request_c2_input["token.input"]
+      preauthorized_code_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, resource…"])
+      preauthorized_code_request_c2_p2(["φ2 PreauthorizedCodesAdapter.create\nwith output: {:ok, preauthorized_code}"])
+      preauthorized_code_request_c2_result["token.result\n{:ok, %{preauthorized_code: preauthorized_code}}"]
+      preauthorized_code_request_c2_input -->|"request"| preauthorized_code_request_c2_p1
+      preauthorized_code_request_c2_p1 -->|"code"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"client"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"resource_owner"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"redirect_uri"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"sub"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"scope"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"resource"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"state"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"nonce"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"agent_token"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p1 -->|"authorization_details"| preauthorized_code_request_c2_p2
+      preauthorized_code_request_c2_p2 -->|"preauthorized_code"| preauthorized_code_request_c2_result
+  end
+
+
+end
+
+subgraph code_request["CodeRequest"]
+  direction TB
+  code_request_params["request.parameters"]
+  code_request_build(["Request.Base.build_request\n%{'response_type' => 'code'} = params"])
+  code_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    code_request_params -->|"client_id"| code_request_build
+    code_request_params -->|"redirect_uri"| code_request_build
+    code_request_params -->|"code"| code_request_build
+    code_request_params -->|"resource_owner"| code_request_build
+    code_request_params -->|"state"| code_request_build
+    code_request_params -->|"nonce"| code_request_build
+    code_request_params -->|"prompt"| code_request_build
+    code_request_params -->|"code_challenge"| code_request_build
+    code_request_params -->|"code_challenge_method"| code_request_build
+    code_request_params -->|"scope"| code_request_build
+    code_request_params -->|"resource"| code_request_build
+    code_request_params -->|"response_mode"| code_request_build
+  code_request_build -->|"CodeRequest"| code_request_protocol
+    code_request_protocol -->|"request"| code_request_c1_input
+    code_request_protocol -->|"request"| code_request_c2_input
+  subgraph code_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      code_request_c1_input["preauthorize.input"]
+      code_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      code_request_c1_p2(["φ2 Authorization.ResourceOwner.authorize\nwith output: {:ok, %ResourceOwner{sub: sub} = resource_owner}"])
+      code_request_c1_p3(["φ3 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      code_request_c1_p4(["φ4 Authorization.Nonce.authorize\nwith output: :ok"])
+      code_request_c1_p5(["φ5 VerifiableCredentials.validate_authorization_details\nwith output: :ok"])
+      code_request_c1_p6(["φ6 case.resolve\nwith output: {:ok, previous_code}"])
+      code_request_c1_p7(["φ7 check_code_challenge\nwith output: :ok"])
+      code_request_c1_p8(["φ8 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      code_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, redirect_uri: redirect_uri, sub: sub, scope: scope, re…"]
+      code_request_c1_input -->|"client_id"| code_request_c1_p1
+      code_request_c1_input -->|"redirect_uri"| code_request_c1_p1
+      code_request_c1_input -->|"resource_owner"| code_request_c1_p2
+      code_request_c1_p1 -->|"client"| code_request_c1_p2
+      code_request_c1_input -->|"scope"| code_request_c1_p3
+      code_request_c1_p1 -->|"client"| code_request_c1_p3
+      code_request_c1_p2 -->|"resource_owner"| code_request_c1_p3
+      code_request_c1_p2 -->|"sub"| code_request_c1_p3
+      code_request_c1_input -->|"request"| code_request_c1_p4
+      code_request_c1_p3 -->|"scope"| code_request_c1_p4
+      code_request_c1_input -->|"authorization_details"| code_request_c1_p5
+      code_request_c1_p4 -->|"nonce_authorization"| code_request_c1_p5
+      code_request_c1_input -->|"code"| code_request_c1_p6
+      code_request_c1_input -->|"value"| code_request_c1_p6
+      code_request_c1_p5 -->|"authorization_details_validation"| code_request_c1_p6
+      code_request_c1_p1 -->|"client"| code_request_c1_p7
+      code_request_c1_input -->|"code_challenge"| code_request_c1_p7
+      code_request_c1_input -->|"code_challenge_method"| code_request_c1_p7
+      code_request_c1_p6 -->|"previous_code"| code_request_c1_p7
+      code_request_c1_input -->|"resource"| code_request_c1_p8
+      code_request_c1_p1 -->|"client"| code_request_c1_p8
+      code_request_c1_p7 -->|"code_challenge_validation"| code_request_c1_p8
+      code_request_c1_p1 -->|"client"| code_request_c1_result
+      code_request_c1_input -->|"redirect_uri"| code_request_c1_result
+      code_request_c1_p2 -->|"sub"| code_request_c1_result
+      code_request_c1_p3 -->|"scope"| code_request_c1_result
+      code_request_c1_p8 -->|"resource"| code_request_c1_result
+      code_request_c1_input -->|"state"| code_request_c1_result
+      code_request_c1_input -->|"nonce"| code_request_c1_result
+      code_request_c1_input -->|"code_challenge"| code_request_c1_result
+      code_request_c1_input -->|"code_challenge_method"| code_request_c1_result
+      code_request_c1_p6 -->|"previous_code"| code_request_c1_result
+      code_request_c1_p2 -->|"resource_owner"| code_request_c1_result
+      code_request_c1_input -->|"authorization_details"| code_request_c1_result
+  end
+
+  subgraph code_request_c2["token/1 · clause 1"]
+    direction LR
+      code_request_c2_input["token.input"]
+      code_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, resource…"])
+      code_request_c2_p2(["φ2 CodesAdapter.create\nwith output: {:ok, code}"])
+      code_request_c2_result["token.result\n{:ok, %{code: code}}"]
+      code_request_c2_input -->|"request"| code_request_c2_p1
+      code_request_c2_p1 -->|"client"| code_request_c2_p2
+      code_request_c2_p1 -->|"resource_owner"| code_request_c2_p2
+      code_request_c2_p1 -->|"redirect_uri"| code_request_c2_p2
+      code_request_c2_p1 -->|"sub"| code_request_c2_p2
+      code_request_c2_p1 -->|"scope"| code_request_c2_p2
+      code_request_c2_p1 -->|"resource"| code_request_c2_p2
+      code_request_c2_p1 -->|"state"| code_request_c2_p2
+      code_request_c2_p1 -->|"nonce"| code_request_c2_p2
+      code_request_c2_p1 -->|"code_challenge"| code_request_c2_p2
+      code_request_c2_p1 -->|"code_challenge_method"| code_request_c2_p2
+      code_request_c2_p1 -->|"previous_code"| code_request_c2_p2
+      code_request_c2_p1 -->|"authorization_details"| code_request_c2_p2
+      code_request_c2_p2 -->|"code"| code_request_c2_result
+  end
+
+
+end
+
+subgraph authorization_request["AuthorizationRequest"]
+  direction TB
+  authorization_request_params["request.parameters"]
+  authorization_request_build(["Request.Base.build_request\n%{'response_type' => 'code', 'method' => 'POST'} = params"])
+  authorization_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    authorization_request_params -->|"response_type"| authorization_request_build
+    authorization_request_params -->|"client_id"| authorization_request_build
+    authorization_request_params -->|"redirect_uri"| authorization_request_build
+    authorization_request_params -->|"state"| authorization_request_build
+    authorization_request_params -->|"code_challenge"| authorization_request_build
+    authorization_request_params -->|"code_challenge_method"| authorization_request_build
+    authorization_request_params -->|"scope"| authorization_request_build
+    authorization_request_params -->|"resource"| authorization_request_build
+  authorization_request_build -->|"AuthorizationRequest"| authorization_request_protocol
+    authorization_request_protocol -->|"request"| authorization_request_c1_input
+    authorization_request_protocol -->|"request"| authorization_request_c2_input
+  subgraph authorization_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      authorization_request_c1_input["preauthorize.input"]
+      authorization_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      authorization_request_c1_p2(["φ2 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      authorization_request_c1_p3(["φ3 check_code_challenge\nwith output: :ok"])
+      authorization_request_c1_p4(["φ4 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      authorization_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, redirect_uri: redirect_uri, scope: scope, resource: re…"]
+      authorization_request_c1_input -->|"client_id"| authorization_request_c1_p1
+      authorization_request_c1_input -->|"client_authentication"| authorization_request_c1_p1
+      authorization_request_c1_input -->|"redirect_uri"| authorization_request_c1_p1
+      authorization_request_c1_input -->|"scope"| authorization_request_c1_p2
+      authorization_request_c1_p1 -->|"client"| authorization_request_c1_p2
+      authorization_request_c1_p1 -->|"client"| authorization_request_c1_p3
+      authorization_request_c1_input -->|"code_challenge"| authorization_request_c1_p3
+      authorization_request_c1_input -->|"code_challenge_method"| authorization_request_c1_p3
+      authorization_request_c1_p2 -->|"scope"| authorization_request_c1_p3
+      authorization_request_c1_input -->|"resource"| authorization_request_c1_p4
+      authorization_request_c1_p1 -->|"client"| authorization_request_c1_p4
+      authorization_request_c1_p3 -->|"code_challenge_validation"| authorization_request_c1_p4
+      authorization_request_c1_p1 -->|"client"| authorization_request_c1_result
+      authorization_request_c1_input -->|"redirect_uri"| authorization_request_c1_result
+      authorization_request_c1_p2 -->|"scope"| authorization_request_c1_result
+      authorization_request_c1_p4 -->|"resource"| authorization_request_c1_result
+      authorization_request_c1_input -->|"state"| authorization_request_c1_result
+      authorization_request_c1_input -->|"code_challenge"| authorization_request_c1_result
+      authorization_request_c1_input -->|"code_challenge_method"| authorization_request_c1_result
+  end
+
+  subgraph authorization_request_c2["token/1 · clause 1"]
+    direction LR
+      authorization_request_c2_input["token.input"]
+      authorization_request_c2_result["token.result\nraise 'Not implemented'"]
+      authorization_request_c2_input -->|"result"| authorization_request_c2_result
+  end
+
+
+end
+
+subgraph presentation_request["PresentationRequest"]
+  direction TB
+  presentation_request_params["request.parameters"]
+  presentation_request_build(["Request.Base.build_request\n%{'response_type' => 'code' <> _rest, 'client_metadata' => _client_metadata} = params %{'response_type' => 'id_token' <> _rest, 'client_metadata' => _client_metadata} = params %{'…"])
+  presentation_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    presentation_request_params -->|"client_id"| presentation_request_build
+    presentation_request_params -->|"resource_owner"| presentation_request_build
+    presentation_request_params -->|"redirect_uri"| presentation_request_build
+    presentation_request_params -->|"state"| presentation_request_build
+    presentation_request_params -->|"nonce"| presentation_request_build
+    presentation_request_params -->|"prompt"| presentation_request_build
+    presentation_request_params -->|"code_challenge"| presentation_request_build
+    presentation_request_params -->|"code_challenge_method"| presentation_request_build
+    presentation_request_params -->|"code"| presentation_request_build
+    presentation_request_params -->|"agent_token"| presentation_request_build
+    presentation_request_params -->|"scope"| presentation_request_build
+    presentation_request_params -->|"client_metadata"| presentation_request_build
+    presentation_request_params -->|"response_type"| presentation_request_build
+    presentation_request_params -->|"client_encryption_key"| presentation_request_build
+    presentation_request_params -->|"client_encryption_alg"| presentation_request_build
+  presentation_request_build -->|"PresentationRequest"| presentation_request_protocol
+    presentation_request_protocol -->|"request"| presentation_request_c1_input
+    presentation_request_protocol -->|"request"| presentation_request_c2_input
+  subgraph presentation_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      presentation_request_c1_input["preauthorize.input"]
+      presentation_request_c1_p1(["φ1 VerifiablePresentations.response_types\nwith output: response_types"])
+      presentation_request_c1_p2(["φ2 authorize_presentation_client\nwith output: {:ok, client}"])
+      presentation_request_c1_p3(["φ3 authorize_optional_code\nwith output: {:ok, _code}"])
+      presentation_request_c1_p4(["φ4 Authorization.Nonce.authorize\nwith output: :ok"])
+      presentation_request_c1_p5(["φ5 VerifiableCredentials.validate_authorization_details\nwith output: :ok"])
+      presentation_request_c1_p6(["φ6 authorize_optional_code\nwith output: {:ok, previous_code}"])
+      presentation_request_c1_p7(["φ7 VerifiablePresentations.check_client_metadata\nwith output: :ok"])
+      presentation_request_c1_p8(["φ8 VerifiablePresentations.presentation_definition\nwith output: {:ok, identifier, presentation_definition}"])
+      presentation_request_c1_p9(["φ9 authorize_presentation_agent_token\nwith output: {:ok, resource_owner}"])
+      presentation_request_c1_p10(["φ10 Authorization.Scope.filter\nwith output: {:ok, scope}"])
+      presentation_request_c1_p11(["φ11 Enum.join\nwith output: requested_scope"])
+      presentation_request_c1_result["preauthorize.result\n{code_challenge, code_challenge_method} = code_challenge_params(resource_owner, code_challenge, cod…"]
+      presentation_request_c1_input -->|"response_type"| presentation_request_c1_p1
+      presentation_request_c1_input -->|"requested_scope"| presentation_request_c1_p1
+      presentation_request_c1_input -->|"resource_owner"| presentation_request_c1_p1
+      presentation_request_c1_input -->|"client_id"| presentation_request_c1_p2
+      presentation_request_c1_input -->|"redirect_uri"| presentation_request_c1_p2
+      presentation_request_c1_p1 -->|"response_types"| presentation_request_c1_p2
+      presentation_request_c1_input -->|"code"| presentation_request_c1_p3
+      presentation_request_c1_p2 -->|"client"| presentation_request_c1_p3
+      presentation_request_c1_input -->|"request"| presentation_request_c1_p4
+      presentation_request_c1_p3 -->|"optional_code_authorization"| presentation_request_c1_p4
+      presentation_request_c1_input -->|"authorization_details"| presentation_request_c1_p5
+      presentation_request_c1_p4 -->|"nonce_authorization"| presentation_request_c1_p5
+      presentation_request_c1_input -->|"code"| presentation_request_c1_p6
+      presentation_request_c1_p5 -->|"authorization_details_validation"| presentation_request_c1_p6
+      presentation_request_c1_input -->|"client_metadata"| presentation_request_c1_p7
+      presentation_request_c1_p6 -->|"previous_code"| presentation_request_c1_p7
+      presentation_request_c1_p1 -->|"response_types"| presentation_request_c1_p8
+      presentation_request_c1_input -->|"resource_owner"| presentation_request_c1_p8
+      presentation_request_c1_input -->|"requested_scope"| presentation_request_c1_p8
+      presentation_request_c1_p7 -->|"client_metadata_validation"| presentation_request_c1_p8
+      presentation_request_c1_input -->|"agent_token"| presentation_request_c1_p9
+      presentation_request_c1_input -->|"resource_owner"| presentation_request_c1_p9
+      presentation_request_c1_p8 -->|"identifier"| presentation_request_c1_p9
+      presentation_request_c1_p8 -->|"presentation_definition"| presentation_request_c1_p9
+      presentation_request_c1_input -->|"requested_scope"| presentation_request_c1_p10
+      presentation_request_c1_p2 -->|"client"| presentation_request_c1_p10
+      presentation_request_c1_p9 -->|"resource_owner"| presentation_request_c1_p10
+      presentation_request_c1_p8 -->|"identifier"| presentation_request_c1_p10
+      presentation_request_c1_input -->|"requested_scope"| presentation_request_c1_p11
+      presentation_request_c1_p10 -->|"scope"| presentation_request_c1_p11
+      presentation_request_c1_input -->|"code_challenge"| presentation_request_c1_result
+      presentation_request_c1_input -->|"code_challenge_method"| presentation_request_c1_result
+      presentation_request_c1_p9 -->|"resource_owner"| presentation_request_c1_result
+      presentation_request_c1_input -->|"authorization_details"| presentation_request_c1_result
+      presentation_request_c1_p2 -->|"client"| presentation_request_c1_result
+      presentation_request_c1_p10 -->|"scope"| presentation_request_c1_result
+      presentation_request_c1_p11 -->|"requested_scope"| presentation_request_c1_result
+      presentation_request_c1_input -->|"state"| presentation_request_c1_result
+      presentation_request_c1_input -->|"nonce"| presentation_request_c1_result
+      presentation_request_c1_input -->|"code"| presentation_request_c1_result
+      presentation_request_c1_p6 -->|"previous_code"| presentation_request_c1_result
+      presentation_request_c1_p8 -->|"presentation_definition"| presentation_request_c1_result
+      presentation_request_c1_input -->|"client_id"| presentation_request_c1_result
+      presentation_request_c1_input -->|"redirect_uri"| presentation_request_c1_result
+      presentation_request_c1_p1 -->|"response_types"| presentation_request_c1_result
+      presentation_request_c1_input -->|"agent_token"| presentation_request_c1_result
+      presentation_request_c1_input -->|"client_encryption_key"| presentation_request_c1_result
+      presentation_request_c1_input -->|"client_encryption_alg"| presentation_request_c1_result
+  end
+
+  subgraph presentation_request_c2["token/1 · clause 1"]
+    direction LR
+      presentation_request_c2_input["token.input"]
+      presentation_request_c2_p1(["φ1 Authorization.preauthorize\nwith output: {:ok, %AuthorizationSuccess{ authorization_details: a…"])
+      presentation_request_c2_p2(["φ2 PreauthorizedCodesAdapter.create\nwith output: {:ok, code}"])
+      presentation_request_c2_result["token.result\ncase verifiable_presentation?(response_types) do false -> {:ok, %{siopv2_code: code, response_mode:…"]
+      presentation_request_c2_input -->|"request"| presentation_request_c2_p1
+      presentation_request_c2_p1 -->|"sub"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"resource_owner"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"response_types"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"client"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"public_client_id"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"redirect_uri"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"code"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"scope"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"requested_scope"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"state"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"nonce"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"previous_code"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"agent_token"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"code_challenge"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"code_challenge_method"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"authorization_details"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"presentation_definition"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"client_encryption_key"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"client_encryption_alg"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"response_mode"| presentation_request_c2_p2
+      presentation_request_c2_p1 -->|"response_types"| presentation_request_c2_result
+      presentation_request_c2_p2 -->|"code"| presentation_request_c2_result
+      presentation_request_c2_p1 -->|"response_mode"| presentation_request_c2_result
+  end
+
+
+end
+
+subgraph hybrid_request["HybridRequest"]
+  direction TB
+  hybrid_request_params["request.parameters"]
+  hybrid_request_build(["Request.Base.build_request\n%{'response_type' => response_type} = params"])
+  hybrid_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    hybrid_request_params -->|"client_id"| hybrid_request_build
+    hybrid_request_params -->|"code"| hybrid_request_build
+    hybrid_request_params -->|"code_challenge"| hybrid_request_build
+    hybrid_request_params -->|"code_challenge_method"| hybrid_request_build
+    hybrid_request_params -->|"nonce"| hybrid_request_build
+    hybrid_request_params -->|"prompt"| hybrid_request_build
+    hybrid_request_params -->|"redirect_uri"| hybrid_request_build
+    hybrid_request_params -->|"resource_owner"| hybrid_request_build
+    hybrid_request_params -->|"response_mode"| hybrid_request_build
+    hybrid_request_params -->|"response_types"| hybrid_request_build
+    hybrid_request_params -->|"scope"| hybrid_request_build
+    hybrid_request_params -->|"resource"| hybrid_request_build
+    hybrid_request_params -->|"state"| hybrid_request_build
+  hybrid_request_build -->|"HybridRequest"| hybrid_request_protocol
+    hybrid_request_protocol -->|"request"| hybrid_request_c1_input
+    hybrid_request_protocol -->|"request"| hybrid_request_c2_input
+  subgraph hybrid_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      hybrid_request_c1_input["preauthorize.input"]
+      hybrid_request_c1_p1(["φ1 Authorization.preauthorize\nwith output: {:ok, authorization}"])
+      hybrid_request_c1_result["preauthorize.result\n{:ok, %{authorization | response_types: response_types}}"]
+      hybrid_request_c1_input -->|"request"| hybrid_request_c1_p1
+      hybrid_request_c1_p1 -->|"authorization"| hybrid_request_c1_result
+      hybrid_request_c1_input -->|"response_types"| hybrid_request_c1_result
+  end
+
+  subgraph hybrid_request_c2["token/1 · clause 1"]
+    direction LR
+      hybrid_request_c2_input["token.input"]
+      hybrid_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ response_types: response…"])
+      hybrid_request_c2_result["token.result\nresponse_types |> Enum.sort_by(fn response_type -> response_type == 'id_token' end) |> Enum.reduce(…"]
+      hybrid_request_c2_input -->|"request"| hybrid_request_c2_p1
+      hybrid_request_c2_p1 -->|"response_types"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"response_type"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"tokens"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"code"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"client"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"resource_owner"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"redirect_uri"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"sub"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"scope"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"resource"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"state"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"nonce"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"code_challenge"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"code_challenge_method"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"previous_code"| hybrid_request_c2_result
+      hybrid_request_c2_p1 -->|"authorization_details"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"binary"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"id_token"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"access_token"| hybrid_request_c2_result
+      hybrid_request_c2_input -->|"error"| hybrid_request_c2_result
+  end
+
+
+end
+
+subgraph refresh_token_request["RefreshTokenRequest"]
+  direction TB
+  refresh_token_request_params["request.parameters"]
+  refresh_token_request_build(["Request.Base.build_request\n%{'grant_type' => 'refresh_token'} = params"])
+  refresh_token_request_protocol(["Boruta.Oauth.Authorization.dispatch"])
+    refresh_token_request_params -->|"client_id"| refresh_token_request_build
+    refresh_token_request_params -->|"client_authentication"| refresh_token_request_build
+    refresh_token_request_params -->|"refresh_token"| refresh_token_request_build
+    refresh_token_request_params -->|"scope"| refresh_token_request_build
+    refresh_token_request_params -->|"resource"| refresh_token_request_build
+  refresh_token_request_build -->|"RefreshTokenRequest"| refresh_token_request_protocol
+    refresh_token_request_protocol -->|"request"| refresh_token_request_c1_input
+    refresh_token_request_protocol -->|"request"| refresh_token_request_c2_input
+  subgraph refresh_token_request_c1["preauthorize/1 · clause 1"]
+    direction LR
+      refresh_token_request_c1_input["preauthorize.input"]
+      refresh_token_request_c1_p1(["φ1 Authorization.Client.authorize\nwith output: {:ok, client}"])
+      refresh_token_request_c1_p2(["φ2 Authorization.AccessToken.authorize\nwith output: {:ok, %Token{client: ^client, sub: sub, scope: token_…"])
+      refresh_token_request_c1_p3(["φ3 Authorization.Resource.authorize\nwith output: {:ok, resource}"])
+      refresh_token_request_c1_p4(["φ4 Authorization.Scope.authorize\nwith output: {:ok, scope}"])
+      refresh_token_request_c1_result["preauthorize.result\n{:ok, %AuthorizationSuccess{ client: client, sub: sub, scope: scope, resource: resource, access_tok…"]
+      refresh_token_request_c1_input -->|"client_id"| refresh_token_request_c1_p1
+      refresh_token_request_c1_input -->|"client_source"| refresh_token_request_c1_p1
+      refresh_token_request_c1_input -->|"grant_type"| refresh_token_request_c1_p1
+      refresh_token_request_c1_input -->|"refresh_token"| refresh_token_request_c1_p2
+      refresh_token_request_c1_p1 -->|"client"| refresh_token_request_c1_p2
+      refresh_token_request_c1_input -->|"resource"| refresh_token_request_c1_p3
+      refresh_token_request_c1_p2 -->|"client"| refresh_token_request_c1_p3
+      refresh_token_request_c1_p2 -->|"token"| refresh_token_request_c1_p3
+      refresh_token_request_c1_p2 -->|"sub"| refresh_token_request_c1_p3
+      refresh_token_request_c1_p2 -->|"token_scope"| refresh_token_request_c1_p3
+      refresh_token_request_c1_input -->|"scope"| refresh_token_request_c1_p4
+      refresh_token_request_c1_p2 -->|"token_scope"| refresh_token_request_c1_p4
+      refresh_token_request_c1_p2 -->|"token"| refresh_token_request_c1_p4
+      refresh_token_request_c1_p3 -->|"resource"| refresh_token_request_c1_p4
+      refresh_token_request_c1_p2 -->|"client"| refresh_token_request_c1_result
+      refresh_token_request_c1_p2 -->|"sub"| refresh_token_request_c1_result
+      refresh_token_request_c1_p4 -->|"scope"| refresh_token_request_c1_result
+      refresh_token_request_c1_p3 -->|"resource"| refresh_token_request_c1_result
+      refresh_token_request_c1_p2 -->|"token"| refresh_token_request_c1_result
+  end
+
+  subgraph refresh_token_request_c2["token/1 · clause 1"]
+    direction LR
+      refresh_token_request_c2_input["token.input"]
+      refresh_token_request_c2_p1(["φ1 preauthorize\nwith output: {:ok, %AuthorizationSuccess{ client: client, sub: sub…"])
+      refresh_token_request_c2_p2(["φ2 AccessTokensAdapter.create\nwith output: {:ok, access_token}"])
+      refresh_token_request_c2_p3(["φ3 AccessTokensAdapter.revoke_refresh_token\nwith output: {:ok, _token}"])
+      refresh_token_request_c2_result["token.result\n{:ok, %{token: access_token}}"]
+      refresh_token_request_c2_input -->|"request"| refresh_token_request_c2_p1
+      refresh_token_request_c2_p1 -->|"previous_token"| refresh_token_request_c2_p2
+      refresh_token_request_c2_p1 -->|"client"| refresh_token_request_c2_p2
+      refresh_token_request_c2_p1 -->|"sub"| refresh_token_request_c2_p2
+      refresh_token_request_c2_p1 -->|"scope"| refresh_token_request_c2_p2
+      refresh_token_request_c2_p1 -->|"resource"| refresh_token_request_c2_p2
+      refresh_token_request_c2_p1 -->|"previous_token"| refresh_token_request_c2_p3
+      refresh_token_request_c2_p2 -->|"access_token"| refresh_token_request_c2_p3
+      refresh_token_request_c2_p2 -->|"access_token"| refresh_token_request_c2_result
+      refresh_token_request_c2_p3 -->|"refresh_token_revocation"| refresh_token_request_c2_result
+  end
+
+
+end
+
+classDef context fill:#eef2ff,stroke:#3730a3,color:#111827
+classDef operation fill:#ecfeff,stroke:#0e7490,color:#164e63,stroke-width:2px
+classDef result fill:#ecfdf5,stroke:#047857,color:#111827
+class client_credentials_request_params,client_credentials_request_c1_input,client_credentials_request_c2_input,code_chain_request_params,code_chain_request_c1_input,code_chain_request_c2_input,agent_credentials_request_params,agent_credentials_request_c1_input,agent_credentials_request_c2_input,password_request_params,password_request_c1_input,password_request_c2_input,authorization_code_request_params,authorization_code_request_c1_input,authorization_code_request_c2_input,agent_code_request_params,agent_code_request_c1_input,agent_code_request_c2_input,preauthorization_code_request_params,preauthorization_code_request_c1_input,preauthorization_code_request_c2_input,token_request_params,token_request_c1_input,token_request_c2_input,preauthorized_code_request_params,preauthorized_code_request_c1_input,preauthorized_code_request_c2_input,code_request_params,code_request_c1_input,code_request_c2_input,authorization_request_params,authorization_request_c1_input,authorization_request_c2_input,presentation_request_params,presentation_request_c1_input,presentation_request_c2_input,hybrid_request_params,hybrid_request_c1_input,hybrid_request_c2_input,refresh_token_request_params,refresh_token_request_c1_input,refresh_token_request_c2_input context
+class client_credentials_request_build,client_credentials_request_protocol,client_credentials_request_c1_p1,client_credentials_request_c1_p2,client_credentials_request_c1_p3,client_credentials_request_c1_p4,client_credentials_request_c2_p1,client_credentials_request_c2_p2,code_chain_request_build,code_chain_request_protocol,code_chain_request_c1_p1,code_chain_request_c1_p2,code_chain_request_c1_p3,code_chain_request_c1_p4,code_chain_request_c1_p5,code_chain_request_c1_p6,code_chain_request_c2_p1,code_chain_request_c2_p2,agent_credentials_request_build,agent_credentials_request_protocol,agent_credentials_request_c1_p1,agent_credentials_request_c1_p2,agent_credentials_request_c1_p3,agent_credentials_request_c1_p4,agent_credentials_request_c1_p5,agent_credentials_request_c2_p1,agent_credentials_request_c2_p2,password_request_build,password_request_protocol,password_request_c1_p1,password_request_c1_p2,password_request_c1_p3,password_request_c1_p4,password_request_c2_p1,password_request_c2_p2,authorization_code_request_build,authorization_code_request_protocol,authorization_code_request_c1_p1,authorization_code_request_c1_p2,authorization_code_request_c1_p3,authorization_code_request_c1_p4,authorization_code_request_c1_p5,authorization_code_request_c1_p6,authorization_code_request_c2_p1,authorization_code_request_c2_p2,authorization_code_request_c2_p3,agent_code_request_build,agent_code_request_protocol,agent_code_request_c1_p1,agent_code_request_c1_p2,agent_code_request_c1_p3,agent_code_request_c1_p4,agent_code_request_c1_p5,agent_code_request_c1_p6,agent_code_request_c2_p1,agent_code_request_c2_p2,agent_code_request_c2_p3,preauthorization_code_request_build,preauthorization_code_request_protocol,preauthorization_code_request_c1_p1,preauthorization_code_request_c1_p2,preauthorization_code_request_c1_p3,preauthorization_code_request_c1_p4,preauthorization_code_request_c2_p1,preauthorization_code_request_c2_p2,preauthorization_code_request_c2_p3,token_request_build,token_request_protocol,token_request_c1_p1,token_request_c1_p2,token_request_c1_p3,token_request_c1_p4,token_request_c1_p5,token_request_c2_p1,preauthorized_code_request_build,preauthorized_code_request_protocol,preauthorized_code_request_c1_p1,preauthorized_code_request_c1_p2,preauthorized_code_request_c1_p3,preauthorized_code_request_c1_p4,preauthorized_code_request_c1_p5,preauthorized_code_request_c2_p1,preauthorized_code_request_c2_p2,code_request_build,code_request_protocol,code_request_c1_p1,code_request_c1_p2,code_request_c1_p3,code_request_c1_p4,code_request_c1_p5,code_request_c1_p6,code_request_c1_p7,code_request_c1_p8,code_request_c2_p1,code_request_c2_p2,authorization_request_build,authorization_request_protocol,authorization_request_c1_p1,authorization_request_c1_p2,authorization_request_c1_p3,authorization_request_c1_p4,presentation_request_build,presentation_request_protocol,presentation_request_c1_p1,presentation_request_c1_p2,presentation_request_c1_p3,presentation_request_c1_p4,presentation_request_c1_p5,presentation_request_c1_p6,presentation_request_c1_p7,presentation_request_c1_p8,presentation_request_c1_p9,presentation_request_c1_p10,presentation_request_c1_p11,presentation_request_c2_p1,presentation_request_c2_p2,hybrid_request_build,hybrid_request_protocol,hybrid_request_c1_p1,hybrid_request_c2_p1,refresh_token_request_build,refresh_token_request_protocol,refresh_token_request_c1_p1,refresh_token_request_c1_p2,refresh_token_request_c1_p3,refresh_token_request_c1_p4,refresh_token_request_c2_p1,refresh_token_request_c2_p2,refresh_token_request_c2_p3 operation
+class client_credentials_request_c1_result,client_credentials_request_c2_result,code_chain_request_c1_result,code_chain_request_c2_result,agent_credentials_request_c1_result,agent_credentials_request_c2_result,password_request_c1_result,password_request_c2_result,authorization_code_request_c1_result,authorization_code_request_c2_result,agent_code_request_c1_result,agent_code_request_c2_result,preauthorization_code_request_c1_result,preauthorization_code_request_c2_result,token_request_c1_result,token_request_c2_result,preauthorized_code_request_c1_result,preauthorized_code_request_c2_result,code_request_c1_result,code_request_c2_result,authorization_request_c1_result,authorization_request_c2_result,presentation_request_c1_result,presentation_request_c2_result,hybrid_request_c1_result,hybrid_request_c2_result,refresh_token_request_c1_result,refresh_token_request_c2_result result
