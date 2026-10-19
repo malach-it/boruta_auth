@@ -121,6 +121,7 @@ defmodule Boruta.MixProject do
         Authorization: [
           Boruta.Oauth.Authorization,
           Boruta.Oauth.Authorization.AccessToken,
+          Boruta.Oauth.Authorization.IdToken,
           Boruta.Oauth.Authorization.Client,
           Boruta.Oauth.Authorization.Code,
           Boruta.Oauth.Authorization.Nonce,
@@ -172,6 +173,7 @@ defmodule Boruta.MixProject do
           Boruta.Oauth.PresentationRequest,
           Boruta.Oauth.AgentCodeRequest,
           Boruta.Oauth.AgentCredentialsRequest,
+          Boruta.Oauth.CodeChainRequest,
           Boruta.Oauth.Request
         ],
         "Ecto Adapter": [
