@@ -223,29 +223,42 @@ defmodule Boruta.Oauth.Request.Base do
 
     case Enum.member?(response_types, "code") do
       true ->
-        request = %HybridRequest{
-          client_id: params["client_id"],
-          code: params["code"],
-          code_challenge: params["code_challenge"],
-          code_challenge_method: params["code_challenge_method"],
-          nonce: params["nonce"],
-          prompt: params["prompt"],
-          redirect_uri: params["redirect_uri"],
-          resource_owner: params["resource_owner"],
-          response_mode: params["response_mode"],
-          response_types: response_types,
-          scope: params["scope"],
-          resource: params["resource"],
-          state: params["state"]
-        }
+        case List.last(response_types) == "code" do
+          true ->
+            # NOTE This may result in a code chain request but to reflect on the
+            # difference between it being a response type or a grant type
+            {:error,
+             %Boruta.Oauth.Error{
+               :error => :invalid_request,
+               :error_description => "Final code response type is not implemented.",
+               :status => :bad_request
+             }}
 
-        request =
-          case params["authorization_details"] do
-            nil -> request
-            authorization_details -> %{request | authorization_details: authorization_details}
-          end
+          false ->
+            request = %HybridRequest{
+              client_id: params["client_id"],
+              code: params["code"],
+              code_challenge: params["code_challenge"],
+              code_challenge_method: params["code_challenge_method"],
+              nonce: params["nonce"],
+              prompt: params["prompt"],
+              redirect_uri: params["redirect_uri"],
+              resource_owner: params["resource_owner"],
+              response_mode: params["response_mode"],
+              response_types: response_types,
+              scope: params["scope"],
+              resource: params["resource"],
+              state: params["state"]
+            }
 
-        {:ok, request}
+            request =
+              case params["authorization_details"] do
+                nil -> request
+                authorization_details -> %{request | authorization_details: authorization_details}
+              end
+
+            {:ok, request}
+        end
 
       false ->
         {:ok,

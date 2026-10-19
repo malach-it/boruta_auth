@@ -272,6 +272,7 @@ These rules apply to authorization endpoints that redirect to a client.
 
 - The pushed request must contain a valid response type, client ID, redirect
   URI, scope, grant, and PKCE data when PKCE is required.
+- Hybrid requests with response types ending with code are rejected
 - Private, unknown, and unauthorized scopes are rejected.
 - A client without the authorization-code grant is rejected.
 - A valid request is persisted and returned through a request URI.
@@ -309,13 +310,16 @@ These rules apply to authorization endpoints that redirect to a client.
 | Method | Suggested endpoint | Boruta entry point | Application behaviour |
 |---|---|---|---|
 | `GET` or `POST` | `/oauth/authorize` | `Boruta.Oauth.authorize/3` | `Boruta.Oauth.AuthorizeApplication` |
+| `GET` or `POST` | `/oauth/authorize` | `Boruta.Oauth.preauthorize/3` | `Boruta.Oauth.AuthorizeApplication` |
 
 ### Rules
 
 - Supported combinations can return a code, access token, ID token, or all
   three.
+- Private, unknown, and unauthorized scopes are rejected.
 - Invalid response modes are rejected.
-- ID-token combinations require the `openid` scope and a nonce.
+- An ID-token combination with `openid` scope requires a nonce. Without that
+  scope, the ID token is not issued.
 - A code-and-token response does not require a nonce when no ID token is
   returned.
 - `query` response mode is supported for tested hybrid combinations; the
@@ -812,17 +816,17 @@ OpenID4VCI pre-authorized code flow described below.
 
 This inventory covers every active test under `test/boruta/oauth` and
 `test/boruta/openid`, plus the shared outbound-trust tests in
-`test/boruta/http_client_test.exs`, at the time it was generated. Several tests
+`test/boruta/http_client_test.exs`, as of 2026-10-19. Several tests
 exercise the same rule with different inputs, so the number of rule bullets is
 deliberately smaller than the number of test cases.
 
 | Test layer | OAuth | OpenID | Shared trust | Total |
 |---|---:|---:|---:|---:|
-| Active integration and flow cases | 260 | 107 | 0 | 367 |
-| Active supporting unit cases | 193 | 73 | 10 | 276 |
-| **All active cases represented by this guide** | **453** | **180** | **10** | **643** |
+| Active integration and flow cases | 292 | 114 | 0 | 406 |
+| Active supporting unit cases | 201 | 74 | 10 | 285 |
+| **All active cases represented by this guide** | **493** | **188** | **10** | **691** |
 | Skipped cases, not asserted as implemented rules | 1 | 6 | 0 | 7 |
-| **All discovered cases** | **454** | **186** | **10** | **650** |
+| **All discovered cases** | **494** | **194** | **10** | **698** |
 
 Outbound request trust is exercised by 28 active cases across the shared HTTP
 client, OAuth request-object and client-authentication tests, dynamic
@@ -835,6 +839,7 @@ The integration and flow rules are exercised by:
 - `test/boruta/oauth/integration/agent_credentials_grant_test.exs`
 - `test/boruta/oauth/integration/authorization_code_grant_test.exs`
 - `test/boruta/oauth/integration/client_credentials_grant_test.exs`
+- `test/boruta/oauth/integration/code_chain_grant_test.exs`
 - `test/boruta/oauth/integration/common_grant_test.exs`
 - `test/boruta/oauth/integration/hybrid_test.exs`
 - `test/boruta/oauth/integration/implicit_grant_test.exs`

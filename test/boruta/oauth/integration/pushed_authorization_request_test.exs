@@ -60,6 +60,29 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
                 }}
     end
 
+    test "rejects hybrid pushed authorization requests when response type ends with code", %{
+      client: client
+    } do
+      assert {:pushed_authorization_error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Final code response type is not implemented.",
+                status: :bad_request
+              }} =
+               Oauth.pushed_authorization_request(
+                 %Plug.Conn{
+                   body_params: %{
+                     "response_type" => "token code",
+                     "client_id" => client.id,
+                     "redirect_uri" => List.first(client.redirect_uris)
+                   }
+                 },
+                 ApplicationMock
+               )
+
+      assert Repo.all(AuthorizationRequest) == []
+    end
+
     test "returns an error if `client_id` is invalid" do
       assert Oauth.pushed_authorization_request(
                %Plug.Conn{
@@ -196,16 +219,16 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
                  }
                },
                ApplicationMock
-             ) == {:pushed_authorization_error,
-               %Boruta.Oauth.Error{
-                 error: :invalid_request,
-                 error_description: "Code challenge is invalid.",
-                 format: :json,
-                 redirect_uri: "https://redirect.uri",
-                 status: :bad_request,
-                 state: given_state
-               }
-             }
+             ) ==
+               {:pushed_authorization_error,
+                %Boruta.Oauth.Error{
+                  error: :invalid_request,
+                  error_description: "Code challenge is invalid.",
+                  format: :json,
+                  redirect_uri: "https://redirect.uri",
+                  status: :bad_request,
+                  state: given_state
+                }}
     end
 
     test "stores the request", %{
@@ -232,7 +255,9 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
                  ApplicationMock
                )
 
-      assert [_, request_id] = Regex.run(~r/urn\:ietf\:params\:oauth\:request_uri\:(.+)/, request_uri)
+      assert [_, request_id] =
+               Regex.run(~r/urn\:ietf\:params\:oauth\:request_uri\:(.+)/, request_uri)
+
       request = Repo.get(AuthorizationRequest, request_id)
       assert request.client_id
       assert expires_in

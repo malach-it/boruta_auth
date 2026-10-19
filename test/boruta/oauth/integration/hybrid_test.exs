@@ -64,6 +64,58 @@ defmodule Boruta.OauthTest.HybridGrantTest do
                 }}
     end
 
+    test "rejects hybrid requests when response type ends with code", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      for response_type <- ["token code", "id_token code", "code token code"] do
+        assert {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Final code response type is not implemented.",
+                  status: :bad_request
+                }} =
+                 Oauth.authorize(
+                   %Plug.Conn{
+                     query_params: %{
+                       "response_type" => response_type,
+                       "client_id" => client.id,
+                       "redirect_uri" => redirect_uri
+                     }
+                   },
+                   resource_owner,
+                   ApplicationMock
+                 )
+      end
+
+      assert Repo.all(Ecto.Token) == []
+    end
+
+    test "rejects hybrid preauthorization when response type ends with code", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      assert {:preauthorize_error,
+              %Error{
+                error: :invalid_request,
+                error_description: "Final code response type is not implemented.",
+                status: :bad_request
+              }} =
+               Oauth.preauthorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "token code",
+                     "client_id" => client.id,
+                     "redirect_uri" => List.first(client.redirect_uris)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
     test "returns an error if `response_mode` is invalid" do
       assert Oauth.authorize(
                %Plug.Conn{
