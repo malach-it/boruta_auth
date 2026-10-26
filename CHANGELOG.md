@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- unique index on OAuth client `public_client_id`, with duplicate values reported as changeset errors
 - up to Elixir 1.20 and OTP 29 support
 - per-client trusted certificate authorities and host allowlists for outbound requests
 - oauth resource indicators support

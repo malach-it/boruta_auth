@@ -248,6 +248,7 @@ defmodule Boruta.Ecto.Client do
     ])
     |> validate_required([:redirect_uris])
     |> unique_constraint(:id, name: :clients_pkey, match: :suffix)
+    |> unique_constraint(:public_client_id)
     |> change_access_token_ttl()
     |> change_agent_token_ttl()
     |> change_authorization_code_ttl()
@@ -364,6 +365,7 @@ defmodule Boruta.Ecto.Client do
       :id_token_ttl,
       :key_pair_type
     ])
+    |> unique_constraint(:public_client_id)
     |> validate_inclusion(:access_token_ttl, 1..access_token_max_ttl())
     |> validate_inclusion(:agent_token_ttl, 1..agent_token_max_ttl())
     |> validate_inclusion(:authorization_code_ttl, 1..authorization_code_max_ttl())

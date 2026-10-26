@@ -174,6 +174,19 @@ defmodule Boruta.Ecto.AdminTest do
                Admin.create_client(%{public_client_id: public_client_id})
     end
 
+    test "rejects a duplicate public_client_id" do
+      public_client_id = "duplicate_public_client_id"
+      client_fixture(%{public_client_id: public_client_id})
+
+      assert {:error, changeset} = Admin.create_client(%{public_client_id: public_client_id})
+      assert {"has already been taken", _} = changeset.errors[:public_client_id]
+    end
+
+    test "allows clients without a public_client_id" do
+      assert {:ok, %Client{public_client_id: nil}} = Admin.create_client(%{})
+      assert {:ok, %Client{public_client_id: nil}} = Admin.create_client(%{})
+    end
+
     test "creates a client with check_public_client_id" do
       check_public_client_id = true
 
@@ -612,6 +625,17 @@ defmodule Boruta.Ecto.AdminTest do
 
       assert {:ok, %Client{public_client_id: ^public_client_id}} =
                Admin.update_client(client, %{"public_client_id" => public_client_id})
+    end
+
+    test "rejects updating a client to another client's public client id" do
+      public_client_id = "existing_public_client_id"
+      client_fixture(%{public_client_id: public_client_id})
+      client = client_fixture()
+
+      assert {:error, changeset} =
+               Admin.update_client(client, %{"public_client_id" => public_client_id})
+
+      assert {"has already been taken", _} = changeset.errors[:public_client_id]
     end
 
     test "updates the client with check public client id" do
