@@ -58,7 +58,7 @@ defmodule Boruta.OauthTest.CommonGrantTest do
                    "grant_type" => "client_credentials",
                    "client_id" => SecureRandom.uuid()
                  },
-                 req_headers: [{"dpop", "dpop"}, {"dpop", "dpop"}]
+                 req_headers: [{"dpop", "first-proof"}, {"dpop", "second-proof"}]
                },
                ApplicationMock
              ) ==

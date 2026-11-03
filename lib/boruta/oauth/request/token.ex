@@ -68,10 +68,10 @@ defmodule Boruta.Oauth.Request.Token do
 
   defp fetch_dpop(%{req_headers: req_headers}) do
     with {"dpop", dpop} <- List.keyfind(req_headers, "dpop", 0),
-         nil <- List.keyfind(req_headers, "dpop", 1) do
+         true <- Enum.count(req_headers, fn {key, _value} -> key == "dpop" end) == 1 do
       {:ok, dpop}
     else
-      {"dpop", _dpop} ->
+      false ->
         {:error, "More than one DPoP header present in the request."}
 
       _ ->
