@@ -26,16 +26,26 @@ defmodule Boruta.Oauth.Validator do
   """
   @spec validate(action :: :token | :authorize | :introspect | :revoke, params :: map()) ::
           {:ok, params :: map()} | {:error, message :: String.t()}
-  def validate(:token, %{"grant_type" => grant_type} = params)
-      when grant_type in [
-             "password",
-             "client_credentials",
-             "agent_credentials",
-             "code_chain",
-             "agent_code",
-             "authorization_code",
-             "refresh_token"
-           ] do
+  def validate(action, params) do
+    # Postgres rejects NUL in text, so a param carrying one would raise on
+    # whichever query it reaches.
+    if nul_byte?(params) do
+      {:error, "Request params must not contain NUL bytes."}
+    else
+      validate_schema(action, params)
+    end
+  end
+
+  defp validate_schema(:token, %{"grant_type" => grant_type} = params)
+       when grant_type in [
+              "password",
+              "client_credentials",
+              "agent_credentials",
+              "code_chain",
+              "agent_code",
+              "authorization_code",
+              "refresh_token"
+            ] do
     case ExJsonSchema.Validator.validate(
            apply(Schema, String.to_atom(grant_type), []),
            params,
@@ -49,10 +59,10 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(
-        :token,
-        %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params
-      ) do
+  defp validate_schema(
+         :token,
+         %{"grant_type" => "urn:ietf:params:oauth:grant-type:pre-authorized_code"} = params
+       ) do
     case ExJsonSchema.Validator.validate(
            Schema.preauthorization_code(),
            params,
@@ -66,7 +76,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:token, %{"grant_type" => _} = params) do
+  defp validate_schema(:token, %{"grant_type" => _} = params) do
     case ExJsonSchema.Validator.validate(
            Schema.grant_type(),
            params,
@@ -77,7 +87,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => "token"} = params) do
+  defp validate_schema(:authorize, %{"response_type" => "token"} = params) do
     case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
@@ -87,7 +97,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => "vp_token" <> _rest} = params) do
+  defp validate_schema(:authorize, %{"response_type" => "vp_token" <> _rest} = params) do
     case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
@@ -97,7 +107,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => "id_token" <> _rest} = params) do
+  defp validate_schema(:authorize, %{"response_type" => "id_token" <> _rest} = params) do
     case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
@@ -107,7 +117,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => "code" <> _rest} = params) do
+  defp validate_schema(:authorize, %{"response_type" => "code" <> _rest} = params) do
     case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
@@ -117,10 +127,10 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(
-        :authorize,
-        %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params
-      ) do
+  defp validate_schema(
+         :authorize,
+         %{"response_type" => "urn:ietf:params:oauth:response-type:pre-authorized_code"} = params
+       ) do
     case ExJsonSchema.Validator.validate(
            Schema.preauthorized_code(),
            params,
@@ -134,7 +144,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:authorize, %{"response_type" => _response_types} = params) do
+  defp validate_schema(:authorize, %{"response_type" => _response_types} = params) do
     case validate_multiple_response_types(params) do
       :ok ->
         {:ok, params}
@@ -144,7 +154,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:introspect, params) do
+  defp validate_schema(:introspect, params) do
     case ExJsonSchema.Validator.validate(Schema.introspect(), params,
            error_formatter: BorutaFormatter
          ) do
@@ -156,7 +166,7 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:revoke, params) do
+  defp validate_schema(:revoke, params) do
     case ExJsonSchema.Validator.validate(Schema.revoke(), params,
            error_formatter: BorutaFormatter
          ) do
@@ -168,11 +178,11 @@ defmodule Boruta.Oauth.Validator do
     end
   end
 
-  def validate(:token, _params) do
+  defp validate_schema(:token, _params) do
     {:error, "Request is not a valid OAuth request. Need a grant_type param."}
   end
 
-  def validate(:authorize, _params) do
+  defp validate_schema(:authorize, _params) do
     {:error, "Request is not a valid OAuth request. Need a response_type param."}
   end
 
@@ -215,4 +225,12 @@ defmodule Boruta.Oauth.Validator do
       end
     end)
   end
+
+  defp nul_byte?(value) when is_binary(value), do: String.contains?(value, <<0>>)
+  defp nul_byte?(values) when is_list(values), do: Enum.any?(values, &nul_byte?/1)
+
+  defp nul_byte?(params) when is_map(params) and not is_struct(params),
+    do: Enum.any?(params, fn {key, value} -> nul_byte?(key) or nul_byte?(value) end)
+
+  defp nul_byte?(_value), do: false
 end

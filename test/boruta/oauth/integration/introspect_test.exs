@@ -92,6 +92,25 @@ defmodule Boruta.OauthTest.IntrospectTest do
                 }}
     end
 
+    test "returns an error if `token` contains a NUL byte", %{client: client} do
+      %{req_headers: [{"authorization", authorization_header}]} =
+        using_basic_auth(client.id, client.secret)
+
+      assert Oauth.introspect(
+               %Plug.Conn{
+                 body_params: %{"token" => "a\u0000b"},
+                 req_headers: [{"authorization", authorization_header}]
+               },
+               ApplicationMock
+             ) ==
+               {:introspect_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Request params must not contain NUL bytes.",
+                  status: :bad_request
+                }}
+    end
+
     test "returns an inactive token if token is inactive", %{client: client} do
       %{req_headers: [{"authorization", authorization_header}]} =
         using_basic_auth(client.id, client.secret)

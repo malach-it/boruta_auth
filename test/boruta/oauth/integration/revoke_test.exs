@@ -77,6 +77,19 @@ defmodule Boruta.OauthTest.RevokeTest do
       }}
     end
 
+    test "returns an error if `token` contains a NUL byte", %{client: client} do
+      %{req_headers: [{"authorization", authorization_header}]} = using_basic_auth(client.id, client.secret)
+
+      assert Oauth.revoke(%Plug.Conn{
+        body_params: %{"token" => "a\u0000b"},
+        req_headers: [{"authorization", authorization_header}]
+      }, ApplicationMock) == {:revoke_error, %Error{
+        error: :invalid_request,
+        error_description: "Request params must not contain NUL bytes.",
+        status: :bad_request
+      }}
+    end
+
     test "revoke token by value if token is active", %{client: client, token: token, resource_owner: resource_owner} do
       ResourceOwners
       |> expect(:get_by, 3, fn(_params) -> {:ok, resource_owner} end)
