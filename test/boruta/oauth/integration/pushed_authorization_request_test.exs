@@ -262,6 +262,32 @@ defmodule Boruta.OauthTest.PushedAuthorizationRequestTest do
       assert request.client_id
       assert expires_in
     end
+
+    test "returns an error if `code_challenge` is too long", %{
+      client: client
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.pushed_authorization_request(
+               %Plug.Conn{
+                 body_params: %{
+                   "response_type" => "code",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "code_challenge" => String.duplicate("a", 256),
+                   "code_challenge_method" => "plain"
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:pushed_authorization_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description:
+                    "Query params validation failed. #/code_challenge must be at most 128 characters long.",
+                  status: :bad_request
+                }}
+    end
   end
 
   def valid_public_key do
