@@ -1,8 +1,13 @@
 defmodule Boruta.Openid.VerifiablePresentationsTest do
-  use ExUnit.Case
+  use Boruta.DataCase
 
   alias Boruta.Openid.VerifiablePresentations
   alias Boruta.Support.TLSServer
+
+  setup do
+    Boruta.Factory.insert(:client, id_token_signature_alg: "RS256")
+    :ok
+  end
 
   describe "response type and presentation definition selection" do
     test "keeps OAuth response types and rejects unsupported response types" do
@@ -816,7 +821,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                {:error, "Proof does not contain a valid JWT."}
     end
 
-    test "rejects a token whose embedded key does not match its signature" do
+    test "trusts the registered signing key instead of the embedded key" do
       signer =
         Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
           "jwk" =>
@@ -829,8 +834,20 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       {:ok, jwt, _claims} =
         VerifiablePresentations.Token.generate_and_sign(%{"exp" => 1}, signer)
 
-      assert VerifiablePresentations.validate_signature(jwt) ==
-               {:error, "Bad proof signature"}
+      assert {:ok, jwk, %{"exp" => 1}} = VerifiablePresentations.validate_signature(jwt)
+      assert Map.take(jwk, ["kty", "n", "e"]) == public_jwk_fixture()
+    end
+
+    test "rejects an unregistered signing key even with its public key embedded" do
+      key = JOSE.JWK.generate_key({:rsa, 2048})
+      public_key = key |> JOSE.JWK.to_public() |> JOSE.JWK.to_map() |> elem(1)
+
+      for headers <- [%{"jwk" => public_key}, %{"kid" => "did:example:untrusted"}] do
+        signer = Joken.Signer.create("RS256", %{"pem" => JOSE.JWK.to_pem(key)}, headers)
+        jwt = sign_credential(signer, %{})
+        assert {:error, reason} = VerifiablePresentations.validate_signature(jwt)
+        assert reason =~ "signature not trusted."
+      end
     end
 
     test "validates a token with a did:key header" do
@@ -847,7 +864,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       assert {:ok, jwk, %{"exp" => 1}} =
                VerifiablePresentations.validate_signature(jwt)
 
-      assert jwk == public_jwk_fixture()
+      assert Map.take(jwk, ["kty", "n", "e"]) == public_jwk_fixture()
     end
   end
 

@@ -38,6 +38,23 @@ defmodule Boruta.OpenidTest.DirectPostTest do
 
   setup :verify_on_exit!
 
+  setup do
+    public_key =
+      private_key_fixture()
+      |> JOSE.JWK.from_pem()
+      |> JOSE.JWK.to_public()
+      |> JOSE.JWK.to_pem()
+      |> elem(1)
+
+    insert(:client,
+      private_key: private_key_fixture(),
+      public_key: public_key,
+      id_token_signature_alg: "RS256"
+    )
+
+    :ok
+  end
+
   describe "authenticates with direct post response" do
     setup do
       :ok = ClientStore.invalidate_public()

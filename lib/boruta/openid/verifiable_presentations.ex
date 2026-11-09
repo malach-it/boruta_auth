@@ -10,6 +10,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
     def token_config, do: %{}
   end
 
+  alias Boruta.ClientsAdapter
   alias Boruta.Did
   alias Boruta.HttpClient
   alias Boruta.Oauth.Client
@@ -297,7 +298,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->
-        verify_jwt(extract_key(headers), alg, jwt)
+        verify_trusted_jwt(extract_key(headers), alg, jwt)
 
       error ->
         {:error, inspect(error)}
@@ -353,6 +354,58 @@ defmodule Boruta.Openid.VerifiablePresentations do
   end
 
   def verify_jwt(error, _alg, _jwt), do: error
+
+  @spec verify_trusted_jwt(
+          {:did, String.t()} | {:jwk, String.t()},
+          alg :: String.t(),
+          jwt :: String.t()
+        ) ::
+          {:ok, jwk :: map(), claims :: map()} | {:error, String.t()}
+  defp verify_trusted_jwt({:did, _did}, alg, jwt) do
+    ClientsAdapter.list_clients_jwk()
+    |> Enum.reduce_while(
+      {:error, "Verifiable credential signature not trusted."},
+      fn
+        {_client, %{"alg" => ^alg} = jwk}, {:error, errors} ->
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+
+          with {:ok, claims} <- Client.Token.verify(jwt, signer) do
+            {:halt, {:ok, jwk, claims}}
+          else
+            {:error, error} ->
+              {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
+          end
+
+        _key, error ->
+          {:cont, error}
+      end
+    )
+  end
+
+  defp verify_trusted_jwt({:jwk, _jwk}, alg, jwt) do
+    ClientsAdapter.list_clients_jwk()
+    |> Enum.reduce_while(
+      {:error, "signature not trusted."},
+      fn
+        {_client, %{"alg" => ^alg} = jwk}, {:error, errors} ->
+          signer =
+            Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
+
+          with {:ok, claims} <- Client.Token.verify(jwt, signer) do
+            {:halt, {:ok, jwk, claims}}
+          else
+            {:error, error} ->
+              {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
+          end
+
+        _key, error ->
+          {:cont, error}
+      end
+    )
+  end
+
+  defp verify_trusted_jwt(error, _alg, _jwt), do: error
 
   defp extract_key(%{"jwk" => jwk}), do: {:jwk, jwk}
   defp extract_key(%{"kid" => did}), do: {:did, did}

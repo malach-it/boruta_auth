@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- verifiable presentation credentials signature are verified against registered client JWKS rejecting self signed JWTs
 - `AuthorizeResponse` result expose an `Oauth.Token` struct instead of value
 - successful OAuth revocation callbacks receive the revoked token, or `nil` for an unknown token
 - oauth tokens value database field is now a text
