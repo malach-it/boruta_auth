@@ -386,7 +386,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
   defp verify_trusted_jwt({:jwk, _jwk}, alg, jwt) do
     ClientsAdapter.list_clients_jwk()
     |> Enum.reduce_while(
-      {:error, "signature not trusted."},
+      {:error, "Verifiable credential signature not trusted."},
       fn
         {_client, %{"alg" => ^alg} = jwk}, {:error, error} ->
           signer =
