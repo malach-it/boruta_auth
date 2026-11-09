@@ -832,7 +832,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       credential =
         Client.signatures_adapter(client).verifiable_credential_sign(payload, client, "jwt_vc")
 
-      assert {:ok, jwk, %{"exp" => 1}} = VerifiablePresentations.validate_signature(credential)
+      assert {:ok, jwk, %{"exp" => 1}} = VerifiablePresentations.validate_trusted_signature(credential)
       assert Map.take(jwk, ["kty", "n", "e"]) == public_jwk_fixture()
     end
 
@@ -843,7 +843,7 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
       for headers <- [%{"jwk" => public_key}, %{"kid" => "did:example:untrusted"}] do
         signer = Joken.Signer.create("RS256", %{"pem" => JOSE.JWK.to_pem(key)}, headers)
         jwt = sign_credential(signer, %{})
-        assert {:error, reason} = VerifiablePresentations.validate_signature(jwt)
+        assert {:error, reason} = VerifiablePresentations.validate_trusted_signature(jwt)
         assert reason =~ "signature not trusted."
       end
     end

@@ -154,7 +154,7 @@ defmodule Boruta.Openid.VerifiablePresentations do
         trusted_authorities,
         trusted_hosts
       ) do
-    with {:ok, _jwk, claims} <- validate_signature(credential),
+    with {:ok, _jwk, claims} <- validate_trusted_signature(credential),
          :ok <- validate_expiration(claims),
          :ok <- validate_valid_from(claims),
          :ok <- validate_status_list(claims, trusted_authorities, trusted_hosts) do
@@ -298,18 +298,28 @@ defmodule Boruta.Openid.VerifiablePresentations do
   def validate_signature(jwt) when is_binary(jwt) do
     case Joken.peek_header(jwt) do
       {:ok, %{"alg" => alg} = headers} ->
+        verify_jwt(extract_key(headers), alg, jwt)
+
+      error ->
+        {:error, inspect(error)}
+    end
+  end
+
+  def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
+
+  @spec validate_trusted_signature(jwt :: String.t()) ::
+          {:ok, jwk :: map(), claims :: map()} | {:error, reason :: String.t()}
+  def validate_trusted_signature(jwt) when is_binary(jwt) do
+    case Joken.peek_header(jwt) do
+      {:ok, %{"alg" => alg} = headers} ->
         verify_trusted_jwt(extract_key(headers), alg, jwt)
 
       error ->
         {:error, inspect(error)}
     end
-
-    # rescue
-    #   error ->
-    #     {:error, inspect(error)}
   end
 
-  def validate_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
+  def validate_trusted_signature(_jwt), do: {:error, "Proof does not contain a valid JWT."}
 
   @spec verify_jwt({:did, String.t()} | {:jwk, String.t()}, alg :: String.t(), jwt :: String.t()) ::
           {:ok, jwk :: map(), claims :: map()} | {:error, String.t()}
