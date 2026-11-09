@@ -1,12 +1,17 @@
 defmodule Boruta.Openid.VerifiablePresentationsTest do
   use Boruta.DataCase
 
+  alias Boruta.Ecto.OauthMapper
+  alias Boruta.Oauth.Client
   alias Boruta.Openid.VerifiablePresentations
   alias Boruta.Support.TLSServer
 
   setup do
-    Boruta.Factory.insert(:client, id_token_signature_alg: "RS256")
-    :ok
+    client =
+      Boruta.Factory.insert(:client, id_token_signature_alg: "RS256")
+      |> OauthMapper.to_oauth_schema()
+
+    {:ok, client: client}
   end
 
   describe "response type and presentation definition selection" do
@@ -821,20 +826,13 @@ defmodule Boruta.Openid.VerifiablePresentationsTest do
                {:error, "Proof does not contain a valid JWT."}
     end
 
-    test "trusts the registered signing key instead of the embedded key" do
-      signer =
-        Joken.Signer.create("RS256", %{"pem" => private_key_fixture()}, %{
-          "jwk" =>
-            JOSE.JWK.generate_key({:rsa, 2048})
-            |> JOSE.JWK.to_public()
-            |> JOSE.JWK.to_map()
-            |> elem(1)
-        })
+    test "trusts the registered signing key instead of the embedded key", %{client: client} do
+      payload = %{"exp" => 1}
 
-      {:ok, jwt, _claims} =
-        VerifiablePresentations.Token.generate_and_sign(%{"exp" => 1}, signer)
+      credential =
+        Client.signatures_adapter(client).verifiable_credential_sign(payload, client, "jwt_vc")
 
-      assert {:ok, jwk, %{"exp" => 1}} = VerifiablePresentations.validate_signature(jwt)
+      assert {:ok, jwk, %{"exp" => 1}} = VerifiablePresentations.validate_signature(credential)
       assert Map.take(jwk, ["kty", "n", "e"]) == public_jwk_fixture()
     end
 
