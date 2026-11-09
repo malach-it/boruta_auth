@@ -388,15 +388,15 @@ defmodule Boruta.Openid.VerifiablePresentations do
     |> Enum.reduce_while(
       {:error, "signature not trusted."},
       fn
-        {_client, %{"alg" => ^alg} = jwk}, {:error, errors} ->
+        {_client, %{"alg" => ^alg} = jwk}, {:error, error} ->
           signer =
             Joken.Signer.create(alg, %{"pem" => JOSE.JWK.from_map(jwk) |> JOSE.JWK.to_pem()})
 
           with {:ok, claims} <- Client.Token.verify(jwt, signer) do
             {:halt, {:ok, jwk, claims}}
           else
-            {:error, error} ->
-              {:cont, {:error, errors <> ", #{inspect(error)} with key #{inspect(jwk)}"}}
+            {:error, _error} ->
+              {:cont, {:error, error}}
           end
 
         _key, error ->
