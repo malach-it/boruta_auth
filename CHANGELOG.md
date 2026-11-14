@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - primary keys and the `oauth_clients_scopes` sequence carry the `oauth_` prefixed names; duplicate client and scope ids are reported as changeset errors whichever name the constraint has
+- authorization requests with a `state` or `nonce` longer than 255 characters, or a `code_challenge` longer than 128 characters (counted in code points, as the database does), return an `invalid_request` error instead of raising on insert
 
 ### Added
 

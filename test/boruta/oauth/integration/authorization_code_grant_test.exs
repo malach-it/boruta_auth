@@ -871,6 +871,108 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
       end
     end
 
+    test "returns a code with a state of the maximum length", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      given_state = String.duplicate("a", 255)
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert {:authorize_success, %AuthorizeResponse{type: :code, state: ^given_state}} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "state" => given_state
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error if `state` is too long", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "state" => String.duplicate("a", 256)
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description:
+                    "Query params validation failed. #/state must be at most 255 characters long.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if `state` is too long in code points", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      # 128 graphemes, 256 code points
+      assert {:authorize_error,
+              %Error{
+                error_description:
+                  "Query params validation failed. #/state must be at most 255 characters long."
+              }} =
+               Oauth.authorize(
+                 %Plug.Conn{
+                   query_params: %{
+                     "response_type" => "code",
+                     "client_id" => client.id,
+                     "redirect_uri" => redirect_uri,
+                     "state" => String.duplicate("e\u0301", 128)
+                   }
+                 },
+                 resource_owner,
+                 ApplicationMock
+               )
+    end
+
+    test "returns an error if `nonce` is too long", %{
+      client: client,
+      resource_owner: resource_owner
+    } do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "nonce" => String.duplicate("a", 256)
+                 }
+               },
+               resource_owner,
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description:
+                    "Query params validation failed. #/nonce must be at most 255 characters long.",
+                  status: :bad_request
+                }}
+    end
+
     test "returns an error with pkce client without code_challenge", %{
       pkce_client: client,
       resource_owner: resource_owner

@@ -3,6 +3,13 @@ defmodule Boruta.Oauth.Json.Schema do
   alias ExJsonSchema.Schema
 
   @uuid_pattern "\^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}\$"
+  # Length limits are patterns rather than `maxLength`, which counts graphemes: the
+  # columns these values are stored in count code points, and in UTF-8 mode `[\s\S]`
+  # matches one code point. `BorutaFormatter` reports them as a length error.
+  # state and nonce are stored in varchar(255) columns
+  @stored_string_length_pattern "(*UTF8)\\A[\\s\\S]{0,255}\\z"
+  # RFC 7636 section 4.1, a plain code challenge is the code verifier
+  @code_challenge_length_pattern "(*UTF8)\\A[\\s\\S]{0,128}\\z"
 
   def client_credentials do
     %{
@@ -81,7 +88,7 @@ defmodule Boruta.Oauth.Json.Schema do
         "id_token" => %{"type" => "string"},
         "authorization_code" => %{"type" => "string"},
         "scope" => %{"type" => "string"},
-        "code_challenge" => %{"type" => "string"},
+        "code_challenge" => %{"type" => "string", "pattern" => @code_challenge_length_pattern},
         "code_challenge_method" => %{
           "type" => "string",
           "pattern" => "plain|S256"
@@ -209,8 +216,8 @@ defmodule Boruta.Oauth.Json.Schema do
           "pattern" => @uuid_pattern
         },
         "encrypted_request" => %{"type" => "string"},
-        "state" => %{"type" => "string"},
-        "nonce" => %{"type" => "string"},
+        "state" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
+        "nonce" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"},
         "prompt" => %{"type" => "string"}
@@ -228,8 +235,8 @@ defmodule Boruta.Oauth.Json.Schema do
         "client_id" => %{
           "type" => "string"
         },
-        "state" => %{"type" => "string"},
-        "nonce" => %{"type" => "string"},
+        "state" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
+        "nonce" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"}
       },
@@ -245,9 +252,9 @@ defmodule Boruta.Oauth.Json.Schema do
         "response_type" => %{"type" => "string", "pattern" => "vp_token"},
         "response_mode" => %{"type" => "string", "pattern" => "^(query|fragment|form_post)$"},
         "client_id" => %{"type" => "string"},
-        "state" => %{"type" => "string"},
+        "state" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
         "client_metadata" => %{"type" => "string"},
-        "nonce" => %{"type" => "string"},
+        "nonce" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"}
       },
@@ -279,13 +286,13 @@ defmodule Boruta.Oauth.Json.Schema do
           "pattern" => "urn:ietf:params:oauth:response-type:pre-authorized_code"
         },
         "client_id" => %{"type" => "string"},
-        "state" => %{"type" => "string"},
-        "nonce" => %{"type" => "string"},
+        "state" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
+        "nonce" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"},
         "code" => %{"type" => "string"},
         "prompt" => %{"type" => "string"},
-        "code_challenge" => %{"type" => "string"},
+        "code_challenge" => %{"type" => "string", "pattern" => @code_challenge_length_pattern},
         "code_challenge_method" => %{
           "type" => "string",
           "pattern" => "plain|S256"
@@ -305,12 +312,12 @@ defmodule Boruta.Oauth.Json.Schema do
         "client_id" => %{
           "type" => "string"
         },
-        "state" => %{"type" => "string"},
-        "nonce" => %{"type" => "string"},
+        "state" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
+        "nonce" => %{"type" => "string", "pattern" => @stored_string_length_pattern},
         "redirect_uri" => %{"type" => "string"},
         "resource" => %{"type" => "string"},
         "prompt" => %{"type" => "string"},
-        "code_challenge" => %{"type" => "string"},
+        "code_challenge" => %{"type" => "string", "pattern" => @code_challenge_length_pattern},
         "code_challenge_method" => %{
           "type" => "string",
           "pattern" => "plain|S256"

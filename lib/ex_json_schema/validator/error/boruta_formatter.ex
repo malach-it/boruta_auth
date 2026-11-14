@@ -18,6 +18,11 @@ defmodule ExJsonSchema.Validator.Error.BorutaFormatter do
     "Required properties #{Enum.join(missing, ", ")} are missing at #{path}."
   end
 
+  def format(%Error.Pattern{expected: "(*UTF8)\\A[\\s\\S]{0," <> max_length_pattern_end}, path) do
+    [max_length, _rest] = String.split(max_length_pattern_end, "}", parts: 2)
+    "#{path} must be at most #{max_length} characters long."
+  end
+
   def format(%Error.Pattern{expected: expected}, path) do
     "#{path} do match required pattern /#{expected}/."
   end
