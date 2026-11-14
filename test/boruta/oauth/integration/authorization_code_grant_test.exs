@@ -137,6 +137,29 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 }}
     end
 
+    test "returns an error if `state` contains a NUL byte", %{client: client} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.authorize(
+               %Plug.Conn{
+                 query_params: %{
+                   "response_type" => "code",
+                   "client_id" => client.id,
+                   "redirect_uri" => redirect_uri,
+                   "state" => "a\u0000b"
+                 }
+               },
+               %ResourceOwner{sub: "sub"},
+               ApplicationMock
+             ) ==
+               {:authorize_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Request params must not contain NUL bytes.",
+                  status: :bad_request
+                }}
+    end
+
     test "returns an error if user is invalid", %{client: client} do
       redirect_uri = List.first(client.redirect_uris)
 
@@ -1787,6 +1810,28 @@ defmodule Boruta.OauthTest.AuthorizationCodeGrantTest do
                 %Error{
                   error: :invalid_grant,
                   error_description: "Given authorization code is invalid, revoked, or expired.",
+                  status: :bad_request
+                }}
+    end
+
+    test "returns an error if `code` contains a NUL byte", %{client: client} do
+      redirect_uri = List.first(client.redirect_uris)
+
+      assert Oauth.token(
+               %Plug.Conn{
+                 body_params: %{
+                   "grant_type" => "authorization_code",
+                   "client_id" => client.id,
+                   "code" => "a\u0000b",
+                   "redirect_uri" => redirect_uri
+                 }
+               },
+               ApplicationMock
+             ) ==
+               {:token_error,
+                %Error{
+                  error: :invalid_request,
+                  error_description: "Request params must not contain NUL bytes.",
                   status: :bad_request
                 }}
     end

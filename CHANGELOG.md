@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - primary keys and the `oauth_clients_scopes` sequence carry the `oauth_` prefixed names; duplicate client and scope ids are reported as changeset errors whichever name the constraint has
+- authorize, token, introspect and revoke requests with a NUL byte in a param return an `invalid_request` error instead of raising on the database query
 
 ### Added
 
